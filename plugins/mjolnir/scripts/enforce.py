@@ -51,12 +51,15 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import io
+import itertools
 import json
 import os
 import re
 import shlex
+import signal
 import subprocess
 import sys
 import tempfile
@@ -305,6 +308,10 @@ FIELD_FLAGS = ("-f", "--raw-field", "-F", "--field", "--input")
 # one, and the reader bounds that value for the same reason.
 PROBE_TIMEOUT = 5
 
+# How long one reading may spend asking whether background work has ended, over
+# every lease it asks about. Shared, because the guard's own budget is.
+BACKGROUND_BUDGET = 5
+
 # How long a wait rests between two readings of a resource. A probe is a command the
 # project pays for, so the rest is what bounds how often it is asked.
 WAIT_REST = 2
@@ -389,6 +396,206 @@ def live_leases(store: Path, now: float) -> list[tuple[Path, dict]]:
     return found
 
 
+# --- whether background work has ended --------------------------------------
+
+
+def process_table() -> dict[int, tuple[int, str, str]] | None:
+    """Every process here as pid -> (parent, when it started, its arguments).
+
+    ⛔ `None` where the table could not be read, and a table this process is not
+    in is one: what is missing from it has not been shown to have ended.
+    ⚠️ A process that has exited and is not yet reaped is left out.
+    """
+    try:
+        proc = subprocess.run(
+            ["ps", "-axww", "-o", "pid=,ppid=,stat=,lstart=,args="],
+            capture_output=True, text=True, errors="replace", timeout=PROBE_TIMEOUT,
+            # The start is a local time, so the zone is fixed for it to compare.
+            env={**os.environ, "LC_ALL": "C", "TZ": "UTC"},
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    table = {}
+    for line in proc.stdout.splitlines():
+        parts = line.split(None, 8)
+        if len(parts) < 8 or not (parts[0].isdigit() and parts[1].isdigit()):
+            continue
+        if parts[2].startswith("Z"):
+            continue
+        table[int(parts[0])] = (
+            int(parts[1]), " ".join(parts[3:8]), parts[8] if len(parts) > 8 else ""
+        )
+    return table if os.getpid() in table else None
+
+
+def _started(pid: int, listed: str) -> str:
+    """When a process started, in the most exact form this machine states.
+
+    ⚠️ Where the kernel states it in ticks, the listed time is derived from them
+    and moves when the clock is set, so the ticks are what is compared.
+    """
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8", errors="replace")
+        return stat.rpartition(")")[2].split()[19]
+    except (OSError, IndexError):
+        return listed
+
+
+def _process_space() -> str:
+    """What a process identifier is relative to, or `""` where it is the machine."""
+    try:
+        return os.readlink("/proc/self/ns/pid")
+    except OSError:
+        return ""
+
+
+def _unquoted(text: str) -> str:
+    return re.sub(r"[\s'\"\\]", "", text)
+
+
+def launched_process(command: str, table: dict, recorded: set, me: int,
+                     started=_started) -> list | None:
+    """The process the harness started for this command, as `[pid, started]`.
+
+    A child of something this process descends from, whose arguments carry the
+    command. ⛔ Compared without quotes and whitespace, the harness quoting the
+    command again on its way into a shell. `None` where none or several match.
+    """
+    line, pid = set(), me
+    while pid in table and pid not in line:
+        line.add(pid)
+        pid = table[pid][0]
+    wanted = _unquoted(command)
+    found = []
+    for pid, (parent, listed, arguments) in table.items():
+        if pid in line or parent not in line or wanted not in _unquoted(arguments):
+            continue
+        one = [pid, started(pid, listed)]
+        if tuple(one) not in recorded:
+            found.append(one)
+    return found[0] if len(found) == 1 else None
+
+
+def record_process(stated: list[dict], store: Path, session: str, cwd: str, command: str,
+                   now: float, table=None, me: int | None = None,
+                   started=_started, launchers=()) -> list[str]:
+    """Write which process a launched background call started onto its lease.
+
+    Returns the resources whose process could not be identified.
+    """
+    mine = [entry for entry in stated
+            if entry.get("background_end") == "process"
+            and claims(entry, command, launchers)]
+    if not mine:
+        return []
+    leases = live_leases(store, now)
+    recorded = {tuple(one) for _path, lease in leases for one in lease.get("processes") or []}
+    read = process_table() if table is None else table
+    found = None if read is None else launched_process(
+        command, read, recorded, os.getpid() if me is None else me, started
+    )
+    missed = []
+    for entry in mine:
+        key = _tree_key(cwd) if entry.get("subject") == "tree" else _call_key(session, command)
+        for path, lease in leases:
+            if (lease.get("resource") != entry.get("name") or lease.get("key") != key
+                    or not lease.get("background")):
+                continue
+            if found is None:
+                # ⛔ Kept on the lease: a tree's place may cover work that was
+                # identified too, and its end is not this one's.
+                lease["unidentified"] = True
+                missed.append(str(entry.get("name")))
+            else:
+                lease["processes"] = [*(lease.get("processes") or []), found]
+                lease["space"] = _process_space()
+            _rewrite(path, lease)
+    return missed
+
+
+def _rewrite(path: Path, lease: dict) -> None:
+    beside = path.with_suffix(f".{os.getpid()}")
+    try:
+        beside.write_text(json.dumps(lease), encoding="utf-8")
+        os.replace(beside, path)
+    except OSError:
+        # The lease stands as it was, with no process on it, so it expires.
+        beside.unlink(missing_ok=True)
+
+
+def _process_ended(lease: dict, table: dict | None, started) -> tuple[bool, str]:
+    """(whether every process recorded on this lease has ended, or why not known)."""
+    processes = lease.get("processes") or []
+    if lease.get("unidentified") or not processes:
+        return False, "the process it started was not identified"
+    if table is None:
+        return False, "the processes here could not be read"
+    if lease.get("space") != _process_space():
+        return False, "its process was recorded from somewhere its identifier means another one"
+    for pid, began in processes:
+        # ⛔ The start is compared and not the identifier alone, which is handed
+        # out again once its process is gone.
+        if pid in table and started(pid, table[pid][1]) == began:
+            return False, ""
+    return True, ""
+
+
+def _probe_ended(entry: dict, lease: dict, root, run, limit: float,
+                 now: float) -> tuple[bool, str]:
+    if now - float(lease.get("taken") or 0) <= int(entry.get("background_grace") or 0):
+        return False, ""
+    if limit <= 0:
+        return False, "the time for asking had run out"
+    runner = run if run is not None else _run_in_shell
+    told = {
+        "MJOLNIR_PLACE_KEY": str(lease.get("key")),
+        "MJOLNIR_PLACE_COMMAND": str(lease.get("command")),
+    }
+    try:
+        code, out = runner(str(entry.get("background_probe")), root, limit, told)
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return False, f"{type(error).__name__} while asking whether its work has ended"
+    said = out.strip()
+    if code != 0 or said not in ("running", "ended"):
+        return False, f"the background probe exited {code} printing {said[:40]!r}"
+    return said == "ended", ""
+
+
+def end_background(stated: list[dict], store: Path, now: float, root, *, run=None,
+                   most: float | None = None, table=None,
+                   started=_started) -> dict[Path, str]:
+    """Free every place whose background work has ended, on the way past.
+
+    Returns why it is unestablished, for each lease where it is. ⛔ Those are left
+    to their lifetime, and nothing here lengthens one.
+    """
+    modes = {entry.get("name"): entry for entry in stated
+             if entry.get("background_end") in ("process", "probe")}
+    if not modes:
+        return {}
+    budget = BACKGROUND_BUDGET if most is None else min(BACKGROUND_BUDGET, most)
+    deadline = time.monotonic() + budget
+    unknown: dict[Path, str] = {}
+    read = False
+    for path, lease in live_leases(store, now):
+        entry = modes.get(lease.get("resource"))
+        if entry is None or not lease.get("background"):
+            continue
+        if entry["background_end"] == "process":
+            if table is None and not read and lease.get("processes"):
+                table, read = process_table(), True
+            ended, why = _process_ended(lease, table, started)
+        else:
+            ended, why = _probe_ended(
+                entry, lease, root, run, deadline - time.monotonic(), now
+            )
+        if ended:
+            path.unlink(missing_ok=True)
+        elif why:
+            unknown[path] = why
+    return unknown
+
+
 # --- the resources a project states ----------------------------------------
 
 
@@ -458,7 +665,8 @@ def probe_count(entry: dict, root: str | Path, run=None,
     return int(first), None
 
 
-def _run_in_shell(command: str, root: str | Path, timeout: int) -> tuple[int, str]:
+def _run_in_shell(command: str, root: str | Path, timeout: float,
+                  told: dict | None = None) -> tuple[int, str]:
     """Run a command the project stated, whole, from the skills root.
 
     ⚠️ Through a shell because the command is stated whole and the procedure
@@ -467,6 +675,7 @@ def _run_in_shell(command: str, root: str | Path, timeout: int) -> tuple[int, st
     """
     proc = subprocess.run(
         command, shell=True, cwd=str(root), capture_output=True, text=True, timeout=timeout,
+        env={**os.environ, **told} if told else None,
     )
     return proc.returncode, proc.stdout
 
@@ -591,7 +800,7 @@ def release(store: Path, session: str, scope: str, command: str, now: float) -> 
 
     ⛔ A backgrounded call's place is skipped deliberately, by the surface's own
     table: the call itself finishes at launch, so a sweep that released it would
-    hand the place back while the work ran. Expiry is the only release for one.
+    hand the place back while the work ran. `end_background` is what frees one.
     """
     given = []
     for path, lease in live_leases(store, now):
@@ -1534,6 +1743,10 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
     where = store if store is not None else store_for(config.skills_root)
     launchers = position.launchers_of(config)
     refusals, notes, written, waits = [], [], [], []
+    unknown = end_background(
+        [entry for entry in stated if claims(entry, command, launchers)], where, now,
+        config.skills_root, run=probe,
+    )
     for number, entry in enumerate(stated, 1):
         if not claims(entry, command, launchers):
             continue
@@ -1550,8 +1763,14 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
         if path is not None:
             written.append(path)
         if not taken:
+            whys = sorted({
+                unknown[held] for held, lease in live_leases(where, now)
+                if held in unknown and lease.get("resource") == entry.get("name")
+            })
             refusals.append(
                 f"{entry.get('name')} is at its cap of {cap}, with {standing} held"
+                + (f" ({'; '.join(whys)}, so a backgrounded holder's place counts until it "
+                   "expires)" if whys else "")
             )
             if entry.get("wait_up_to"):
                 waits.append(
@@ -1866,11 +2085,36 @@ def release_answer(payload: dict, *, config=None, now: float | None = None,
         return {}
     loaded = config if config is not None else _config(payload.get("cwd"))
     said = [
+        _process_recorded(loaded, payload, event, now=now, store=store),
         _places_given_back(loaded, payload, scope, now=now, store=store),
         behind_answer(payload, event=event, load=load, read=read),
     ]
     spoken = [line for line in said if line]
     return {"systemMessage": " ".join(spoken)} if spoken else {}
+
+
+def _process_recorded(loaded, payload: dict, event: str, *, now: float | None,
+                      store: Path | None) -> str:
+    """What a background launch left unidentified, in words, or `""`."""
+    tool_input = payload.get("tool_input") or {}
+    if loaded is None or event != "PostToolUse" or not tool_input.get("run_in_background"):
+        return ""
+    missed = record_process(
+        resources(loaded),
+        store if store is not None else store_for(loaded.skills_root),
+        str(payload.get("session_id") or ""),
+        str(payload.get("cwd") or "."),
+        str(tool_input.get("command") or ""),
+        time.time() if now is None else now,
+        launchers=position.launchers_of(loaded),
+    )
+    if not missed:
+        return ""
+    return (
+        "Capacity: the process this call started was not identified, so its place on "
+        + ", ".join(sorted(set(missed)))
+        + f" counts until it expires. ({LEASE_CITATION})"
+    )
 
 
 def _places_given_back(loaded, payload: dict, scope: str, *, now: float | None,
@@ -2131,25 +2375,30 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
     # is held to what the caller has where the caller says.
     most = within
     while True:
+        asked = clock()
         counted, unestablished = probe_count(entry, config.skills_root, run=probe, most=most)
         moment = clock()
         if unestablished and (full is None or moment < deadline):
             return (f"{name}: {unestablished}, so there is nothing to wait for and no place "
                     f"is held ({LEASE_CITATION})."), 0
         if not unestablished:
+            unknown = end_background(
+                [entry], where, moment, config.skills_root, run=probe,
+                most=None if most is None else most - (moment - asked),
+            )
             leases = live_leases(where, moment)
             standing, keys, _added = occupancy(entry, leases, counted, moment)
             if standing < cap or key in keys:
                 return (f"{name}: a place is free after {int(moment - started)}s. ⚠️ It is not "
                         "held: the call itself takes it."), 0
-            full = (standing, counted, leases, moment)
+            full = (standing, counted, leases, moment, unknown)
         if moment >= deadline:
             break
         rest(min(WAIT_REST, deadline - moment))
         most = deadline - clock()
         if most <= 0:
             break
-    standing, counted, leases, moment = full
+    standing, counted, leases, moment, unknown = full
     lines = [
         f"Refused: {name} is at its cap of {cap}, with {standing} held, "
         + (f"after {int(bound)}s of waiting" if bound
@@ -2159,12 +2408,12 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
         if entry.get("probe") is not None
         else "  the resource cannot be asked, so its leases are the whole of the count",
     ]
-    lines.extend(_holders(entry, leases, moment, counted))
+    lines.extend(_holders(entry, leases, moment, counted, unknown))
     return "\n".join(lines), 1
 
 
 def _holders(entry: dict, leases: list[tuple[Path, dict]], now: float,
-             counted: int | None) -> list[str]:
+             counted: int | None, unknown: dict[Path, str]) -> list[str]:
     """One line per lease on this resource: what holds it, and for how long."""
     _standing, _keys, added = occupancy(entry, leases, counted, now)
     return [
@@ -2173,7 +2422,8 @@ def _holders(entry: dict, leases: list[tuple[Path, dict]], now: float,
         + (", backgrounded" if lease.get("background") else "")
         + ("" if str(lease.get("key")) in added
            else ", past its grace and left to the resource's own count")
-        for _path, lease in leases
+        + (f", counting until it expires: {unknown[path]}" if path in unknown else "")
+        for path, lease in leases
         if lease.get("resource") == entry.get("name")
     ]
 
@@ -2193,6 +2443,7 @@ def held_report(config, *, now: float | None = None, store: Path | None = None,
         return "\n".join(lines), 0
     where = store if store is not None else store_for(config.skills_root)
     moment = time.time() if now is None else now
+    unknown = end_background(stated, where, moment, config.skills_root, run=probe)
     leases = live_leases(where, moment)
     for entry in stated:
         counted, unestablished = probe_count(entry, config.skills_root, run=probe)
@@ -2206,7 +2457,9 @@ def held_report(config, *, now: float | None = None, store: Path | None = None,
         else:
             lines.append(f"  the resource itself reports {counted} held")
         lines.append(f"  {len(added)} lease(s) still counting, so {standing} against the cap")
-        lines.extend(_holders(entry, leases, moment, None if unestablished else counted))
+        lines.extend(
+            _holders(entry, leases, moment, None if unestablished else counted, unknown)
+        )
     return "\n".join(lines), 0
 
 
@@ -2263,8 +2516,9 @@ def check_every_exit_is_held(text: str, mapped: dict[str, str]) -> list[str]:
             continue
         events = re.findall(r"`([^`]+)`", row[2])
         named.update(events)
-        if not events and (row[2] != "none" or "expiry alone" not in row[1]):
-            problems.append(f"the exit {row[0]!r} names no event and is not the expiry case.")
+        if not events and (row[2] != "none" or "`background_end`" not in row[1]
+                           or "expiry" not in row[1]):
+            problems.append(f"the exit {row[0]!r} names no event and is not the backgrounded case.")
         for event in events:
             if event not in mapped:
                 problems.append(f"the exit {row[0]!r} is released on {event}, which no release "
@@ -2906,6 +3160,220 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and it is gone once its lifetime is up",
               guard_answer(_call("a-claiming-command", session="another"), config=config,
                            now=1121.0, store=where) == {})
+
+        # --- how the end of background work is established -----------------
+        out.append("")
+        out.append("A backgrounded call's place is freed when its work has ended, as stated:")
+
+        def left_at(config, where, at, probe=None):
+            held, _status = held_report(config, now=at, store=where, probe=probe)
+            return len(live_leases(where, at)), held
+
+        # ⛔ A process the suite starts, so that what is read is the machine's own
+        # table and not the shape a fixture gave one.
+        quoted = "sleep 60; echo \"it's a-claiming-command\""
+        for subject in ("call", "tree"):
+            where = fresh(f"background-process-{subject}")
+            config = _a_config([_a_resource(cap=1, subject=subject, background_end="process")])
+            guard_answer(_call(quoted, background=True), config=config, now=1000.0, store=where)
+            launched = _exit("PostToolUse", ".", command=quoted)
+            launched["tool_input"]["run_in_background"] = True
+            work = subprocess.Popen(
+                ["sh", "-c", "eval " + shlex.quote(quoted)], start_new_session=True,
+                stdout=subprocess.DEVNULL,
+            )
+            try:
+                said = _process_recorded(config, launched, "PostToolUse", now=1000.0, store=where)
+                check(f"{subject}: the launched process is identified", said == "", said)
+                count, held = left_at(config, where, 1500.0)
+                check(f"{subject}: the place is held while the process runs",
+                      count == 1 and "until it expires" not in held, held)
+                check(f"{subject}: and another session is refused", denied(guard_answer(
+                    _call("a-claiming-command", session="another", cwd=directory),
+                    config=config, now=1500.0, store=where)))
+                release_answer(_exit("Stop", outside), config=config, now=1500.0, store=where)
+                check(f"{subject}: and no sweep frees it", len(live_leases(where, 1500.0)) == 1)
+            finally:
+                with contextlib.suppress(ProcessLookupError):
+                    os.killpg(work.pid, signal.SIGKILL)
+                work.wait()
+            check(f"{subject}: and it is free on the next reading once the process has ended",
+                  guard_answer(_call("a-claiming-command", session="another", cwd=directory),
+                               config=config, now=1500.0, store=where) == {})
+
+        where = fresh("background-waited")
+        config = _a_config([_a_resource(cap=1, background_end="process", wait_up_to=5)])
+        guard_answer(_call("a-claiming-command", background=True), config=config, now=1000.0,
+                     store=where)
+        path, lease = live_leases(where, 1000.0)[0]
+        lease.update(processes=[[os.getpid(), "another start"]], space=_process_space())
+        _rewrite(path, lease)
+        printed, status = wait_for(config, 1, store=where, clock=itertools.count(1001).__next__,
+                                   rest=lambda _seconds: None)
+        check("an identifier reused by an unrelated process holds no place", status == 0, printed)
+
+        line = {9: (1, "s", "an ancestor"), 10: (9, "s", "the hook")}
+        shell = "sh -c eval 'a-claiming-command --it'\"'\"'s' < /dev/null"
+        same = lambda _pid, listed: listed  # noqa: E731
+        command = "a-claiming-command --it's"
+        check("a child of the harness carrying the command is the process",
+              launched_process(command, {**line, 11: (9, "t", shell)}, set(), 10, same)
+              == [11, "t"])
+        check("one belonging to another session is not",
+              launched_process(command, {**line, 11: (7, "t", shell)}, set(), 10, same) is None)
+        check("two that match identify neither",
+              launched_process(command, {**line, 11: (9, "t", shell), 12: (9, "t", shell)},
+                               set(), 10, same) is None)
+        check("and one already recorded is not matched again",
+              launched_process(command, {**line, 11: (9, "t", shell), 12: (9, "t", shell)},
+                               {(11, "t")}, 10, same) == [12, "t"])
+
+        where = fresh("background-two")
+        config = _a_config([_a_resource(cap=1, subject="tree", background_end="process")])
+        guard_answer(_call(command, background=True), config=config, now=1000.0, store=where)
+        table = {**line, 11: (9, "t", shell)}
+        record_process(resources(config), where, "a-session", ".", command, 1000.0,
+                       table, 10, same)
+        table[12] = (9, "t", shell)
+        record_process(resources(config), where, "a-session", ".", command, 1000.0,
+                       table, 10, same)
+        del table[12]
+        end_background(resources(config), where, 1001.0, ".", table=table, started=same)
+        check("a tree's place outlives the second of two pieces of work, the first still running",
+              len(live_leases(where, 1001.0)) == 1)
+        del table[11]
+        end_background(resources(config), where, 1001.0, ".", table=table, started=same)
+        check("and is freed once both have ended", not live_leases(where, 1001.0))
+
+        for label, change, reason_given in (
+            ("a process never identified", {}, "not identified"),
+            ("one of two never identified",
+             {"processes": [[1, "s"]], "unidentified": True, "space": _process_space()},
+             "not identified"),
+            ("an identifier from another process space",
+             {"processes": [[1, "s"]], "space": "another"}, "identifier means another"),
+        ):
+            where = fresh(f"background-{label}")
+            config = _a_config([_a_resource(cap=1, ttl=120, background_end="process")])
+            guard_answer(_call("a-claiming-command", background=True), config=config,
+                         now=1000.0, store=where)
+            path, lease = live_leases(where, 1000.0)[0]
+            lease.update(change)
+            _rewrite(path, lease)
+            count, held = left_at(config, where, 1100.0)
+            check(f"{label}: the place is held and the report says it waits for expiry",
+                  count == 1 and "counting until it expires" in held and reason_given in held,
+                  held)
+            refusal = guard_answer(_call("a-claiming-command", session="another"), config=config,
+                                   now=1100.0, store=where)
+            check(f"{label}: and the refusal says so",
+                  denied(refusal) and "until it expires" in reason(refusal), reason(refusal))
+            count, _held = left_at(config, where, 1121.0)
+            check(f"{label}: and its lifetime frees it", count == 0)
+
+        unread = _process_ended(
+            {"processes": [[1, "s"]], "space": _process_space()}, None, same)
+        check("a process table that cannot be read ends nothing",
+              unread[0] is False and "could not be read" in unread[1], repr(unread))
+
+        where = fresh("background-unfound")
+        config = _a_config([_a_resource(cap=1, background_end="process")])
+        guard_answer(_call("a-claiming-command", background=True), config=config, now=1000.0,
+                     store=where)
+        launched = _exit("PostToolUse", outside, command="a-claiming-command")
+        launched["tool_input"]["run_in_background"] = True
+        said = release_answer(launched, config=config, now=1000.0, store=where)
+        check("a launch whose process is not found is reported at the launch",
+              "counts until it expires" in said.get("systemMessage", ""), repr(said))
+
+        where = fresh("background-launcher")
+        config = _a_config([_a_resource(cap=1, background_end="process",
+                                        claimed_by=[{"command": "a-claiming-command"}])])
+        config.data["command_position"] = {
+            "launchers": [{"command": "a-shell", "string_flags": ["-c"]}]}
+        inner = "a-shell -c 'a-claiming-command'"
+        guard_answer(_call(inner, background=True), config=config, now=1000.0, store=where)
+        launched = _exit("PostToolUse", outside, command=inner)
+        launched["tool_input"]["run_in_background"] = True
+        said = release_answer(launched, config=config, now=1000.0, store=where)
+        check("a launch that claims through a listed launcher is looked for too",
+              "counts until it expires" in said.get("systemMessage", ""), repr(said))
+        path, lease = live_leases(where, 1000.0)[0]
+        lease.update(processes=[[os.getpid(), "another start"]], unidentified=False,
+                     space=_process_space())
+        _rewrite(path, lease)
+        check("and its ended work frees the place for a call through one",
+              guard_answer(_call(inner, session="another"), config=config, now=1001.0,
+                           store=where) == {})
+
+        asked: list = []
+
+        def answering(code, printed):
+            def run(_command, _root, _limit, told):
+                asked.append(told)
+                return code, printed
+            return run
+
+        config = _a_config([_a_resource(cap=1, ttl=120, background_end="probe", background_grace=10,
+                                        background_probe="a-command-that-says")])
+        for label, code, printed, at, kept, said_so in (
+            ("ended, past the grace", 0, "ended\n", 1011.0, 0, False),
+            ("ended, inside the grace", 0, "ended\n", 1010.0, 1, False),
+            ("running", 0, "running\n", 1011.0, 1, False),
+            ("nothing printed", 0, "", 1011.0, 1, True),
+            ("ended, and a failed exit", 1, "ended\n", 1011.0, 1, True),
+            ("running, past the lifetime", 0, "running\n", 1120.0, 0, False),
+        ):
+            where = fresh(f"background-probe-{label}")
+            guard_answer(_call("a-claiming-command", background=True), config=config,
+                         now=1000.0, store=where)
+            count, held = left_at(config, where, at, answering(code, printed))
+            check(f"a probe saying {label}: {'kept' if kept else 'freed'}",
+                  count == kept and ("counting until it expires" in held) == said_so, held)
+        check("and the probe is told which place it is asked about",
+              asked and all(told["MJOLNIR_PLACE_COMMAND"] == "a-claiming-command"
+                            and told["MJOLNIR_PLACE_KEY"] for told in asked), repr(asked))
+        check("what the probe is told reaches a command run for real",
+              _run_in_shell('printf %s "$MJOLNIR_PLACE_KEY"', ".", 5,
+                            {"MJOLNIR_PLACE_KEY": "a-key"}) == (0, "a-key"))
+        where = fresh("background-probe-waited")
+        spent = _a_config([_a_resource(cap=1, wait_up_to=60, probe="a-count", ttl=120,
+                                       background_end="probe", background_grace=1,
+                                       background_probe="a-command-that-says")])
+        guard_answer(_call("a-claiming-command", background=True), config=spent, now=1000.0,
+                     store=where, probe=lambda *_a: (0, "0"))
+        at, limits = [1010.0], []
+
+        def slow(_command, _root, limit, told=None):
+            if told is None:
+                at[0] += 4
+                return 0, "1"
+            limits.append(limit)
+            return 0, "running"
+
+        def rests(seconds):
+            at[0] += seconds
+
+        wait_for(spent, 1, within=5, store=where, probe=slow, clock=lambda: at[0], rest=rests)
+        check("a wait gives the background probe only the time its count left",
+              bool(limits) and max(limits) <= 1, repr(limits))
+        where = fresh("background-probe-foreground")
+        guard_answer(_call("a-claiming-command"), config=config, now=1000.0, store=where)
+        check("a call not put in the background is not asked about",
+              left_at(config, where, 1050.0, answering(0, "ended"))[0] == 1)
+
+        for stated in ({}, {"background_end": "expiry"}):
+            where = fresh(f"background-expiry-{len(stated)}")
+            config = _a_config([_a_resource(cap=1, ttl=120, **stated)])
+            guard_answer(_call("a-claiming-command", background=True), config=config,
+                         now=1000.0, store=where)
+            launched = _exit("PostToolUse", outside, command="a-claiming-command")
+            launched["tool_input"]["run_in_background"] = True
+            check("expiry alone, stated or not: nothing is said at launch",
+                  release_answer(launched, config=config, now=1000.0, store=where) == {})
+            count, held = left_at(config, where, 1119.0)
+            check("and it is held to the end of its lifetime, with nothing reported",
+                  count == 1 and "until it expires" not in held, held)
 
         # --- the sum, and the maximum that let a third through -------------
         out.append("")
@@ -4272,9 +4740,10 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check(f"and reddens when the surface stops naming `{event}`",
               bool(check_every_exit_is_held(
                   surface.replace(f"`{event}`", "`Reworded`"), RELEASE_EVENTS)))
-    check("and reddens when the expiry case stops being stated as one",
-          bool(check_every_exit_is_held(
-              _plant_in(surface, "⛔ **expiry alone.**", "a sweep."), RELEASE_EVENTS)))
+    for stated in ("as the resource's `background_end` establishes it", ", and expiry. ⛔"):
+        check(f"and reddens when the backgrounded case stops stating {stated!r}",
+              bool(check_every_exit_is_held(
+                  _plant_in(surface, stated, "a sweep."), RELEASE_EVENTS)))
     check("and reddens when the table is gone",
           bool(check_every_exit_is_held(
               _reword_heading(surface, ARM_ANCHORS["lease"]), RELEASE_EVENTS)))

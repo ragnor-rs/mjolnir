@@ -2547,7 +2547,7 @@ which of the three designs was the one that worked.
 | arm | what it reads | kind | what it does |
 |---|---|---|---|
 | `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge and that change's head commit, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's verdict and commit | denies the call, or takes a place |
-| `release` (`PostToolUse`, `PostToolUseFailure`, `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
+| `release` (`PostToolUse`, `PostToolUseFailure`, `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted; a background launch's process is recorded on its lease |
 | `release` again, at two of those (`Stop`, and a `PostToolUse` whose call merged) | the tree the event names, the head the remote reports for the base, and the base's commits against this branch by patch | **computed** | reports `level`, `behind` with its figure, or `unestablished` — and ⛔ **refuses nothing, there being no call in hand at either point** |
 | `record` | nothing | — | writes the answer a guard reads onto the change |
 | `held` | the leases and the probe | **computed** | reports what is held, and what it could not establish |
@@ -2706,8 +2706,11 @@ sat red on that one forever, or been *fixed* by deleting the sweep that is doing
 is where the path's status is stated rather than here.
 
 ⚠️ **A backgrounded call is the path no event can close**, and the suite asserts the full sequence:
-the place is taken, every one of the release events leaves it alone, and it is gone once its
-lifetime is up. A sweep that released it would hand the place back while the work ran.
+the place is taken, every one of the release events leaves it alone, and it is gone once its work is
+read as ended or its lifetime is up. ⚠️ The process half is run against a process the suite starts;
+which process the harness starts for a call is read off its own arguments, and a harness that stops
+putting the command there leaves every such place to its `ttl`, reported. A sweep that released it
+would hand the place back while the work ran.
 
 ⚠️ **The arithmetic is a sum and the suite plants the maximum that let a third holder through.**
 With a cap of two, a probe reporting one, and one lease too young for that probe to see, the sum is
