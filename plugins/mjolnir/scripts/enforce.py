@@ -44,6 +44,7 @@ Usage:
     enforce.py release                      a hook payload on stdin
     enforce.py record --change O/R#N --question Q --given TEXT --by WHO
     enforce.py held   [--skills-root R]
+    enforce.py wait   --resource N [--within SECONDS] [--skills-root R] [--cwd DIR]
     enforce.py --self-test
 """
 
@@ -303,6 +304,10 @@ FIELD_FLAGS = ("-f", "--raw-field", "-F", "--field", "--input")
 # one, and the reader bounds that value for the same reason.
 PROBE_TIMEOUT = 5
 
+# How long a wait rests between two readings of a resource. A probe is a command the
+# project pays for, so the rest is what bounds how often it is asked.
+WAIT_REST = 2
+
 # ⛔ The merge guard makes up to this many host reads in one call, and a hook the
 # harness kills is a merge held to nothing -- so the two figures multiplied stay
 # inside the carrier's own timeout, which `--self-test` asserts off the carrier.
@@ -417,18 +422,21 @@ def claims(entry: dict, command: str) -> bool:
         return False
 
 
-def probe_count(entry: dict, root: str | Path, run=None) -> tuple[int, str | None]:
+def probe_count(entry: dict, root: str | Path, run=None,
+                most: float | None = None) -> tuple[int, str | None]:
     """How many of this resource are held right now, or why that is unestablished.
 
     `probe: null` is a stated absence and not a count of zero: it returns `0`
     with no complaint, because the leases are then the whole of the count.
+    `most` shortens the probe's own limit for a caller with less time than that.
     """
     command = entry.get("probe")
     if command is None:
         return 0, None
     runner = run if run is not None else _run_in_shell
     try:
-        code, out = runner(str(command), root, int(entry.get("probe_timeout") or PROBE_TIMEOUT))
+        limit = int(entry.get("probe_timeout") or PROBE_TIMEOUT)
+        code, out = runner(str(command), root, limit if most is None else min(limit, most))
     except Exception as error:  # noqa: BLE001 -- any failure is a named absence
         return 0, f"{type(error).__name__} while asking how many are held"
     if code != 0:
@@ -1496,8 +1504,8 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
     if not stated:
         return {}
     where = store if store is not None else store_for(config.skills_root)
-    refusals, notes, written = [], [], []
-    for entry in stated:
+    refusals, notes, written, waits = [], [], [], []
+    for number, entry in enumerate(stated, 1):
         if not claims(entry, command):
             continue
         counted, unestablished = probe_count(entry, config.skills_root, run=probe)
@@ -1516,6 +1524,12 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
             refusals.append(
                 f"{entry.get('name')} is at its cap of {cap}, with {standing} held"
             )
+            if entry.get("wait_up_to"):
+                waits.append(
+                    f"`python3 \"{Path(__file__).resolve()}\" wait --resource {number} "
+                    f"--skills-root \"{Path(config.skills_root).resolve()}\"` waits up to "
+                    f"{entry['wait_up_to']}s for one on {entry.get('name')}"
+                )
     if refusals:
         # ⛔ Every place this call took on its way to being refused is given back
         # here. One call may claim several resources, and a place taken for a call
@@ -1529,6 +1543,7 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
             + "; ".join(refusals)
             + f". ⛔ The call is refused rather than queued ({LEASE_CITATION}). What unblocks "
             "it is a place coming back — a holder finishing, or its lease expiring."
+            + (" " + "; ".join(waits) + ", and the call is then made again." if waits else "")
         )
     if notes:
         return {"systemMessage": "Capacity: " + "; ".join(notes) + f". ({LEASE_CITATION})"}
@@ -2048,6 +2063,87 @@ def write_record(address: str, question: str, given: str, by: str, at: str,
     )
 
 
+def wait_for(config, number: int, *, within: float | None = None, cwd: str = ".",
+             store: Path | None = None, probe=None, clock=time.time,
+             rest=time.sleep) -> tuple[str, int]:
+    """Wait for a place on one resource, up to the bound its project states.
+
+    ⛔ A command and never a hook: what a hook blocks on is killed at the hook's
+    own limit, and a killed guard lets its call through unheld. ⚠️ It holds
+    nothing. A place found free here is taken by the call's own guard, which may
+    still refuse it.
+
+    The resource is named by its position, so that the call waiting for it does
+    not carry the text its own `claimed_by` matches.
+    """
+    stated = resources(config)
+    if not 1 <= number <= len(stated):
+        return (f"No resource {number}: this project states {len(stated)} "
+                "(`branch_model.exclusive_resources`)."), 2
+    if within is not None and not within > 0:
+        return f"`--within` is {within}; it is the seconds this call has, above zero.", 2
+    entry = stated[number - 1]
+    name, cap = entry.get("name"), int(entry.get("cap") or 1)
+    bound = float(entry.get("wait_up_to") or 0)
+    if within is not None:
+        bound = min(bound, within)
+    where = store if store is not None else store_for(config.skills_root)
+    key = _tree_key(cwd) if entry.get("subject") == "tree" else None
+    started = clock()
+    deadline = started + bound
+    full = None
+    # ⛔ A probe is given no longer than the wait has left, so the bound holds
+    # whatever the probe's own limit is. The first reading is always taken, and
+    # is held to what the caller has where the caller says.
+    most = within
+    while True:
+        counted, unestablished = probe_count(entry, config.skills_root, run=probe, most=most)
+        moment = clock()
+        if unestablished and (full is None or moment < deadline):
+            return (f"{name}: {unestablished}, so there is nothing to wait for and no place "
+                    f"is held ({LEASE_CITATION})."), 0
+        if not unestablished:
+            leases = live_leases(where, moment)
+            standing, keys, _added = occupancy(entry, leases, counted, moment)
+            if standing < cap or key in keys:
+                return (f"{name}: a place is free after {int(moment - started)}s. ⚠️ It is not "
+                        "held: the call itself takes it."), 0
+            full = (standing, counted, leases, moment)
+        if moment >= deadline:
+            break
+        rest(min(WAIT_REST, deadline - moment))
+        most = deadline - clock()
+        if most <= 0:
+            break
+    standing, counted, leases, moment = full
+    lines = [
+        f"Refused: {name} is at its cap of {cap}, with {standing} held, "
+        + (f"after {int(bound)}s of waiting" if bound
+           else "and this project states no wait for it")
+        + f" ({LEASE_CITATION}).",
+        f"  the resource itself reports {counted} held"
+        if entry.get("probe") is not None
+        else "  the resource cannot be asked, so its leases are the whole of the count",
+    ]
+    lines.extend(_holders(entry, leases, moment, counted))
+    return "\n".join(lines), 1
+
+
+def _holders(entry: dict, leases: list[tuple[Path, dict]], now: float,
+             counted: int | None) -> list[str]:
+    """One line per lease on this resource: what holds it, and for how long."""
+    _standing, _keys, added = occupancy(entry, leases, counted, now)
+    return [
+        f"    - {lease.get('key')}, session {lease.get('session')} — "
+        f"{int(now - float(lease.get('taken') or 0))}s old of {lease.get('ttl')}s"
+        + (", backgrounded" if lease.get("background") else "")
+        + ("" if str(lease.get("key")) in added
+           else ", past its grace and left to the resource's own count")
+        for _path, lease in leases
+        if lease.get("resource") == entry.get("name")
+    ]
+
+
 def held_report(config, *, now: float | None = None, store: Path | None = None,
                 probe=None) -> tuple[str, int]:
     """What is held right now, and by what."""
@@ -2076,16 +2172,7 @@ def held_report(config, *, now: float | None = None, store: Path | None = None,
         else:
             lines.append(f"  the resource itself reports {counted} held")
         lines.append(f"  {len(added)} lease(s) still counting, so {standing} against the cap")
-        for _path, lease in leases:
-            if lease.get("resource") != entry.get("name"):
-                continue
-            age = int(moment - float(lease.get("taken") or 0))
-            lines.append(
-                f"    - {lease.get('key')} — {age}s old of {lease.get('ttl')}s"
-                + (", backgrounded" if lease.get("background") else "")
-                + ("" if str(lease.get("key")) in added
-                   else ", past its grace and left to the resource's own count")
-            )
+        lines.extend(_holders(entry, leases, moment, None if unestablished else counted))
     return "\n".join(lines), 0
 
 
@@ -2800,6 +2887,112 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         probe_count(_a_resource(probe="a-command"), outside, run=_a_timed_probe)
         check("a stated probe time limit is the one used, and an unstated one is unchanged",
               limits == [7, 5], repr(limits))
+
+        out.append("")
+        out.append("A wait is bounded, holds nothing, and refuses naming who holds the places:")
+
+        class _Clock:
+            def __init__(self):
+                self.at, self.rests = 1000.0, []
+
+            def now(self):
+                return self.at
+
+            def rest(self, seconds):
+                self.rests.append(seconds)
+                self.at += seconds
+
+        def waited(label: str, probe=None, within=None, held=True, cwd=".", on_rest=None,
+                   **entry):
+            where = fresh(label)
+            config = _a_config([_a_resource(cap=1, **entry)])
+            if held:
+                guard_answer(_call("a-claiming-command", cwd=cwd), config=config, now=1000.0,
+                             store=where, probe=_a_probe(count=0))
+            clock = _Clock()
+
+            def rest(seconds):
+                clock.rest(seconds)
+                if on_rest:
+                    on_rest(where, clock)
+
+            report, status = wait_for(config, 1, within=within, cwd=cwd, store=where,
+                                      probe=probe(clock) if probe else _a_probe(count=0),
+                                      clock=clock.now, rest=rest)
+            return report, status, clock, where
+
+        report, status, clock, where = waited("wait-out", wait_up_to=7)
+        check("a wait that runs out refuses", status == 1, report[:140])
+        check("naming who holds the place", "session a-session" in report, report[:200])
+        check("and never past its bound", clock.at == 1007.0, str(clock.at))
+        check("and it wrote no lease of its own", len(live_leases(where, 1000.0)) == 1)
+        _r, _s, clock, _w = waited("wait-within", wait_up_to=60, within=3)
+        check("a caller with less time waits that long and no longer", clock.at == 1003.0,
+              str(clock.at))
+        _r, _s, clock, _w = waited("wait-within-more", wait_up_to=5, within=60)
+        check("and one with more is still held to the bound", clock.at == 1005.0, str(clock.at))
+        report, status, clock, _w = waited(
+            "wait-freed", wait_up_to=60,
+            on_rest=lambda where, _c: release(where, "a-session", "session", "", 1000.0))
+        check("a place given back ends the wait", status == 0 and clock.at == 1002.0, report)
+        report, status, clock, _w = waited("wait-expired", wait_up_to=60, ttl=5)
+        check("and so does a lease that expires", status == 0 and clock.at < 1010.0, report)
+        report, status, clock, _w = waited("wait-none")
+        check("a resource stating no wait is refused at once", status == 1 and not clock.rests
+              and "states no wait" in report, report)
+        report, status, clock, _w = waited("wait-null", wait_up_to=None)
+        check("and one stating refuse is the same", status == 1 and not clock.rests, report)
+        report, status, clock, _w = waited("wait-free", held=False, wait_up_to=60)
+        check("a free place is answered without resting", status == 0 and not clock.rests, report)
+        report, status, clock, _w = waited("wait-own", wait_up_to=60, subject="tree",
+                                           cwd=str(outside))
+        check("a tree already holding its place is not made to wait",
+              status == 0 and not clock.rests, report)
+        given = []
+
+        def slow(clock):
+            def run(_command, _root, limit):
+                given.append(limit)
+                clock.at += 4
+                return 0, "1\n"
+            return run
+
+        where = fresh("wait-slow")
+        config = _a_config([_a_resource(cap=1, probe="a-command", wait_up_to=9)])
+        clock = _Clock()
+        report, status = wait_for(config, 1, store=where, probe=slow(clock), clock=clock.now,
+                                  rest=clock.rest)
+        check("a probe is given no longer than the wait has left",
+              status == 1 and given == [5, 3.0], f"{status} {given}")
+        report, status = wait_for(config, 1, store=where, probe=_a_probe(code=1),
+                                  clock=_Clock().now, rest=_Clock().rest)
+        check("a count nobody can read is reported and not waited on",
+              status == 0 and "no place" in report, report)
+        given.clear()
+        clock = _Clock()
+        wait_for(config, 1, within=3, store=where, probe=slow(clock), clock=clock.now,
+                 rest=clock.rest)
+        check("and the first one no longer than its caller has", given == [3], repr(given))
+        for seconds in (0, -1, float("nan")):
+            check(f"a caller with {seconds} seconds is misuse",
+                  wait_for(config, 1, within=seconds, store=where)[1] == 2)
+        check("a resource that is not stated is misuse",
+              wait_for(config, 2, store=where)[1] == 2)
+
+        # ⛔ The guard answers at once whatever a resource states: waiting in a
+        # hook is what its own time limit ends.
+        for label, stated, named in (("wait-guard", {"wait_up_to": 600}, True),
+                                     ("wait-guard-none", {}, False)):
+            where = fresh(label)
+            config = _a_config([_a_resource(cap=1, **stated)])
+            guard_answer(_call("a-claiming-command"), config=config, now=1000.0, store=where)
+            before = time.monotonic()
+            answered = guard_answer(_call("a-claiming-command", session="another"),
+                                    config=config, now=1000.0, store=where)
+            check(f"{label}: a full resource is refused without waiting",
+                  denied(answered) and time.monotonic() - before < 5)
+            check(f"{label}: the wait is " + ("named" if named else "not named"),
+                  ("wait --resource 1" in reason(answered)) is named, reason(answered)[-160:])
 
         out.append("")
         out.append("A count that could not be established holds nothing, and says so:")
@@ -4118,9 +4311,27 @@ def main(argv: list[str]) -> int:
     reporting.add_argument("--skills-root", default=".",
                            help="the root the configuration is resolved relative to")
 
+    waiting = sub.add_parser("wait", help="wait for a place on a resource, up to its bound")
+    waiting.add_argument("--resource", type=int, required=True,
+                         help="its position in `branch_model.exclusive_resources`, from one")
+    waiting.add_argument("--within", type=float, default=None,
+                         help="the seconds this call has, where fewer than the bound stated")
+    waiting.add_argument("--skills-root", default=".",
+                         help="the root the configuration is resolved relative to")
+    waiting.add_argument("--cwd", default=".", help="the tree the call would be made from")
+
     args = parser.parse_args(argv)
     if args.self_test:
         return self_test()
+    if args.arm == "wait":
+        loaded = _config(args.skills_root)
+        if loaded is None:
+            print("⛔ Not established: the project's configuration could not be read, so there "
+                  "is nothing to wait for.")
+            return 2
+        report, status = wait_for(loaded, args.resource, within=args.within, cwd=args.cwd)
+        print(report)
+        return status
     if args.arm == "guard":
         return hook(sys.stdin, guard_answer)
     if args.arm == "release":
