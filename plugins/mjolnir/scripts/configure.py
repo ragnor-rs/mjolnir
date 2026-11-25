@@ -552,7 +552,9 @@ ANSWERED_BY: dict[str, Answer] = {
     "writer": ask(
         "Who is allowed to move an item into this status? ⛔ The writer question "
         "again, and the reason § 4.2 gives for it: nothing in any tracker records "
-        "who may set a status.",
+        "who may set a status. ⚠️ Where it is a different party for a different "
+        "class of item, the status states `writers` in place of this key: each "
+        "party with the paths of its class, and at most one taking the rest.",
     ),
     "readiness": ask(
         "Which of the shared predicates gate an item into committed work here? "

@@ -405,6 +405,11 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
   --advance-to "<the entry's advances>" --argument "<the item>" --as-writer deploy
 ```
 
+⛔ **Where that status states several writers**
+([`§ 4.2`](../../config/schema.md#a-status-several-writers-reach-a-class-of-item-each)), the call
+also carries `--path <path>` once per path the item's own closing changes touched, repository-relative.
+⚠️ Where a change could not be read, none is passed and the refusal goes in the reply with the item.
+
 ⛔ **That flag is the only route to the move, and naming the operation underneath it is refused** —
 the writer guard sits inside the role resolution, so an invocation that named `set_state` would be
 writing a status word this role chose, which is what
