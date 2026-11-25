@@ -1161,6 +1161,22 @@ ANSWERED_BY: dict[str, Answer] = {
     "deploy.inputs": ask(
         "Which inputs?",
     ),
+    "deploy.choices.name": ask(
+        "Which inputs may a run of this target choose for itself? ⚠️ None is an "
+        "answer: the key is then omitted (§ 33).",
+    ),
+    "deploy.choices.values": ask(
+        "Which values may that input take?",
+    ),
+    "deploy.choices.default": ask(
+        "Which of them does a run take when it chooses nothing?",
+    ),
+    "deploy.choices.joined_by": ask(
+        "May a run choose several of them at once, and what joins them?",
+    ),
+    "deploy.choices.warnings": ask(
+        "Is there a value a person should be warned about before they approve it?",
+    ),
     "deploy.requires": ask(
         "Which preconditions does it need that it does not check itself?",
     ),

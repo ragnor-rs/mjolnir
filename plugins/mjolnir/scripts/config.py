@@ -3066,6 +3066,94 @@ class Config:
             "ref_prefix": grouping.get("ref_prefix"),
         }
 
+    def deploy_target(self, target: str, chosen: list[str] | None = None) -> dict:
+        """One § 33 target as a run would invoke it, its choices resolved.
+
+        `chosen` is `name=value` strings, a name repeated where its choice may
+        take several. ⛔ Every refusal is made here, ahead of any go: what comes
+        back is the whole of what the go shows and the whole of what is run.
+        """
+        entries = [one for one in self.get("deploy") or () if isinstance(one, dict)]
+        entry = next((one for one in entries if one.get("name") == target), None)
+        if entry is None:
+            raise ConfigError(
+                "deploy",
+                f"names no target {target!r}. It names "
+                f"{', '.join(repr(one.get('name')) for one in entries) or 'none'} (§ 33).",
+            )
+        choices = {choice["name"]: choice for choice in entry.get("choices") or ()}
+        asked: dict[str, list[str]] = {}
+        for stated in chosen or ():
+            name, equals, value = stated.partition("=")
+            if not equals:
+                raise ConfigError(
+                    "deploy.choices", f"was handed {stated!r}; a choice is `name=value` (§ 33)."
+                )
+            if name not in choices:
+                raise ConfigError(
+                    "deploy.choices",
+                    f"names no choice {name!r} on the target {target!r}. It names "
+                    f"{', '.join(repr(one) for one in choices) or 'none'} (§ 33).",
+                )
+            allowed = choices[name]["values"]
+            if value not in allowed:
+                raise ConfigError(
+                    f"deploy.choices.{name}",
+                    f"does not allow {value!r}. It allows "
+                    f"{', '.join(repr(one) for one in allowed)} (§ 33).",
+                )
+            held = asked.setdefault(name, [])
+            if value in held:
+                raise ConfigError(
+                    f"deploy.choices.{name}", f"was handed {value!r} twice (§ 33)."
+                )
+            if held and "joined_by" not in choices[name]:
+                raise ConfigError(
+                    f"deploy.choices.{name}",
+                    "takes one value, its choice stating no `joined_by`, and was "
+                    f"handed {held[0]!r} and {value!r} (§ 33).",
+                )
+            held.append(value)
+        shown = []
+        sent: dict[str, str] = {}
+        for name, choice in choices.items():
+            default = choice["default"]
+            taken = asked.get(name) or (default if isinstance(default, list) else [default])
+            taken = [value for value in choice["values"] if value in taken]
+            sent[name] = choice.get("joined_by", "").join(taken)
+            warnings = choice.get("warnings") or {}
+            shown.append(
+                {
+                    "name": name,
+                    "value": sent[name],
+                    "chosen": name in asked,
+                    "warnings": [warnings[value] for value in taken if value in warnings],
+                }
+            )
+        answer = {
+            "target": target,
+            "not_live": entry["not_live"],
+            # ⚠️ Not `invoke`: the command's own resolution carries a key of that
+            # name for § 1's form, and the two are different facts.
+            "reached_by": entry["invoke"],
+            DEPLOY_CODE_ROOT: entry.get(DEPLOY_CODE_ROOT),
+            "choices": shown,
+        }
+        if entry["invoke"] != "command":
+            # ⚠️ The two halves cannot meet: a name in both is refused at the load.
+            return {
+                **answer,
+                "workflow": entry["workflow"],
+                "ref": entry["ref"],
+                "inputs": {**(entry.get("inputs") or {}), **sent},
+            }
+        command = entry["command"]
+        if choices:
+            command = _CHOICE_PLACED.sub(lambda found: sent[found.group(1)], command)
+        root = entry.get(DEPLOY_CODE_ROOT)
+        view = self.root(root) if root is not None else self.only_root
+        return {**answer, **view.command(command, entry.get(COMMAND_ROOT_REF))}
+
     def live_data_step(self, target: str) -> dict:
         """§ 35's block on one § 33 target, with which answer it is said out loud.
 
@@ -5035,6 +5123,7 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
                     raise ConfigError(
                         f"{where}.inputs", "names an input that is not a string (§ 33)."
                     )
+        _validate_choices(where, entry, facts)
         # ⛔ § 16's list, cited rather than given a second grammar here -- the
         # division § 17 already has with the same section. What this facet does
         # with it is hold its shape and name it; evaluating a precondition is
@@ -5186,6 +5275,204 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # one § 33 has with § 16 over `requires` -- the shape is held where the
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
+
+
+# § 33's placement grammar, which the surface states in prose as it does § 34's
+# capture: not a key, not a default, and not a member of an alternation.
+_CHOICE_PLACED = re.compile(r"\{choose:([^}]*)\}")
+_CHOICE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_-]*")
+# ⛔ Words a shell reads as themselves, inside quotes of either kind and outside
+# them, which is why nothing is quoted at the substitution. The first character is
+# narrower: a leading `-` is an option, and `=`, `%` and `~` each mean something
+# at the front of a word to some shell.
+_PLAIN_VALUE = re.compile(r"[A-Za-z0-9_./][A-Za-z0-9_./:@%+,=-]*")
+_PLAIN_JOIN = re.compile(r"[A-Za-z0-9_./:@%+,=-]+")
+
+
+def _one_line(value) -> bool:
+    return isinstance(value, str) and bool(value.strip()) and value.isprintable()
+
+
+def _placed_elsewhere(value, at: str):
+    """Every (path, name) a choice is placed at, anywhere below `value`."""
+    if isinstance(value, str):
+        for name in _CHOICE_PLACED.findall(value):
+            yield at, name
+    elif isinstance(value, dict):
+        for key, inner in value.items():
+            yield from _placed_elsewhere(inner, f"{at}.{key}")
+    elif isinstance(value, list):
+        for index, inner in enumerate(value):
+            yield from _placed_elsewhere(inner, f"{at}[{index}]")
+
+
+def _validate_choices(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `choices` on one entry, which no marker on the surface can reach.
+
+    ⚠️ An entry that omits the key is held to nothing here, its command's own text
+    included: a project that declares no choice keeps every command it had.
+    """
+    if "choices" not in entry:
+        return
+    at = f"{where}.choices"
+    choices = entry["choices"]
+    if not isinstance(choices, list) or not choices:
+        raise ConfigError(
+            at,
+            "must be a non-empty list of the inputs a run may choose (§ 33); omit "
+            "it where a run chooses nothing.",
+        )
+    prefix = "deploy.choices."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a choice could be held "
+            "to nothing; § 33 states a choice's keys in the entry's own fence.",
+        )
+    shell = entry.get("invoke") == "command"
+    always = entry["inputs"] if isinstance(entry.get("inputs"), dict) else {}
+    names: list[str] = []
+    for index, choice in enumerate(choices):
+        here = f"{at}[{index}]"
+        if not isinstance(choice, dict):
+            raise ConfigError(
+                here, "must be a mapping stating a name, its values and a default (§ 33)."
+            )
+        for key in choice:
+            if key not in declared:
+                raise ConfigError(
+                    f"{here}.{key}",
+                    "is a key § 33 does not declare on a choice, so nothing reads "
+                    f"it. The keys it declares are: {', '.join(sorted(declared))}.",
+                )
+        name = choice.get("name")
+        if not isinstance(name, str) or not _CHOICE_NAME.fullmatch(name):
+            raise ConfigError(
+                f"{here}.name",
+                f"is {name!r}; it must be letters, digits, `_` and `-`, opening "
+                "with a letter or `_` (§ 33).",
+            )
+        if name in names:
+            raise ConfigError(
+                f"{here}.name", f"is {name!r}, which another choice already carries (§ 33)."
+            )
+        if name in always:
+            raise ConfigError(
+                f"{here}.name",
+                f"is {name!r}, which `inputs` always sends (§ 33): one input would "
+                "carry two values.",
+            )
+        names.append(name)
+        values = choice.get("values")
+        if not isinstance(values, list) or not values:
+            raise ConfigError(
+                f"{here}.values", "required, and a non-empty list of the allowed values (§ 33)."
+            )
+        for position, value in enumerate(values):
+            if not _one_line(value):
+                raise ConfigError(
+                    f"{here}.values[{position}]",
+                    f"is {value!r}; it must be a string on one line, quoted where "
+                    "the file would read it as anything else (§ 33).",
+                )
+            if shell and not _PLAIN_VALUE.fullmatch(value):
+                raise ConfigError(
+                    f"{here}.values[{position}]",
+                    f"is {value!r}, which a shell would not read as one plain word "
+                    "(§ 33). On a `command` target a value is letters, digits and "
+                    "`_ . / : @ % + , = -`, opening with a letter, a digit, `_`, "
+                    "`.` or `/`.",
+                )
+            if value in values[:position]:
+                raise ConfigError(
+                    f"{here}.values[{position}]", f"states {value!r} a second time (§ 33)."
+                )
+        several = "joined_by" in choice
+        if several:
+            join = choice["joined_by"]
+            if not isinstance(join, str) or not join or not join.isprintable():
+                raise ConfigError(
+                    f"{here}.joined_by",
+                    "must be the text between two chosen values (§ 33); omit it "
+                    "where a run chooses one.",
+                )
+            if shell and not _PLAIN_JOIN.fullmatch(join):
+                raise ConfigError(
+                    f"{here}.joined_by",
+                    f"is {join!r}, which a shell would not read as part of one "
+                    "plain word (§ 33).",
+                )
+            for value in values:
+                if join in value:
+                    raise ConfigError(
+                        f"{here}.joined_by",
+                        f"is {join!r}, which the value {value!r} carries, so two "
+                        "selections would read as one (§ 33).",
+                    )
+        if "default" not in choice:
+            raise ConfigError(
+                f"{here}.default", "required: the value a run that chooses nothing takes (§ 33)."
+            )
+        default = choice["default"]
+        if several != isinstance(default, list):
+            raise ConfigError(
+                f"{here}.default",
+                "must be a list where `joined_by` is stated and one value where it "
+                "is not (§ 33).",
+            )
+        taken = default if several else [default]
+        if not taken or any(one not in values for one in taken) or any(
+            one in taken[:position] for position, one in enumerate(taken)
+        ):
+            raise ConfigError(
+                f"{here}.default",
+                f"is {default!r}; it must be drawn from {values!r}, each once (§ 33).",
+            )
+        warnings = choice.get("warnings", {})
+        if not isinstance(warnings, dict) or ("warnings" in choice and not warnings):
+            raise ConfigError(
+                f"{here}.warnings",
+                "must be a non-empty mapping from a value to its warning (§ 33); "
+                "omit it where there is none.",
+            )
+        for value, text in warnings.items():
+            if value not in values:
+                raise ConfigError(
+                    f"{here}.warnings",
+                    f"warns about {value!r}, which this choice does not carry, so "
+                    "nothing would ever show it (§ 33).",
+                )
+            if not isinstance(text, str) or not text.strip():
+                raise ConfigError(
+                    f"{here}.warnings", f"states nothing about {value!r} (§ 33)."
+                )
+    if shell:
+        placed = _CHOICE_PLACED.findall(entry["command"])
+        for name in names:
+            if name not in placed:
+                raise ConfigError(
+                    f"{where}.command",
+                    f"never places the choice {name!r}, written {{choose:{name}}}, "
+                    "so its value would be shown in a go and reach nothing (§ 33).",
+                )
+        for name in placed:
+            if name not in names:
+                raise ConfigError(
+                    f"{where}.command",
+                    f"places {name!r}, which no choice of this target declares (§ 33).",
+                )
+    for key, value in entry.items():
+        if key == "choices" or (key == "command" and shell):
+            continue
+        for path, name in _placed_elsewhere(value, f"{where}.{key}"):
+            raise ConfigError(
+                path,
+                f"places the choice {name!r}, which is read in a `command` target's "
+                "`command` and nowhere else (§ 33).",
+            )
 
 
 # § 35's two commands that may not carry their own answer, and the one shape a
@@ -14856,6 +15143,136 @@ def self_test() -> int:
         refusal = _refused(loaded)
         check(label, refusal is None, f"refused on {refusal!r}")
 
+    print("\n§ 33's choices, resolved for one run:")
+
+    def choosing(*handed, **overrides):
+        loaded = _a_valid_example()
+        loaded["deploy"] = [_a_deploy_target(**overrides)]
+        with open(SURFACE, encoding="utf-8") as handle:
+            facts = surface_facts(handle.read())
+        try:
+            return _resolve(loaded, EXAMPLES, facts, False).deploy_target(
+                loaded["deploy"][0]["name"], list(handed)
+            )
+        except ConfigError as error:
+            return error.key
+
+    placed = {
+        "command": "ship {choose:scope} --only={choose:parts} '{choose:scope}'",
+        "choices": [
+            _a_choice(),
+            _a_choice(name="parts", values=["one", "two", "three"],
+                      default=["three", "one"], joined_by=",", warnings=_ABSENT),
+        ],
+    }
+    for label, handed, wanted in (
+        ("a run that chooses nothing takes every default, in the declared order", (),
+         "ship some --only=one,three 'some'"),
+        ("a chosen value is put everywhere the command places it", ("scope=all",),
+         "ship all --only=one,three 'all'"),
+        ("several values are joined in the declared order",
+         ("parts=three", "parts=two"), "ship some --only=two,three 'some'"),
+    ):
+        got = choosing(*handed, **placed)
+        check(label, isinstance(got, dict) and got["command"] == wanted, f"answered {got!r}")
+    got = choosing("scope=all", **placed)
+    check(
+        "the answer carries each value, whether it was chosen, and its warning alone",
+        isinstance(got, dict) and got["choices"] == [
+            {"name": "scope", "value": "all", "chosen": True, "warnings": ["slow"]},
+            {"name": "parts", "value": "one,three", "chosen": False, "warnings": []},
+        ],
+        f"answered {got!r}",
+    )
+    got = choosing(**placed)
+    check(
+        "and a value nothing was declared about carries no warning",
+        isinstance(got, dict) and not got["choices"][0]["warnings"], f"answered {got!r}",
+    )
+    warned = {**placed, "choices": [_a_choice(default="all"), placed["choices"][1]]}
+    got = choosing(**warned)
+    check(
+        "a default a warning is declared for carries it",
+        isinstance(got, dict) and got["choices"][0]["warnings"] == ["slow"],
+        f"answered {got!r}",
+    )
+    for label, handed, key in (
+        ("a value outside the declaration", ("scope=most",), "deploy.choices.scope"),
+        ("a value that would run a second command", ("scope=all; rm",),
+         "deploy.choices.scope"),
+        ("an empty value", ("scope=",), "deploy.choices.scope"),
+        ("a choice the target does not declare", ("other=all",), "deploy.choices"),
+        ("a choice with no value", ("scope",), "deploy.choices"),
+        ("two values for a choice that takes one", ("scope=all", "scope=some"),
+         "deploy.choices.scope"),
+        ("one value handed over twice", ("parts=one", "parts=one"),
+         "deploy.choices.parts"),
+    ):
+        got = choosing(*handed, **placed)
+        check(f"{label} is a stop", got == key, f"answered {got!r}")
+    dispatched = {
+        "invoke": "dispatch", "command": _ABSENT, "ref": "a-ref",
+        "workflow": _a_workflow_the_example_states(),
+    }
+    for shape in ("dispatch", "by_hand"):
+        got = choosing("scope=all of it", **{
+            **dispatched, "invoke": shape, "inputs": {"always": "sent"},
+            "choices": [_a_choice(values=["some", "all of it"], warnings=_ABSENT)],
+        })
+        check(
+            f"a {shape} carries the chosen input beside the ones it always sends",
+            isinstance(got, dict)
+            and got["inputs"] == {"always": "sent", "scope": "all of it"}
+            and got["workflow"] == dispatched["workflow"] and got["ref"] == "a-ref",
+            f"answered {got!r}",
+        )
+        check(
+            f"and the answer says it is reached by {shape}",
+            isinstance(got, dict) and got["reached_by"] == shape, f"answered {got!r}",
+        )
+    got = choosing(**placed)
+    check(
+        "and a command's answer says the same beside its root's own form",
+        isinstance(got, dict) and got["reached_by"] == "command", f"answered {got!r}",
+    )
+    # A project that states no choice keeps every command it had, the placement's
+    # own spelling included.
+    got = choosing(command="ship {choose:scope}")
+    check(
+        "a target declaring no choice has its command run as written",
+        isinstance(got, dict) and got["command"] == "ship {choose:scope}"
+        and got["choices"] == [],
+        f"answered {got!r}",
+    )
+    got = choosing("scope=all", command="ship it")
+    check("and is handed no choice", got == "deploy.choices", f"answered {got!r}")
+    collected = _a_collection_example()
+    if collected is not None and _a_target_stating(COMMAND_ROOT_REF) >= 0:
+        entry = _get(collected, "deploy")[_a_target_stating(COMMAND_ROOT_REF)]
+        entry["command"] = "ship {choose:scope}"
+        entry["choices"] = [_a_choice()]
+        with open(SURFACE, encoding="utf-8") as handle:
+            whole = _resolve(collected, EXAMPLES, surface_facts(handle.read()), False)
+        got = whole.deploy_target(entry["name"])
+        direct = whole.root(entry[DEPLOY_CODE_ROOT]).command(
+            "ship some", entry[COMMAND_ROOT_REF]
+        )
+        check(
+            "the command is resolved in the repository and the root the target names",
+            {key: got.get(key) for key in direct} == direct
+            and got[DEPLOY_CODE_ROOT] == entry[DEPLOY_CODE_ROOT],
+            f"answered {got!r}, where the root answers {direct!r}",
+        )
+    said = ""
+    try:
+        _validate_choices("deploy[0]", {"choices": [_a_choice()]}, {"declared": set()})
+    except ConfigError as refused:
+        said = refused.key
+    check(
+        "a surface that has lost a choice's keys is refused, with the key named",
+        said == "deploy[0].choices", f"reported {said!r}",
+    )
+
     # ⛔ The one arm the plant list above cannot hold, and it is held on the
     # refusal's **text** rather than on its key. Two rules refuse
     # `deploy[].command_root` — this facet's *the shape never reads it* and
@@ -16228,6 +16645,87 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(
              invoke="dispatch", command=_ABSENT, ref="a-ref",
              workflow=_a_workflow_the_example_states(), inputs={})])),
+        # § 33's choices, one plant per arm. The last group is about the command's
+        # text, where the two directions of the agreement are separate plants.
+        *(
+            (label, f"deploy[0].{key}", at("deploy", [_a_deploy_target(**{
+                "command": "ship {choose:scope}", "choices": [_a_choice(**changed)],
+            })]))
+            for label, key, changed in (
+                ("a choice with a key § 33 does not declare", "choices[0].allow", {"allow": 1}),
+                ("a choice with no name", "choices[0].name", {"name": _ABSENT}),
+                ("a choice name no placement could carry", "choices[0].name", {"name": "a b"}),
+                ("a choice with no values", "choices[0].values", {"values": _ABSENT}),
+                ("choice values that are not a list", "choices[0].values", {"values": "all"}),
+                ("a choice with no value in it", "choices[0].values", {"values": []}),
+                ("a choice value that is not a string", "choices[0].values[1]",
+                 {"values": ["some", True]}),
+                ("a choice value over two lines", "choices[0].values[1]",
+                 {"values": ["some", "a\nb"]}),
+                ("a choice value stated twice", "choices[0].values[1]",
+                 {"values": ["some", "some"]}),
+                *(
+                    (f"a command's choice value a shell reads as more: {value!r}",
+                     "choices[0].values[1]", {"values": ["some", value]})
+                    for value in (
+                        "two words", "a;b", "$(a)", "`a`", "$A", "a|b", "a&b", "a>b",
+                        "it's", 'a"b', "a*", "a?", "[a]", "{a,b}", "a\\b", "~a", "#a",
+                        "!a", "-rf", "=a", "\u0430",
+                    )
+                ),
+                ("a choice with no default", "choices[0].default", {"default": _ABSENT}),
+                ("a default outside the values", "choices[0].default", {"default": "most"}),
+                ("a list default on a choice of one", "choices[0].default",
+                 {"default": ["some"]}),
+                ("one default on a choice of several", "choices[0].default",
+                 {"joined_by": ","}),
+                ("an empty default on a choice of several", "choices[0].default",
+                 {"joined_by": ",", "default": []}),
+                ("a default naming one value twice", "choices[0].default",
+                 {"joined_by": ",", "default": ["some", "some"]}),
+                ("an empty join", "choices[0].joined_by", {"joined_by": ""}),
+                ("a join a shell reads as more", "choices[0].joined_by", {"joined_by": " "}),
+                ("a join a value carries", "choices[0].joined_by", {"joined_by": "l"}),
+                ("warnings that are not a mapping", "choices[0].warnings",
+                 {"warnings": ["slow"]}),
+                ("an empty warnings mapping", "choices[0].warnings", {"warnings": {}}),
+                ("a warning about a value the choice does not carry",
+                 "choices[0].warnings", {"warnings": {"most": "slow"}}),
+                ("a warning stating nothing", "choices[0].warnings",
+                 {"warnings": {"all": " "}}),
+            )
+        ),
+        ("choices that are not a list", "deploy[0].choices",
+         at("deploy", [_a_deploy_target(choices={"scope": "all"})])),
+        ("a choices list carrying nothing", "deploy[0].choices",
+         at("deploy", [_a_deploy_target(choices=[])])),
+        ("a choice that is not a block", "deploy[0].choices[0]",
+         at("deploy", [_a_deploy_target(choices=["scope"])])),
+        ("one choice name twice", "deploy[0].choices[1].name",
+         at("deploy", [_a_deploy_target(command="ship {choose:scope}",
+                                        choices=[_a_choice(), _a_choice()])])),
+        ("a choice of an input the target always sends", "deploy[0].choices[0].name",
+         at("deploy", [_a_deploy_target(
+             invoke="dispatch", command=_ABSENT, ref="a-ref",
+             workflow=_a_workflow_the_example_states(),
+             inputs={"scope": "some"}, choices=[_a_choice()])])),
+        ("a choice the command never places", "deploy[0].command",
+         at("deploy", [_a_deploy_target(command="ship it", choices=[_a_choice()])])),
+        ("a placement no choice declares", "deploy[0].command",
+         at("deploy", [_a_deploy_target(command="ship {choose:scope} {choose:other}",
+                                        choices=[_a_choice()])])),
+        ("a choice placed in the batch command", "deploy[0].batch",
+         at("deploy", [_a_deploy_target(command="ship {choose:scope}",
+                                        choices=[_a_choice()],
+                                        batch="list {choose:scope}")])),
+        ("a choice placed inside a nested command", "deploy[0].live_data_step.apply",
+         at("deploy", [_a_deploy_target(
+             command="ship {choose:scope}", choices=[_a_choice()],
+             live_data_step=_a_live_data_step(apply="write {choose:scope}"))])),
+        ("a choice placed in a dispatch's ref", "deploy[0].ref",
+         at("deploy", [_a_deploy_target(
+             invoke="dispatch", command=_ABSENT, ref="{choose:scope}",
+             workflow=_a_workflow_the_example_states(), choices=[_a_choice()])])),
         ("a requires list that is not a list", "deploy[0].requires",
          at("deploy", [_a_deploy_target(requires="a credential")])),
         ("a precondition written blank", "deploy[0].requires[0]",
@@ -19095,6 +19593,18 @@ def _a_workflow_the_example_states() -> str:
     return stated[0]
 
 
+def _a_choice(**overrides) -> dict:
+    """One § 33 choice, minimal and correct."""
+    choice = {
+        "name": "scope", "values": ["some", "all"], "default": "some",
+        "warnings": {"all": "slow"},
+    }
+    choice.update(overrides)
+    if "values" in overrides and "warnings" not in overrides:
+        choice.pop("warnings")
+    return {key: value for key, value in choice.items() if value is not _ABSENT}
+
+
 def _a_deploy_target(**overrides) -> dict:
     """§ 33's smallest valid target, to break one key of at a time.
 
@@ -20123,6 +20633,21 @@ def main(argv: list[str]) -> int:
         "than an answer",
     )
     parser.add_argument(
+        "--deploy-target",
+        metavar="TARGET",
+        help="one of § 33's deploy targets, resolved as a run would invoke it: the "
+        "command and where it runs, or the workflow, the ref and every input, with "
+        "each choice, the value taken and any warning declared for it",
+    )
+    parser.add_argument(
+        "--choose",
+        action="append",
+        metavar="NAME=VALUE",
+        help="a value for one of that target's choices, repeated per choice and per "
+        "value where a choice may take several. One the target does not allow is a "
+        "stop. A choice left out takes its default",
+    )
+    parser.add_argument(
         "--tier",
         metavar="TIER",
         help="the § 31 tier to report: every suite classified under it, what each "
@@ -20196,6 +20721,28 @@ def main(argv: list[str]) -> int:
                 "a *command* runs in, so a name alone asks nothing. Pass "
                 "`--command` with it, or read the roots this project declares "
                 "out of the report this run prints without either.",
+            )
+        if args.deploy_target:
+            # ⛔ The repository is the entry's own fact, so a root handed over
+            # beside the target is a second answer to it.
+            if args.root or args.root_for:
+                raise ConfigError(
+                    f"deploy.{DEPLOY_CODE_ROOT}",
+                    "is the target's own statement of its repository (§ 33), so a "
+                    "root is not passed beside `--deploy-target`.",
+                )
+            if args.command:
+                raise ConfigError(
+                    "deploy.command",
+                    "is the target's own statement of what it runs (§ 33), so a "
+                    "command is not passed beside `--deploy-target`.",
+                )
+            answer = config.deploy_target(args.deploy_target, args.choose)
+        elif args.choose:
+            raise ConfigError(
+                "deploy.choices",
+                "cannot be chosen with no target named: § 33 states a choice per "
+                "target. Pass `--deploy-target` with it.",
             )
         if args.exempt_for:
             answer = config.exempt_for(args.exempt_for, args.of_kind)
