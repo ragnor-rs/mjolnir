@@ -257,8 +257,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/file_window.py" compare --first <the firs
   behind them. Write the item with nothing between this command and the create.
 - **It exits 1** ⇒ the backlog moved. ⛔ **Every item it names as appeared is read and put through
   2c, 2d and § 3 before anything is written**; the rest of the search is not run again. Then compare
-  again, against the same first reading: the write is licensed once every item named has been
-  judged, with none the last judging did not cover.
+  again, against the same first reading, and write once everything that last run named has already
+  been judged.
 - **It exits 3** ⇒ this tracker has no search, which the fallback above already governs. The window
   is unmeasured, and the reply says that rather than that it was met.
 - **It exits 2** ⇒ a reading could not be taken. ⛔ **Nothing is written on it**: a search that
@@ -441,8 +441,9 @@ Then report, in the register
 - **both of 2e's readings, per item filed**, as the two lines the last comparison printed, with
   every item that appeared between them and how it was judged — or, where the tracker has no search,
   the line `Backlog window: unmeasured`. ⛔ **The reply is held to that before it is sent**, so a
-  pass that skipped the second reading cannot report as one that took it. An item written by
-  § 3's duplicate or parent outcome creates nothing and owes no second reading:
+  pass that skipped the second reading cannot report as one that took it. An item that ended in
+  § 3's duplicate or parent outcome was not created and carries neither line, and a reply over no
+  created item is not put through the check:
 
   ```bash
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/file_window.py" check --reply <the reply>
