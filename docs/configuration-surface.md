@@ -860,8 +860,8 @@ Each but status has a real absent case of its own — which is where the schema'
 absence-is-a-configuration rule comes from: a procedure that treats absence as an unset value
 fails on a project that is correctly configured.
 
-- **Type** — five carriers observed: a native field; a label convention, because a user-owned
-  repository on one host has no type field at all; a bare label whose absence means the other
+- **Type** — five carriers observed: a native field; a label convention, on a
+  user-owned repository; a bare label whose absence means the other
   value; a native field with nine values of which six are used; and a prefixed label mapping onto
   a five-valued branch-type vocabulary. The branch prefix is a **function** of type whose range
   differs — two values in four projects, five in another, with one type resolving to one of two
