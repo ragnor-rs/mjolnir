@@ -61,6 +61,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from urllib.parse import quote
 
 # What this carrier is, read from this file and declared nowhere else, by schema.md
 # § Whether a project can adopt this procedure at all. ⛔ The class is the hook's own and not
@@ -206,7 +207,22 @@ BEHIND_TIMEOUT = 3
 # change is a record only a machine can audit.
 
 RECORD_MARKER = "**mjolnir · recorded answer**"
-RECORD_COLUMNS = ["question", "answer", "answered by", "answered at"]
+RECORD_COLUMNS = ["question", "answer", "answered by", "answered at", "at commit"]
+
+# ⚠️ A record of four columns carries no commit. It is still read, so that the
+# questions no guard holds keep their answers and the merge guard can say that
+# the answer is there and names no commit, rather than that there is no answer.
+COLUMNS_WITHOUT_A_COMMIT = RECORD_COLUMNS[:-1]
+
+# ⛔ The whole commit and never a prefix: a comparison with an abbreviation is a
+# comparison something has to resolve, and the guard resolves nothing.
+COMMIT = re.compile(r"^[0-9a-f]{40}(?:[0-9a-f]{24})?$")
+
+# § 2's key for what an approval covers, the value that widens it, and the value
+# a project that states nothing has.
+APPROVAL_COVERS = "host.landing.approval_covers"
+COVERS_COMMIT = "commit"
+COVERS_CONTENT = "content"
 
 # The question a merge is held on, and where the whole vocabulary comes from.
 # ⛔ The name is read out of the surface's own alternation rather than carried
@@ -283,7 +299,12 @@ FIELD_FLAGS = ("-f", "--raw-field", "-F", "--field", "--input")
 # ⚠️ A resource's own `probe_timeout` is read in its place where the project states
 # one, and the reader bounds that value for the same reason.
 PROBE_TIMEOUT = 5
-HOST_TIMEOUT = 8
+
+# ⛔ The merge guard makes up to this many host reads in one call, and a hook the
+# harness kills is a merge held to nothing -- so the two figures multiplied stay
+# inside the carrier's own timeout, which `--self-test` asserts off the carrier.
+HOST_TIMEOUT = 5
+MERGE_READS = 5
 
 # ⚠️ Tighter than the merge guard's, because this arm may make three reads where
 # that one makes two and runs on every call rather than on a merge: the whole of
@@ -567,13 +588,14 @@ def release(store: Path, session: str, scope: str, command: str, now: float) -> 
 # --- reading the record ----------------------------------------------------
 
 
-def record_body(question: str, given: str, by: str, at: str) -> str:
+def record_body(question: str, given: str, by: str, at: str, head: str = "") -> str:
     """The comment a recorded answer is, in the form the surface states."""
     cells = [
         question,
         given.replace(PIPE, PIPE_ESCAPED),
         by.replace(PIPE, PIPE_ESCAPED),
         at,
+        head,
     ]
     return "\n".join([
         RECORD_MARKER,
@@ -589,7 +611,7 @@ def record_body(question: str, given: str, by: str, at: str) -> str:
 def answers_in(text: str) -> list[dict]:
     """Every recorded answer in one comment body.
 
-    ⛔ The marker is required. A table of four columns is an ordinary shape in a
+    ⛔ The marker is required. A table of a few columns is an ordinary shape in a
     change's conversation, and reading one as a record would let a guard be
     satisfied by somebody's notes.
     """
@@ -603,6 +625,10 @@ def answers_in(text: str) -> list[dict]:
             cell.strip().replace(PIPE_ESCAPED, PIPE)
             for cell in re.split(r"(?<!\\)\|", line.strip().strip(PIPE))
         ]
+        if len(cells) == len(COLUMNS_WITHOUT_A_COMMIT):
+            if cells == COLUMNS_WITHOUT_A_COMMIT:
+                continue
+            cells = [*cells, ""]
         if len(cells) != len(RECORD_COLUMNS):
             continue
         if cells == RECORD_COLUMNS or set("".join(cells)) <= set("-: "):
@@ -656,11 +682,99 @@ def host_comments(slug: str, number: str, run=None) -> tuple[list[str], str | No
     return bodies, None
 
 
+def change_head(slug: str, number: str, run=None) -> tuple[str, str, str | None]:
+    """(the change's head commit, the ref it lands on, or why they are unknown)."""
+    runner = run if run is not None else _run_host
+    try:
+        code, out = runner(["api", f"repos/{slug}/pulls/{number}"], HOST_TIMEOUT)
+        loaded = json.loads(out) if code == 0 else None
+        if loaded is None:
+            return "", "", "the host did not say what this change's head commit is"
+        head, base = str(loaded["head"]["sha"]), str(loaded["base"]["ref"])
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return "", "", f"{type(error).__name__} while reading this change's head commit"
+    if not COMMIT.match(head) or not base:
+        return "", "", "the host's answer named no head commit"
+    return head, base, None
+
+
+def patch_lines(diff: str) -> list[str] | None:
+    """What a diff changes, with where it sits taken out; None where it cannot say.
+
+    ⛔ What is dropped is the hunk's line numbers and the blob names, the two
+    things a rebase moves without changing a line. Every other character is kept,
+    whitespace included, which is why this is not `git patch-id`.
+
+    ⛔ A file the diff does not show is one nothing can be said about: a binary
+    file's bytes are not in the text, so it answers None rather than *the same*.
+    """
+    kept = []
+    in_hunk = False
+    # ⚠️ Split on the newline alone: `splitlines` also cuts at a form feed or a
+    # carriage return inside a line, and the remainder would read as a header.
+    for line in diff.split("\n"):
+        if line.startswith("diff --git "):
+            in_hunk = False
+        elif line.startswith("@@"):
+            in_hunk = True
+            kept.append("@@")
+            continue
+        if not in_hunk:
+            if line.startswith(("Binary files ", "GIT binary patch")):
+                return None
+            if line.startswith("index "):
+                continue
+        kept.append(line)
+    return kept
+
+
+def same_content(slug: str, base: str, approved: str, head: str, run=None) -> tuple[bool, str]:
+    """(whether both commits carry one change against the base, why not where not)."""
+    runner = run if run is not None else _run_host
+    read = []
+    for commit in (approved, head):
+        try:
+            code, out = runner(
+                ["api", "-H", "Accept: application/vnd.github.diff",
+                 f"repos/{slug}/compare/{quote(base, safe='')}...{commit}"],
+                HOST_TIMEOUT,
+            )
+        except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+            return False, f"{type(error).__name__} while reading what {commit} changes"
+        lines = patch_lines(out) if code == 0 else None
+        if code != 0:
+            return False, f"the host did not say what {commit} changes"
+        if lines is None:
+            return False, f"what {commit} changes includes a binary file the diff does not show"
+        if not any(lines):
+            return False, f"the host's answer about what {commit} changes was empty"
+        read.append(lines)
+    if read[0] != read[1]:
+        return False, "the two commits do not carry the same change against the base"
+    return True, ""
+
+
+def approval_covers(config, slug: str) -> str:
+    """What an approval covers in this repository, by § 2's key.
+
+    ⛔ Read from the root whose repository the change is in, and the narrow value
+    where there is none: a repository the project states nothing about has not
+    widened anything.
+    """
+    for view in [*(getattr(config, "views", None) or {}).values(), config]:
+        try:
+            if view.get("host.repo") == slug:
+                return str(view.get(APPROVAL_COVERS) or COVERS_COMMIT)
+        except Exception:  # noqa: BLE001 -- a read that stops widens nothing
+            continue
+    return COVERS_COMMIT
+
+
 def _run_host(args: list[str], timeout: int) -> tuple[int, str]:
-    proc = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, timeout=timeout,
-    )
-    return proc.returncode, proc.stdout
+    # ⛔ Decoded here and not by `text=True`, which rewrites a carriage return: two
+    # diffs that differ in their line endings alone would come back the same.
+    proc = subprocess.run(["gh", *args], capture_output=True, timeout=timeout)
+    return proc.returncode, proc.stdout.decode("utf-8")
 
 
 # --- which call is a merge -------------------------------------------------
@@ -779,7 +893,7 @@ def _deny(reason: str) -> dict:
 
 
 def merge_guard(config, command: str, *, host=None) -> dict:
-    """Refuse a merge where the review question has no recorded answer.
+    """Refuse a merge where the merge ask has no recorded answer for this commit.
 
     ⛔ Refused rather than waved through where the record could not be read at
     all, which is the surface's fail direction for an act that cannot be undone.
@@ -821,8 +935,38 @@ def merge_guard(config, command: str, *, host=None) -> dict:
             f"({RECORD_CITATION})."
         )
     answer = recorded_answer(comments, MERGE_QUESTION)
+    head, base, unread = change_head(slug, number, run=host)
+    if unread:
+        return _deny(
+            f"This command merges {slug}#{number} and the commit it would merge could not be "
+            f"established: {unread}. ⛔ Refused rather than allowed: an approval covers the "
+            f"commit it was given for, and a merge is not undone ({RECORD_CITATION}). Re-run "
+            "once the host answers."
+        )
+    again = (
+        f"  python3 {Path(__file__).resolve()} record \\\n"
+        f"    --change {slug}#{number} --question {MERGE_QUESTION} --head {head} \\\n"
+        "    --given '<the answer as it came back>' --by '<who answered>'"
+    )
     if answer:
-        return {}
+        approved = answer["at commit"]
+        if approved == head:
+            return {}
+        why = "the two are not the same commit"
+        if not COMMIT.match(approved):
+            approved = approved or "no commit"
+            why = "the record names no commit to compare"
+        elif approval_covers(config, slug) == COVERS_CONTENT:
+            same, why = same_content(slug, base, approved, head, run=host)
+            if same:
+                return {}
+        return _deny(
+            f"This command merges {slug}#{number} at {head}, and the answer to "
+            f"`{MERGE_QUESTION}` recorded on it was given at {approved}: {why} "
+            f"({RECORD_CITATION}). ⛔ An approval covers the commit it was given for and no "
+            "later one. Put the question to a person again about the commit that would merge, "
+            f"then record their answer:\n{again}"
+        )
     # ⛔ The remedy is named as a command somebody can run, not as a description of
     # one: a refusal whose remedy has to be worked out is a refusal somebody gets
     # past by editing the guard. The path is this file's own, so it names whichever
@@ -834,10 +978,7 @@ def merge_guard(config, command: str, *, host=None) -> dict:
         "established — and it is procedure rather than a setting, so *later* is an answer and "
         "so is unanswered. ⛔ Ask it before recording it: an answer written on somebody's "
         "behalf is a fabricated attestation, which is the one thing this record may not "
-        f"carry. What unblocks this is their answer written onto the change:\n"
-        f"  python3 {Path(__file__).resolve()} record \\\n"
-        f"    --change {slug}#{number} --question {MERGE_QUESTION} \\\n"
-        "    --given '<the answer as it came back>' --by '<who answered>'"
+        f"carry. What unblocks this is their answer written onto the change:\n{again}"
     )
 
 
@@ -1782,7 +1923,7 @@ def questions(surface_text: str | None = None) -> list[str]:
 
 
 def write_record(address: str, question: str, given: str, by: str, at: str,
-                 run=None) -> tuple[str, int]:
+                 head: str = "", run=None) -> tuple[str, int]:
     """Write a recorded answer onto a change, and say where it went.
 
     ⛔ A question outside the surface's own vocabulary is refused rather than
@@ -1813,8 +1954,17 @@ def write_record(address: str, question: str, given: str, by: str, at: str,
             "different change in every repository the route carries.",
             2,
         )
+    if (head or question == MERGE_QUESTION) and not COMMIT.match(head):
+        # ⛔ Stated by the pass that asked and never read from the host here: a
+        # push between the ask and this call would be recorded as approved.
+        return (
+            f"Refused: {head!r} is not the commit the answer was given for. ⛔ Nothing was "
+            f"written: `{MERGE_QUESTION}` covers one commit, so its record names the whole "
+            f"head commit the person was asked about, on `--head` ({RECORD_CITATION}).",
+            2,
+        )
     slug, number = found.group("slug"), found.group("number")
-    body = record_body(question, given, by, at)
+    body = record_body(question, given, by, at, head)
     runner = run if run is not None else _run_host
     with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as out:
         out.write(body + "\n")
@@ -2026,12 +2176,28 @@ def _a_resource(**overrides) -> dict:
     return entry
 
 
-def _a_host(comments: list[str] | None = None, number: int | None = 7, code: int = 0):
-    """A stand-in for the host, answering the two reads the merge guard makes."""
+A_HEAD = "a" * 40
+A_LATER_HEAD = "b" * 40
+
+
+def _a_diff(added: str = "+a line", at: int = 1, blob: str = "1111111") -> str:
+    return (f"diff --git a/a-file b/a-file\nindex {blob}..2222222 100644\n--- a/a-file\n"
+            f"+++ b/a-file\n@@ -{at},2 +{at},3 @@ a heading\n a kept line\n{added}\n a last line\n")
+
+
+def _a_host(comments: list[str] | None = None, number: int | None = 7, code: int = 0,
+            head: str | None = A_HEAD, diffs: dict | None = None):
+    """A stand-in for the host, answering the reads the merge guard makes."""
 
     def run(args, _timeout):
         if code:
             return code, ""
+        if args[0] == "api" and re.fullmatch(r"repos/[^/]+/[^/]+/pulls/\d+", args[-1]):
+            return (0, json.dumps({"head": {"sha": head}, "base": {"ref": "a-base/ref"}})) \
+                if head is not None else (1, "")
+        if args[0] == "api" and "/compare/a-base%2Fref..." in args[-1]:
+            found = (diffs or {}).get(args[-1].rpartition("...")[2])
+            return (0, found) if found is not None else (1, "")
         if args[:2] == ["api", "--paginate"]:
             return 0, json.dumps([{"body": body} for body in (comments or [])])
         if args[:2] == ["pr", "view"]:
@@ -2691,7 +2857,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
 
         printed, status = write_record("an-owner/a-repository#7", MERGE_QUESTION,
                                        "yes, merge it now", "a-person",
-                                       "2026-01-01T00:00:00Z", run=_records)
+                                       "2026-01-01T00:00:00Z", A_HEAD, run=_records)
         check("a well-formed record is written, and the arm says where", status == 0
               and "an-owner/a-repository#7" in printed, printed[:140])
         check("and what reached the host parses back as the answer that was given",
@@ -2723,7 +2889,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                   "--question" in reason(answered) and MERGE_QUESTION in reason(answered),
                   reason(answered)[:160])
         recorded = [record_body(MERGE_QUESTION, "yes, merge it now", "a-person",
-                                "2026-01-01T00:00:00Z")]
+                                "2026-01-01T00:00:00Z", A_HEAD)]
         check("allowed once the person's own merge answer is on the change",
               guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
                            store=fresh("merge"), host=_a_host(comments=recorded)) == {})
@@ -2743,6 +2909,92 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               MERGE_QUESTION in reason(guard_answer(
                   _call("gh pr merge 7"), config=config, now=1000.0,
                   store=fresh("merge"), host=_a_host(comments=retired_only))))
+        out.append("")
+        out.append("An approval covers the commit it was given for and no later one:")
+
+        def merging(project=config, comments=recorded, **host):
+            return guard_answer(_call("gh pr merge 7"), config=project, now=1000.0,
+                                store=fresh("merge"), host=_a_host(comments=comments, **host))
+
+        answered = merging(head=A_LATER_HEAD)
+        check("a head pushed after the answer is refused", denied(answered), repr(answered)[:140])
+        check("and the refusal names both commits",
+              A_HEAD in reason(answered) and A_LATER_HEAD in reason(answered),
+              reason(answered)[:200])
+        check("and how to ask again, about the commit that would merge",
+              "again" in reason(answered)
+              and f"--question {MERGE_QUESTION} --head {A_LATER_HEAD}" in reason(answered),
+              reason(answered)[-300:])
+        for label, unsaid in (("no answer about the head", None),
+                              ("an answer naming no commit", "")):
+            answered = merging(head=unsaid)
+            check(f"{label}: refused", denied(answered) and "could not be established"
+                  in reason(answered), repr(answered)[:140])
+        answered = merging(comments=recorded + [record_body(
+            MERGE_QUESTION, "yes", "a-person", "y", A_LATER_HEAD)], head=A_LATER_HEAD)
+        check("asked again at the later commit, it is allowed", answered == {},
+              repr(answered)[:140])
+        four = "\n".join([RECORD_MARKER, "", "| question | answer | answered by | answered at |",
+                          "|---|---|---|---|", f"| {MERGE_QUESTION} | yes | a-person | x |"])
+        check("a record of four columns is read, and once",
+              [a["at commit"] for a in answers_in(four)] == [""], repr(answers_in(four)))
+        answered = merging(comments=[four])
+        check("and covers no commit", denied(answered) and "no commit" in reason(answered),
+              reason(answered)[:200])
+        for label, stated in (("no commit", ""), ("an abbreviated one", A_HEAD[:7])):
+            check(f"a merge answer recorded with {label} is refused",
+                  write_record("an-owner/a-repository#7", MERGE_QUESTION, "yes", "a-person",
+                               "x", stated, run=_records)[1] == 2)
+        moved = {A_HEAD: _a_diff(), A_LATER_HEAD: _a_diff(at=40, blob="3333333")}
+        wide = _a_config([])
+        wide.data["host"]["landing"] = {"approval_covers": COVERS_CONTENT}
+        check("a push changing no content is refused where nothing is stated",
+              denied(merging(head=A_LATER_HEAD, diffs=moved)))
+        answered = merging(wide, head=A_LATER_HEAD, diffs=moved)
+        check("and keeps the approval where the project states it", answered == {},
+              repr(answered)[:200])
+        for label, diffs in (
+            ("a changed line", {**moved, A_LATER_HEAD: _a_diff("+another line")}),
+            ("a line changed in its whitespace alone",
+             {**moved, A_LATER_HEAD: _a_diff("+a  line")}),
+            ("a line changed in its line ending alone",
+             {**moved, A_LATER_HEAD: _a_diff("+a line\r")}),
+            ("a changed line carrying a form feed and a hunk header",
+             {A_HEAD: _a_diff("+x\f@@ one"), A_LATER_HEAD: _a_diff("+x\f@@ two")}),
+            ("a binary file", {key: "diff --git a/x b/x\nindex 1..2\nBinary files a/x and b/x "
+                                    "differ\n" for key in moved}),
+            ("an empty answer", {key: "" for key in moved}),
+            ("an approved commit the host no longer answers for",
+             {A_LATER_HEAD: moved[A_LATER_HEAD]}),
+        ):
+            answered = merging(wide, head=A_LATER_HEAD, diffs=diffs)
+            check(f"{label}: refused even there, naming both commits",
+                  denied(answered) and A_HEAD in reason(answered)
+                  and A_LATER_HEAD in reason(answered), repr(answered)[:200])
+        # ⛔ The stand-in above cannot reach what the real runner does to the bytes,
+        # so the runner itself is asked, against a client that prints both endings.
+        client = fresh("client")
+        client.mkdir(parents=True, exist_ok=True)
+        (client / "gh").write_text("#!/bin/sh\nprintf 'a\\r\\nb\\n'\n", encoding="utf-8")
+        (client / "gh").chmod(0o755)
+        path_held = os.environ.get("PATH", "")
+        os.environ["PATH"] = f"{client}{os.pathsep}{path_held}"
+        try:
+            ran = _run_host(["api"], HOST_TIMEOUT)
+        finally:
+            os.environ["PATH"] = path_held
+        check("and the client's own line endings reach the comparison as printed",
+              ran == (0, "a\r\nb\n"), repr(ran))
+        check("a repository the project states nothing about widens nothing",
+              approval_covers(wide, "another-owner/a-repository") == COVERS_COMMIT)
+        allowed = next(
+            hook_entry["timeout"]
+            for group in json.loads(CARRIER.read_text(encoding="utf-8"))["hooks"][GUARD_EVENT]
+            for hook_entry in group["hooks"]
+            if Path(__file__).name in " ".join(hook_entry.get("args") or [])
+        )
+        check("and every read it may make fits inside the carrier's own timeout",
+              HOST_TIMEOUT * MERGE_READS < allowed, f"{HOST_TIMEOUT} x {MERGE_READS}, {allowed}")
         check("a record that could not be read is refused, not read as absent",
               denied(guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
                                   store=fresh("merge"), host=_a_host(code=1))))
@@ -3708,6 +3960,9 @@ def main(argv: list[str]) -> int:
     writing.add_argument("--given", required=True, help="the answer, as it came back")
     writing.add_argument("--by", required=True, help="who answered it")
     writing.add_argument("--at", default=None, help="when; now where omitted")
+    writing.add_argument("--head", default="",
+                         help="the change's head commit when the question was put, in full; "
+                              f"required for {MERGE_QUESTION}")
 
     reporting = sub.add_parser("held", help="report what is held right now, and by what")
     reporting.add_argument("--skills-root", default=".",
@@ -3722,7 +3977,8 @@ def main(argv: list[str]) -> int:
         return hook(sys.stdin, release_answer)
     if args.arm == "record":
         stamp = args.at or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        report, status = write_record(args.change, args.question, args.given, args.by, stamp)
+        report, status = write_record(args.change, args.question, args.given, args.by, stamp,
+                                      args.head)
         print(report)
         return status
     if args.arm == "held":

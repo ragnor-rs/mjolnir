@@ -1532,6 +1532,7 @@ host:
   landing:
     method: squash | merge_commit | rebase     # how a pull request lands; required
     delete_branch: host | procedure | never    # which side deletes the remote ref afterwards; required
+    approval_covers: commit | content          # what a merge approval covers; default: commit
 ```
 
 **Stated, because the roles that land a change read it and the shape of `main` is not a reading.**
@@ -1580,6 +1581,14 @@ nobody wrote.
 [§ 10](#the-claim-on-a-work-item)'s release, which no host setting touches, so nothing reads this
 key as an answer about either; a ref the host deleted is one of the ways a landed claim stops
 existing, and that release's own test is *landed or held here* either way.
+
+**`approval_covers` is read by [§ 7's guard on a merge](#what-a-hook-refuses-and-the-record-it-reads)
+and by nothing else.** `commit` is the rule stated there. `content` keeps an approval across a push
+that leaves the change's diff against its base the same — a rebase onto the base is the case. What
+is compared is every line of the diff but the line numbers and blob names. ⛔ **A diff that could
+not be read whole keeps nothing**: a binary file it does not show, a commit the host no longer
+answers for, or a size the host refuses. ⚠️ **What it does not see is position**: one hunk moved
+between two places whose surrounding lines are identical reads as the same diff.
 
 ⛔ **A reader of this key reads what to expect, never what it may refuse to handle.** The method is
 the project's convention and not a guarantee about a given ref: a check told `merge_commit` still
@@ -3035,7 +3044,9 @@ anything. A rule read by three parties and written in one of their files is a se
 the other two.
 
 ⛔ **A recorded answer is one comment on the change, keyed by the repository and the change's own
-number, stating the question, the answer as it came back, who answered it and when.** The keying
+number, stating the question, the answer as it came back, who answered it, when, and the commit that
+was the change's head when the question was put.** The commit is required on the merge ask, and an
+answer no guard holds to a commit may leave it empty. The keying
 is the load-bearing half: a bare number names a different change in every repository the route
 carries, so an answer recorded against one is an answer no guard can resolve, and the act stays
 refused however it was answered.
@@ -3063,6 +3074,14 @@ and a guard reading that as *no record* would hold a change nothing on the route
 ⛔ **The guard on a merge refuses where the merge ask has no recorded answer.** That is the ask the
 route puts immediately before the act, so the answer that authorizes the merge and the answer the
 guard reads are one record rather than two.
+
+⛔ **A merge approval covers the commit it was given for and no later one.** The guard refuses a
+merge whose head is not the recorded commit, naming both and how to ask again; a record naming no
+commit covers none, and a host that cannot say what the head is refuses the merge. ⛔ **The commit is
+stated by the pass that put the question and never read when the answer is written**, since a push
+between the two would be recorded as approved. A project widens this in one way, by
+[§ 2's `approval_covers`](#how-a-pull-request-lands). ⚠️ **What is compared is the head when the
+guard reads it**: a push landing between that read and the host's merge is not seen.
 
 ⚠️ **Keyed on anything else, a guard refuses a merge its own authorization already covers.**
 Measured on this repository: a person authorized a merge, the pass recorded that answer, and the

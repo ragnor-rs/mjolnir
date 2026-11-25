@@ -521,7 +521,9 @@ turn off are
   same rule the reviewing role's record is held to, and the reason a *later* answered in one window
   is not re-asked from scratch in the next. The form and the one command that writes it are
   [`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)'s, which the
-  reviewing role's step 9 names; this role writes `merge_now` under the same keying.
+  reviewing role's step 9 names; this role writes `merge_now` under the same keying, with `--head`
+  naming the whole head commit it read before asking. ⛔ **A push after the answer is a question
+  asked again**, by the same section's rule on what an approval covers.
 - ⛔ **The answer is recorded as it came back, and `--by` names whoever actually gave it.** ⚠️ **A
   person's name written against an answer they did not give is a fabricated attestation**, and
   [`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads) states that no guard
