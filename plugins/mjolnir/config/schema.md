@@ -7981,6 +7981,12 @@ deploy:
     workflow:     "<a name § 2's `checks` is keyed on, where the shape is not `command`>"
     ref:          "<the ref a dispatch is made against>"
     inputs:       "<the typed inputs this target always sends, as a mapping>"
+    choices:                   # a list; one entry per input a run may choose
+      name:       "<the input's name>"
+      values:     "<the allowed values, as a list of strings>"
+      default:    "<the value a run that chooses nothing takes>"
+      joined_by:  "<what joins several values, where a run may choose more than one>"
+      warnings:   "<a value, mapped to what the go says about choosing it>"
     requires:     "<§ 16's list, cited there and not restated>"
     advances:     "<one of § 4.2's own roles, read there — or `none`>"
     batch:        "<a command printing one item identifier per line>"
@@ -8079,7 +8085,7 @@ table being the statement and the figures the measurement's.
 
 | `invoke` | what the role does | what the entry states |
 |---|---|---|
-| `command` | runs it, in the root `command_root` names | `command`, and `command_root` where it is not the code root |
+| `command` | runs it, in the root `command_root` names, with [each choice](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target) put in its place | `command`, and `command_root` where it is not the code root |
 | `dispatch` | asks [§ 29](#the-run-operations-and-what-each-absence-does) for one, against `ref`, sending `inputs` | `workflow`, `ref`, `inputs` |
 | `by_hand` | runs nothing, names the workflow, the ref and every input, and **reports no deploy made** | `workflow`, `ref`, `inputs` |
 
@@ -8091,8 +8097,8 @@ overriding that project's own rule with a capability. ⚠️ **One target in the
 most irreversible one in it**, which is the whole of the evidence and is stated rather than rounded
 up.
 
-⛔ **`inputs` is the inputs this target *always* sends, and an input a person chooses is asked for
-and named in the go instead.** Measured on the one dispatching target, where the host's own default
+⛔ **`inputs` is the inputs this target *always* sends, and an input a run may choose is
+[`choices`](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target)' instead.** Measured on the one dispatching target, where the host's own default
 for an input is the wrong one: unsent, the run builds the branch production serves from a workflow
 dispatched off another, and reports success throughout. ⚠️ **So the hazard is an input omitted
 rather than an input mistyped**, which is why the always-sent set is configuration and the rest is
@@ -8109,6 +8115,52 @@ shape never looks at. ⚠️ **The second is the one a reader is tempted to tole
 it leaves a ref beside a command that takes none: a fact written exactly where somebody would expect
 it to be read. ⛔ **And a key this section does not declare at all is refused the same way**, by the
 rule [§ 1](#a-command-root-is-not-a-code-root) already states for a named root's blocks.
+
+### A choice made for one run, and how its value reaches the target
+
+⛔ **`choices` declares every input a run may choose, so one target covers every combination of
+them.** Each entry states its `name`, the `values` it may take and the `default` a run choosing
+nothing takes. The key is omitted where a run chooses nothing, and such a target is read and invoked
+exactly as one was before the key existed.
+
+| the key | what it states | what is refused where it is written |
+|---|---|---|
+| `name` | letters, digits, `_` and `-`, opening with a letter or `_` | a name another choice carries, and a name `inputs` always sends |
+| `values` | a list of strings, each on one line | a value written twice, and one that is not a string — a word the file format reads as a boolean or a number is quoted |
+| `default` | one of `values`; a list of them where `joined_by` is stated | a default outside `values` |
+| `joined_by` | that a run may choose several values, and the text between them | an empty one, and one that appears inside a value |
+| `warnings` | what the go says when a value is chosen | a value the choice does not carry |
+
+⛔ **A selection is resolved by the reader, before the go, and nothing outside the declaration is
+resolved at all.** A choice the target does not declare, a value it does not allow, one value where
+several were handed to a choice stating no `joined_by`, and a value named twice are each a stop naming
+what is allowed. Several values are joined in the order `values` states them, whatever order they
+were handed over in, so one selection has one spelling.
+
+**How a value reaches what is invoked:**
+
+| `invoke` | where the value goes |
+|---|---|
+| `command` | in place of `{choose:<name>}`, everywhere the command carries it |
+| `dispatch` | as a typed input of that name, beside the ones `inputs` always sends |
+| `by_hand` | named with the workflow and the ref, as every input is |
+
+⛔ **On a `command` target a value is held to words a shell reads as themselves, and that is the
+quoting.** Every value and every `joined_by` is ASCII letters, digits and `_ . / : @ % + , = -`, and
+a value opens with a letter, a digit, `_`, `.` or `/`; anything else is refused at the load. ⚠️ **Not
+quoted at the substitution instead**, because a command may already place the word inside quotes and
+[§ 1](#a-command-root-is-not-a-code-root)'s form may place the whole command inside another: quotes
+added here would close those. A value needing a space is a word the project's own command maps.
+
+⛔ **The command and the declaration agree in both directions**: a declared choice the command never
+places would be shown in a go and reach nothing, and a placed name no choice declares would reach
+the shell as written. Each is refused with the name. ⚠️ **A choice reaches `command` and no other
+command of the entry**, so a placement written in any other key is refused too.
+
+⛔ **The go shows every choice with the value taken, whether it was chosen or is the default, and
+every warning declared for a value taken.** A go is for the values it showed: a different selection
+is a different deploy and is asked for again. ⚠️ **On a target stating `not_live: true` there is no
+go**, and the values and their warnings are in the reply.
 
 ### What runs before the target is confirmed, and what it may not do
 

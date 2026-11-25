@@ -2092,6 +2092,9 @@ What the corpus is scoped to, and what that scope costs, is the next subsection'
   the obligation on *never obeying* rather than on detecting, and a green run licenses nothing.
 - **A comment the tracker withholds from the account reading it.** The read is held to what the host
   says it has, so a comment restricted to other people is in neither number and nothing reports it.
+- **What a deploy's go showed, and whether the command it printed is the one that ran.** The reader
+  resolves a target's choices and prints the command, the values and the warnings. Showing them and
+  running that command are the deploying role's, and no check reads either.
 - **Prose outside the plugin, this repository's own included.** The corpus pass reads the markdown
   that ships beside the script — the surface and the skills — and nothing else. ⛔ An adopter's
   documents are deliberately out of scope: a shipped check whose green depends on the repository it
