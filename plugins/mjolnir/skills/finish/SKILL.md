@@ -456,10 +456,10 @@ own list, and this file does not carry a second copy of it.
 
 ## 8. The merge, and reading it back
 
-⛔ **Four things are established before the merge, because each of them is cheap now and expensive
+⛔ **These are established before the merge, because each of them is cheap now and expensive
 after.** Every one was in a single copy of a role and in none of the rest, and ⛔ **this step is
 ordered so that nothing irreversible happens before the thing that would have stopped it** —
-which the last of the four is the measured violation of.
+which the tracker's answering is the measured violation of.
 
 1. ⛔ **Whether anything is based on this branch.** Retarget-on-merge does **not** fire reliably:
    deleting the head branch **closes** every change based on it instead of moving it to this one's
@@ -477,19 +477,31 @@ which the last of the four is the measured violation of.
    and step 9 is where that is discovered — after the irreversible act. So the port is reached for
    a read **before** the merge, and an unreachable tracker holds it; `§ 3`'s fallback covers a
    capability that is *absent*, which is a different thing from a host that is not answering.
+5. ⛔ **That what the merge closes is what was meant**, by
+   [`§ 3 → What a merge closes`](../../config/schema.md#what-a-merge-closes-and-the-comparison-that-holds-it),
+   which states which items are meant, what each answer does, and why a commit message is read too:
 
-⛔ **Then the merge is asked for, with those four established and before the merge call.** The
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --closing-of <the change> \
+     --intend <each item meant> --landing-text <the squash subject, where one is passed>
+   ```
+
+   ⛔ **A difference withdraws the merge ask**, and the reply names each item with the text the
+   command printed. ⚠️ **Exit 3 is *unread* and never *the same***, and the ask says so.
+
+⛔ **Then the merge is asked for, with those established and before the merge call.** The
 question, that *later* is an answer rather than a failure, and that it is procedure no project can
 turn off are
 [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s
 — ⛔ **not restated here**, and the asking form is the same section's citation of
 [`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred).
 
-- ⛔ **After the four and not before them.** Two of them can turn the merge into a mistake rather
-  than an act — a dependent change the deletion would close, a base that is not the change's own —
-  and a person asked before they are established is being asked to license exactly the damage those
-  two exist to catch. ⚠️ **None of the four is irreversible**, so nothing is spent by establishing
-  them first; a failure among them withdraws the question instead of answering it.
+- ⛔ **After them and not before.** Several of them can turn the merge into a mistake rather than
+  an act — a dependent change the deletion would close, a base that is not the change's own, an
+  item nobody meant to close — and a person asked before they are established is being asked to
+  license exactly the damage those exist to catch. ⚠️ **None of them is irreversible**, so nothing
+  is spent by establishing them first; a failure among them withdraws the question instead of
+  answering it.
 - ⛔ **This is the only question the route puts to a person about its own verification**, so nothing
   of that kind is asked beside it. The reviewing leg answers its own — the depth it read at, and the
   plan it ran — and records both rather than stopping for anybody; § The loop states why. ⚠️ **A
@@ -717,8 +729,8 @@ sentence, then the facts, with a table where the content enumerates.
 - **every check the project's done list carries**, by name, with its verdict, who answered it and
   — for one carrying a command — the command and the tree it ran in; ⛔ every check that could not
   be answered said as unanswered, and an empty list said as empty rather than passed over;
-- which of step 8's four pre-merge establishments held, and what each found — the dependents, the
-  base, the tree, and whether the tracker answered;
+- which of step 8's pre-merge establishments held, and what each found — the dependents, the base,
+  the tree, whether the tracker answered, and what the merge closes against what was meant;
 - **how the merge ask was answered**, where that answer was recorded, and ⛔ **what the reviewing
   role's record said was read and not read** — the depth quoted rather than summarised, a reading
   nothing could take named with what stopped it, and the fact that this pass wrote that record

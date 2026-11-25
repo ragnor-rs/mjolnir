@@ -78,6 +78,7 @@ COVERED = {
     "create_grouping",
     "mark_grouping_released",
     "read_closing_change",
+    "read_closing_list",
     "read_vocabulary",
 }
 
@@ -969,6 +970,70 @@ def self_test() -> int:
         "a pull request is refused before the closing change is asked for",
         not [args for args in as_change.sent if "graphql" in " ".join(args)],
         f"sent {as_change.sent!r}",
+    )
+
+    # --- what a merge will close ---------------------------------------------
+    def closing_answer(**changed):
+        held = {
+            "baseRefName": "main", "body": "This does not close #34.\n\nCloses #21.",
+            "closingIssuesReferences": {"pageInfo": {"hasNextPage": False}, "nodes": [
+                {"number": 34, "repository": {"nameWithOwner": A_REPO}},
+                {"number": 7, "repository": {"nameWithOwner": "else/where"}},
+            ]},
+            "commits": {"pageInfo": {"hasNextPage": False}, "nodes": [
+                {"commit": {"oid": "abc1234", "message": "A subject\n\nFixes: #35"}},
+            ]},
+        }
+        held.update(changed)
+        return _Host({"closingIssuesReferences": {"data": {"repository": {
+            "defaultBranchRef": {"name": "main"}, "pullRequest": held,
+        }}}})
+
+    reading = with_host(
+        closing_answer(), lambda: under_test.read_closing_list("9", "Resolve GH-36 now")
+    )
+    check(
+        "the closing list is the host's, an item elsewhere carrying its repository",
+        reading["listed"] == ["34", "else/where#7"] and reading["closes_on_merge"] is True,
+        f"answered {reading!r}",
+    )
+    check(
+        "every text that closes is named with its line: body, commit and landing",
+        [(one["item"], one["where"], one["text"]) for one in reading["mentions"]] == [
+            ("34", "body", "This does not close #34."),
+            ("21", "body", "Closes #21."),
+            ("35", "commit", "Fixes: #35"),
+            ("36", "landing", "Resolve GH-36 now"),
+        ],
+        f"answered {reading['mentions']!r}",
+    )
+    based = with_host(
+        closing_answer(baseRefName="a-stack"), lambda: under_test.read_closing_list(9)
+    )
+    check(
+        "a change not based on the default branch closes nothing at its merge",
+        based["closes_on_merge"] is False,
+        f"answered {based!r}",
+    )
+    short = {"pageInfo": {"hasNextPage": True}, "nodes": []}
+    for label, changed in (
+        ("a closing list", {"closingIssuesReferences": short}),
+        ("a commit listing", {"commits": short}),
+        ("a closing list that is not there", {"closingIssuesReferences": None}),
+    ):
+        said = with_host(
+            closing_answer(**changed),
+            lambda: unavailable(lambda: under_test.read_closing_list(9)),
+        )
+        check(
+            f"{label} that is short or absent is refused rather than read",
+            said is not None and not said.startswith("<"),
+            f"said {said!r}",
+        )
+    check(
+        "a word that only contains a closing one, and a bare number, close nothing",
+        under_test.closing_reading.mentions(
+            A_REPO, "prefix #1, disclosed #2, closes 3, closing #4", "body") == [],
     )
 
     # --- the vocabularies this tracker states, before a configuration --------
