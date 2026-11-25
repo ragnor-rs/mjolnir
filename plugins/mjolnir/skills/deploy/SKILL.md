@@ -154,6 +154,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
 - ⛔ **A grouping that could not be read is reported unread, never as holding nothing.** § 3's
   fallback for the operation says what happens instead, and ⚠️ **an unread set and an empty set are
   the same list** — which is why the reply says which it was rather than how long it was.
+- ⛔ **What the answer names under `off_board` and `outside` goes in the reply**, by
+  [`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into): an
+  omission nobody reads is one nobody was told about.
 - ⛔ **An item in the batch the grouping does not hold is named and not advanced**, and an item the
   grouping holds that the batch never named is named too: the batch stays the only source of
   candidates, and the grouping is what narrows them.

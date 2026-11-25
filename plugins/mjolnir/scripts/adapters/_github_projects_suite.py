@@ -362,9 +362,8 @@ def _default_answers() -> dict:
         "issue edit": "",
         # ⚠️ Named by the **paging flag** rather than by the path, because
         # `args[:2]` is what this fake reads and the path is the third word --
-        # which holds while this is the one paged REST read in the module. A
-        # second one would need the fake to name a call by what it addresses, and
-        # this comment is where that shows up.
+        # so the two paged REST reads in the module share one name, and the answer
+        # is told apart by the path it was asked at.
         #
         # ⚠️ **Its position among the keys is not load-bearing**, and the first
         # form of this comment claimed it was: `_answer_for` tries every exact
@@ -373,7 +372,9 @@ def _default_answers() -> dict:
         # Reproduced by moving it after `api` and watching the suite stay green --
         # a comment asserting an ordering nothing depends on is the restated-fact
         # class one layer down.
-        "api --paginate": _dependencies_page([]),
+        "api --paginate": lambda args: (
+            [] if "/comments?" in args[-1] else _dependencies_page([])
+        ),
         # Prefix-matched: the dependency lookup addresses one issue by path, and
         # the relation itself is posted with `--method`.
         "api": 4321,
@@ -929,6 +930,7 @@ def self_test() -> int:
     )
     documents = [
         BOARD_QUERY, ITEM_QUERY, ITEMS_QUERY, CLOSED_BY_QUERY, ADD_CARD,
+        under_test.MILESTONES_QUERY, under_test.MILESTONE_ITEMS_QUERY,
         SET_OPTION, SET_TEXT, SET_NUMBER, SET_DATE,
     ]
     check(
@@ -941,9 +943,11 @@ def self_test() -> int:
     # a value type added to one and missing from the other reads as a column with
     # no value rather than as an omission.
     check(
-        "the value selection is stated once and used by both queries that read values",
+        "the value selection is stated once and used by every query that reads values",
         VALUE_FACTS in ITEM_QUERY
         and VALUE_FACTS in ITEMS_QUERY
+        and VALUE_FACTS in under_test.MILESTONE_ITEMS_QUERY
+        and under_test.MILESTONE_ITEMS_QUERY.count("fragment valueFacts") == 1
         and ITEM_QUERY.count("fragment valueFacts") == 1
         and ITEMS_QUERY.count("fragment valueFacts") == 1,
         f"{ITEM_QUERY.count('fragment valueFacts')} and "
@@ -1186,6 +1190,28 @@ def self_test() -> int:
         and relation.issue_path(own_repo, 12) in looked_up[0],
         f"posted {posted!r} after looking up {looked_up!r}",
     )
+
+    # --- `read_comments`: the shaping is the sibling suite's to hold --------
+    _boards.clear()
+    conversing = _Host({"api --paginate": [{
+        "id": 1, "user": {"login": "a-writer"}, "body": "a decision",
+        "created_at": "2026-10-01T00:00:00Z", "updated_at": "2026-10-01T00:00:00Z",
+        "html_url": "https://example.invalid/c/1",
+    }]})
+    answered = with_host(conversing, lambda: under_test.read_comments("011"))
+    check(
+        "this kind's own read of the comments reaches the shared shaping, every page",
+        answered.get("number") == 11
+        and [(c["author"], c["body"]) for c in answered.get("comments") or []]
+        == [("a-writer", "a decision")]
+        and conversing.sent[-1]
+        == ["api", "--paginate", f"repos/{own_repo}/issues/11/comments?per_page=100"],
+        f"answered {answered!r} after {conversing.sent!r}",
+    )
+    guarded = _Host({"Item": _issue_payload(11, typename="PullRequest")})
+    with_host(guarded, lambda: unavailable(lambda: under_test.read_comments(11)))
+    check("and a pull request's conversation is not read as an item's",
+          guarded.calls == ["Item"], f"called {guarded.calls!r}")
 
     # --- `read_blockers`: the source the readiness gate's blocker check has ---
     #
@@ -1671,23 +1697,154 @@ def self_test() -> int:
         nowhere == "work_item.grouping.field",
         f"reported {nowhere!r}",
     )
-    # ⛔ And a carrier this board has no card-level answer for is refused with the
-    # key named: a milestone belongs to the issue behind a card, and a board holds
-    # draft items that are no issue at all -- so a set read that way would be
-    # short by whatever is not an issue and say nothing about it.
+    # ⛔ A carrier a board has no answer for is refused with the key named.
     _boards.clear()
     off_card = with_host(
         _Host({}, pages=search_pages),
         lambda: refused(
             lambda: under_test.grouping_items(
-                "Sprint 1", grouping={"carrier": "native_milestone", "name": "grouping"}
+                "Sprint 1", grouping={"carrier": "none", "name": "grouping"}
             )
         ),
     )
     check(
-        "a grouping carrier a card cannot answer for is refused, naming the carrier",
+        "a grouping carrier a board cannot answer for is refused, naming the carrier",
         off_card == "work_item.grouping.carrier",
         f"reported {off_card!r}",
+    )
+
+    # A milestone, which is the repository's and not the board's: the set is the
+    # milestone's issues, and what the board holds that it cannot is named.
+    IN_A_MILESTONE = {"carrier": "native_milestone", "name": "grouping"}
+    repo = _example_configuration().get("host.repo")
+
+    def planned(number, *, state="OPEN", status="Todo", board="PVT_board"):
+        carded = [] if board is None else [{
+            "id": f"PVTI_{number}",
+            "isArchived": False,
+            "project": {"id": board},
+            "fieldValues": _page_of(_value_nodes(status)),
+        }]
+        return {
+            "number": number,
+            "title": f"item {number}",
+            "state": state,
+            "url": f"https://example.invalid/{repo}/issues/{number}",
+            "labels": _page_of([{"name": "port"}]),
+            "projectItems": _page_of(carded),
+        }
+
+    def board_card(number, address):
+        node = _item_card(number, f"item {number}")
+        node["content"]["url"] = f"https://example.invalid/{address}/issues/{number}"
+        return node
+
+    def milestone_pages(first, second=(), titles=("a release",)):
+        held = [
+            {"number": 30 + index, "title": title, "state": "CLOSED"}
+            for index, title in enumerate(titles)
+        ]
+        return {
+            "Board": lambda after: _board_payload_for(_page_of(FIELD_NODES)),
+            "Milestones": lambda after: {"repository": {"milestones": (
+                _page_of([], more=True, cursor="m-2") if after is None
+                else _page_of(held)
+            )}},
+            "MilestoneItems": lambda after: {"repository": {"milestone": {
+                "pullRequests": {"totalCount": 2},
+                "issues": (
+                    _page_of(list(first), more=bool(second), cursor="i-2")
+                    if after is None else _page_of(list(second))
+                ),
+            }}},
+            "Items": lambda after: {"repositoryOwner": {"projectV2": {"items": (
+                _page_of([board_card(1, repo)], more=True, cursor="b-2")
+                if after is None
+                else _page_of([
+                    board_card(8, "somebody/elsewhere"),
+                    _item_card(9, "a draft", kind="DraftIssue"),
+                    _item_card(10, "a change", kind="PullRequest"),
+                    {**_item_card(11, "hidden"), "type": "REDACTED", "content": None},
+                ])
+            )}}},
+        }
+
+    _boards.clear()
+    asking = _Host({}, pages=milestone_pages(
+        [planned(1), planned(2, state="CLOSED", status="Done")],
+        [planned(3, board=None), planned(4, board="PVT_another"),
+         planned(5, status=None)],
+    ))
+    in_milestone = with_host(
+        asking, lambda: under_test.grouping_items("a release", grouping=IN_A_MILESTONE)
+    )
+    held_items = at(in_milestone, "items") or []
+    check(
+        "a milestone's items are read whole, each with its state and its board status",
+        [(one["number"], one["state"], one["status"]) for one in held_items]
+        == [(1, "OPEN", "Todo"), (2, "CLOSED", "Done"), (3, "OPEN", None),
+            (4, "OPEN", None), (5, "OPEN", None)],
+        f"read {held_items!r}",
+    )
+    check(
+        "the milestone's own number is what its items are asked for by",
+        any("number=30" in sent for sent in asking.sent
+            if any("MilestoneItems" in part for part in sent)),
+        f"sent {asking.calls!r}",
+    )
+    check(
+        "an item with no card here, and one carded on another board, are named as "
+        "off the board and stay in the set",
+        [one["number"] for one in at(in_milestone, "off_board") or []] == [3, 4],
+        f"named {at(in_milestone, 'off_board')!r}",
+    )
+    check(
+        "an item with no column to read says why, and one with a column does not",
+        [one.get("unplaced") for one in held_items]
+        == [None, None, "off the board", "off the board", "no `Status` on its card"],
+        f"read {[one.get('unplaced') for one in held_items]!r}",
+    )
+    outside = at(in_milestone, "outside") or {}
+    check(
+        "drafts, another repository's cards, the milestone's pull requests and a "
+        "card this credential cannot see are reported as outside the set",
+        [one["title"] for one in outside.get("drafts") or []] == ["a draft"]
+        and [one["title"] for one in outside.get("other_repositories") or []] == ["item 8"]
+        and outside.get("pull_requests") == 2
+        and outside.get("unreadable") == 1,
+        f"reported {outside!r}",
+    )
+    check(
+        "every state of milestone is asked for, and no state of issue is filtered on",
+        "states:[OPEN, CLOSED]" in under_test.MILESTONES_QUERY
+        and "states" not in under_test.MILESTONE_ITEMS_QUERY
+        and "includeArchived:true" in under_test.MILESTONE_ITEMS_QUERY,
+    )
+    for said, titles in (
+        ("a milestone this repository does not hold is refused, never an empty set",
+         ("another release",)),
+        ("two milestones one value folds onto are refused rather than resolved",
+         ("A release", "A RELEASE")),
+    ):
+        _boards.clear()
+        reported = with_host(
+            _Host({}, pages=milestone_pages([], titles=titles)),
+            lambda: refused(lambda: under_test.grouping_items(
+                "a release", grouping=IN_A_MILESTONE)),
+        )
+        check(said, reported == "work_item.grouping", f"reported {reported!r}")
+    _boards.clear()
+    gone = milestone_pages([])
+    gone["MilestoneItems"] = lambda after: {"repository": {"milestone": None}}
+    vanished = with_host(
+        _Host({}, pages=gone),
+        lambda: unavailable(lambda: under_test.grouping_items(
+            "a release", grouping=IN_A_MILESTONE)),
+    )
+    check(
+        "a milestone the host stops answering for is a failed read, never an empty set",
+        vanished is not None and "could not be read" in vanished,
+        f"got {vanished!r}",
     )
 
     # The label guard, through the second seam -- the one path that reads a

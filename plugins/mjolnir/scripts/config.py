@@ -8355,6 +8355,15 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                         "below one is a resource nothing may ever hold, and a lifetime below "
                         "one is a lease that has expired before the call it covers starts.",
                     )
+            wait = entry.get("wait_up_to")
+            if wait is not None and (
+                isinstance(wait, bool) or not isinstance(wait, int) or wait < 1
+            ):
+                raise ConfigError(
+                    f"{at}.wait_up_to",
+                    f"is {wait!r}; it is a whole number of seconds of at least one, or `null` "
+                    "where a call over the cap is refused and nothing waits (§ 10).",
+                )
             for key, most in (("grace", entry["ttl"]), ("probe_timeout", 8)):
                 value = entry.get(key)
                 if value is None:
@@ -10103,7 +10112,8 @@ def inert_report(session: str, stop: str) -> dict:
     """
     said = (
         "The project's configuration could not be read, so every guard that reads it is "
-        "inert: each call here is held to nothing and proceeds unguarded. Said once for this "
+        "inert but for the refusal of a merge: each other call here is held to nothing and "
+        "proceeds unguarded. Said once for this "
         f"session rather than on every call. ({INERT_CITATION}){stop}"
     )
     return {"systemMessage": said} if said_once(session, said) else {}
@@ -16739,6 +16749,12 @@ def _planted_violations():
          _a_resource_of(ttl=None)),
         ("a lifetime of zero, which expires before the call it covers starts",
          "branch_model.exclusive_resources[0].ttl", _a_resource_of(ttl=0)),
+        ("a wait of no seconds", "branch_model.exclusive_resources[0].wait_up_to",
+         _a_resource_of(wait_up_to=0)),
+        ("a wait written as a flag, which reads as one second",
+         "branch_model.exclusive_resources[0].wait_up_to", _a_resource_of(wait_up_to=True)),
+        ("a wait with no bound", "branch_model.exclusive_resources[0].wait_up_to",
+         _a_resource_of(wait_up_to="wait")),
         ("a grace of zero", "branch_model.exclusive_resources[0].grace",
          _a_resource_of(grace=0)),
         ("a grace written as a flag", "branch_model.exclusive_resources[0].grace",

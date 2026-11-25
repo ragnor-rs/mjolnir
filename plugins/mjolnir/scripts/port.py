@@ -735,6 +735,54 @@ def load_adapters(spec: PortSpec | None = None) -> dict[str, Adapter]:
     return dict(registry)
 
 
+# Why an item in a set carries no status word, where an implementation knows it.
+UNPLACED = "unplaced"
+
+# What a set's own reading says about its edges, by the keys an implementation
+# answers with: items it holds that the board does not, and what it cannot hold.
+EDGES = ("off_board", "outside")
+
+
+def _edges(outcome: "Outcome") -> dict:
+    """What a read set says lies on its edge, and nothing where it says nothing.
+
+    ⛔ Carried into the report beside the set: the report drops the rest of the
+    result, and an omission an implementation named would be dropped with it.
+    """
+    result = outcome.result if outcome.performed else None
+    if not isinstance(result, dict):
+        return {}
+    return {key: result[key] for key in EDGES if key in result}
+
+
+def set_report(name: str, read_grouping, held: list, answer) -> dict:
+    """What a publishing ask prints: the set, its edges, and the bar's answer.
+
+    ⛔ The set is reported by **identity** and never whole, for `_item_name`'s
+    reason: a release's own batch read through here would otherwise put every
+    item's body into the window the reply is written in. ⚠️ What a role needs
+    off this is which items the grouping holds and where each one stands, both of
+    which the compact form carries.
+    """
+    return {
+        "port": name,
+        "grouping": (
+            {
+                key: value
+                for key, value in invocation_report(
+                    name, GROUPING_ITEMS, read_grouping
+                ).items()
+                if key != "result"
+            }
+            if read_grouping is not None
+            else None
+        ),
+        "set": [_item_name(item) for item in held],
+        **(_edges(read_grouping) if read_grouping is not None else {}),
+        "short_of": answer,
+    }
+
+
 def _set_from(outcome: "Outcome") -> list:
     """The items an answered `grouping_items` carried, or an empty set.
 
@@ -786,6 +834,8 @@ def _item_name(item: object) -> dict:
     for key in ("title", "name", "url"):
         if isinstance(item.get(key), str) and item[key].strip():
             named[key] = item[key]
+    if item.get(UNPLACED):
+        named[UNPLACED] = item[UNPLACED]
     return named
 
 
@@ -805,6 +855,11 @@ def _item_word(item: object) -> str | None:
     """
     if not isinstance(item, dict):
         return item if isinstance(item, str) and item.strip() else None
+    # ⛔ An implementation that says an item has no status word to read is believed
+    # before the coarse state is: a column named as that state is would otherwise
+    # place an item no column holds.
+    if item.get(UNPLACED):
+        return None
     for key in ("status", "state"):
         word = item.get(key)
         if isinstance(word, str) and word.strip():
@@ -3185,6 +3240,39 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         f"unread {str(unreadable)!r}, empty {str(readable)!r}",
     )
 
+    edged = Port(
+        _with_grouping(
+            [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+            {a_grouping: {CLOSED_BY: DEPLOY}},
+        ),
+        spec,
+        adapter=Adapter({GROUPING_ITEMS: lambda *a, **k: {
+            "items": [],
+            "off_board": [{"number": 9}],
+            "outside": {"drafts": ["a draft"]},
+        }}),
+        stated=stated,
+    ).items_in(a_grouping, "a value")
+    check(
+        "what a set says lies on its edge reaches the report, and a set saying "
+        "nothing adds nothing",
+        set_report("a port", edged, [], None).get("off_board") == [{"number": 9}]
+        and set_report("a port", edged, [], None).get("outside")
+        == {"drafts": ["a draft"]}
+        and all(
+            set(set_report("a port", one, [], None))
+            == {"port", "grouping", "set", "short_of"}
+            for one in (readable, unreadable, None)
+        ),
+        f"reported {set_report('a port', edged, [], None)!r}",
+    )
+    check(
+        "an item reported as unplaced says why in the report",
+        _item_name({"number": 7, "unplaced": "off the board"})
+        == {"item": 7, "unplaced": "off the board"},
+        f"named {_item_name({'number': 7, 'unplaced': 'off the board'})!r}",
+    )
+
     # ⛔ The reported set is identities and never whole items, which is what keeps
     # a release's own batch out of the window the reply is written in.
     check(
@@ -3208,6 +3296,7 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
             {"number": 3, "status": "FIRST"},
             {"number": 4, "status": "a word nothing maps"},
             {"number": 5},
+            {"number": 6, "status": None, "state": "second", "unplaced": "why"},
         ],
     )
     # ⛔ **Every** item short, and not the first: § 33 states the refusal names
@@ -3228,7 +3317,8 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
     # held by nothing.
     check(
         "an item whose word no status maps is unanswered, never short and never clear",
-        sorted(str(entry.get("item")) for entry in verdict["unanswered"]) == ["4", "5"],
+        sorted(str(entry.get("item")) for entry in verdict["unanswered"])
+        == ["4", "5", "6"],
         f"named {verdict['unanswered']!r}",
     )
     check(
@@ -4421,27 +4511,7 @@ def main(argv: list[str]) -> int:
                 )
             )
             return 1
-        # ⛔ The set is reported by **identity** and never whole, for `_item_name`'s
-        # reason: a release's own batch read through here would otherwise put every
-        # item's body into the window the reply is written in. ⚠️ What a role needs
-        # off this is which items the grouping holds and where each one stands,
-        # both of which the compact form carries.
-        reported = {
-            "port": answering.name,
-            "grouping": (
-                {
-                    key: value
-                    for key, value in invocation_report(
-                        answering.name, GROUPING_ITEMS, read_grouping
-                    ).items()
-                    if key != "result"
-                }
-                if read_grouping is not None
-                else None
-            ),
-            "set": [_item_name(item) for item in held],
-            "short_of": answer,
-        }
+        reported = set_report(answering.name, read_grouping, held, answer)
         print(json.dumps(reported, indent=2, ensure_ascii=False, default=str))
         # ⛔ Nonzero where the grouping could not be read, or where anything is
         # short **or unanswered**: each of the three is a precondition a target
