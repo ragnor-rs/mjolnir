@@ -2111,9 +2111,9 @@ as vocabulary and the carrier stays the project's to state.
 tracker's own word.** On a tracker that also creates items without one, a type it does not state is
 refused by name with nothing filed; one that did not land is a failed filing naming the item that
 now exists, never a create made again; a native type stated under any other carrier is refused, the
-type having one carrier; and a filing that states none is filed without one. ⚠️ **A tracker that will
-not create an item untyped refuses a filing that states none**, since picking one would be choosing
-what the work is.
+type having one carrier; and a filing that states none is filed without one. ⚠️ **A tracker that
+will not create an item untyped refuses a filing that states none**, since picking one would be
+choosing what the work is.
 
 ```yaml
   type_branch_prefix:
