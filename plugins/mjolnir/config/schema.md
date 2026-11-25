@@ -3088,6 +3088,12 @@ project: a build started outside the loop holds the resource with no lease, whil
 holds a lease the resource does not report yet, and reading the two as a maximum let a third
 through a cap of two.
 
+⛔ **A lease is too young while it is no older than the resource's `grace`**
+([§ 10](#exclusive-resources)), and past that its holder is left to the probe's count, so one that
+both report counts once. ⚠️ **A lease left out of the sum still holds its place**: a call under its
+key takes no second one, and what releases it is unchanged. Where no `grace` is stated, every live
+lease is too young.
+
 ⛔ **`probe: null` is that key's stated absence, and then the leases are the whole of the count.**
 A project whose resource can be asked how many are held and one whose resource cannot are both
 ordinary, and the second is not a project whose count is zero.
@@ -4034,10 +4040,10 @@ named.
 
 A resource the trees cannot all help themselves to — a local service stack, a build daemon's
 slots, a machine-wide lock. How many may be held at once is `cap`, and what holds a place is
-`subject`, so neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry is
-stated and none of them is defaulted**, because every one of them is a measurement of the resource
-rather than a preference about it, and a default here would be the procedure describing somebody
-else's machine:
+`subject`, so neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry but
+`grace` and `probe_timeout` is stated and none of them is defaulted**, because every one of them is
+a measurement of the resource rather than a preference about it, and a default here would be the
+procedure describing somebody else's machine:
 
 ```yaml
 branch_model:
@@ -4047,6 +4053,8 @@ branch_model:
       subject:    tree | call
       claimed_by: "<what the command a call runs is matched against>"
       probe:      "<prints how many are held right now, as one number on one line>"
+      grace:      60             # seconds; may be left unwritten
+      probe_timeout: 5           # seconds; may be left unwritten
       ttl:        1800
 ```
 
@@ -4066,6 +4074,12 @@ branch_model:
   procedure cannot answer about somebody else's resource. ⛔ **`null` is a stated absence**, not a
   count of zero, and what each value leaves the arithmetic as is
   [§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)'s.
+- **`grace`** — the seconds after which the probe is taken to have seen a lease's holder, from one
+  to that entry's `ttl`. Unwritten, every live lease is added to the probe's count. ⛔ **Refused
+  beside `probe: null`**, there being no count for it to qualify.
+- **`probe_timeout`** — the seconds the probe may run before its count is unestablished, at most
+  eight so that it stays inside the guard's own budget. Unwritten, the guard's own limit applies.
+  ⛔ **Refused beside `probe: null`**, for the same reason.
 - **`ttl`** — the seconds a lease counts for before it expires, which bounds what one leaked lease
   costs. ⚠️ **It is not a timeout on the work**: the work is not watched, and nothing here stops
   anything.
@@ -4093,7 +4107,8 @@ is not configuration here:
 [§ 7 → A lease on an exclusive resource](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
 is where it is stated, along with how the count is read and what releases a place. This facet
 states what is exclusive, how many of it there are, what holds a place, which calls put it at
-stake, what can be asked how many are held, and how long a lease counts.
+stake, what can be asked how many are held and for how long, when that answer covers a lease's
+holder, and how long a lease counts.
 
 ### Pruning a tree whose branch has landed
 
