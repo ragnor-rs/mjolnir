@@ -2514,7 +2514,7 @@ that the subject is the whole store rather than its loop rulings are
 | structure a provider already reports is read rather than asked for | review | **deliberately local**: the same shape as *detect what is detectable, and read nothing twice* ([`§ What a project is asked`](../plugins/mjolnir/config/schema.md#what-a-project-is-asked-and-the-one-file-the-answers-are-written-into)), applied to a model's output |
 | a schema migration's version is chosen against the order branches merge in | technology | **deliberately local**, and generalising to no other project of the six |
 | an applied migration is immutable, a comment change included | technology | **deliberately local**, same |
-| re-read the shared tracker's list immediately before filing, because other projects' sessions file into it | the toolkit | ⛔ **residue, named** — see below |
+| re-read the shared tracker's list immediately before filing, because other projects' sessions file into it | the toolkit | **promoted**: the filing role's window, in its duplicate check |
 | every item filed here carries at least the second priority value, and the first is never lowered | the toolkit | **configuration**, and already written: [`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)'s values and writer, in this repository's own file |
 | a missing facet is its own item; a question inside an open one is an edit to that item | the toolkit | **promoted, already stated**: the filing role's **parent** relationship, whose default is a check item on the parent rather than a new item |
 | this toolkit names no technology and no project | the toolkit | **promoted, already stated**: [`§ What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls), and the sweep that holds it |
@@ -2539,23 +2539,6 @@ repository by a path on the machine. ⛔ **So the direction is not one project's
 store is otherwise a different shape entirely — hundreds of entries, an index whose rows are rolled
 up rather than one line each, and its own language — which is why the inventory above is one store's
 and the class is the finding.
-
-### The ruling with no home, named
-
-⛔ **It is procedure by the surface's own test — a value a role reads is a key and a rule it
-follows is not** ([`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls))
-— **and it is stated nowhere.**
-
-- **A duplicate search is only as current as the moment before the write** — #278. Measured three
-  times in one day on this repository's own backlog: a listing read, a drafting pass, and six items
-  filed by other projects' sessions in between — once taking three of four gaps a pass was drafting,
-  and one of those ruling against the shape it was about to propose. ⛔ **The filing role states the
-  three search layers and no window**, so a search run an hour before the write reads as a search.
-
-**What happens to it is the item named beside it**, which is where a ruling's outcome lives until
-it is on the surface. ⚠️ That is the convention the inventory above has a row of its own for — a
-missing facet is a numbered item, a question inside an open one is an edit to that item — and it is
-what keeps a named residue from being a note nothing acts on.
 
 ### A disposition is re-taken and never cited
 

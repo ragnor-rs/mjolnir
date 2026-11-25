@@ -2534,7 +2534,7 @@ which of the three designs was the one that worked.
 
 | arm | what it reads | kind | what it does |
 |---|---|---|---|
-| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge and that change's head commit, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's presence | denies the call, or takes a place |
+| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge and that change's head commit, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's verdict and commit | denies the call, or takes a place |
 | `release` (`PostToolUse`, `PostToolUseFailure`, `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
 | `release` again, at two of those (`Stop`, and a `PostToolUse` whose call merged) | the tree the event names, the head the remote reports for the base, and the base's commits against this branch by patch | **computed** | reports `level`, `behind` with its figure, or `unestablished` — and ⛔ **refuses nothing, there being no call in hand at either point** |
 | `record` | nothing | — | writes the answer a guard reads onto the change |
@@ -4563,6 +4563,25 @@ case`](../plugins/mjolnir/config/schema.md#carrier-none-and-the-two-answers-it-m
   every arm above runs against a fixture and none of them has ever run over a real project's
   specification. ⚠️ **That is the gap the documents pair above does not have**, and it is stated
   rather than left for a green to imply.
+
+## The filing role's two readings, and the reply held to carry both
+
+`plugins/mjolnir/scripts/file_window.py --self-test` runs in the `Filing window` workflow, with no
+credential and no network. ⛔ The rule is the filing role's own, in its duplicate check, and this
+document states none of it.
+
+What the suite holds: a reading's count and highest over every identifier shape a tracker answers
+with; a failed search kept apart from an absent one; a move seen where the count and the highest
+both stand still; a reply refused where either reading is missing, the two are reversed, one is
+written twice, or a second item has only its first; and that the role names each of the three
+commands, so the carrier cannot go uncalled.
+
+### What it deliberately does not hold
+
+- **That a role ran the check on its reply.** The role is told to and nothing fires it.
+- **That a line was printed by a comparison rather than typed.** The check reads the reply's own
+  text.
+- **That the create followed the second reading immediately.** Nothing sees the gap between them.
 
 ## What a deployed item is judged against, and the verdict the carrier is barred from
 
