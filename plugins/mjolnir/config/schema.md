@@ -9320,8 +9320,8 @@ nothing announcing it. ⚠️ **The keys this binds are `ordering.record.dir`, `
 `day_log.destination.out_dir`**: what each addresses is read by a pass no checkout here outlives.
 
 ⛔ **A value inside that store is reported, and not refused.** The reader names the key, why the
-value goes stale and what to write instead, beside what it reports as unavailable; the role that
-reads the key says it again. ⛔ **The report names the key and never the value**, by
+value goes stale and what to write instead, beside what it reports as unavailable, where every role
+reads it. ⛔ **The report names the key and never the value**, by
 [§ 28](#28-a-configured-value-a-repository-may-not-hold). ⚠️ **A project whose memory is meant to be
 the harness's own states [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)'s
 `derived`**, which is that fact without a path.
