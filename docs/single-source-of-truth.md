@@ -4564,6 +4564,25 @@ case`](../plugins/mjolnir/config/schema.md#carrier-none-and-the-two-answers-it-m
   specification. ⚠️ **That is the gap the documents pair above does not have**, and it is stated
   rather than left for a green to imply.
 
+## The filing role's two readings, and the reply held to carry both
+
+`plugins/mjolnir/scripts/file_window.py --self-test` runs in the `Filing window` workflow, with no
+credential and no network. ⛔ The rule is the filing role's own, in its duplicate check, and this
+document states none of it.
+
+What the suite holds: a reading's count and highest over every identifier shape a tracker answers
+with; a failed search kept apart from an absent one; a move seen where the count and the highest
+both stand still; a reply refused where either reading is missing, the two are reversed, one is
+written twice, or a second item has only its first; and that the role names each of the three
+commands, so the carrier cannot go uncalled.
+
+### What it deliberately does not hold
+
+- **That a role ran the check on its reply.** The role is told to and nothing fires it.
+- **That a line was printed by a comparison rather than typed.** The check reads the reply's own
+  text.
+- **That the create followed the second reading immediately.** Nothing sees the gap between them.
+
 ## What a deployed item is judged against, and the verdict the carrier is barred from
 
 `plugins/mjolnir/scripts/verify.py --self-test`, mirrored by the `Verify carrier` run that
