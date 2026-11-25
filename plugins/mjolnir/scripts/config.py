@@ -8223,6 +8223,24 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                         "below one is a resource nothing may ever hold, and a lifetime below "
                         "one is a lease that has expired before the call it covers starts.",
                     )
+            for key, most in (("grace", entry["ttl"]), ("probe_timeout", 8)):
+                value = entry.get(key)
+                if value is None:
+                    continue
+                if entry.get("probe") is None:
+                    raise ConfigError(
+                        f"{at}.{key}",
+                        "is stated beside `probe: null`. It qualifies a probe's count, and a "
+                        "resource with no probe is counted by its leases alone (§ 10).",
+                    )
+                if (isinstance(value, bool) or not isinstance(value, int)
+                        or not 1 <= value <= most):
+                    raise ConfigError(
+                        f"{at}.{key}",
+                        f"is {value!r}; it is a whole number of seconds from one to {most} "
+                        "(§ 10). A grace past the lease's lifetime leaves no lease out, and a "
+                        "probe shares the guard's own budget with every other read it makes.",
+                    )
             try:
                 re.compile(str(entry["claimed_by"]))
             except re.error as error:
@@ -16463,6 +16481,21 @@ def _planted_violations():
          _a_resource_of(ttl=None)),
         ("a lifetime of zero, which expires before the call it covers starts",
          "branch_model.exclusive_resources[0].ttl", _a_resource_of(ttl=0)),
+        ("a grace of zero", "branch_model.exclusive_resources[0].grace",
+         _a_resource_of(grace=0)),
+        ("a grace written as a flag", "branch_model.exclusive_resources[0].grace",
+         _a_resource_of(grace=True)),
+        ("a grace past the lease's own lifetime", "branch_model.exclusive_resources[0].grace",
+         _a_resource_of(grace=601)),
+        ("a grace with no probe to qualify", "branch_model.exclusive_resources[0].grace",
+         _a_resource_of(grace=60, probe=None)),
+        ("a probe limit the guard's own budget cannot hold",
+         "branch_model.exclusive_resources[0].probe_timeout", _a_resource_of(probe_timeout=9)),
+        ("a probe limit that is not a number",
+         "branch_model.exclusive_resources[0].probe_timeout", _a_resource_of(probe_timeout="5s")),
+        ("a probe limit with no probe to limit",
+         "branch_model.exclusive_resources[0].probe_timeout",
+         _a_resource_of(probe_timeout=5, probe=None)),
         ("a probe written blank, which reads as a command and prints no count",
          "branch_model.exclusive_resources[0].probe", _a_resource_of(probe="   ")),
         ("a probe that is no command at all", "branch_model.exclusive_resources[0].probe",

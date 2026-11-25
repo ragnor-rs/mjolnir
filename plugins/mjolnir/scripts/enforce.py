@@ -11,10 +11,9 @@ project that states no configuration. This script is the carrier for each:
               refuse a local run the host's own runs have already made, then
               hold a place on whatever the call puts at stake -- and nothing at
               all where the project states no configuration
-    release   a `PostToolUse`, `Stop`, `SessionEnd` or `SubagentStop` answer:
-              give back the places this session is holding -- and, at two of
-              those four, report whether this tree's branch has fallen behind
-              its base
+    release   an answer to any event `RELEASE_EVENTS` maps: give back the
+              places this session is holding -- and, at two of those events,
+              report whether this tree's branch has fallen behind its base
     record    write the recorded answer a guard reads onto a change
     held      report what is held right now, and by what
 
@@ -154,7 +153,9 @@ GUARD_EVENT = "PreToolUse"
 # the one call that just ended, or every place the session is holding.
 RELEASE_EVENTS = {
     "PostToolUse": "call",
+    "PostToolUseFailure": "call",
     "Stop": "session",
+    "StopFailure": "session",
     "SessionEnd": "session",
     "SubagentStop": "session",
 }
@@ -164,7 +165,7 @@ RELEASE_EVENTS = {
 GUARDED_TOOL = "Bash"
 
 # § 7's two points a branch is measured against its base at, and ⛔ **two of the
-# four events above rather than all of them**: a session ending is a report
+# events above rather than all of them**: a session ending is a report
 # nobody is left to act on, and a subagent stopping is not this tree's turn
 # ending. The second entry is further narrowed to a call that merged, which is
 # read with the merge guard's own grammar rather than a second one.
@@ -279,6 +280,8 @@ FIELD_FLAGS = ("-f", "--raw-field", "-F", "--field", "--input")
 # How long a command of somebody else's may run before its answer is no longer
 # worth waiting for. ⚠️ Bounded well inside the carrier's own timeout: a probe
 # that hangs must cost the call a known delay rather than the whole hook.
+# ⚠️ A resource's own `probe_timeout` is read in its place where the project states
+# one, and the reader bounds that value for the same reason.
 PROBE_TIMEOUT = 5
 HOST_TIMEOUT = 8
 
@@ -401,7 +404,7 @@ def probe_count(entry: dict, root: str | Path, run=None) -> tuple[int, str | Non
         return 0, None
     runner = run if run is not None else _run_in_shell
     try:
-        code, out = runner(str(command), root, PROBE_TIMEOUT)
+        code, out = runner(str(command), root, int(entry.get("probe_timeout") or PROBE_TIMEOUT))
     except Exception as error:  # noqa: BLE001 -- any failure is a named absence
         return 0, f"{type(error).__name__} while asking how many are held"
     if code != 0:
@@ -455,8 +458,16 @@ def _tree_key(cwd: str) -> str:
         return str(cwd or ".")
 
 
-def occupancy(entry: dict, leases: list[tuple[Path, dict]], counted: int) -> tuple[int, set[str]]:
+def occupancy(entry: dict, leases: list[tuple[Path, dict]], counted: int | None,
+              now: float) -> tuple[int, set[str], set[str]]:
     """What is compared against `cap`: the resource's own count plus the young leases.
+
+    Returns (the sum, every key holding a lease, the keys the sum added). ⛔ The
+    second is not the third: a holder the probe already counts still holds its
+    place, so a second call under its key is answered from its lease.
+
+    `counted` is `None` where the count could not be established, and then no
+    lease is left out: nothing reported the holder a lease would be left out for.
 
     ⛔ A sum and never a maximum of the two. Measured on one project: a build
     started outside the loop holds the resource with no lease, while one just
@@ -466,12 +477,18 @@ def occupancy(entry: dict, leases: list[tuple[Path, dict]], counted: int) -> tup
     ⛔ Distinct keys rather than lease files, which is what `subject` decides: two
     sessions in one tree share one place, and two calls each hold their own.
     """
-    keys = {
-        str(lease.get("key"))
-        for _path, lease in leases
-        if lease.get("resource") == entry.get("name")
-    }
-    return counted + len(keys), keys
+    grace = entry.get("grace")
+    asked = entry.get("probe") is not None and counted is not None
+    keys, added = set(), set()
+    for _path, lease in leases:
+        if lease.get("resource") != entry.get("name"):
+            continue
+        key = str(lease.get("key"))
+        keys.add(key)
+        age = now - float(lease.get("taken") or 0)
+        if not asked or grace is None or age <= int(grace):
+            added.add(key)
+    return (counted or 0) + len(added), keys, added
 
 
 def take(entry: dict, store: Path, key: str, session: str, command: str,
@@ -490,7 +507,7 @@ def take(entry: dict, store: Path, key: str, session: str, command: str,
     """
     cap = int(entry.get("cap") or 1)
     held = live_leases(store, now)
-    standing, keys = occupancy(entry, held, counted)
+    standing, keys, _added = occupancy(entry, held, counted, now)
     if key in keys:
         # The place is already this key's -- the `tree` case, where a second call
         # from the same tree takes no second place. ⛔ No path comes back, because
@@ -520,7 +537,7 @@ def take(entry: dict, store: Path, key: str, session: str, command: str,
         # the open direction for a call: the answer says so rather than refusing.
         return None, True, standing, cap
 
-    standing, _keys = occupancy(entry, live_leases(store, now), counted)
+    standing, _keys, _added = occupancy(entry, live_leases(store, now), counted, now)
     if standing > cap:
         path.unlink(missing_ok=True)
         return None, False, standing, cap
@@ -1578,7 +1595,7 @@ def behind_of(where: str, *, remote: str = "origin",
 def behind_answer(payload: dict, *, event: str | None = None, load=None, read=None) -> str:
     """§ 7's report for one exit event, or `""` where this is not one of its points.
 
-    ⛔ **Two of the four release events, and the second one narrowed further.**
+    ⛔ **Two of the release events, and the second one narrowed further.**
     A session ending is a report nobody is left to act on and a subagent stopping
     is not this tree's turn ending; a finished call is one of the two points only
     where the call *merged*, which is read with the merge guard's own grammar
@@ -1588,7 +1605,7 @@ def behind_answer(payload: dict, *, event: str | None = None, load=None, read=No
     # ⛔ The two points are read out of the one place that states them, never
     # matched again here: the first form of this arm compared the event against
     # each name inline and left the list beside it decorative — measured by
-    # widening the list to all four events and watching only the list's own
+    # widening the list to every event and watching only the list's own
     # assertion redden while the arm went on answering at two.
     if fired not in BEHIND_EVENTS:
         return ""
@@ -1839,14 +1856,16 @@ def held_report(config, *, now: float | None = None, store: Path | None = None,
     leases = live_leases(where, moment)
     for entry in stated:
         counted, unestablished = probe_count(entry, config.skills_root, run=probe)
-        standing, keys = occupancy(entry, leases, counted)
+        standing, _keys, added = occupancy(
+            entry, leases, None if unestablished else counted, moment
+        )
         lines.append("")
         lines.append(f"{entry.get('name')} — cap {entry.get('cap')}, held by {entry.get('subject')}")
         if unestablished:
             lines.append(f"  ⛔ {unestablished}")
         else:
             lines.append(f"  the resource itself reports {counted} held")
-        lines.append(f"  {len(keys)} lease(s) still counting, so {standing} against the cap")
+        lines.append(f"  {len(added)} lease(s) still counting, so {standing} against the cap")
         for _path, lease in leases:
             if lease.get("resource") != entry.get("name"):
                 continue
@@ -1854,6 +1873,8 @@ def held_report(config, *, now: float | None = None, store: Path | None = None,
             lines.append(
                 f"    - {lease.get('key')} — {age}s old of {lease.get('ttl')}s"
                 + (", backgrounded" if lease.get("background") else "")
+                + ("" if str(lease.get("key")) in added
+                   else ", past its grace and left to the resource's own count")
             )
     return "\n".join(lines), 0
 
@@ -1881,6 +1902,44 @@ def check_the_surface_still_states_this(text: str) -> list[str]:
                 f"the `{arm}` rule cites `{slug}`, which is not a heading of the surface. "
                 "Either the subsection was reworded or the rule it holds is gone."
             )
+    return problems
+
+
+def check_every_exit_is_held(text: str, mapped: dict[str, str]) -> list[str]:
+    """§ 7's exit table and the events mapped here name the same exits.
+
+    ⛔ Both directions: a row naming an event nothing maps is an exit that holds
+    its place until the next sweep, and a mapped event no row names is a release
+    the surface does not state. A row with no event is the stated expiry case
+    and only that.
+    """
+    rows: list[list[str]] = []
+    inside = False
+    for line in text.splitlines():
+        if line.startswith("#"):
+            inside = _anchor(line.lstrip("#").strip()) == ARM_ANCHORS["lease"]
+        elif inside and line.startswith("|"):
+            rows.append([cell.strip() for cell in line.strip().strip("|").split("|")])
+    rows = rows[2:]
+    if not rows:
+        return ["the lease subsection states no exit table, so no exit is held to anything."]
+    problems = []
+    named: set[str] = set()
+    for row in rows:
+        if len(row) != 3:
+            problems.append(f"the exit {row[0]!r} does not state what releases it and the "
+                            "events registered for it.")
+            continue
+        events = re.findall(r"`([^`]+)`", row[2])
+        named.update(events)
+        if not events and (row[2] != "none" or "expiry alone" not in row[1]):
+            problems.append(f"the exit {row[0]!r} names no event and is not the expiry case.")
+        for event in events:
+            if event not in mapped:
+                problems.append(f"the exit {row[0]!r} is released on {event}, which no release "
+                                "arm maps.")
+    for event in sorted(set(mapped) - named):
+        problems.append(f"{event} releases a place here and no exit of the surface names it.")
     return problems
 
 
@@ -1912,7 +1971,7 @@ def check_the_carrier_still_calls_this(text: str) -> list[str]:
                 "event covers is covered by nothing."
             )
             continue
-        if event in (GUARD_EVENT, "PostToolUse"):
+        if event == GUARD_EVENT or RELEASE_EVENTS.get(event) == "call":
             matcher = called.get("matcher") or ""
             if GUARDED_TOOL not in matcher:
                 problems.append(
@@ -2371,12 +2430,14 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               guard_answer(_call("claims-the-first"), config=two, now=1000.0,
                            store=fresh("differential-2")) == {})
 
-        # --- the six exit paths -------------------------------------------
+        # --- the exit paths -----------------------------------------------
         out.append("")
         out.append("Every exit path either gives the place back or is covered by the sweep:")
         paths = [
             ("the call finished", "PostToolUse", False),
+            ("the call failed", "PostToolUseFailure", False),
             ("the turn ended", "Stop", False),
+            ("an API error ended the turn", "StopFailure", False),
             ("the session ended", "SessionEnd", False),
             ("a subagent stopped", "SubagentStop", False),
         ]
@@ -2394,6 +2455,21 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check(f"{label}: and the place comes back on `{event}`",
                   guard_answer(_call("a-claiming-command", session="another"),
                                config=config, now=1001.0, store=where) == {})
+
+        check("and every release event is one of those paths",
+              {event for _label, event, _background in paths} == set(RELEASE_EVENTS))
+
+        # ⛔ A failure is the exit of one call, so it gives back that call's place
+        # and leaves its sibling's, rather than sweeping the session.
+        where = fresh("exit-failed-sibling")
+        config = _a_config([_a_resource(cap=2, subject="call")])
+        guard_answer(_call("a-claiming-command --one"), config=config, now=1000.0, store=where)
+        guard_answer(_call("a-claiming-command --two"), config=config, now=1000.0, store=where)
+        release_answer(_exit("PostToolUseFailure", outside, command="a-claiming-command --one"),
+                       config=config, now=1000.0, store=where)
+        left = [lease.get("command") for _path, lease in live_leases(where, 1000.0)]
+        check("a failed call gives back its own place and not its sibling's",
+              left == ["a-claiming-command --two"], repr(left))
 
         # ⛔ The path the harness publishes no event for. What is asserted is
         # not that an event fires: it is that the sweep at the end of the turn
@@ -2442,10 +2518,62 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and the next is refused: one reported plus one young lease is the cap",
               denied(third), repr(third)[:140])
         leases = live_leases(where, 1000.0)
-        standing, keys = occupancy(config.get("branch_model.exclusive_resources")[0], leases, 1)
+        standing, keys, _added = occupancy(
+            config.get("branch_model.exclusive_resources")[0], leases, 1, 1000.0)
         check("the sum is what reached the cap", standing == 2, f"was {standing}")
         check("and a maximum would have left a place free, which is the measured defect",
               max(1, len(keys)) < 2, f"maximum was {max(1, len(keys))}")
+
+        out.append("")
+        out.append("A holder is counted once, whether its lease, the probe or both report it:")
+
+        def second_call(label: str, at: float, count: int = 1, session: str = "another",
+                        cwd: str | None = None, **stated):
+            where = fresh(label)
+            config = _a_config([_a_resource(**stated)])
+            first = _call("a-claiming-command")
+            later = _call("a-claiming-command", session=session)
+            if cwd is not None:
+                first["cwd"] = later["cwd"] = cwd
+            guard_answer(first, config=config, now=1000.0, store=where, probe=_a_probe(count=0))
+            answer = guard_answer(later, config=config, now=at, store=where,
+                                  probe=_a_probe(count=count))
+            return answer, where, config
+
+        probed = {"cap": 2, "probe": "a-command-that-counts-them", "grace": 60}
+        check("a lease past its grace is not added to the probe's count",
+              second_call("grace-past", 1061.0, **probed)[0] == {})
+        check("one exactly at its grace still is",
+              denied(second_call("grace-at", 1060.0, **probed)[0]))
+        check("a build started outside the loop and a just-launched one count as two",
+              denied(second_call("grace-young", 1001.0, **probed)[0]))
+        check("a project stating no grace adds every live lease, however old",
+              denied(second_call("grace-unstated", 1500.0, **{**probed, "grace": None})[0]))
+        check("a resource with no probe is counted by its leases alone, grace or none",
+              denied(second_call("grace-no-probe", 1061.0, cap=1, probe=None, grace=60)[0]))
+        check("a tree past its grace still holds its own place at a full cap",
+              second_call("grace-own", 1061.0, cwd=str(outside),
+                          **{**probed, "cap": 1, "subject": "tree"})[0] == {})
+        _answer, where, config = second_call("grace-report", 1061.0, **probed)
+        printed, _ = held_report(config, now=1061.0, store=where, probe=_a_probe(count=1))
+        check("the report adds only the young lease and names the one left out",
+              "1 lease(s) still counting, so 2 against" in printed
+              and printed.count("past its grace") == 1, " ".join(printed.split())[:200])
+        printed, _ = held_report(config, now=1061.0, store=where, probe=_a_probe(code=1))
+        check("and leaves none out where the count could not be established",
+              "2 lease(s) still counting" in printed and "past its grace" not in printed,
+              " ".join(printed.split())[:200])
+
+        limits = []
+
+        def _a_timed_probe(_command, _root, timeout):
+            limits.append(timeout)
+            return 0, "0\n"
+
+        probe_count(_a_resource(probe="a-command", probe_timeout=7), outside, run=_a_timed_probe)
+        probe_count(_a_resource(probe="a-command"), outside, run=_a_timed_probe)
+        check("a stated probe time limit is the one used, and an unstated one is unchanged",
+              limits == [7, 5], repr(limits))
 
         out.append("")
         out.append("A count that could not be established holds nothing, and says so:")
@@ -3387,6 +3515,9 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         for label, payload in (
             ("the session ended", _exit("SessionEnd", outside)),
             ("a subagent stopped", _exit("SubagentStop", outside)),
+            ("an API error ended the turn", _exit("StopFailure", outside)),
+            ("a merge call failed",
+             {**_call("gh pr merge 7"), "hook_event_name": "PostToolUseFailure"}),
             ("a call that merged nothing finished",
              {**_call("a-command-of-some-kind"), "hook_event_name": CALL_FINISHED}),
             ("a read of the same change finished",
@@ -3423,6 +3554,23 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     for arm, slug in sorted(ARM_ANCHORS.items()):
         check(f"and reddens when the `{arm}` subsection is reworded",
               bool(check_the_surface_still_states_this(_reword_heading(surface, slug))))
+
+    problems = check_every_exit_is_held(surface, RELEASE_EVENTS)
+    check("every exit the surface states is held to a mapped event or to expiry",
+          not problems, "; ".join(problems))
+    for event in sorted(RELEASE_EVENTS):
+        without = {name: scope for name, scope in RELEASE_EVENTS.items() if name != event}
+        check(f"and reddens when `{event}` stops being mapped",
+              bool(check_every_exit_is_held(surface, without)))
+        check(f"and reddens when the surface stops naming `{event}`",
+              bool(check_every_exit_is_held(
+                  surface.replace(f"`{event}`", "`Reworded`"), RELEASE_EVENTS)))
+    check("and reddens when the expiry case stops being stated as one",
+          bool(check_every_exit_is_held(
+              _plant_in(surface, "⛔ **expiry alone.**", "a sweep."), RELEASE_EVENTS)))
+    check("and reddens when the table is gone",
+          bool(check_every_exit_is_held(
+              _reword_heading(surface, ARM_ANCHORS["lease"]), RELEASE_EVENTS)))
 
     # ⛔ The question the guard matches is the surface's own word, held by this
     # run rather than by whoever edits either file. A rename there with no rename

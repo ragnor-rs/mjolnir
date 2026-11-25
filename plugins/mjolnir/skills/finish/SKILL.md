@@ -672,6 +672,10 @@ says which tree to remove, and the guard asks a different question.
 starting role assembles the taking** — the order is the rule, and the command is re-runnable
 because a half-released claim is exactly what a failed release leaves.
 
+⛔ **A tree git refuses to remove fails the command**, which names the tree, git's reason and what
+became of the ref — the reply carries all three, by
+[`§ 10`](../../config/schema.md#pruning-a-tree-whose-branch-has-landed).
+
 ⛔ **The command reaches the published ref too, and which of step 8's three arms applied decides
 whether it may.** Under `procedure` **this is where the ref goes**, step 8 having left it standing;
 under `host` it is already gone by then, and the half reports what was gone rather than failing on
