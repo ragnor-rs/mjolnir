@@ -387,6 +387,14 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.transitions.resolve": ask(
         "How is a transition resolved -- by the status it reaches, or by its own id?",
     ),
+    "tracker.create_fields.field": ask(
+        "Which fields does this tracker refuse to create an item without, beyond "
+        "its project, type, title and body?",
+    ),
+    "tracker.create_fields.value": ask(
+        "What value does every filing send in that field, where one value suits "
+        "them all?",
+    ),
     "tracker.policy.forbid_on_item": ask(
         "Which classes of content may not be written onto an item here?",
     ),

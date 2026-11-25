@@ -57,6 +57,10 @@ tracker:
   # Transitions are found by name — by the status a transition LEADS TO, which is a separate
   # field from the transition's own name. There is no closing keyword on this tracker.
   transitions: { resolve: by_name }
+  # This site refuses a create without a component, and which one is the item's own fact: no
+  # `value`, so the filing states it.
+  create_fields:
+    - field: "<the field a filing states>"
   # No capability is stated here — schema § 3, `Who declares a capability`.
   policy:
     forbid_on_item: []

@@ -6179,6 +6179,40 @@ def _derivation_cycle(edges: dict) -> list | None:
     return None
 
 
+def _validate_create_fields(data: dict) -> None:
+    """§ 3's list of the fields a filing sends, held to a shape a filing can read.
+
+    ⛔ Refused at load: every one of these otherwise surfaces at the first filing,
+    which is a role holding a finished body and no item.
+    """
+    entries = _get(data, "tracker.create_fields")
+    if entries is None:
+        return
+    if not isinstance(entries, list):
+        raise ConfigError(
+            "tracker.create_fields",
+            f"is {entries!r}; § 3 states it as a list of entries, each naming a "
+            "`field` and optionally the `value` every filing sends in it.",
+        )
+    seen = set()
+    for index, entry in enumerate(entries):
+        where = f"tracker.create_fields[{index}]"
+        name = entry.get("field") if isinstance(entry, dict) else None
+        if not isinstance(name, str) or not name.strip():
+            raise ConfigError(
+                where,
+                f"is {entry!r}, which names no `field`. A value with no field is "
+                "one nothing can send (§ 3).",
+            )
+        if name in seen:
+            raise ConfigError(
+                where,
+                f"names `{name}`, which an entry above already states. Two values "
+                "for one field have no reading of which a filing sends (§ 3).",
+            )
+        seen.add(name)
+
+
 def _validate_billing(data: dict) -> None:
     """§ 37's roots, and the one rule about them no marker can state.
 
@@ -8608,6 +8642,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # written absolutely is a rule the surface states in prose, there being no
     # marker for it, and it is the one arm whose permissive reading is money.
     _validate_billing(data)
+    _validate_create_fields(data)
     # § 38's lists, in the same position and for the same reason. ⛔ The two rules
     # no marker reaches are the ones about the row set rather than a row: that
     # every edge names a declared document, and that the derivation record stays
@@ -15640,6 +15675,13 @@ def _planted_violations():
 
     return [
         ("a value outside an alternation", "tracker.kind", at("tracker.kind", "gitlab")),
+        # § 3's creation fields, one plant per arm.
+        ("creation fields that are not a list", "tracker.create_fields",
+         at("tracker.create_fields", "Components")),
+        ("a creation field with no name", "tracker.create_fields[0]",
+         at("tracker.create_fields", [{"value": ["a"]}])),
+        ("a creation field stated twice", "tracker.create_fields[1]",
+         at("tracker.create_fields", [{"field": "a"}, {"field": "a"}])),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the

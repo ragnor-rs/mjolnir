@@ -226,8 +226,8 @@ OWNED_ELSEWHERE = {
 # A type absent from here is refused naming what it would need, rather than sent
 # as a string the host accepts and nobody reads back: measured on the tracker
 # beside this one, a date handed to a text field is stored and silently wrong.
-TEXT, RICH, DATE, NUMBER, DURATION_FIELD, NAMED, OPTION = (
-    "text", "rich", "date", "number", "duration", "named", "option",
+TEXT, RICH, DATE, NUMBER, DURATION_FIELD, NAMED, OPTION, USER = (
+    "text", "rich", "date", "number", "duration", "named", "option", "user",
 )
 
 # `schema.type` as this tracker's own field catalogue reports it, mapped to the
@@ -246,6 +246,30 @@ SHAPES = {
     "version": NAMED,
     "option": OPTION,
 }
+
+# What the catalogue calls a field holding several values, and the shape each
+# **member** takes by the element type it states beside that. ⛔ A map of its own
+# rather than the one above: a member and a scalar of one type are two shapes to
+# establish, and an element absent from here is refused by name -- a sprint's is
+# the ordinary case, the reference stating no shape for one.
+LIST = "array"
+ELEMENTS = {
+    "component": NAMED,
+    "version": NAMED,
+    "option": OPTION,
+    "user": USER,
+    "string": TEXT,
+}
+
+# The member of the structure that names the value, per shape that has one, as a
+# write takes it and as a read answers it. ⚠️ A user's two spellings differ: the
+# reference writes one by `id` and the host answers `accountId`, one value.
+IDENTIFIED_BY = {NAMED: "name", OPTION: "value", USER: "id"}
+ANSWERED_AS = ("name", "value", "accountId")
+
+# The parts a filing states through its own argument or its address, by id, which
+# no extra field may write over.
+FILED_ALREADY = ("project", "issuetype", "summary", "description")
 
 # The fields whose `schema.type` is a plain string and whose content is a
 # document. ⛔ Keyed by the field's **id**, for the reason the mapping above is:
@@ -1181,8 +1205,213 @@ def _held_labels(labels: list[str]) -> list[str]:
     return held
 
 
+def _as_list(value, *, guard: str) -> list:
+    """Several values, however the caller could hand them over.
+
+    The port's command line passes every value as text, so a list arrives there
+    as its JSON form. ⛔ Text that is not one is **one** value and never split: a
+    separator is a character a component's own name may carry.
+    """
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    if isinstance(value, str) and value.strip().startswith("["):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            raise ConfigError(
+                guard,
+                "was handed text that opens a list and is not one. A list is "
+                "written in its JSON form; a single value is written bare, and one "
+                "whose own name opens with a bracket goes inside a list.",
+            ) from None
+    return [value]
+
+
+def _shaped_list(found: dict, value, *, guard: str, named: str, where: str) -> list:
+    """Every member of a list field, by the element type the site states."""
+    element = (found.get("schema") or {}).get("items")
+    shape = ELEMENTS.get(str(element))
+    if shape is None:
+        raise ConfigError(
+            guard,
+            f"is a list of `{element}` on this site, and this implementation has no "
+            f"shape for one. Shaped here are lists of: "
+            f"{', '.join(sorted(ELEMENTS))}.",
+        )
+    members = _as_list(value, guard=guard)
+    for member in members:
+        if not isinstance(member, str) or not member.strip():
+            raise ConfigError(
+                guard,
+                f"was handed {member!r} as a member of a list of `{element}`. Each "
+                "member is text: a name, an option, an account id or a word.",
+            )
+    if shape == TEXT:
+        for member in members:
+            _hold_to_policy(where, **{named: member})
+        return members
+    return [{IDENTIFIED_BY[shape]: member} for member in members]
+
+
+def _shaped_value(found: dict, value, *, guard: str, named: str, where: str):
+    """One value, in the shape the resolved field's own type takes."""
+    if found["id"] in OWNED_ELSEWHERE:
+        raise ConfigError(
+            guard,
+            f"resolves to `{found['id']}`, which is written by "
+            f"`{OWNED_ELSEWHERE[found['id']]}` here and not by this operation. A "
+            "facet pointing at it is pointing at a value this procedure writes "
+            "through a different question.",
+        )
+    schema = (found.get("schema") or {}).get("type")
+    if schema == LIST:
+        return _shaped_list(found, value, guard=guard, named=named, where=where)
+    shape = RICH if found["id"] in RICH_FIELDS else SHAPES.get(str(schema))
+    if shape is None:
+        raise ConfigError(
+            guard,
+            f"is a `{schema}` field on this site, and this implementation has no "
+            f"shape for one. Shaped here are: {', '.join(sorted(SHAPES))}. A value "
+            "sent in a shape nobody measured is accepted by the host as often as "
+            "it is refused, and the accepted half is written where no reader looks.",
+        )
+    if isinstance(value, (list, tuple, dict)):
+        raise ConfigError(
+            guard,
+            f"was handed {type(value).__name__} for a `{schema}` field, which holds "
+            "one value. The host would be sent that structure's own spelling as "
+            "though somebody had written it.",
+        )
+    if shape == DATE:
+        if not ISO_DATE.match(str(value)):
+            raise ConfigError(
+                guard,
+                f"was handed `{value!r}` for a date field, which is not a date in "
+                "`YYYY-MM-DD`. ⚠️ That is § 4.5's own form and this field takes "
+                "the same one, so there is nothing to convert and nothing to "
+                "invent.",
+            )
+        shaped = str(value)
+    elif shape == NUMBER:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ConfigError(
+                guard,
+                f"was handed `{value!r}` for a number field. A string reaches this "
+                "host as a value it refuses, and a flag reaches it as 1 or 0 -- "
+                "which it accepts.",
+            )
+        shaped = value
+    elif shape == DURATION_FIELD:
+        text = str(value).strip()
+        if not DURATION.match(text):
+            raise ConfigError(
+                guard,
+                f"was handed `{value!r}` for a duration field, which is not a "
+                "duration this tracker parses -- `4h`, `2d`, `1w 2d`. ⛔ A bare "
+                "number is refused rather than sent: this host reads one as "
+                "minutes under its default configuration and otherwise under "
+                "another, so the unit § 4.3 states would be decided by the site.",
+            )
+        # ⚠️ The estimate is a member of a composite field rather than a scalar,
+        # which is why the shape is a mapping and not the string. The remaining
+        # estimate is deliberately not written beside it: that is a measurement
+        # of work left, and § 4.3 forbids moving a number between the bound and
+        # the measurement in either direction.
+        shaped = {"originalEstimate": text}
+    elif shape == NAMED:
+        shaped = {"name": str(value)}
+    elif shape == OPTION:
+        shaped = {"value": str(value)}
+    elif shape == RICH:
+        _hold_to_policy(where, **{named: str(value)})
+        shaped = as_document(str(value))
+    else:
+        shaped = str(value)
+        _hold_to_policy(where, **{named: shaped})
+    return shaped
+
+
+def _not_landed(wanted: dict, item: dict) -> str:
+    """Which members of which list did not read back, in words; empty for none.
+
+    ⚠️ Compared without case, because this host matches a name that way and
+    answers with its own spelling.
+    """
+    held = item.get("fields") or {}
+    short = []
+    for name, shaped in wanted.items():
+        if not isinstance(shaped, list):
+            continue
+        back = set()
+        for one in held.get(name) or []:
+            if isinstance(one, dict):
+                back.update(
+                    str(one[part]).casefold()
+                    for part in ANSWERED_AS if one.get(part) is not None
+                )
+            else:
+                back.add(str(one).casefold())
+        for one in shaped:
+            member = next(iter(one.values())) if isinstance(one, dict) else one
+            if str(member).casefold() not in back:
+                short.append(f"`{member}` in `{name}`")
+    return ", ".join(short)
+
+
+def _create_fields(stated) -> dict:
+    """What a filing sends beside its own parts: `{name: (id, shaped)}` (§ 3).
+
+    ⛔ Every refusal here is before the create, so a filing the site would refuse
+    for a field nobody supplied is not made. The filing's own value wins over the
+    configured one, which is a default for every item rather than a fact about
+    this one.
+    """
+    if isinstance(stated, str):
+        try:
+            stated = json.loads(stated)
+        except json.JSONDecodeError:
+            stated = None
+        if not isinstance(stated, dict):
+            raise ConfigError(
+                "tracker.operations.create_item",
+                "was handed fields as text that is not a mapping in its JSON form.",
+            )
+    wanted = {}
+    for entry in _configuration().get("tracker.create_fields") or []:
+        wanted[str(entry["field"])] = ("tracker.create_fields", entry.get("value"))
+    for name, value in (stated or {}).items():
+        wanted[str(name)] = (f"tracker.fields.{name}", value)
+    unsupplied = [name for name, (_, value) in wanted.items() if value is None]
+    if unsupplied:
+        raise ConfigError(
+            "tracker.create_fields",
+            f"requires {', '.join(f'`{name}`' for name in unsupplied)} on every "
+            "filing and states no value, and this filing states none either. The "
+            "create is not sent.",
+        )
+    shaped = {}
+    for name, (guard, value) in wanted.items():
+        found = _field_named(name, key=guard)
+        if found["id"] in FILED_ALREADY:
+            raise ConfigError(
+                guard,
+                f"names `{name}`, which resolves to `{found['id']}` -- a part the "
+                "filing already states through its own argument or this "
+                "configuration's address.",
+            )
+        shaped[name] = (
+            found["id"],
+            _shaped_value(found, value, guard=guard, named=name, where="create_item"),
+        )
+    return shaped
+
+
 def create_item(
-    title: str, body: str, labels: list[str] | None = None, *, type: str | None = None
+    title: str,
+    body: str,
+    labels: list[str] | None = None,
+    type: str | None = None,
+    fields: dict | None = None,
 ) -> dict:
     """A new item, from the body the filing role wrote.
 
@@ -1198,6 +1427,10 @@ def create_item(
     read-back below is what makes a difference visible either way: an item that
     came back carrying fewer labels than were asked for is a failure naming them
     rather than a filing that looks finished.
+
+    ⚠️ So do the fields § 3's `create_fields` and this filing state, by name: a
+    site that requires one refuses the create without it, so writing it
+    afterwards is not available.
     """
     _hold_to_policy("create_item", title=title, body=body)
     if not (type and str(type).strip()):
@@ -1208,18 +1441,22 @@ def create_item(
             "so the value is one of the tracker's own words -- and a filing that "
             "picked one would be choosing what the work is.",
         )
-    wanted = _held_labels(list(labels or []))
-    fields = {
+    wanted = _held_labels(
+        _as_list(labels, guard="tracker.operations.create_item") if labels else []
+    )
+    extra = _create_fields(fields)
+    sent = {
         "project": {"key": _project_key()},
         "issuetype": {"name": str(type)},
         "summary": title,
         "description": as_document(body),
     }
     if wanted:
-        fields["labels"] = wanted
-    created = _call("POST", "/issue", body={"fields": fields}) or {}
+        sent["labels"] = wanted
+    sent.update(dict(extra.values()))
+    created = _call("POST", "/issue", body={"fields": sent}) or {}
     key = item_number(created)
-    item = read_item(key)
+    item = read_item(key, fields=list(extra) or None)
     missing = set(wanted) - set(item["labels"])
     if missing:
         raise HostUnavailable(
@@ -1228,6 +1465,13 @@ def create_item(
             f"{', '.join(sorted(missing))} did not land. The item exists, so this "
             "is reported rather than retried: a second create would file the work "
             "twice."
+        )
+    short = _not_landed({name: shaped for name, (_, shaped) in extra.items()}, item)
+    if short:
+        raise HostUnavailable(
+            f"item {key} was created and came back without {short}. The item "
+            "exists, so this is reported rather than retried: a second create "
+            "would file the work twice."
         )
     return item
 
@@ -1313,76 +1557,25 @@ def set_field(key: str, field: str, value) -> dict:
     ⛔ The shape is decided by the field's own type and never by what the value
     is: a date handed to a text field is accepted by the host and read back by
     nobody. A type this module has no shape for is refused naming it.
+
+    ⛔ **A list is replaced, not added to** (§ 3): the call carries the whole list
+    and the host keeps what it carries, so an empty one clears the field.
     """
     guard = f"tracker.fields.{field}"
     found = _field_named(field, key=guard)
-    if found["id"] in OWNED_ELSEWHERE:
-        raise ConfigError(
-            guard,
-            f"resolves to `{found['id']}`, which is written by "
-            f"`{OWNED_ELSEWHERE[found['id']]}` here and not by this operation. A "
-            "facet pointing at it is pointing at a value this procedure writes "
-            "through a different question.",
-        )
-    schema = (found.get("schema") or {}).get("type")
-    shape = RICH if found["id"] in RICH_FIELDS else SHAPES.get(str(schema))
-    if shape is None:
-        raise ConfigError(
-            guard,
-            f"is a `{schema}` field on this site, and this implementation has no "
-            f"shape for one. Shaped here are: {', '.join(sorted(SHAPES))}. A value "
-            "sent in a shape nobody measured is accepted by the host as often as "
-            "it is refused, and the accepted half is written where no reader looks.",
-        )
-    if shape == DATE:
-        if not ISO_DATE.match(str(value)):
-            raise ConfigError(
-                guard,
-                f"was handed `{value!r}` for a date field, which is not a date in "
-                "`YYYY-MM-DD`. ⚠️ That is § 4.5's own form and this field takes "
-                "the same one, so there is nothing to convert and nothing to "
-                "invent.",
-            )
-        shaped = str(value)
-    elif shape == NUMBER:
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise ConfigError(
-                guard,
-                f"was handed `{value!r}` for a number field. A string reaches this "
-                "host as a value it refuses, and a flag reaches it as 1 or 0 -- "
-                "which it accepts.",
-            )
-        shaped = value
-    elif shape == DURATION_FIELD:
-        text = str(value).strip()
-        if not DURATION.match(text):
-            raise ConfigError(
-                guard,
-                f"was handed `{value!r}` for a duration field, which is not a "
-                "duration this tracker parses -- `4h`, `2d`, `1w 2d`. ⛔ A bare "
-                "number is refused rather than sent: this host reads one as "
-                "minutes under its default configuration and otherwise under "
-                "another, so the unit § 4.3 states would be decided by the site.",
-            )
-        # ⚠️ The estimate is a member of a composite field rather than a scalar,
-        # which is why the shape is a mapping and not the string. The remaining
-        # estimate is deliberately not written beside it: that is a measurement
-        # of work left, and § 4.3 forbids moving a number between the bound and
-        # the measurement in either direction.
-        shaped = {"originalEstimate": text}
-    elif shape == NAMED:
-        shaped = {"name": str(value)}
-    elif shape == OPTION:
-        shaped = {"value": str(value)}
-    elif shape == RICH:
-        _hold_to_policy("set_field", **{field: str(value)})
-        shaped = as_document(str(value))
-    else:
-        shaped = str(value)
-        _hold_to_policy("set_field", **{field: shaped})
+    shaped = _shaped_value(found, value, guard=guard, named=field, where="set_field")
     read_item(key)
     _call("PUT", f"/issue/{_addressed(key)}", body={"fields": {found["id"]: shaped}})
-    return read_item(key)
+    if not isinstance(shaped, list):
+        return read_item(key)
+    item = read_item(key, fields=[field])
+    missing = _not_landed({field: shaped}, item)
+    if missing:
+        raise HostUnavailable(
+            f"item {key} was written and came back without {missing}. ⛔ The write "
+            "replaces the list, so what it held before is gone either way."
+        )
+    return item
 
 
 def comment(key: str, body: str) -> dict:
