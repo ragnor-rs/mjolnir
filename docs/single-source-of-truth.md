@@ -3137,11 +3137,11 @@ that direction directly.
 
 ### What this check deliberately does not hold
 
-- **A spend reached through an interpreter, or through any flag whose value is a whole command
-  string.** A paid script handed to an interpreter stands in no command position of its own; the
-  interpreter does. The same is true of `-c`-style flags whose value is a multi-word string the
-  shell splits later: only its first word stands in a position here. A project invoking one that way
-  states that spelling itself, and
+- **A spend reached through a launcher the project does not list.** A paid script handed to an
+  interpreter, or a multi-word string handed to a shell's flag, stands in no command position of its
+  own. A project invoking one that way lists the launcher
+  ([schema § 19 → The launchers a project lists](../plugins/mjolnir/config/schema.md#the-launchers-a-project-lists-and-what-each-one-runs))
+  or states that spelling itself, and
   [schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
   says why no list of interpreters may live here.
 - **A spend that runs on another machine.** A call that reaches a remote shell is a command whose
@@ -3235,10 +3235,9 @@ than a silent pass.
   added, is not the name in the file. ⚠️ That is the inversion working in the safe direction for a
   live machine and in the annoying one for an allowlisted one — the unnamed alias of a *cleared*
   machine gets a prompt.
-- **A session opened through an interpreter, a wrapper script of the project's own, or a flag whose
-  value is a whole command string.** The same residue the spend half has, one guard over, and for
-  the same reason: the thing in the command position is the interpreter, and no list of
-  interpreters may live here.
+- **A session opened through a launcher the project does not list, or a wrapper script of its
+  own.** The same residue the spend half has, one guard over, and for the same reason: the thing in
+  the command position is the launcher, and no list of interpreters may live here.
 - **Whether the machine behind an allowlisted name is still not live.** The file is a statement
   somebody wrote on a machine. A name left in it after that machine became live answers this check
   exactly as a correct one does, and nothing here can read what a name points at.

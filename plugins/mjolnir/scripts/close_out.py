@@ -37,6 +37,7 @@ import io
 import json
 import os
 import re
+import stat
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -135,6 +136,35 @@ def record_of(configuration) -> dict:
         out["grouping"] = str(configuration.get(GROUPING) or "").strip()
         out["names"] = out["grouping"]
     return out
+
+
+def directory_missing(record: dict) -> bool:
+    """Whether the record's directory is absent -- and a stop where that cannot be established.
+
+    ⛔ Asked by `stat` and not by `isdir`, which answers *no* for a directory behind a parent that
+    cannot be read: an absence and a question nobody could ask have different remedies (§ 40).
+    """
+    try:
+        held = os.stat(record["dir"])
+    except FileNotFoundError:
+        return True
+    except OSError as error:
+        raise Stop(
+            f"`{DIR}` resolves to {record['dir']}, which could not be read -- {error}. Whether a "
+            "record is there is unestablished (§ 40)."
+        ) from error
+    if not stat.S_ISDIR(held.st_mode):
+        raise Stop(f"`{DIR}` resolves to {record['dir']}, which is not a directory (§ 40).")
+    return False
+
+
+def said_of_missing(record: dict) -> str:
+    """The one wording of an absent directory, for the stop and for `--bootstrap` alike."""
+    return (
+        f"`{DIR}` resolves to {record['dir']}, and that directory is not there. The record and "
+        "its baseline may exist elsewhere -- on another machine, under another account, or where "
+        "the value pointed before -- so check the value first"
+    )
 
 
 def tiers_of(configuration) -> tuple[str | None, list[str]]:
@@ -688,6 +718,9 @@ def bootstrap(configuration, tracker, record) -> int:
     nothing derives, so a run that wrote one would be ordering the work on this toolkit's own
     judgement (§ 12, § 40).
     """
+    if directory_missing(record):
+        print(f"⚠️ DIRECTORY MISSING : {said_of_missing(record)}. Where this is the project's "
+              "first ordering, the directory is created with the record (§ 40).\n")
     held = backlog(tracker)
     edges, unreadable = relations(tracker, held["live"])
     print(f"record               : {record['carrier']} — {record['names']}")
@@ -758,6 +791,13 @@ def create(configuration, tracker, record, value: str | None) -> int:
 def pass_over(configuration, tracker, record, *, stamp: bool, tested: set[int],
               value: str | None = None, quiet: bool = False) -> tuple[int, list[int]]:
     """One read of the backlog, the relations and the record. Returns (the exit, the queue)."""
+    # ⛔ Before either carrier's record is read: an absent directory is an absent *baseline* on
+    # both, and a pass that went ahead would report no drift for want of anything to compare.
+    if directory_missing(record):
+        raise Stop(
+            f"{said_of_missing(record)}. Where this is the project's first ordering, run "
+            "`--bootstrap` and then create the directory (§ 40)."
+        )
     places, unread = places_of(tracker, record, value)
     if unread is not None:
         raise Stop(unread)
@@ -908,6 +948,10 @@ def main(argv: list[str] | None = None) -> int:
                            "act on")
             return startable(configuration, tracker)
         record = record_of(configuration)
+        # ⚠️ On the error stream, so `--queue`'s output stays the items and nothing else.
+        stale = configuration.harness_derived_directories().get(DIR)
+        if stale:
+            print(f"⚠️ {stale}", file=sys.stderr)
         if args.create:
             if args.stamp or args.tested or args.queue or args.bootstrap:
                 raise Stop("--create makes one write about the grouping and reads no record, so "
