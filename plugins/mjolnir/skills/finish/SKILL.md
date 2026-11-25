@@ -635,6 +635,12 @@ and the item moves separately; where the advance is unavailable the role asks fo
 unavailable too, the move is **reported for whoever does make it**. Say which fallback was taken,
 rather than reporting the item as moved.
 
+⛔ **An advance this role asks for is asked by role, with `--advance-to`**, and where that status
+states several writers
+([`§ 4.2`](../../config/schema.md#a-status-several-writers-reach-a-class-of-item-each)) it carries
+`--path <path>` once per path the item's changes touched. A refusal there is reported with the writer
+it names, or with the reason it names none.
+
 ⛔ **An item carrying more than one change does not advance until all of them have landed.** One
 copy carried this and the rest moved the item on the first merge, which says the item's work is in
 when a sibling change is still open. ⚠️ **The count is taken after this merge rather than before

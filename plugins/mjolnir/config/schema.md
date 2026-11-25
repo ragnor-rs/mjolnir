@@ -2168,6 +2168,46 @@ refusing anything.
 where every write reads as that person speaking, so the procedure writes nothing at all and
 reports instead.
 
+#### A status several writers reach, a class of item each
+
+A status two parties reach in two different cases states `writers` in place of `writer`:
+
+```yaml
+statuses:
+  - { name: "…", role: terminal, writers: [{ writer: procedure, paths: ["ci/*"] }, { writer: deploy, rest: true }] }
+```
+
+⛔ **An entry states its writer and exactly one class**: `paths`, in
+[§ 30](#what-a-class-is-and-the-conjunction-that-makes-it-one)'s glob grammar with the forms that
+section refuses, or `rest: true`. Each writer is stated once and `never` is none of them, being
+the absence of a writer rather than a party holding a class.
+
+⛔ **The class is the item's, read off the paths its change touched, and it decides the writer
+before the ask is compared with one.** Every changed path is inside the class and never merely one
+of them, which is § 30's rule; a change split between two classes is therefore inside neither. The
+ask is then held to that one writer exactly as it is to a status's only one, so another writer of
+the same status is refused and the refusal names whose move it is.
+
+⛔ **An item in no class or in two is refused, and the refusal names no writer**: the move is
+reported for a person. ⚠️ **A glob stated by two writers is refused where the configuration is
+read, and two that merely overlap are not**: the reader compares globs as they are written, so an
+overlap is met against the item that is in both.
+
+⛔ **`rest` covers a change no other class covers whole, and at most one entry states it.** A
+change split between a class and anything else falls to it, which is the common change wherever
+one class is a narrow one. ⛔ **It covers no change nobody described**: an ask handed no path is
+refused, since a remainder answering it would claim every item whose paths a role failed to read.
+
+⚠️ **The paths are handed over with the ask, as the writer is**: the port reads no change. What
+supplies them is the change that closed the item, or each of them where it has several; a role
+that could not read one hands over none and the refusal is the answer. ⛔ **Paths from the changes
+it did read are not the item's**, since they answer about a smaller change. ⚠️ **What it does not
+hold is a role handing over paths the change did not touch** — that is trusted as the asked-as
+writer is.
+
+A status stating `writer` is asked for no path, and one handed over is not read. What a grouping's
+close needs of a classed status is [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s.
+
 ### 4.3 Estimate
 
 ```yaml
@@ -2495,12 +2535,13 @@ against § 4.2's vocabulary, and `closes_items` below is refused against the ter
 writer.
 
 ⛔ **`closes_items` is a second question and not a restatement of the first, and where it is true
-the item's own terminal writer has to be the same actor.** [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)
-carries one writer per status, so a grouping whose close also closes what is still open in it is
-writing the terminal status — and a configuration naming one actor there and another here states
-two writers for one field, which the surface has no form for. The reader refuses that pair with
-both keys named. ⚠️ **It is refused only where `statuses` maps a terminal role at all**: a project
-mapping a subset is § 4.2's legitimate case, and there is then no status for the close to write.
+the item's own terminal writer has to be the same actor.**
+[§ 4.2](#42-status--an-ordered-set-of-name-role-writer) states who writes the terminal status, and a
+grouping whose close also closes what is still open in it writes that status for every item left —
+whatever class each is in. So the closer has to be that status's **only** writer: a configuration
+naming another actor there, or several with a class each, is refused with both keys named. ⚠️ **It
+is refused only where `statuses` maps a terminal role at all**: a project mapping a subset is
+§ 4.2's legitimate case, and there is then no status for the close to write.
 
 ⛔ **`has_own_acceptance` says where the bar lives, which is the one key here that changes what an
 item means.** Where a grouping carries criteria of its own it is a work item with children rather

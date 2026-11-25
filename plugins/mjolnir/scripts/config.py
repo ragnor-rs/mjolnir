@@ -1022,6 +1022,76 @@ def _opens_with(text: str, value: str) -> bool:
     return text.startswith(value) and not WORD_CHARACTER.match(text[len(value):])
 
 
+def _changed_paths(paths: list[str], key: str) -> list[str]:
+    """The changed paths a class is asked about, refused where one is not a path.
+
+    ⛔ **One statement for both facets that match a change against § 30's globs**
+    -- the exemption, and § 4.2's classed writers -- because the permissive
+    direction is the same in both: a path dropped or misread answers about a
+    different change than the one the caller described.
+
+    ⛔ **Refused rather than filtered**, and that is a reproduction rather than a
+    preference: `['docs/a.md', 123, None, {'app/main.py': 1}]` answered exempt
+    with the dict dropped.
+
+    ⛔ **And repository-relative**, which the glob rule states and this performs:
+    under a `*.md` glob an absolute path outside the repository and
+    `../outside/thing.md` each matched.
+
+    Deduplicated, because *wholly inside* compares what a class covers against
+    what the change touches, and a path named twice is one file.
+    """
+    for position, path in enumerate(paths):
+        if not isinstance(path, str) or not path.strip():
+            raise ConfigError(
+                key,
+                f"was handed {path!r} as changed path {position}, which is not a "
+                "path. ⛔ Not dropped from the list: a change described wrongly "
+                "in part would be answered about in part (§ 30, § 11).",
+            )
+        if os.path.isabs(path) or path.split("/")[0] == os.pardir:
+            raise ConfigError(
+                key,
+                f"was handed {path!r}, which is not repository-relative. § 30 "
+                "matches a class's globs against the path as the repository "
+                "holds it, so an absolute path or one climbing out of the tree "
+                "is a path no class can be asked about.",
+            )
+    return list(dict.fromkeys(paths))
+
+
+def classed_writers(status: dict, paths: list[str]) -> list[str]:
+    """The writers whose class covers one change whole (§ 4.2).
+
+    One member is the writer this item's move belongs to; none and several are
+    each a refusal the port words. ⛔ `every` changed path and never `any`, which
+    is § 30's rule and is why `rest` exists: a change split between two classes
+    is inside neither. ⛔ And `rest` answers only where a path was handed over --
+    an empty change is inside no class, the remainder included, since the
+    remainder would otherwise claim every item nobody described.
+    """
+    entries = status[STATUS_WRITERS]
+    held = _changed_paths(paths, f"statuses.{STATUS_WRITERS}")
+    if not held:
+        return []
+    covering = [
+        entry["writer"]
+        for entry in entries
+        if "paths" in entry
+        and all(any(_matches(p, g) for g in entry["paths"]) for p in held)
+    ]
+    if covering:
+        return covering
+    return [entry["writer"] for entry in entries if entry.get(CLASS_REST)]
+
+
+def writers_of(status: dict) -> list[str]:
+    """Every writer one status states, whichever of § 4.2's two forms it uses."""
+    if STATUS_WRITERS in status:
+        return [entry["writer"] for entry in status[STATUS_WRITERS]]
+    return [status.get("writer")]
+
+
 def _matches(path: str, glob: str) -> bool:
     """Whether one changed path is inside one of § 30's globs.
 
@@ -1636,14 +1706,15 @@ def _grouping_facet(data: dict, facts: dict) -> dict[str, dict]:
                 ),
                 None,
             )
-            if terminal is not None and terminal.get("writer") != closed_by:
+            if terminal is not None and writers_of(terminal) != [closed_by]:
                 raise ConfigError(
                     f"{at}.closes_items",
                     f"is true while `closed_by` is {closed_by!r} and the status "
                     f"holding § 4.2's terminal role is written by "
-                    f"{terminal.get('writer')!r}. Closing the grouping writes that "
-                    "status, so the configuration names two actors for one field "
-                    "and the surface carries one writer per status (§ 4.8, § 4.2).",
+                    f"{' and '.join(repr(w) for w in writers_of(terminal))}. "
+                    "Closing the grouping writes that status for every item still "
+                    "open in it, whatever its class, so its writer has to be the "
+                    "status's only one (§ 4.8, § 4.2).",
                 )
 
     # ⛔ The gate's own two checks, each refused where the facet has nothing for
@@ -2376,40 +2447,7 @@ class Config:
         and `person_for`'s rule arriving at the facet where the permissive
         reading is a commit that skipped every check the loop owns.
         """
-        # ⛔ **Refused rather than filtered**, and that is the reproduction rather
-        # than a preference: a list filtered down to its well-formed members
-        # answers about a *different change* than the one the caller described,
-        # and the answer it gives is `exempt`. Measured by review on this change
-        # -- `['docs/a.md', 123, None, {'app/main.py': 1}]` answered exempt with
-        # the dict dropped, which is the permissive direction § 11 names.
-        for position, path in enumerate(paths):
-            if not isinstance(path, str) or not path.strip():
-                raise ConfigError(
-                    EXEMPT_CLASSES_PATH,
-                    f"was handed {path!r} as changed path {position}, which is not a "
-                    "path. ⛔ Not dropped from the list: a change described wrongly "
-                    "in part would be answered about in part, and the part that "
-                    "survives is the part that gets exempted (§ 30, § 11).",
-                )
-            # ⛔ § 30 states the glob is matched against the **repository-relative**
-            # path, and that precondition is performed here or by nothing. Measured
-            # by review: under the shipped `*.md` glob, an absolute path outside the
-            # repository and `../outside/thing.md` each answered `exempt` -- an
-            # exemption granted over a file the repository does not contain.
-            if os.path.isabs(path) or path.split("/")[0] == os.pardir:
-                raise ConfigError(
-                    EXEMPT_CLASSES_PATH,
-                    f"was handed {path!r}, which is not repository-relative. § 30 "
-                    "matches a class's globs against the path as the repository "
-                    "holds it, so an absolute path or one climbing out of the tree "
-                    "is a path no class can be asked about -- and the answer it "
-                    "would otherwise get is `exempt`.",
-                )
-        # ⛔ Deduplicated, because the *wholly inside* test below compares what the
-        # class covers against what the change touches, and a path named twice is
-        # one file. Measured by review: the comparison was a set's size against a
-        # list's, so one repeated path turned an exemption into a question.
-        held = list(dict.fromkeys(p for p in paths if isinstance(p, str)))
+        held = _changed_paths(paths, EXEMPT_CLASSES_PATH)
         # ⛔ A decision with no changed path is a stop and never *exempt*: the
         # permissive reading of an empty list is a class whose `paths` are
         # vacuously all matched, which exempts every change a caller forgets to
@@ -4028,6 +4066,11 @@ SPEC_CORPUS_GROUPING = f"{SPEC_CORPUS_KEY}.{GROUPING_ENTRY_KEY}"
 # way every other block's are in this module: a constant for one of them and
 # literals for the rest would be the mixed spelling a constant exists against.
 CLOSE_OUT_ROLE = "close_out"
+
+# § 4.2's classed form: the key several writers of one status are stated under,
+# and the class that covers what no other entry does.
+STATUS_WRITERS = "writers"
+CLASS_REST = "rest"
 
 # § 30's block and the three keys under it. ⛔ The two facets a class is built out
 # of are named here because a class entry's keys are **not** walked off the
@@ -7646,6 +7689,128 @@ def _workflows_anywhere(data: dict, facts: dict) -> set[str]:
     return {name for name in out if name}
 
 
+def _held_to_the_class_globs(globs: list, at: str) -> None:
+    """The glob forms § 30 refuses, for every class written in its grammar.
+
+    ⛔ Called from § 30's classes and from § 4.2's classed writers rather than
+    written twice: a form refused under one key and read under the other is one
+    spelling with two meanings.
+    """
+    for position, glob in enumerate(globs):
+        where = f"{at}.paths[{position}]"
+        if not isinstance(glob, str) or not glob.strip():
+            raise ConfigError(
+                where, f"is {glob!r} and a glob is a non-empty string (§ 30)."
+            )
+        # ⛔ The glob that matches every path: `*` crosses a directory separator
+        # here, so a class whose glob is a bare star narrows nothing. ⚠️ § 15's
+        # `cases` carries the same refusal.
+        if set(glob.strip()) <= set("*"):
+            raise ConfigError(
+                where,
+                f"is {glob!r}, which matches every path this project has: `*` "
+                "crosses a directory separator here (§ 30), so this class "
+                "covers every change rather than narrowing anything.",
+            )
+        # ⛔ Refused rather than read: `*` already crosses a directory separator
+        # here, so this form means nothing different.
+        if CROSSING_GLOB in glob:
+            raise ConfigError(
+                where,
+                f"is {glob!r}, and `{CROSSING_GLOB}` is refused: § 30 matches a "
+                "glob against the repository-relative path with `*` already "
+                "crossing a directory separator, so `docs/*` covers that subtree "
+                "whole and this form states a rule nothing here performs.",
+            )
+
+
+def _held_to_a_status_writers(status: dict, where: str, facts: dict) -> None:
+    """§ 4.2's classed form: several writers of one status, a class each."""
+    at = f"{where}.{STATUS_WRITERS}"
+    if "writer" in status:
+        raise ConfigError(
+            at,
+            "is written beside `writer`. § 4.2 states a status's writer in one of "
+            "two forms, and a status carrying both names two answers to who may "
+            "make the same move.",
+        )
+    entries = status[STATUS_WRITERS]
+    if not isinstance(entries, list) or len(entries) < 2:
+        raise ConfigError(
+            at,
+            f"is {entries!r}; § 4.2 takes two or more writers with a class each. A "
+            "status with one writer states `writer`.",
+        )
+    allowed = [w for w in vocabulary(facts, "writer", "a status writer") if w != "never"]
+    seen: set[str] = set()
+    claimed: dict[str, str] = {}
+    remainder = None
+    for index, entry in enumerate(entries):
+        each = f"{at}[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(each, "must be a mapping of a writer and its class (§ 4.2).")
+        for key in entry:
+            if key not in ("writer", "paths", CLASS_REST):
+                raise ConfigError(
+                    f"{each}.{key}",
+                    "is not a key of a classed writer; § 4.2 states `writer` and "
+                    f"one of `paths` and `{CLASS_REST}`. A key nothing reads is a "
+                    "narrowing nothing performs.",
+                )
+        writer = entry.get("writer")
+        if writer not in allowed:
+            raise ConfigError(
+                f"{each}.writer",
+                f"is {writer!r}; a classed writer is one of {' | '.join(allowed)}. "
+                "`never` is the absence of a writer, so it holds no class (§ 4.2).",
+            )
+        if writer in seen:
+            raise ConfigError(
+                f"{each}.writer",
+                f"is {writer!r}, which another entry already states. One writer "
+                "has one class, and its globs belong in one list (§ 4.2).",
+            )
+        seen.add(writer)
+        if ("paths" in entry) == (CLASS_REST in entry):
+            raise ConfigError(
+                each,
+                f"states {'both' if 'paths' in entry else 'neither'} of `paths` and "
+                f"`{CLASS_REST}`; § 4.2 takes exactly one, the class being what "
+                "separates this writer from the others.",
+            )
+        if CLASS_REST in entry:
+            if entry[CLASS_REST] is not True:
+                raise ConfigError(
+                    f"{each}.{CLASS_REST}",
+                    f"is {entry[CLASS_REST]!r}; it takes `true` and is otherwise "
+                    "left out (§ 4.2).",
+                )
+            if remainder is not None:
+                raise ConfigError(
+                    f"{each}.{CLASS_REST}",
+                    f"is stated by {remainder!r} already. Two remainders are one "
+                    "class with two writers (§ 4.2).",
+                )
+            remainder = writer
+            continue
+        globs = entry["paths"]
+        if not isinstance(globs, list) or not globs:
+            raise ConfigError(
+                f"{each}.paths",
+                f"is {globs!r}; § 4.2 takes a non-empty list of § 30's globs.",
+            )
+        _held_to_the_class_globs(globs, each)
+        for position, glob in enumerate(globs):
+            if claimed.get(glob, writer) != writer:
+                raise ConfigError(
+                    f"{each}.paths[{position}]",
+                    f"is {glob!r}, which {claimed[glob]!r} states too. The classes "
+                    "are disjoint (§ 4.2), and an item under this glob would be "
+                    "in two.",
+                )
+            claimed[glob] = writer
+
+
 def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⛔ Walked rather than looked up by path, because a retired key may sit
     # inside a list: `_get` descends a dict and returns the default the moment it
@@ -8062,40 +8227,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                     "left out, while an empty list reads as a facet that constrains "
                     "nothing.",
                 )
-        for position, glob in enumerate(globs or []):
-            if not isinstance(glob, str) or not glob.strip():
-                raise ConfigError(
-                    f"{at}.paths[{position}]",
-                    f"is {glob!r} and a glob is a non-empty string (§ 30).",
-                )
-            # ⛔ Refused rather than read, which § 30 states and this performs: `*`
-            # already crosses a directory separator here, so this form means
-            # nothing different -- and a glob quietly matching less than its author
-            # meant is one spelling read two ways, with nothing reporting the
-            # difference.
-            # ⛔ And the glob that matches every path, which is the same refusal as
-            # the stating-neither-facet one above wearing a facet: `*` crosses a
-            # directory separator here, so a class whose only glob is a bare star
-            # exempts this project's every change. Found by review, which measured
-            # the three spellings of *exempt everything* and found two refused and
-            # the shortest accepted -- while the `**` refusal's own message coaches
-            # an author toward it. ⚠️ § 15's `cases` carries the same refusal.
-            if set(glob.strip()) <= set("*"):
-                raise ConfigError(
-                    f"{at}.paths[{position}]",
-                    f"is {glob!r}, which matches every path this project has: `*` "
-                    "crosses a directory separator here (§ 30), so this class "
-                    "exempts every change rather than narrowing anything -- the "
-                    "whole loop switched off by a block that reads like a class.",
-                )
-            if CROSSING_GLOB in glob:
-                raise ConfigError(
-                    f"{at}.paths[{position}]",
-                    f"is {glob!r}, and `{CROSSING_GLOB}` is refused: § 30 matches a "
-                    "glob against the repository-relative path with `*` already "
-                    "crossing a directory separator, so `docs/*` covers that subtree "
-                    "whole and this form states a rule nothing here performs.",
-                )
+        _held_to_the_class_globs(globs or [], at)
         # ⛔ Asked only of a class that states `kinds`, and ⚠️ **the phrase is a
         # noun phrase** -- `vocabulary_list` supplies *would be unchecked* itself,
         # so the first form of this read "unchecked would be unchecked". Both found
@@ -8478,7 +8610,10 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
         where = f"statuses[{index}]"
         if not isinstance(status, dict):
             raise ConfigError(where, "must be a mapping of name, role and writer.")
-        for field in ("role", "writer"):
+        classed = STATUS_WRITERS in status
+        if classed:
+            _held_to_a_status_writers(status, where, facts)
+        for field in ("role",) if classed else ("role", "writer"):
             allowed = vocabulary(facts, field, f"a status {field}")
             if field not in status:
                 raise ConfigError(f"{where}.{field}", "required (§ 4.2).")
@@ -12459,6 +12594,27 @@ def self_test() -> int:
             broken == f"{GROUPING_KEY}.{named[0]}.closes_items",
             f"reported {broken!r}",
         )
+        # § 4.2's classed form on that status: two writers are never one closer,
+        # even where the closer is among them.
+        terminal.pop("writer")
+        terminal["writers"] = [
+            {"writer": "orderer", "paths": ["ci/*"]},
+            {"writer": "deploy", "rest": True},
+        ]
+        broken = _refused(disagreeing)
+        check(
+            "and so is one whose closer holds one class of the terminal status",
+            broken == f"{GROUPING_KEY}.{named[0]}.closes_items",
+            f"reported {broken!r}",
+        )
+        # The green side of the form itself, which no shipped example writes: on a
+        # project with no closing grouping the same status loads.
+        _get(disagreeing, f"{GROUPING_KEY}.{named[0]}")["closes_items"] = False
+        check(
+            "and the classed status loads where no close writes it",
+            _refused(disagreeing) is None,
+            f"refused on {_refused(disagreeing)!r}",
+        )
         agreeing = _a_grouping_collection()
         _get(agreeing, f"{GROUPING_KEY}.{named[0]}").update(
             closes_items=True, closed_by="orderer")
@@ -15768,6 +15924,40 @@ def _planted_violations():
          at("statuses", [{"name": "x", "role": "sideways", "writer": "procedure"}])),
         ("a status writer outside the vocabulary", "statuses[0].writer",
          at("statuses", [{"name": "x", "role": "initial", "writer": "the cat"}])),
+        # § 4.2's classed form, one plant per refusal.
+        ("a status stating both forms of its writer", "statuses[0].writers",
+         at("statuses", [{"name": "x", "role": "initial", "writer": "deploy",
+                          "writers": [dict(w) for w in TWO_WRITERS]}])),
+        ("a classed status naming one writer alone", "statuses[0].writers",
+         _classed(TWO_WRITERS[0])),
+        ("a classed writer that is not a block", "statuses[0].writers[1]",
+         _classed(TWO_WRITERS[0], "deploy")),
+        ("a classed writer carrying a key nothing reads",
+         "statuses[0].writers[1].kinds",
+         _classed(TWO_WRITERS[0], {"writer": "deploy", "paths": ["app/*"],
+                                   "kinds": ["tooling"]})),
+        ("a classed writer outside the vocabulary", "statuses[0].writers[1].writer",
+         _classed(TWO_WRITERS[0], {"writer": "the cat", "rest": True})),
+        ("a class written by nobody", "statuses[0].writers[1].writer",
+         _classed(TWO_WRITERS[0], {"writer": "never", "rest": True})),
+        ("one writer with two classes", "statuses[0].writers[1].writer",
+         _classed(TWO_WRITERS[0], {"writer": "procedure", "rest": True})),
+        ("a classed writer stating no class", "statuses[0].writers[1]",
+         _classed(TWO_WRITERS[0], {"writer": "deploy"})),
+        ("a classed writer stating paths and the remainder", "statuses[0].writers[1]",
+         _classed(TWO_WRITERS[0],
+                  {"writer": "deploy", "paths": ["app/*"], "rest": True})),
+        ("a remainder that is not `true`", "statuses[0].writers[1].rest",
+         _classed(TWO_WRITERS[0], {"writer": "deploy", "rest": "yes"})),
+        ("two remainders", "statuses[0].writers[1].rest",
+         _classed({"writer": "procedure", "rest": True},
+                  {"writer": "deploy", "rest": True})),
+        ("a class with no glob", "statuses[0].writers[1].paths",
+         _classed(TWO_WRITERS[0], {"writer": "deploy", "paths": []})),
+        ("a class whose glob matches everything", "statuses[0].writers[1].paths[0]",
+         _classed(TWO_WRITERS[0], {"writer": "deploy", "paths": ["*"]})),
+        ("two classes stating one glob", "statuses[0].writers[1].paths[0]",
+         _classed(TWO_WRITERS[0], {"writer": "deploy", "paths": ["ci/*"]})),
         # § 32's shape, and then the one refusal that is about `reversals` and
         # `statuses` **agreeing** rather than about either on its own -- the
         # target-no-status-maps case, last of the three `to_role` plants.
@@ -17956,6 +18146,25 @@ def _verdict_on(paths, kind=None, **overrides) -> str:
     if answer["destination"]:
         shown += f" onto {answer['destination']}"
     return shown
+
+
+# § 4.2's classed form at its smallest: a class by paths, and the remainder.
+TWO_WRITERS = (
+    {"writer": "procedure", "paths": ["ci/*"]},
+    {"writer": "deploy", "rest": True},
+)
+
+
+def _classed(*writers):
+    """The status list rewritten to one status carrying these classed writers."""
+
+    def mutate(data: dict) -> dict:
+        data["statuses"] = [
+            {"name": "x", "role": "initial", "writers": copy.deepcopy(list(writers))}
+        ]
+        return data
+
+    return mutate
 
 
 def _an_exempt_class_of(*entries) -> dict:
