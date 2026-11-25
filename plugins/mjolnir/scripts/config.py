@@ -8189,6 +8189,10 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
         subjects = vocabulary(
             facts, "branch_model.exclusive_resources.subject", "what holds a place"
         )
+        endings = vocabulary(
+            facts, "branch_model.exclusive_resources.background_end",
+            "how the end of background work is established",
+        )
         for index, entry in enumerate(resources):
             at = f"branch_model.exclusive_resources[{index}]"
             if not isinstance(entry, dict):
@@ -8249,6 +8253,37 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                         f"is {value!r}; it is a whole number of seconds from one to {most} "
                         "(§ 10). A grace past the lease's lifetime leaves no lease out, and a "
                         "probe shares the guard's own budget with every other read it makes.",
+                    )
+            ending = entry.get("background_end")
+            if ending is not None and ending not in endings:
+                raise ConfigError(
+                    f"{at}.background_end",
+                    f"is {ending!r}; § 10 states {' | '.join(endings)}.",
+                )
+            asked = entry.get("background_probe")
+            settled = entry.get("background_grace")
+            if ending != "probe":
+                for key, value in (("background_probe", asked), ("background_grace", settled)):
+                    if value is not None:
+                        raise ConfigError(
+                            f"{at}.{key}",
+                            "is stated and `background_end` is not `probe`, so nothing would "
+                            "read it (§ 10).",
+                        )
+            else:
+                if not isinstance(asked, str) or not asked.strip():
+                    raise ConfigError(
+                        f"{at}.background_probe",
+                        f"is {asked!r}; `background_end: probe` states the command that says "
+                        "whether the work is running (§ 10).",
+                    )
+                if (isinstance(settled, bool) or not isinstance(settled, int)
+                        or not 1 <= settled <= entry["ttl"]):
+                    raise ConfigError(
+                        f"{at}.background_grace",
+                        f"is {settled!r}; it is a whole number of seconds from one to "
+                        f"{entry['ttl']} (§ 10). A probe asked before the work is up says "
+                        "`ended` about work that has not started.",
                     )
             try:
                 re.compile(str(entry["claimed_by"]))
@@ -16565,6 +16600,32 @@ def _planted_violations():
          "branch_model.exclusive_resources[0].wait_up_to", _a_resource_of(wait_up_to=True)),
         ("a wait with no bound", "branch_model.exclusive_resources[0].wait_up_to",
          _a_resource_of(wait_up_to="wait")),
+        ("an end of background work outside its alternation",
+         "branch_model.exclusive_resources[0].background_end",
+         _a_resource_of(background_end="whenever")),
+        ("a background probe nothing would read",
+         "branch_model.exclusive_resources[0].background_probe",
+         _a_resource_of(background_end="process", background_probe="a-command")),
+        ("a background grace nothing would read",
+         "branch_model.exclusive_resources[0].background_grace",
+         _a_resource_of(background_grace=5)),
+        ("an end by probe naming no probe",
+         "branch_model.exclusive_resources[0].background_probe",
+         _a_resource_of(background_end="probe", background_grace=5)),
+        ("an end by a probe written blank",
+         "branch_model.exclusive_resources[0].background_probe",
+         _a_resource_of(background_end="probe", background_probe=" ", background_grace=5)),
+        ("an end by probe with no grace",
+         "branch_model.exclusive_resources[0].background_grace",
+         _a_resource_of(background_end="probe", background_probe="a-command")),
+        ("a background grace past the lease's own lifetime",
+         "branch_model.exclusive_resources[0].background_grace",
+         _a_resource_of(background_end="probe", background_probe="a-command",
+                        background_grace=601)),
+        ("a background grace written as a flag",
+         "branch_model.exclusive_resources[0].background_grace",
+         _a_resource_of(background_end="probe", background_probe="a-command",
+                        background_grace=True)),
         ("a grace of zero", "branch_model.exclusive_resources[0].grace",
          _a_resource_of(grace=0)),
         ("a grace written as a flag", "branch_model.exclusive_resources[0].grace",

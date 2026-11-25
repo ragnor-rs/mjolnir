@@ -3240,9 +3240,10 @@ lease is too young.
 A project whose resource can be asked how many are held and one whose resource cannot are both
 ordinary, and the second is not a project whose count is zero.
 
-⛔ **Every exit path either releases the lease or is proved not to fire, and one path is closed by
-expiry alone.** ⚠️ **The proof is per path and is not a reading**: a path a guard registers nothing
-for, and a path whose event the harness does not publish, read identically from the carrier.
+⛔ **Every exit path either releases the lease or is proved not to fire, and one path is closed by a
+reading rather than an event.** ⚠️ **The proof is per path and is not a reading**: a path a guard
+registers nothing for, and a path whose event the harness does not publish, read identically from
+the carrier.
 
 | the call's exit | what releases the place | the events registered for it |
 |---|---|---|
@@ -3250,7 +3251,15 @@ for, and a path whose event the harness does not publish, read identically from 
 | it was refused before it ran | nothing fires, so the end-of-turn sweep is what releases it | `Stop`, `StopFailure` |
 | it was cancelled while it ran | nothing fires for the call or for the turn the cancellation ended, so the next sweep this session reaches is what releases it, and expiry where it reaches none | `Stop`, `StopFailure`, `SessionEnd` |
 | the turn ended, the session ended, or a subagent stopped | the sweep, over every place this session holds — and a turn an API error ended is published as an event of its own | `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop` |
-| it was put in the background | ⛔ **expiry alone.** The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately | none |
+| it was put in the background | its work ending, as the resource's `background_end` establishes it, and expiry. ⛔ The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately | none |
+
+⛔ **A place whose background work has ended is free on the next reading of the resource**, where
+its `background_end` ([§ 10](#exclusive-resources)) is `process` or `probe`. ⛔ **Where the end cannot
+be established the lease counts until its `ttl`, and the report and the refusal say so and why.**
+⛔ **A process is its identifier and when it started**: an identifier handed out again is another
+process and holds nothing. ⚠️ The process is the one the harness started for the call, so work that
+outlives it needs `probe`. ⚠️ **No value lengthens a lease**: work still running at its `ttl` loses
+its place, as under `expiry`.
 
 ⛔ **A call over the cap is refused by the guard at once, and what waits is a command a role runs.**
 A wait inside the hook is ended by the hook's own time limit, and a guard ended there lets its call
@@ -4193,7 +4202,8 @@ named.
 A resource the trees cannot all help themselves to — a local service stack, a build daemon's
 slots, a machine-wide lock. How many may be held at once is `cap`, and what holds a place is
 `subject`, so neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry but
-`grace`, `probe_timeout` and `wait_up_to` is stated and none of them is defaulted**, because every
+`grace`, `probe_timeout`, `wait_up_to` and the three `background_` keys is stated and none of them
+is defaulted**, because every
 one of them is a measurement of the resource rather than a preference about it, and a default here
 would be the procedure describing somebody else's machine:
 
@@ -4208,6 +4218,9 @@ branch_model:
       grace:      60             # seconds; may be left unwritten
       probe_timeout: 5           # seconds; may be left unwritten
       wait_up_to: 300            # seconds, or null; may be left unwritten
+      background_end: process | probe | expiry   # may be left unwritten
+      background_probe: "<prints `running` or `ended` for one call's work>"   # under `probe` only
+      background_grace: 30       # seconds; under `probe` only
       ttl:        1800
 ```
 
@@ -4236,9 +4249,16 @@ branch_model:
   ⛔ **Refused beside `probe: null`**, for the same reason.
 - **`wait_up_to`** — the seconds a role may wait for a place that is not free. `null`, and the key
   left unwritten, each say refuse.
+- **`background_end`** — what establishes that work a call put in the background has ended. Unwritten
+  is `expiry`: nothing is read and the lease counts until its `ttl`.
+- **`background_probe`** — the command `probe` asks, run from the skills root with the place's key
+  in `MJOLNIR_PLACE_KEY` — the tree's path, or a digest under `subject: call` — and the start of its
+  command in `MJOLNIR_PLACE_COMMAND`. ⛔ It exits zero printing `running` or `ended`; anything else
+  is unestablished. Every place one reading asks about shares five seconds.
+- **`background_grace`** — the seconds after a launch before that answer is read, from one to the
+  entry's `ttl`. ⛔ **Both are stated under `probe` and refused elsewhere.**
 - **`ttl`** — the seconds a lease counts for before it expires, which bounds what one leaked lease
-  costs. ⚠️ **It is not a timeout on the work**: the work is not watched, and nothing here stops
-  anything.
+  costs. ⚠️ **It is not a timeout on the work**: nothing here stops anything.
 
 ⛔ **The probe is the third place a project's build tooling is encoded, and that triple is not an
 argument for declaring the toolchain on this surface.** The capacity rule, the spend guard's
@@ -4263,7 +4283,7 @@ What happens *on* contention is stated once, and this facet adds only that bound
 is where it is stated, along with how the count is read and what releases a place. This facet
 states what is exclusive, how many of it there are, what holds a place, which calls put it at
 stake, what can be asked how many are held and for how long, when that answer covers a lease's
-holder, and how long a lease counts.
+holder, what shows background work has ended, and how long a lease counts.
 
 ### Pruning a tree whose branch has landed
 

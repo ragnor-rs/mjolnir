@@ -773,6 +773,16 @@ ANSWERED_BY: dict[str, Answer] = {
     "branch_model.exclusive_resources.probe_timeout": ask(
         "How many seconds may asking the resource take?",
     ),
+    "branch_model.exclusive_resources.background_end": ask(
+        "What shows that work put in the background has ended -- its process, a command "
+        "of the project's own, or only its place expiring?",
+    ),
+    "branch_model.exclusive_resources.background_probe": ask(
+        "Which command prints `running` or `ended` for one backgrounded call's work?",
+    ),
+    "branch_model.exclusive_resources.background_grace": ask(
+        "How many seconds after a launch is that command's answer believed?",
+    ),
     "branch_model.exclusive_resources.ttl": ask(
         "How long does a place live before it is handed back? ⚠️ A long value is "
         "the unsafe direction here, which is the opposite of how a timeout reads.",
