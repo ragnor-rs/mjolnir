@@ -4093,6 +4093,9 @@ def self_test() -> int:
             # named, so the arm survives a renamed capability: what is wanted is
             # any available operation taking more than one argument.
             short = _ran("--invoke", _needing_two_arguments(), "--argument", "1")
+            # ⛔ A read, so a type dropped on the way leaves nothing on a tracker.
+            typed = _ran("--invoke", "read_item", "--argument", "1", "--type", "a type")
+            typed_alone = _ran("--type", "a type")
         except subprocess.TimeoutExpired:
             check(
                 "the status-move route answered at all, rather than hanging",
@@ -4153,6 +4156,17 @@ def self_test() -> int:
                 f"{both_ways.stderr.strip()[:160]!r}",
             )
             check(
+                "a type reaches the operation, and one taking none refuses it",
+                typed.returncode == 1 and "arguments it does not take" in typed.stdout
+                and "'type'" in typed.stdout,
+                f"exited {typed.returncode} saying {typed.stdout.strip()[:160]!r}",
+            )
+            check(
+                "and a type with no operation to carry it is refused",
+                typed_alone.returncode == 2 and "--type" in typed_alone.stderr,
+                f"exited {typed_alone.returncode}",
+            )
+            check(
                 "an operation asked for with too few arguments is a refusal, not a "
                 "traceback",
                 "Traceback (most recent call last)" not in short.stderr
@@ -4211,6 +4225,13 @@ def main(argv: list[str]) -> int:
         metavar="VALUE",
         help="one argument for `--invoke`, repeated in the order the operation "
         "takes them. Always passed as text",
+    )
+    parser.add_argument(
+        "--type",
+        metavar="NAME",
+        help="the native type a `create_item` filing states (§ 4.1), in the "
+        "tracker's own word. Omitted, the filing states none; an operation taking "
+        "no type refuses it",
     )
     parser.add_argument(
         "--advance-to",
@@ -4318,6 +4339,13 @@ def main(argv: list[str]) -> int:
         print("Holding the port contract to the surface and the examples:")
         return self_test()
 
+    if args.type is not None and not args.invoke:
+        print(
+            "Refused: `--type` is what a filing states, so it is asked for with "
+            "`--invoke create_item` and nothing else reads it.",
+            file=sys.stderr,
+        )
+        return 2
     # ⛔ Performing an operation is a separate request from reporting one, and the
     # two are not combined. ⚠️ This exists because a port whose operations no role
     # can reach is a contract nobody can keep: the tracker port's roles have a
@@ -4586,7 +4614,8 @@ def main(argv: list[str]) -> int:
                 root=args.root,
                 check_paths=not args.no_check_paths,
             )
-            outcome = answering.invoke(args.invoke, *args.argument)
+            stated = {} if args.type is None else {"type": args.type}
+            outcome = answering.invoke(args.invoke, *args.argument, **stated)
         except ConfigError as error:
             # ⛔ Reported as a refusal and never as a traceback. A value the
             # configuration states badly, or an operation this port does not

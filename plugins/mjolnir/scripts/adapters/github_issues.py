@@ -86,6 +86,7 @@ from adapters import _code_host_closing as closing_reading  # noqa: E402
 from adapters import _code_host_comments as conversation  # noqa: E402
 from adapters import _code_host_dependency as relation  # noqa: E402
 from adapters import _code_host_milestone as milestone  # noqa: E402
+from adapters import _code_host_type as native_type  # noqa: E402
 
 KIND = "github-issues"
 
@@ -308,6 +309,10 @@ def read_item(number: int) -> dict:
             "A role holding a pull request number has the wrong identifier, which "
             "is a different fault from an item that does not exist."
         )
+    # ⛔ Asked only where § 4.1's carrier is the host's own, so a project carrying
+    # its type elsewhere spends no call on it and its answer has no such key.
+    if native_type.carried(_bound):
+        item["type"] = native_type.type_of(_gh, _repo(), answered)
     return item
 
 
@@ -436,15 +441,21 @@ def search_items(
     }
 
 
-def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
+def create_item(
+    title: str, body: str, labels: list[str] | None = None, *, type: str | None = None
+) -> dict:
     """A new item, from the body the filing role wrote.
 
     Labels go on at creation -- one call, unlike the tracker that cannot set them
     until the card exists. The number is taken from the URL the host returns and
     the item is then read back, so what a role carries onward is the same shape
     `read_item` gives it and `item_number` can read either.
+
+    The type goes on in the same call where the filing states one, and is held to
+    that read-back (§ 4.1).
     """
     args = ["issue", "create", "--repo", _repo(), "--title", title, "--body", body]
+    args += native_type.flags(_gh, _bound, _repo(), type)
     for label in labels or []:
         args += ["--label", label]
     url = _gh(args, parse=False)
@@ -456,7 +467,7 @@ def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
             f"`gh issue create` answered `{url!r}`, whose last path segment is not "
             "a number, so the created item cannot be addressed."
         )
-    return read_item(int(tail))
+    return native_type.hold(read_item(int(tail)), type)
 
 
 def item_number(item: dict | int | str, *, operation: str = "item_number") -> int:
@@ -1094,11 +1105,8 @@ def read_vocabulary() -> dict:
     refuses anything else for -- so this reads that same pair rather than asking
     the host what its states are.
 
-    ⚠️ **The types are *unestablished* rather than absent.** This host states a
-    type vocabulary above the repository, and there is no read here that answers
-    for a repository whose owner may or may not have one -- so whether types are
-    native is asked, which is the honest half of § 4.1's question rather than a
-    `none` nobody checked.
+    ⚠️ **The types are the repository's own answer**, and stating them is not a
+    project carrying its type in them: that is § 4.1's question and stays asked.
     """
     reading = {
         "statuses": {
@@ -1136,15 +1144,7 @@ def read_vocabulary() -> dict:
                 f"{_repo()} carries no label at all, which is a repository's "
                 "ordinary state rather than a reading that failed",
         }
-    reading["types"] = {
-        "answer": port.VOCABULARY_UNESTABLISHED,
-        "values": None,
-        "because":
-            "this host states its item types above the repository, and there is "
-            "no read here that answers for one whose owner may or may not have "
-            "them -- so whether a type is native, a prefixed label or absent is "
-            "asked rather than read (§ 4.1)",
-    }
+    reading["types"] = native_type.vocabulary(_gh, _repo)
     return reading
 
 

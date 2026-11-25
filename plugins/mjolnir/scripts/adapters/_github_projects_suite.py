@@ -2025,6 +2025,94 @@ def self_test() -> int:
         not writes(host),
         f"called {host.calls}",
     )
+    # ⛔ The type is the issue's (§ 4.1), and the card is added whatever came of it.
+    labelled = under_test._bound
+    check(
+        "and asks about no type where the project carries its type elsewhere",
+        "type" not in created
+        and not {"IssueTypes", "TypeOf"} & set(host.calls)
+        and not any("--type" in args for args in host.sent),
+        f"called {host.calls}",
+    )
+
+    class _Native:
+        def get(self, key, default=None):
+            return "native" if key == "work_item.type.carrier" \
+                else labelled.get(key, default)
+
+    def typed(landed, wanted, bound):
+        _boards.clear()
+        seen = {"n": 0}
+
+        def item(_args):
+            seen["n"] += 1
+            return _issue_payload(31, on_board=seen["n"] > 1)
+
+        host = _Host({
+            "Item": item,
+            "IssueTypes": {"repository": {"issueTypes": {
+                "pageInfo": {"hasNextPage": False},
+                "nodes": [{"name": "Bug", "isEnabled": True}]}}},
+            "TypeOf": {"repository": {"issue": {
+                "issueType": landed and {"name": landed}}}},
+        })
+        bind(bound)
+
+        def call():
+            try:
+                return create_item("a title", "a body", ["port"], type=wanted)
+            except (ConfigError, HostUnavailable) as error:
+                return error
+        try:
+            return host, with_host(host, call)
+        finally:
+            bind(labelled)
+
+    host, made = typed("Bug", "Bug", _Native())
+    sent = [args for args in host.sent if args[:2] == ["issue", "create"]]
+    check(
+        "a filed item carries the type the filing states, and comes back with it",
+        isinstance(made, dict) and made.get("type") == "Bug"
+        and made.get("on_board") is True
+        and len(sent) == 1 and sent[0][-4:] == ["--type", "Bug", "--label", "port"],
+        f"answered {made!r} after {sent!r}",
+    )
+    host, made = typed(None, "Bug", _Native())
+    check(
+        "a type that did not land is a failed filing, with the card added",
+        isinstance(made, HostUnavailable) and "#31" in str(made)
+        and "AddCard" in host.calls and host.calls.count("issue create") == 1,
+        f"answered {made!r} after {host.calls!r}",
+    )
+    host, made = typed("Bug", "Chore", _Native())
+    check(
+        "a type the host does not know is refused by name, with nothing filed",
+        isinstance(made, ConfigError) and made.key == "work_item.type"
+        and "`Chore`" in str(made) and "issue create" not in host.calls,
+        f"answered {made!r} after {host.calls!r}",
+    )
+    host, made = typed("Bug", "Bug", labelled)
+    check(
+        "a native type stated under another carrier is refused unwritten",
+        isinstance(made, ConfigError) and made.key == "work_item.type.carrier"
+        and "issue create" not in host.calls,
+        f"answered {made!r} after {host.calls!r}",
+    )
+    _boards.clear()
+    reading = with_host(_Host({
+        "IssueTypes": {"repository": {"issueTypes": {
+            "pageInfo": {"hasNextPage": False},
+            "nodes": [{"name": "Bug", "isEnabled": True}]}}},
+        "Board": {"repositoryOwner": None},
+    }), read_vocabulary)
+    check(
+        "the types are read even where the board is not",
+        (reading.get("types") or {}).get("values") == ["Bug"]
+        and (reading.get("status_fields") or {}).get("answer")
+        == port.VOCABULARY_UNESTABLISHED,
+        f"answered {reading!r}",
+    )
+    _boards.clear()
     # ⛔ And the address the host answered with, which is read rather than
     # trusted: the created item is addressed by the last segment of that URL, so
     # a segment that is no item number is an item nobody can address afterwards.
