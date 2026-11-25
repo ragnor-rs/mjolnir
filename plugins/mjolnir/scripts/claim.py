@@ -1464,6 +1464,9 @@ def release(
     being true first. A release is idempotent -- each half reports what was already gone, since a
     half-released claim is exactly the state a failed release leaves and it has to be re-runnable.
 
+    ⛔ **A tree still on disk after the removal raises**, naming git's reason and what became of
+    the ref, which is gone or kept by then: § 10 requires the removal to be read back.
+
     ⛔ **A live claim held somewhere else is refused rather than released.** § 10 states that a
     claim is never broken automatically, and a release that deletes any ref it is pointed at makes
     this command the automatic breaker -- one argument away from ending a session's claim while it
@@ -1578,10 +1581,27 @@ def release(
 
     # ⛔ `doomed`, not a second derivation of the same path: the guard above refused on one answer
     # and a re-read here is allowed to give another, which would remove a tree nothing checked.
+    left = None
     if doomed and Path(doomed).exists():
-        git(root, "worktree", "remove", doomed, "--force", check=False)
-        done.append(f"tree {doomed} removed")
+        proc = git(root, "worktree", "remove", doomed, "--force", check=False)
+        # ⛔ Read back from the disk, never inferred from the exit: the directory is the fact.
+        if Path(doomed).exists():
+            left = " ".join((proc.stderr.strip() or proc.stdout.strip()).split()) or (
+                "git reported success and the directory is still there"
+            )
+        else:
+            done.append(f"tree {doomed} removed")
     git(root, "worktree", "prune", check=False)
+
+    if left is not None:
+        # ⛔ The local branch stays with the tree: it is what a later sweep or a re-run reads the
+        # tree's landing from, and git may have dropped the registration that would protect it.
+        done.append("local branch kept" if _local_branch(root, branch) else "no local branch")
+        raise ClaimError(
+            f"not released whole: the tree `{doomed}` of `{branch}` was **not** removed: {left}.\n"
+            f"What was done beside it: {', '.join(done)}.\n"
+            "Clear what holds the tree (a locked one: `git worktree unlock`) and run this again."
+        )
 
     if _local_branch(root, branch):
         proc = git(root, "branch", "-D", branch, check=False)
@@ -2513,6 +2533,47 @@ def self_test() -> int:
                  "already gone" in again, again)
         suite.ok("so the item can be claimed again after a release",
                  "claimed" in take(two, "feature/r", str(Path(tmp) / "t2")))
+
+    print("\na removal that fails is reported as one:")
+
+    # Plant: a locked tree, which git refuses to remove unless `--force` is given twice. Without
+    # the read-back the release answered *removed* for a tree still on disk.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        tree = str(Path(tmp) / "locked")
+        take(one, "feature/l", tree)
+        git(one, "worktree", "lock", tree, "--reason", "planted")
+        said = _message(lambda: release(one, "feature/l", tree)) or ""
+        suite.ok("⛔ a locked tree is reported as not removed, and it is still there",
+                 "**not** removed" in said and tree in said and Path(tree).exists(), said)
+        suite.ok("with git's own reason", "planted" in said, said)
+        suite.ok("⛔ and the ref's deletion is stated beside the tree left behind",
+                 "ref deleted" in said
+                 and remote_ref_sha(one, "origin", "feature/l") is None, said)
+        suite.ok("the local branch staying with the tree",
+                 "local branch kept" in said and _local_branch(one, "feature/l"), said)
+        printed, complained = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(printed), contextlib.redirect_stderr(complained):
+            code = main(["release", "--repo-root", one, "--branch", "feature/l", "--tree", tree])
+        suite.ok("⛔ and the command exits nonzero with nothing on the success stream",
+                 code == 1 and not printed.getvalue() and "**not** removed" in complained.getvalue(),
+                 f"{code} {printed.getvalue()!r} {complained.getvalue()!r}")
+        # The control: the same release once the lock is gone, so the arm above is the lock's.
+        git(one, "worktree", "unlock", tree)
+        again = release(one, "feature/l", tree)
+        suite.ok("while unlocked, the same release removes it and says so",
+                 f"tree {tree} removed" in again and not Path(tree).exists()
+                 and not _local_branch(one, "feature/l"), again)
+
+        # Under a kept ref the tree left behind is reported the same way.
+        kept_tree = str(Path(tmp) / "locked-kept")
+        take(one, "feature/lk", kept_tree)
+        git(one, "worktree", "lock", kept_tree)
+        said = _message(lambda: release(one, "feature/lk", kept_tree, keep_ref=True)) or ""
+        suite.ok("and a kept ref is named as kept beside the tree left behind",
+                 "**not** removed" in said and "ref kept" in said
+                 and remote_ref_sha(one, "origin", "feature/lk") is not None, said)
 
     print("\nleaving the tree before removing it:")
 
