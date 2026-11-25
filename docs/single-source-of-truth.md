@@ -1158,7 +1158,9 @@ document shape this tracker takes and read back from it, with the shapes that do
 in the module and asserted to come back as the text they were written as; a search bounded by the
 project, which is the host's own requirement rather than a convenience, and every term quoted into
 its operand so that no caller can narrow the states a duplicate check covers; and a field addressed
-by **name** and resolved against the site's own catalogue, every custom id being site-specific.
+by **name** and resolved against the site's own catalogue, every custom id being site-specific;
+a list written by the element type the catalogue states, replacing what was there and read back;
+and the fields a filing owes sent in the create itself, one nobody supplied refused before it.
 
 ⛔ **Two of this one's properties are about where a guard sits rather than what it says**, and both
 came out of the suite rather than out of review — which is
@@ -1523,6 +1525,7 @@ it on the event that opens a session.
 | 26 | An entry naming nothing exempts nothing; an entry anchored at the root matches there and nowhere else | the matching rule alone | computed |
 | 27 | A tree whose contents could not be read is unestablished, never empty; an unreadable directory is not all-symlinks | a directory with its mode taken away | computed |
 | 28 | A worktree registered **inside** a work tree is outside the scope, being a level deeper than the leaf, while the work tree itself stays this project's — and that work tree is then kept, with the nested path named as a reader would want it | a real worktree cut inside a work tree, in a project whose tree directory is inside its checkout | computed |
+| 29 | A stated teardown runs before the removal and is told the tree; one that failed, outlasted what is left of the bound or had too little left to start keeps the tree and reaches the person; a kept tree is never torn down | one landed tree, the clock stated | computed |
 
 ⚠️ **Check 16 is the one that looks like bookkeeping and is not**, for the reason § 10 gives about
 a carrier the harness kills: what the check holds is that the timeout covers the budget **plus**
@@ -2774,10 +2777,12 @@ of the two by the margin this whole document is about.
   itself reaches no event here. ⚠️ That is the same reach the boundary hook has, and the reason the
   record is written on the change rather than into a session: a record on the change is still there
   for whoever reads the history of one that was merged another way.
-- **A `claimed_by` that matches the wrong calls, or none.** The reader refuses a pattern that does
-  not compile — a pattern matching nothing is a resource that reads as guarded and holds nothing —
-  but a pattern that compiles and matches the wrong commands is a project's own statement about its
-  own commands, and nothing here can tell a narrow one from a mistaken one.
+- **A `claimed_by` that matches the wrong calls, or none.** One pattern is searched for in the text
+  of a call, so it takes a place for a call that prints it; a list is read at command positions, and
+  a command written after a separator inside a comment still reads as one. The reader refuses a
+  pattern that does not compile — a pattern matching nothing is a resource that reads as guarded and
+  holds nothing — but a pattern that compiles and matches the wrong commands is a project's own
+  statement about its own commands, and nothing here can tell a narrow one from a mistaken one.
 - **What a probe's count means.** The procedure runs the command and reads one number. A probe that
   counts the wrong thing, counts it twice, or reports a stale figure answers this check exactly as a
   correct one does. ⛔ That is the boundary at

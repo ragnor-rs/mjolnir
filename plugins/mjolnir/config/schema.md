@@ -1832,6 +1832,9 @@ tracker:
   project_key: "KEY"            # required_when: tracker.kind = jira
   transitions:
     resolve: by_name
+  create_fields:                # the fields the site requires before it will create an item
+    - field: "<the field's name>"
+      value: []                 # absent: the filing states it
 ```
 
 ```yaml
@@ -1862,6 +1865,18 @@ the repository the host facet already names, and the second addresses nothing at
 ⚠️ **Nothing here refuses a key this surface does not declare**, so a project may carry one and
 some do — which is a gap in what holds configurations to this surface rather than a licence, and is
 recorded as such in [`docs/single-source-of-truth.md`](../../../docs/single-source-of-truth.md).
+
+⛔ **A field the site requires at creation goes with the create, and `create_fields` states which.**
+Each entry names the field the way the site does. Its `value` is sent on every filing unless the
+filing states one, and an entry with no `value` is one the filing must state: a create missing it
+is refused before it is sent, naming the field. ⚠️ The filing may state fields this list does not.
+A project writing no such list sends what a filing already sends. ⚠️ **Read by this kind's
+implementation alone**, which is why it is in this block: no other tracker here refuses a create
+for a field.
+
+⛔ **A field holding several values is written whole: the write replaces the list**, as `set_labels`
+does, and an empty list clears it. Each member takes the shape of the element type the site states,
+and an element type the implementation has no shape for is refused by name.
 
 **The test a new kind's block is written against**: a key is required when the adapter cannot
 address the right tracker without it. An address this reader accepts and the tracker rejects is
@@ -3630,6 +3645,7 @@ branch_model:
   parallel_trees: true                       # required
   tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place; relative to the checkout, and under the agent harness's own managed root
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
+  teardown: "<the command that stops what a tree started>"   # may be left unwritten; read only under worktree
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
@@ -3663,7 +3679,11 @@ is what distinguishes it from a transitional one.** A tree's setup and teardown 
 project's own build genuinely differs, so there is no shared script for this key to be standing in
 for — which is the condition that was met for § 9's `script`, and that retired it.
 
-⛔ **It is steps and never a location, and `tree_dir` is the location.** The two were conflated
+⛔ **`teardown` is the one step the procedure runs rather than names**, as a command stated whole:
+a removal happens where no role is reading steps. What runs it, and when, is
+[below](#the-teardown-a-removal-runs-first).
+
+⛔ **`mechanics` is steps and never a location, and `tree_dir` is the location.** The two were conflated
 while the second key was absent, which left *where a tree goes* stated in no facet and carried by
 each project's standing convention — readable by the person running a role and by nothing shipped.
 A path is not a step: a project with nothing to install and nothing to tear down still has to say
@@ -4203,9 +4223,9 @@ named.
 A resource the trees cannot all help themselves to — a local service stack, a build daemon's
 slots, a machine-wide lock. How many may be held at once is `cap`, and what holds a place is
 `subject`, so neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry but
-`grace`, `probe_timeout` and `wait_up_to` is stated and none of them is defaulted**, because every
-one of them is a measurement of the resource rather than a preference about it, and a default here
-would be the procedure describing somebody else's machine:
+`never_claims`, `grace`, `probe_timeout` and `wait_up_to` is stated and none of them is defaulted**,
+because every one of them is a measurement of the resource rather than a preference about it, and a
+default here would be the procedure describing somebody else's machine:
 
 ```yaml
 branch_model:
@@ -4213,7 +4233,8 @@ branch_model:
       name:       "<what is held>"
       cap:        1
       subject:    tree | call
-      claimed_by: "<what the command a call runs is matched against>"
+      claimed_by: "<a pattern searched for in the call, or a list of claiming commands>"
+      never_claims: []           # the forms that claim nothing; may be left unwritten
       probe:      "<prints how many are held right now, as one number on one line>"
       grace:      60             # seconds; may be left unwritten
       probe_timeout: 5           # seconds; may be left unwritten
@@ -4233,6 +4254,9 @@ branch_model:
   three unrelated commands, and a guard that recognised any of them would be the toolkit branching
   on what the resource is. ⚠️ **It decides whether a place is taken, never how many there are** —
   which is why it is a key beside `cap` rather than a narrowing of it.
+  Its two forms are below.
+- **`never_claims`** — the forms of a claiming command that take no place. ⛔ **Refused beside a
+  `claimed_by` that is one pattern**, which reads no command to spare.
 - **`probe`** — a command that prints how many are held right now, which is the one question the
   procedure cannot answer about somebody else's resource. ⛔ **`null` is a stated absence**, not a
   count of zero, and what each value leaves the arithmetic as is
@@ -4249,6 +4273,23 @@ branch_model:
 - **`ttl`** — the seconds a lease counts for before it expires, which bounds what one leaked lease
   costs. ⚠️ **It is not a timeout on the work**: the work is not watched, and nothing here stops
   anything.
+
+⛔ **Written as a list, `claimed_by` is matched at each command position of a call and never against
+its text**, so printing, searching for or echoing a claiming command takes no place. Where a command
+stands, and how an entry's `command` and `args_match` are compared, are
+[§ 19](#the-command-position-and-why-the-whole-call-is-not-one)'s. An entry of either list carries
+those two keys and no other: `command` is one word, and `args_match` is absent where the command
+alone decides.
+
+- ⛔ **A call claims where any one position matches an entry of `claimed_by` and none of
+  `never_claims`.** A form that never claims spares the position it matches: a status call beside a
+  build leaves the build claiming.
+- ⚠️ **A script that runs a claiming command claims nothing unless it is listed itself**, its body
+  being out of § 19's reach.
+
+⚠️ **Written as one pattern, it is searched for in the whole text of the call**, so a call that only
+names the command takes a place too. That form stays because a project that states it is read as it
+stated it; the list is what does not over-match.
 
 ⛔ **The probe is the third place a project's build tooling is encoded, and that triple is not an
 argument for declaring the toolchain on this surface.** The capacity rule, the spend guard's
@@ -4274,6 +4315,32 @@ is where it is stated, along with how the count is read and what releases a plac
 states what is exclusive, how many of it there are, what holds a place, which calls put it at
 stake, what can be asked how many are held and for how long, when that answer covers a lease's
 holder, and how long a lease counts.
+
+### The teardown a removal runs first
+
+⛔ **Where `teardown` is stated, the release and the sweep each run it before removing a tree**, after
+every reading that could keep that tree and before the published ref goes. So a tree those readings
+keep is never torn down, and a teardown that fails leaves the claim whole. A project stating none
+has none run.
+
+- **The tree it is for is `MJOLNIR_TREE`**, an absolute path in its environment. It runs at the
+  repository's main checkout, whichever tree the removal was asked from, so a path in the command
+  reads the same for every tree.
+- ⛔ **A nonzero exit keeps the tree**, and the report names the tree, the exit and the end of what
+  the command printed. No override skips it: what clears it is the command succeeding.
+- ⛔ **It has to be repeatable.** It runs again wherever the removal after it failed, and on every
+  later sweep of a tree it left standing. One stopped part way is started from the top.
+- ⚠️ **Whatever it writes into the tree goes with the tree**, the files having been read before it
+  ran. Who is working there is read again after it.
+- ⚠️ **A process the tree started that works inside the tree reads as another session**, where it is
+  not one of the run's own, and the tree is kept before the teardown is reached. Nothing on the
+  machine tells the two apart. The override a release takes for an occupied tree reaches the
+  teardown; the sweep has none.
+
+⛔ **The release reads the key itself**, from the configuration at the skills root, and no caller
+passes it. A configuration that does not resolve refuses the release, since whether it states a
+teardown is unknown; one that is absent, or that states no code root in this repository, is named in
+what the release reports.
 
 ### Pruning a tree whose branch has landed
 
@@ -4464,6 +4531,12 @@ deletion this carrier's. ⚠️ **A kept ref costs the loop nothing** — the cl
 claim as spent whether or not its ref still stands — ⛔ **but the predicate keyed on the ref's
 *name* goes on answering `taken`**, which is the true answer about a ref that exists and is why
 the item read is the one the loop asks.
+
+⛔ **A teardown runs inside the sweep's bound and never past it.** It is given what is left of that
+bound when it starts. One with too little left is not started, one that outlasts it is stopped, and
+either way the tree is kept and the person is told. ⚠️ A teardown that takes the whole bound leaves
+the trees after it unreached, and they are named; a release has no bound and is how such a tree is
+removed.
 
 ```yaml
 branch_model:

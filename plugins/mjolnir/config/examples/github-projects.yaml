@@ -311,6 +311,9 @@ branch_model:
   # directory, not what the tree holds. A path, never a step — the steps are the pointer below.
   tree_dir: ".claude/worktrees/items"
   mechanics: ".claude/worktrees.md"   # the tree's own setup and teardown steps
+  # What stops the instance a tree started. Run before the tree is removed, with the tree's path in
+  # `MJOLNIR_TREE`; a failure keeps the tree.
+  teardown: "<the command that stops what a tree started>"
   # The non-empty shape, and the one the pointer above implies: a tree that has something installed
   # into it holds ignored files that running the install again writes back. ⚠️ The environment file
   # the pointer copies in is deliberately absent from this list — a copied secret is written by
