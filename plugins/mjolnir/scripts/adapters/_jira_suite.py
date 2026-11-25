@@ -249,6 +249,7 @@ ROUTES = [
     ("GET", r"^/issue/[^/]+/transitions$", "transitions"),
     ("POST", r"^/issue/[^/]+/transitions$", "transition"),
     ("POST", r"^/issue/[^/]+/comment$", "comment"),
+    ("GET", r"^/issue/[^/]+/comment$", "conversation"),
     ("PUT", r"^/issue/[^/]+/assignee$", "assignee"),
     ("GET", r"^/issue/[^/]+$", "issue"),
     ("PUT", r"^/issue/[^/]+$", "update"),
@@ -507,6 +508,7 @@ class _Host:
             "update": self._do_update,
             "assignee": self._do_assignee,
             "comment": lambda *_: {"id": "comment-1"},
+            "conversation": lambda *_: {"total": 0, "comments": []},
             "create": self._do_create,
             "link": self._do_link,
             "search": self._answer_search,
@@ -933,6 +935,7 @@ def self_test() -> int:
     # operation resolves its key through `read_item` first.
     for label, call in (
         ("comment", lambda: comment(foreign(1), "a note")),
+        ("read_comments", lambda: under_test.read_comments(foreign(1))),
         ("set_labels", lambda: set_labels(foreign(1), ["alpha"])),
         ("assign", lambda: assign(foreign(1))),
         ("set_state", lambda: set_state(foreign(1), status=second)),
@@ -1297,6 +1300,66 @@ def self_test() -> int:
         all(bool(owner) for owner in OWNED_ELSEWHERE.values()),
         f"owns {OWNED_ELSEWHERE!r}",
     )
+
+    # --- `read_comments` ------------------------------------------------------
+    def _said(number, **other) -> dict:
+        return {
+            "id": str(number), "author": {"displayName": "A Writer", "accountId": "a"},
+            "body": as_document(f"note {number}"),
+            "created": "2026-10-01T00:00:00.000+0000",
+            "updated": "2026-10-01T00:00:00.000+0000", **other,
+        }
+
+    def _in_pages(of, total=None):
+        def answer(_path, params, _body):
+            start = int(params["startAt"])
+            return {
+                "total": (len(of) if total is None else total(start)),
+                "comments": of[start:start + 2],
+            }
+        return answer
+
+    three = [
+        _said(1),
+        _said(2, updated="2026-10-02T00:00:00.000+0000", author=None),
+        _said(3, body={"type": "doc", "content": [{"type": "paragraph", "content": [
+            {"type": "mention", "attrs": {"id": "a", "text": "@A Writer"}},
+            {"type": "text", "text": " see "},
+            {"type": "inlineCard", "attrs": {"url": "https://example.invalid/d"}},
+        ]}]}),
+    ]
+    conversing = host({"conversation": _in_pages(three)})
+    answered = with_host(conversing, lambda: under_test.read_comments(f" {key(1)} "))
+    check(
+        "every page of the comments is read, with writer, time and words",
+        got(answered, "key") == key(1) and [
+            (c["id"], c["author"], c["created"], c["edited"], c["body"])
+            for c in got(answered, "comments") or []
+        ] == [
+            ("1", "A Writer", "2026-10-01T00:00:00.000+0000", None, "note 1"),
+            ("2", None, "2026-10-01T00:00:00.000+0000", "2026-10-02T00:00:00.000+0000", "note 2"),
+            ("3", "A Writer", "2026-10-01T00:00:00.000+0000", None,
+             "@A Writer see https://example.invalid/d"),
+        ],
+        f"answered {answered!r}",
+    )
+    for label, planted in (
+        ("an answer with no list", lambda *_: {"total": 0}),
+        ("an answer with no total", lambda *_: {"comments": []}),
+        ("an entry that is not a comment", lambda *_: {"total": 1, "comments": ["x"]}),
+        ("a page that ends early", _in_pages(three, lambda start: 5)),
+        ("a total that moves", _in_pages(three, lambda start: 3 if start else 4)),
+        ("an entry read twice", _in_pages([_said(1), _said(2), _said(2)])),
+        ("a comment with no text", _in_pages([_said(1, body=None)])),
+        ("a comment with no time", _in_pages([_said(1, created=None)])),
+    ):
+        reported = with_host(
+            host({"conversation": planted}),
+            lambda: unavailable(lambda: under_test.read_comments(key(1))),
+        )
+        check(f"{label} is a failed read and never a shorter list",
+              isinstance(reported, str) and not reported.startswith("<"),
+              f"got {reported!r}")
 
     # --- `comment`, `assign` --------------------------------------------------
     noted = host()

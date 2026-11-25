@@ -362,9 +362,8 @@ def _default_answers() -> dict:
         "issue edit": "",
         # ⚠️ Named by the **paging flag** rather than by the path, because
         # `args[:2]` is what this fake reads and the path is the third word --
-        # which holds while this is the one paged REST read in the module. A
-        # second one would need the fake to name a call by what it addresses, and
-        # this comment is where that shows up.
+        # so the two paged REST reads in the module share one name, and the answer
+        # is told apart by the path it was asked at.
         #
         # ⚠️ **Its position among the keys is not load-bearing**, and the first
         # form of this comment claimed it was: `_answer_for` tries every exact
@@ -373,7 +372,9 @@ def _default_answers() -> dict:
         # Reproduced by moving it after `api` and watching the suite stay green --
         # a comment asserting an ordering nothing depends on is the restated-fact
         # class one layer down.
-        "api --paginate": _dependencies_page([]),
+        "api --paginate": lambda args: (
+            [] if "/comments?" in args[-1] else _dependencies_page([])
+        ),
         # Prefix-matched: the dependency lookup addresses one issue by path, and
         # the relation itself is posted with `--method`.
         "api": 4321,
@@ -1186,6 +1187,28 @@ def self_test() -> int:
         and relation.issue_path(own_repo, 12) in looked_up[0],
         f"posted {posted!r} after looking up {looked_up!r}",
     )
+
+    # --- `read_comments`: the shaping is the sibling suite's to hold --------
+    _boards.clear()
+    conversing = _Host({"api --paginate": [{
+        "id": 1, "user": {"login": "a-writer"}, "body": "a decision",
+        "created_at": "2026-10-01T00:00:00Z", "updated_at": "2026-10-01T00:00:00Z",
+        "html_url": "https://example.invalid/c/1",
+    }]})
+    answered = with_host(conversing, lambda: under_test.read_comments("011"))
+    check(
+        "this kind's own read of the comments reaches the shared shaping, every page",
+        answered.get("number") == 11
+        and [(c["author"], c["body"]) for c in answered.get("comments") or []]
+        == [("a-writer", "a decision")]
+        and conversing.sent[-1]
+        == ["api", "--paginate", f"repos/{own_repo}/issues/11/comments?per_page=100"],
+        f"answered {answered!r} after {conversing.sent!r}",
+    )
+    guarded = _Host({"Item": _issue_payload(11, typename="PullRequest")})
+    with_host(guarded, lambda: unavailable(lambda: under_test.read_comments(11)))
+    check("and a pull request's conversation is not read as an item's",
+          guarded.calls == ["Item"], f"called {guarded.calls!r}")
 
     # --- `read_blockers`: the source the readiness gate's blocker check has ---
     #
