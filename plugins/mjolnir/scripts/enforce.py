@@ -11,10 +11,9 @@ project that states no configuration. This script is the carrier for each:
               refuse a local run the host's own runs have already made, then
               hold a place on whatever the call puts at stake -- and nothing at
               all where the project states no configuration
-    release   a `PostToolUse`, `Stop`, `SessionEnd` or `SubagentStop` answer:
-              give back the places this session is holding -- and, at two of
-              those four, report whether this tree's branch has fallen behind
-              its base
+    release   an answer to any event `RELEASE_EVENTS` maps: give back the
+              places this session is holding -- and, at two of those events,
+              report whether this tree's branch has fallen behind its base
     record    write the recorded answer a guard reads onto a change
     held      report what is held right now, and by what
 
@@ -153,7 +152,9 @@ GUARD_EVENT = "PreToolUse"
 # the one call that just ended, or every place the session is holding.
 RELEASE_EVENTS = {
     "PostToolUse": "call",
+    "PostToolUseFailure": "call",
     "Stop": "session",
+    "StopFailure": "session",
     "SessionEnd": "session",
     "SubagentStop": "session",
 }
@@ -163,7 +164,7 @@ RELEASE_EVENTS = {
 GUARDED_TOOL = "Bash"
 
 # § 7's two points a branch is measured against its base at, and ⛔ **two of the
-# four events above rather than all of them**: a session ending is a report
+# events above rather than all of them**: a session ending is a report
 # nobody is left to act on, and a subagent stopping is not this tree's turn
 # ending. The second entry is further narrowed to a call that merged, which is
 # read with the merge guard's own grammar rather than a second one.
@@ -1573,7 +1574,7 @@ def behind_of(where: str, *, remote: str = "origin",
 def behind_answer(payload: dict, *, event: str | None = None, load=None, read=None) -> str:
     """§ 7's report for one exit event, or `""` where this is not one of its points.
 
-    ⛔ **Two of the four release events, and the second one narrowed further.**
+    ⛔ **Two of the release events, and the second one narrowed further.**
     A session ending is a report nobody is left to act on and a subagent stopping
     is not this tree's turn ending; a finished call is one of the two points only
     where the call *merged*, which is read with the merge guard's own grammar
@@ -1583,7 +1584,7 @@ def behind_answer(payload: dict, *, event: str | None = None, load=None, read=No
     # ⛔ The two points are read out of the one place that states them, never
     # matched again here: the first form of this arm compared the event against
     # each name inline and left the list beside it decorative — measured by
-    # widening the list to all four events and watching only the list's own
+    # widening the list to every event and watching only the list's own
     # assertion redden while the arm went on answering at two.
     if fired not in BEHIND_EVENTS:
         return ""
@@ -1879,6 +1880,44 @@ def check_the_surface_still_states_this(text: str) -> list[str]:
     return problems
 
 
+def check_every_exit_is_held(text: str, mapped: dict[str, str]) -> list[str]:
+    """§ 7's exit table and the events mapped here name the same exits.
+
+    ⛔ Both directions: a row naming an event nothing maps is an exit that holds
+    its place until the next sweep, and a mapped event no row names is a release
+    the surface does not state. A row with no event is the stated expiry case
+    and only that.
+    """
+    rows: list[list[str]] = []
+    inside = False
+    for line in text.splitlines():
+        if line.startswith("#"):
+            inside = _anchor(line.lstrip("#").strip()) == ARM_ANCHORS["lease"]
+        elif inside and line.startswith("|"):
+            rows.append([cell.strip() for cell in line.strip().strip("|").split("|")])
+    rows = rows[2:]
+    if not rows:
+        return ["the lease subsection states no exit table, so no exit is held to anything."]
+    problems = []
+    named: set[str] = set()
+    for row in rows:
+        if len(row) != 3:
+            problems.append(f"the exit {row[0]!r} does not state what releases it and the "
+                            "events registered for it.")
+            continue
+        events = re.findall(r"`([^`]+)`", row[2])
+        named.update(events)
+        if not events and (row[2] != "none" or "expiry alone" not in row[1]):
+            problems.append(f"the exit {row[0]!r} names no event and is not the expiry case.")
+        for event in events:
+            if event not in mapped:
+                problems.append(f"the exit {row[0]!r} is released on {event}, which no release "
+                                "arm maps.")
+    for event in sorted(set(mapped) - named):
+        problems.append(f"{event} releases a place here and no exit of the surface names it.")
+    return problems
+
+
 def check_the_carrier_still_calls_this(text: str) -> list[str]:
     """`hooks.json` still registers this file on the guard event and on every release event.
 
@@ -1907,7 +1946,7 @@ def check_the_carrier_still_calls_this(text: str) -> list[str]:
                 "event covers is covered by nothing."
             )
             continue
-        if event in (GUARD_EVENT, "PostToolUse"):
+        if event == GUARD_EVENT or RELEASE_EVENTS.get(event) == "call":
             matcher = called.get("matcher") or ""
             if GUARDED_TOOL not in matcher:
                 problems.append(
@@ -2366,12 +2405,14 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               guard_answer(_call("claims-the-first"), config=two, now=1000.0,
                            store=fresh("differential-2")) == {})
 
-        # --- the six exit paths -------------------------------------------
+        # --- the exit paths -----------------------------------------------
         out.append("")
         out.append("Every exit path either gives the place back or is covered by the sweep:")
         paths = [
             ("the call finished", "PostToolUse", False),
+            ("the call failed", "PostToolUseFailure", False),
             ("the turn ended", "Stop", False),
+            ("an API error ended the turn", "StopFailure", False),
             ("the session ended", "SessionEnd", False),
             ("a subagent stopped", "SubagentStop", False),
         ]
@@ -2389,6 +2430,21 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check(f"{label}: and the place comes back on `{event}`",
                   guard_answer(_call("a-claiming-command", session="another"),
                                config=config, now=1001.0, store=where) == {})
+
+        check("and every release event is one of those paths",
+              {event for _label, event, _background in paths} == set(RELEASE_EVENTS))
+
+        # ⛔ A failure is the exit of one call, so it gives back that call's place
+        # and leaves its sibling's, rather than sweeping the session.
+        where = fresh("exit-failed-sibling")
+        config = _a_config([_a_resource(cap=2, subject="call")])
+        guard_answer(_call("a-claiming-command --one"), config=config, now=1000.0, store=where)
+        guard_answer(_call("a-claiming-command --two"), config=config, now=1000.0, store=where)
+        release_answer(_exit("PostToolUseFailure", outside, command="a-claiming-command --one"),
+                       config=config, now=1000.0, store=where)
+        left = [lease.get("command") for _path, lease in live_leases(where, 1000.0)]
+        check("a failed call gives back its own place and not its sibling's",
+              left == ["a-claiming-command --two"], repr(left))
 
         # ⛔ The path the harness publishes no event for. What is asserted is
         # not that an event fires: it is that the sweep at the end of the turn
@@ -3392,6 +3448,9 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         for label, payload in (
             ("the session ended", _exit("SessionEnd", outside)),
             ("a subagent stopped", _exit("SubagentStop", outside)),
+            ("an API error ended the turn", _exit("StopFailure", outside)),
+            ("a merge call failed",
+             {**_call("gh pr merge 7"), "hook_event_name": "PostToolUseFailure"}),
             ("a call that merged nothing finished",
              {**_call("a-command-of-some-kind"), "hook_event_name": CALL_FINISHED}),
             ("a read of the same change finished",
@@ -3428,6 +3487,23 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     for arm, slug in sorted(ARM_ANCHORS.items()):
         check(f"and reddens when the `{arm}` subsection is reworded",
               bool(check_the_surface_still_states_this(_reword_heading(surface, slug))))
+
+    problems = check_every_exit_is_held(surface, RELEASE_EVENTS)
+    check("every exit the surface states is held to a mapped event or to expiry",
+          not problems, "; ".join(problems))
+    for event in sorted(RELEASE_EVENTS):
+        without = {name: scope for name, scope in RELEASE_EVENTS.items() if name != event}
+        check(f"and reddens when `{event}` stops being mapped",
+              bool(check_every_exit_is_held(surface, without)))
+        check(f"and reddens when the surface stops naming `{event}`",
+              bool(check_every_exit_is_held(
+                  surface.replace(f"`{event}`", "`Reworded`"), RELEASE_EVENTS)))
+    check("and reddens when the expiry case stops being stated as one",
+          bool(check_every_exit_is_held(
+              _plant_in(surface, "⛔ **expiry alone.**", "a sweep."), RELEASE_EVENTS)))
+    check("and reddens when the table is gone",
+          bool(check_every_exit_is_held(
+              _reword_heading(surface, ARM_ANCHORS["lease"]), RELEASE_EVENTS)))
 
     # ⛔ The question the guard matches is the surface's own word, held by this
     # run rather than by whoever edits either file. A rename there with no rename
