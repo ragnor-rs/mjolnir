@@ -7462,9 +7462,9 @@ already crosses a separator and a class so written exempts every change — the 
 refusal above wearing a facet. The two-star form, because it is the habit every other tool teaches,
 would mean nothing different here, and a glob quietly matching less than its author meant sends a
 change through the loop that should not have been in it. And a blank one, which matches nothing.
-⛔ **A path handed to the decision is refused on the same rule**: one that is absolute or climbs out
-of the tree is a path no class can be asked about, and the answer it would otherwise be given is
-*exempt*.
+⛔ **A path handed to the decision is refused on the same rule**: one that is absolute, climbs out
+of the tree or carries a step the repository's own spelling does not is a path no class can be asked
+about, and the answer it would otherwise be given is *exempt*.
 
 **The kinds are a closed set, published in the fence above and nowhere else on this surface.**
 ⚠️ **Unlike [§ 27](#27-the-role-to-person-map)'s role names, they are publishable** — which roles a

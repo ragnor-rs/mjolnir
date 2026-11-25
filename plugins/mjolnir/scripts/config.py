@@ -1049,13 +1049,20 @@ def _changed_paths(paths: list[str], key: str) -> list[str]:
                 "path. ⛔ Not dropped from the list: a change described wrongly "
                 "in part would be answered about in part (§ 30, § 11).",
             )
-        if os.path.isabs(path) or path.split("/")[0] == os.pardir:
+        # ⚠️ The third arm is a path the repository does not hold under that
+        # spelling: `ci/../app/a` matched a `ci/*` glob, and `./ci/a` matched none.
+        if (
+            os.path.isabs(path)
+            or path.split("/")[0] == os.pardir
+            or os.path.normpath(path) != path
+        ):
             raise ConfigError(
                 key,
                 f"was handed {path!r}, which is not repository-relative. § 30 "
                 "matches a class's globs against the path as the repository "
-                "holds it, so an absolute path or one climbing out of the tree "
-                "is a path no class can be asked about.",
+                "holds it, so an absolute path, one climbing out of the tree or "
+                "one carrying a step the repository does not is a path no class "
+                "can be asked about.",
             )
     return list(dict.fromkeys(paths))
 
@@ -13229,6 +13236,8 @@ def self_test() -> int:
          ["/elsewhere/notes.md"], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
         ("a decision handed a path climbing out of the tree",
          ["../outside/thing.md"], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
+        ("a decision handed a path that steps out of the class it is written under",
+         ["docs/../app/main.py"], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
         # ⛔ And the kind held to the published set at decision time, which is a
         # different act from holding a configuration's kinds: a misspelling
         # answered `through_the_loop`, which is safe, silent, and drops the

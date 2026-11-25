@@ -2635,7 +2635,7 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
             answer.refused and "claiming to be somebody" in answer.detail,
             f"got {str(answer)!r}",
         )
-    for bad in ("../ci/a", "/ci/a", "  "):
+    for bad in ("../ci/a", "/ci/a", "  ", "ci/../app/a", "./ci/a"):
         try:
             answer = _classed_ask([bad], PROCEDURE, built, the_rest)
         except ConfigError as error:
