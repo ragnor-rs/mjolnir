@@ -499,6 +499,11 @@ spend_guard:
   # rewrite is the same window the deploy above is driven from.
   resume_bar_usd: 0.5
 
+# No launcher is listed, so a call is read by its own command positions and nothing handed to a shell
+# as a string is read.
+command_position:
+  launchers: []
+
 live_guard:
   # The same environment the deploy above reaches, guarded one layer lower: the release goes
   # through the command named there, and ⛔ a shell that opens a session on the same machine

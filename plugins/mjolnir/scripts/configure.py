@@ -890,6 +890,18 @@ ANSWERED_BY: dict[str, Answer] = {
     "spend_guard.resume_bar_usd": ask(
         "Above which figure does a resumed run stop to ask again?",
     ),
+    "command_position.launchers.command": ask(
+        "Which commands here run what they are handed as a command?",
+    ),
+    "command_position.launchers.string_flags": ask(
+        "Which flags of that command take a command text as their value?",
+    ),
+    "command_position.launchers.valued_flags": ask(
+        "Which flags of that command take some other separate word as their value?",
+    ),
+    "command_position.launchers.operands": ask(
+        "Are that command's plain words a command, a command text, or neither?",
+    ),
 
     # --- § 20. The sections a body must carry ------------------------------
     "body_sections.heading": ask(
