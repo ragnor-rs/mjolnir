@@ -82,6 +82,7 @@ if _SCRIPTS not in sys.path:
 
 import port  # noqa: E402
 
+from adapters import _code_host_closing as closing_reading  # noqa: E402
 from adapters import _code_host_dependency as relation  # noqa: E402
 
 KIND = "github-issues"
@@ -839,6 +840,26 @@ def read_closing_change(number: int) -> dict:
     }
 
 
+def read_closing_list(change: int, *landing: str) -> dict:
+    """What merging one change closes, read before it is merged.
+
+    ⚠️ **Keyed on the change and not on an item**, so the guard that refuses a
+    change's number does not apply: that number is what this reads. `landing` is
+    any text the merge call itself will supply, a squash subject being the case.
+    The reading and why it is two are `_code_host_closing`'s.
+    """
+    repo = _repo()
+    addressed = item_number(change, operation="read_closing_list")
+    owner, name = repo.split("/")
+    answer = _gh([
+        "api", "graphql", "-f", f"query={closing_reading.CLOSING_LIST_QUERY}",
+        "-f", f"owner={owner}", "-f", f"name={name}", "-F", f"number={addressed}",
+    ])
+    return closing_reading.closing_list(
+        repo, addressed, (answer.get("data") or {}).get("repository"), landing
+    )
+
+
 def create_grouping(value: str, *, grouping: dict) -> dict:
     """The milestone this grouping names, brought into existence.
 
@@ -1151,6 +1172,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "read_blockers": read_blockers,
     "link_for_close": link_for_close,
     "read_closing_change": read_closing_change,
+    "read_closing_list": read_closing_list,
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
     "create_grouping": create_grouping,

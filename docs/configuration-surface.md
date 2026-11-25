@@ -2509,7 +2509,7 @@ that the subject is the whole store rather than its loop rulings are
 | assert values, never key sets | review | **promoted**: [`§ What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable) |
 | a fixture thinner than the production shape tests the fixture | review | **promoted**: the same subsection |
 | a message may claim a specific cause only where the layer below reported that cause | review | **promoted, already stated** for a role's own report — a precondition's failure is never folded into the conclusion ([`§ 2`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)) and a report names what it could not establish ([`§ 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)) — and **deliberately local** for the artifact the project ships |
-| an absolute in an acceptance condition becomes the thing measured against later | review | ⛔ **residue, named** — see below |
+| an absolute in an acceptance condition becomes the thing measured against later | review | **promoted**: [`§ What an acceptance condition is written as`](../plugins/mjolnir/config/schema.md#what-an-acceptance-condition-is-written-as) |
 | text the user typed and the system silently capped must be said to be capped | review | **deliberately local**: the same report rule as above, applied to a product's own output rather than a role's |
 | structure a provider already reports is read rather than asked for | review | **deliberately local**: the same shape as *detect what is detectable, and read nothing twice* ([`§ What a project is asked`](../plugins/mjolnir/config/schema.md#what-a-project-is-asked-and-the-one-file-the-answers-are-written-into)), applied to a model's output |
 | a schema migration's version is chosen against the order branches merge in | technology | **deliberately local**, and generalising to no other project of the six |
@@ -2540,27 +2540,19 @@ store is otherwise a different shape entirely — hundreds of entries, an index 
 up rather than one line each, and its own language — which is why the inventory above is one store's
 and the class is the finding.
 
-### The two rulings with no home, named
+### The ruling with no home, named
 
-⛔ **Both are procedure by the surface's own test — a value a role reads is a key and a rule it
+⛔ **It is procedure by the surface's own test — a value a role reads is a key and a rule it
 follows is not** ([`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls))
-— **and neither of them is stated anywhere.**
+— **and it is stated nowhere.**
 
-- **An acceptance condition states the failure being prevented, not an absolute** — #277. An
-  absolute outlives the reasoning that produced it and becomes the thing a later measurement is
-  taken against — measured where it cost a correct, merged change being reported as not meeting its
-  own criterion. ⚠️ **Four legs read an acceptance condition**: the filing role writes it, the gate
-  checks it is present, the starting role bounds the work by it, and *implemented* is defined as it
-  being answered. ⛔ **So it cannot live in one role's carrier**, by the reasoning ruling (11) gives,
-  and [`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template) names the section without saying
-  anything about how it is phrased.
 - **A duplicate search is only as current as the moment before the write** — #278. Measured three
   times in one day on this repository's own backlog: a listing read, a drafting pass, and six items
   filed by other projects' sessions in between — once taking three of four gaps a pass was drafting,
   and one of those ruling against the shape it was about to propose. ⛔ **The filing role states the
   three search layers and no window**, so a search run an hour before the write reads as a search.
 
-**What happened to each is the item named beside it**, which is where a ruling's outcome lives until
+**What happens to it is the item named beside it**, which is where a ruling's outcome lives until
 it is on the surface. ⚠️ That is the convention the inventory above has a row of its own for — a
 missing facet is a numbered item, a question inside an open one is an edit to that item — and it is
 what keeps a named residue from being a note nothing acts on.

@@ -389,7 +389,8 @@ here rather than in the role that carries it.** ⛔ **Two legs read that state**
 reaches it and the one entered on it — so a definition written in either role's own text would be a
 second authority for the other, which is the division this section already makes for finishing and
 reviewing. ⛔ **Implemented** is therefore stated here: **the item's own stated acceptance condition
-is answered in the tree, and nothing that condition raised is waiting on a person.** ⚠️ **It is not
+is answered in the tree, and nothing that condition raised is waiting on a person.** What that
+condition is written as is [below](#what-an-acceptance-condition-is-written-as). ⚠️ **It is not
 the diff looking finished** — an item whose condition nobody can answer yet has not reached this
 state, and the session says so rather than continuing. ⚠️ **Where the item
 states no such condition**, which §4.4 makes a legitimate configuration, that is reported as
@@ -603,6 +604,45 @@ figure in them stale and every standing fact in them already argued in a row of 
 ⛔ **`audit_trail` is the key this surface will never declare.** A rule that is procedure everywhere
 is the rule an adopting project is likeliest to reach for a switch on, and a key accepted in silence
 is the rule gone with nothing refusing it.
+
+### What an acceptance condition is written as
+
+⛔ **An acceptance condition states the failure being prevented, never an absolute.** An absolute —
+*every*, *all*, *never*, or a wording read as one of them — is wider than the failure somebody
+wanted gone, and nothing in the sentence says which part of it was meant.
+
+**What that costs arrives later.** The wording outlives the reasoning that produced it and becomes
+what a later measurement is taken against. ⚠️ **Measured where it cost something**: a condition
+asked that a listing return the entries *other* than the dominant one, which reads as *all of
+them*; the goal was that one entry cannot crowd out the rest. The change that landed capped each
+entry's share, so only some of the others could ever show — and a session that measured the
+wording called the merged change defective and proposed undoing the cap. ⛔ **The condition was
+wrong and the code was right**, which is the direction that gets this backwards: a strict wording
+looks like the safer one to write, and what it produces is correct work reported as failing its own
+criterion.
+
+⛔ **It is not a licence to read a condition down.** A leg that finds the wording and the failure
+apart says so and asks, by [*Nothing is deferred*](#nothing-is-deferred), and the item is rewritten
+by whoever may rewrite it. A reader who decided alone that an unmet condition meant something
+narrower would be the same defect pointed the other way.
+
+⚠️ **The form is stated and the wording is not.** No heading, language or template text comes from
+here, the heading half being [§ 4.4](#44-template)'s. Whether a sentence is *present*, and whether
+anybody can answer it yet, are other rules' questions; so is how much of a condition a check can
+decide, since a condition answered half by a machine and half by a person is phrased under this
+rule whichever half reads it.
+
+⚠️ **Nothing decides this rule, which is its boundary rather than an omission.** Whether a sentence
+names a failure or an absolute is a reading and not a computation: the same word is an absolute in
+one condition and the failure itself in another — *no credential is written to the log* is both
+strict and exactly what is being prevented. So no `readiness:` predicate and no `done:` check is
+answered out of it, and no gate refuses an item by it. What it binds is whoever writes an item and
+whoever reads one.
+
+⛔ **Procedure, and no key on this surface carries it**: a project supplies no value for it, which
+is the test
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) states.
+It stands here rather than in a role's text because several legs read the one sentence.
 
 ### What earns a test, and what makes its red believable
 
@@ -1492,6 +1532,7 @@ host:
   landing:
     method: squash | merge_commit | rebase     # how a pull request lands; required
     delete_branch: host | procedure | never    # which side deletes the remote ref afterwards; required
+    approval_covers: commit | content          # what a merge approval covers; default: commit
 ```
 
 **Stated, because the roles that land a change read it and the shape of `main` is not a reading.**
@@ -1540,6 +1581,14 @@ nobody wrote.
 [§ 10](#the-claim-on-a-work-item)'s release, which no host setting touches, so nothing reads this
 key as an answer about either; a ref the host deleted is one of the ways a landed claim stops
 existing, and that release's own test is *landed or held here* either way.
+
+**`approval_covers` is read by [§ 7's guard on a merge](#what-a-hook-refuses-and-the-record-it-reads)
+and by nothing else.** `commit` is the rule stated there. `content` keeps an approval across a push
+that leaves the change's diff against its base the same — a rebase onto the base is the case. What
+is compared is every line of the diff but the line numbers and blob names. ⛔ **A diff that could
+not be read whole keeps nothing**: a binary file it does not show, a commit the host no longer
+answers for, or a size the host refuses. ⚠️ **What it does not see is position**: one hunk moved
+between two places whose surrounding lines are identical reads as the same diff.
 
 ⛔ **A reader of this key reads what to expect, never what it may refuse to handle.** The method is
 the project's convention and not a guarantee about a given ref: a check told `merge_commit` still
@@ -1849,6 +1898,7 @@ operations the survey reached and says which it did not.
 | `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
 | `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
 | `read_closing_change` | `link_for_close`'s own read, after the fact: the change that closed one item and the commit that change landed as — ⛔ never a verdict about whether the item is done, which is the item's state and is `read_item`'s | the landed record names the item and reports the closing change **unread**: never *no change closed it*, and never the newest change on the branch, by § 2's rule that absence of signal is not an answer |
+| `read_closing_list` | `link_for_close`'s own read, before the fact: the items the host will close when one change lands, and every text in its title, its body, its commit messages and the merge call's own text that could close one — ⛔ never a verdict about which were meant, which is [the comparison](#what-a-merge-closes-and-the-comparison-that-holds-it) below | the report says what the merge closes went **unread**, and never that nothing but the intended items closes, by § 2's rule that absence of signal is not an answer |
 | `create_grouping` | one of § 4.8's groupings brought into existence, by the value that facet keys it on — the one write about a grouping that is made before any item is in it | nothing is created, and the role **names the grouping it would have created** for whoever creates it by hand; ⛔ no file and no record of a grouping is written anywhere else instead, a grouping the tracker does not hold being a grouping no `grouping_items` can read |
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
@@ -1861,6 +1911,33 @@ operations the survey reached and says which it did not.
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
 | `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
 | `read_vocabulary` | the vocabularies the tracker itself states — its status words in their own order, its label set, its item types where it has native ones — each answered as **read**, as the tracker stating none, or as unestablished, and ⛔ never a verdict about which of them this project means, that being the facets' own question and a person's to answer. ⚠️ **An implementation may publish a vocabulary of its own beyond those three** where its tracker holds one the others do not: the measured case is a board's single-select columns, which is what makes *which field carries status* a question with a menu rather than a column picked out of several | every question about a status word, a label prefix or a type is **asked** rather than filled in, and the asking step's report names the reading it could not take; an unreadable vocabulary is never an empty one, by § 2's rule that absence of signal is not an answer |
+
+### What a merge closes, and the comparison that holds it
+
+⛔ **Before a merge, the items the host will close are compared with the items meant, and a
+difference in either direction stops the merge, naming the item and the text responsible.** The
+host's own list is read rather than derived from what a role wrote: ⚠️ a keyword parser ignores
+negation, and an item was closed here by a body saying the change did not close it.
+
+⛔ **The host's list is the authority on the body, and a commit message is on no such list.** A
+message carrying a closing phrase closes its item when it reaches the default branch, so the
+change's commits are read for one, and so are its title and any text the merge call supplies. An
+item only a commit closes is enough to **stop** for and, under `squash`
+([§ 2](#how-a-pull-request-lands)), not enough to **rely on**: which messages reach the base there is
+the host's own setting, so an intended item is named in the body or in the merge call. A title is
+never relied on, whatever the method.
+
+**The items meant** are those this change's body was given a closing reference for: none where
+`link_for_close` is absent, none where the base is not the default branch, and not an item a sibling
+change still holds open. ⛔ They are stated from the work and never read back out of the body, which
+would compare it with itself.
+
+| the answer | what follows |
+|---|---|
+| the two sets are the same | the merge is asked for |
+| an extra item, or a missing one | ⛔ stop: the text is corrected, or the person rules the item intended, and the comparison is made again |
+| the capability is absent | the report and the merge ask say the list went unread |
+| the host did not answer | the same is said, and the merge is held until it does |
 
 ### Who declares a capability
 
@@ -2133,6 +2210,10 @@ The procedure names the **semantic** sections it depends on — `outcome`, `acce
 `reproduction` — and each template declares which of its own headings fills each. That keeps the
 heading text, and its language, out of the procedure while letting the procedure still check a
 section is present and tick its items later.
+
+**How the acceptance section's content is phrased is no part of this key**:
+[§ What an acceptance condition is written as](#what-an-acceptance-condition-is-written-as) states
+the form, and it holds where no template is carried too.
 
 ⚠️ **`sections` is declared once for the project rather than once per template**, so every file
 `by_type` names gives one semantic section the same heading. What differs between two templates is
@@ -2991,7 +3072,9 @@ anything. A rule read by three parties and written in one of their files is a se
 the other two.
 
 ⛔ **A recorded answer is one comment on the change, keyed by the repository and the change's own
-number, stating the question, the answer as it came back, who answered it and when.** The keying
+number, stating the question, the answer as it came back, who answered it, when, and the commit that
+was the change's head when the question was put.** The commit is required on the merge ask, and an
+answer no guard holds to a commit may leave it empty. The keying
 is the load-bearing half: a bare number names a different change in every repository the route
 carries, so an answer recorded against one is an answer no guard can resolve, and the act stays
 refused however it was answered.
@@ -3019,6 +3102,14 @@ and a guard reading that as *no record* would hold a change nothing on the route
 ⛔ **The guard on a merge refuses where the merge ask has no recorded answer.** That is the ask the
 route puts immediately before the act, so the answer that authorizes the merge and the answer the
 guard reads are one record rather than two.
+
+⛔ **A merge approval covers the commit it was given for and no later one.** The guard refuses a
+merge whose head is not the recorded commit, naming both and how to ask again; a record naming no
+commit covers none, and a host that cannot say what the head is refuses the merge. ⛔ **The commit is
+stated by the pass that put the question and never read when the answer is written**, since a push
+between the two would be recorded as approved. A project widens this in one way, by
+[§ 2's `approval_covers`](#how-a-pull-request-lands). ⚠️ **What is compared is the head when the
+guard reads it**: a push landing between that read and the host's merge is not seen.
 
 ⚠️ **Keyed on anything else, a guard refuses a merge its own authorization already covers.**
 Measured on this repository: a person authorized a merge, the pass recorded that answer, and the

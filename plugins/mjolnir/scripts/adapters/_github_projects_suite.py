@@ -635,6 +635,31 @@ def self_test() -> int:
     _boards.clear()
 
     # --- the operation list, against the surface the port reads -------------
+    # --- what a merge will close ---------------------------------------------
+    #
+    # The shaping is shared and the sibling kind's suite holds it; what is held
+    # here is that this kind's own transport reaches it.
+    closing = with_host(
+        _Host({"ClosingList": {"repository": {
+            "defaultBranchRef": {"name": "main"},
+            "pullRequest": {
+                "baseRefName": "main", "body": "This does not close #34.",
+                "closingIssuesReferences": {"pageInfo": {"hasNextPage": False}, "nodes": [
+                    {"number": 34, "repository": {"nameWithOwner": under_test._repo()}}]},
+                "commits": {"pageInfo": {"hasNextPage": False}, "nodes": [
+                    {"commit": {"oid": "abc1234", "message": "Fixes #35"}}]},
+            },
+        }}}),
+        lambda: under_test.read_closing_list("9", "Closes #36"),
+    )
+    check(
+        "the closing list is the host's, with every text that closes beside it",
+        closing["listed"] == ["34"]
+        and [(one["item"], one["where"]) for one in closing["mentions"]]
+        == [("34", "body"), ("35", "commit"), ("36", "landing")],
+        f"answered {closing!r}",
+    )
+
     # --- the vocabularies this board states, before a configuration ---------
     #
     # ⛔ The decision this tracker makes that no other does: the statuses are
