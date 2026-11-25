@@ -250,8 +250,8 @@ SHAPES = {
 # What the catalogue calls a field holding several values, and the shape each
 # **member** takes by the element type it states beside that. ⛔ A map of its own
 # rather than the one above: a member and a scalar of one type are two shapes to
-# establish, and an element absent from here is refused by name -- a sprint, whose
-# elements the catalogue states as `json`, is the ordinary case.
+# establish, and an element absent from here is refused by name -- a sprint's is
+# the ordinary case, the reference stating no shape for one.
 LIST = "array"
 ELEMENTS = {
     "component": NAMED,
@@ -261,8 +261,11 @@ ELEMENTS = {
     "string": TEXT,
 }
 
-# The member of the structure that names the value, per shape that has one.
-IDENTIFIED_BY = {NAMED: "name", OPTION: "value", USER: "accountId"}
+# The member of the structure that names the value, per shape that has one, as a
+# write takes it and as a read answers it. ⚠️ A user's two spellings differ: the
+# reference writes one by `id` and the host answers `accountId`, one value.
+IDENTIFIED_BY = {NAMED: "name", OPTION: "value", USER: "id"}
+ANSWERED_AS = ("name", "value", "accountId")
 
 # The parts a filing states through its own argument or its address, by id, which
 # no extra field may write over.
@@ -1344,7 +1347,7 @@ def _not_landed(wanted: dict, item: dict) -> str:
             if isinstance(one, dict):
                 back.update(
                     str(one[part]).casefold()
-                    for part in IDENTIFIED_BY.values() if one.get(part) is not None
+                    for part in ANSWERED_AS if one.get(part) is not None
                 )
             else:
                 back.add(str(one).casefold())

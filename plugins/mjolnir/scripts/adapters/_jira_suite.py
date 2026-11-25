@@ -376,6 +376,14 @@ class _Host:
 
     def _answer_issue(self, path: str, params: dict, _body) -> dict:
         issue = self.item(path)
+        # A user is written by `id` and answered as `accountId`.
+        for name, value in issue["fields"].items():
+            if isinstance(value, list):
+                issue["fields"][name] = [
+                    {"accountId": one["id"]}
+                    if isinstance(one, dict) and one.get("id") in (ME, SOMEBODY) else one
+                    for one in value
+                ]
         wanted = {name for name in str(params.get("fields") or "").split(",") if name}
         fields = (
             issue["fields"]
@@ -1298,7 +1306,7 @@ def self_test() -> int:
         ("Ships in", "fixVersions", ["1.0"], [{"name": "1.0"}]),
         ("Areas", "customfield_10050", ["A", "B"], [{"value": "A"}, {"value": "B"}]),
         ("Readers", "customfield_10051", [ME, SOMEBODY],
-         [{"accountId": ME}, {"accountId": SOMEBODY}]),
+         [{"id": ME}, {"id": SOMEBODY}]),
         ("Words", "customfield_10052", ["x", "y z"], ["x", "y z"]),
         ("Words", "customfield_10052", "a, b", ["a, b"]),
         ("Parts", "components", '["One", "Two"]', [{"name": "One"}, {"name": "Two"}]),
@@ -1309,10 +1317,14 @@ def self_test() -> int:
         answered = with_host(
             listed, lambda name=name, given=given: set_field(key(1), name, given)
         )
+        read_back = [
+            {"accountId": one["id"]} if isinstance(one, dict) and "id" in one else one
+            for one in wire
+        ]
         check(
             f"`{name}` handed {given!r} is written as the whole list its elements take",
             (body_of(listed, "update").get("fields") or {}).get(identifier) == wire
-            and (got(answered, "fields") or {}).get(name) == wire,
+            and (got(answered, "fields") or {}).get(name) == read_back,
             f"sent {listed.sent_for('update')!r} and read {answered!r}",
         )
     recased = host({"update": lambda *_: None})
