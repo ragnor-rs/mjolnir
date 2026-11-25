@@ -754,10 +754,10 @@ def approval_covers(config, slug: str) -> str:
 
 
 def _run_host(args: list[str], timeout: int) -> tuple[int, str]:
-    proc = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, timeout=timeout,
-    )
-    return proc.returncode, proc.stdout
+    # ⛔ Decoded here and not by `text=True`, which rewrites a carriage return: two
+    # diffs that differ in their line endings alone would come back the same.
+    proc = subprocess.run(["gh", *args], capture_output=True, timeout=timeout)
+    return proc.returncode, proc.stdout.decode("utf-8")
 
 
 # --- which call is a merge -------------------------------------------------
@@ -2829,6 +2829,8 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             ("a changed line", {**moved, A_LATER_HEAD: _a_diff("+another line")}),
             ("a line changed in its whitespace alone",
              {**moved, A_LATER_HEAD: _a_diff("+a  line")}),
+            ("a line changed in its line ending alone",
+             {**moved, A_LATER_HEAD: _a_diff("+a line\r")}),
             ("a changed line carrying a form feed and a hunk header",
              {A_HEAD: _a_diff("+x\f@@ one"), A_LATER_HEAD: _a_diff("+x\f@@ two")}),
             ("a binary file", {key: "diff --git a/x b/x\nindex 1..2\nBinary files a/x and b/x "
@@ -2841,6 +2843,20 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check(f"{label}: refused even there, naming both commits",
                   denied(answered) and A_HEAD in reason(answered)
                   and A_LATER_HEAD in reason(answered), repr(answered)[:200])
+        # ⛔ The stand-in above cannot reach what the real runner does to the bytes,
+        # so the runner itself is asked, against a client that prints both endings.
+        client = fresh("client")
+        client.mkdir(parents=True, exist_ok=True)
+        (client / "gh").write_text("#!/bin/sh\nprintf 'a\\r\\nb\\n'\n", encoding="utf-8")
+        (client / "gh").chmod(0o755)
+        path_held = os.environ.get("PATH", "")
+        os.environ["PATH"] = f"{client}{os.pathsep}{path_held}"
+        try:
+            ran = _run_host(["api"], HOST_TIMEOUT)
+        finally:
+            os.environ["PATH"] = path_held
+        check("and the client's own line endings reach the comparison as printed",
+              ran == (0, "a\r\nb\n"), repr(ran))
         check("a repository the project states nothing about widens nothing",
               approval_covers(wide, "another-owner/a-repository") == COVERS_COMMIT)
         allowed = next(
