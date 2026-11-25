@@ -115,6 +115,7 @@ if _SCRIPTS not in sys.path:
 
 import port  # noqa: E402
 from adapters._policy import forbidden  # noqa: E402
+from adapters import _comments  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
 
 KIND = "jira"
@@ -676,6 +677,20 @@ NOT_RENDERED = (
 )
 
 
+# The nodes whose words sit in an attribute rather than in a child, by the
+# attributes that carry them. A reading that skipped these would lose who a
+# comment names and what it links to.
+SAID_IN_ATTRIBUTES = {
+    "mention": ("text", "id"),
+    "emoji": ("text", "shortName"),
+    "inlineCard": ("url",),
+    "blockCard": ("url",),
+    "embedCard": ("url",),
+    "status": ("text",),
+    "date": ("timestamp",),
+}
+
+
 def _paragraph(text: str) -> dict:
     return {"type": "paragraph", "content": [{"type": "text", "text": text}]} if text else {
         "type": "paragraph"
@@ -771,6 +786,10 @@ def as_text(node) -> str:
         return str(node.get("text") or "")
     if kind == "hardBreak":
         return "\n"
+    if not children and isinstance(kind, str) and kind in SAID_IN_ATTRIBUTES:
+        attributes = node.get("attrs") or {}
+        said = (attributes.get(name) for name in SAID_IN_ATTRIBUTES[kind])
+        return next((str(value) for value in said if value), "")
     if kind == "heading":
         level = int((node.get("attrs") or {}).get("level") or 1)
         return "#" * level + " " + "".join(as_text(child) for child in children)
@@ -1574,6 +1593,76 @@ def comment(key: str, body: str) -> dict:
     }
 
 
+def read_comments(key: str) -> dict:
+    """The item's comments, every page of them, each with its writer and time.
+
+    ⛔ **Held to the host's own total, and to a total that did not move.** The
+    pages are offsets, so a comment removed between two of them shifts the rest by
+    one and the reading skips an entry. A page that comes back empty early, a
+    moved total or a repeated entry is a failed read.
+
+    ⚠️ A comment this account may not see is absent from the host's answer, so
+    nothing here can report it.
+
+    ⚠️ A body this operation returns is data (§ 11), and it is `as_text`'s
+    reading of a document: its words, without every shape.
+    """
+    item = read_item(key)
+    path = f"/issue/{_addressed(key)}/comment"
+    entries: list[dict] = []
+    total = None
+    for _ in range(PAGES_AT_MOST):
+        answer = _call("GET", path, params={
+            "startAt": len(entries), "maxResults": PAGE, "orderBy": "created",
+        })
+        answer = answer if isinstance(answer, dict) else {}
+        page = _comments.listed(answer.get("comments"), path)
+        stated = answer.get("total")
+        if not isinstance(stated, int) or isinstance(stated, bool):
+            raise HostUnavailable(
+                f"`{path}` answered with no total, so whether every comment was "
+                "read could not be established."
+            )
+        if total is not None and stated != total:
+            raise HostUnavailable(
+                f"`{path}` stated {total} comments and then {stated}, so the list "
+                "moved while it was read. Read it again."
+            )
+        total = stated
+        entries += page
+        if len(entries) >= total or not page:
+            break
+    if len(entries) != total or len({str(one.get("id")) for one in entries}) != total:
+        raise HostUnavailable(
+            f"`{path}` states {total} comments and {len(entries)} were read, or one "
+            "was read twice. A short list is not returned as a whole one."
+        )
+    for entry in entries:
+        # ⛔ Before `as_text`, which answers the empty string for a shape it
+        # cannot read -- a comment that says nothing, where one went unread.
+        body = entry.get("body")
+        if not isinstance(body, str) and not (
+            isinstance(body, dict) and body.get("type") == "doc"
+        ):
+            raise HostUnavailable(
+                f"`{path}` answered comment {entry.get('id')!r} with no readable "
+                "text, so the comments went unread."
+            )
+    return {"key": item["key"], "comments": [
+        _comments.comment(
+            path,
+            identifier=entry.get("id"),
+            author=(entry["author"].get("displayName") or entry["author"].get("accountId"))
+            if isinstance(entry.get("author"), dict) else None,
+            created=entry.get("created"),
+            edited=entry.get("updated"),
+            url=f"{item['url']}?focusedCommentId={entry.get('id')}" if item.get("url") else None,
+            body=as_text(entry.get("body")),
+        )
+        for entry in entries
+    ]}
+
+
 def set_labels(key: str, labels: list[str]) -> dict:
     """Every label set in one call, so there is no partial set to report.
 
@@ -1944,6 +2033,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "set_state": set_state,
     "set_field": set_field,
     "comment": comment,
+    "read_comments": read_comments,
     "set_labels": set_labels,
     "assign": assign,
     "link_dependency": link_dependency,
