@@ -1120,7 +1120,11 @@ none of it. For the board behind `kind: github-projects` that is every list read
 rather than returned short — the measured ceiling being a first page that reads as a complete
 answer — every id resolved from the board by the name a configuration gives, every value shaped by
 its own column's type, and every operation that writes reading the item first, so that a number
-naming a pull request is refused *before* the write rather than after it.
+naming a pull request is refused *before* the write rather than after it. Where a milestone is the
+grouping it is also that every item in it is read, that one off the board stays in the set and is
+named, and that what the milestone cannot hold is reported — the omissions being
+[schema § 4.8's](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)
+to list. The matching of a value to a milestone is one module, read by both kinds on that host.
 
 For the cards behind `kind: trello` it is a different list, because the tracker is: a state resolved
 to **one** list by name, with an ambiguous name and a name the board does not have both refused
