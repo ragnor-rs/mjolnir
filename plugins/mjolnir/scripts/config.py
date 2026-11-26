@@ -4552,6 +4552,8 @@ FIELD_PRESENT_CHECK = "field_present"
 # § 4.8's own groupings, so the two spellings are one fact and a literal here
 # would be free to disagree with the gate entry's.
 SPEC_CORPUS_KEY = "spec_corpus"
+BUILT_CHECK_KEY = "built_check"
+BUILT_CHECK_POINTS_PATH = f"{BUILT_CHECK_KEY}.points"
 SPEC_CORPUS_CARRIER = f"{SPEC_CORPUS_KEY}.carrier"
 SPEC_CORPUS_REPOSITORY = "repository"
 SPEC_CORPUS_GROUPING = f"{SPEC_CORPUS_KEY}.{GROUPING_ENTRY_KEY}"
@@ -7381,6 +7383,37 @@ def _a_forbidding_scope(entry: dict, where: str, declared_paths: set) -> None:
                 "must be prose, and is written blank or as something else (§ 38). An "
                 "exemption whose reason is gone is a check switched off.",
             )
+
+
+def _validate_built_check(data: dict, facts: dict) -> None:
+    """§ 42's `points`: a set drawn from the list the surface shows.
+
+    The block's defaults and `on_finding`'s alternation are marked and answered
+    before this runs. What is here is what the list has to be: a list, each
+    entry one the surface shows, and no point twice.
+    """
+    key = BUILT_CHECK_POINTS_PATH
+    points = _get(data, key)
+    if points is None or points == []:
+        return
+    if not isinstance(points, list):
+        raise ConfigError(
+            key,
+            f"is {points!r}; it is a list of the points the step runs at (§ 42), "
+            "and `[]` where it runs at none.",
+        )
+    allowed = vocabulary_list(facts, key, "the points the step runs at")
+    seen: set = set()
+    for point in points:
+        if point not in allowed:
+            raise ConfigError(
+                key,
+                f"names {point!r}; a point is one of {' | '.join(allowed)} "
+                "(§ 42), the roles whose files carry the step.",
+            )
+        if point in seen:
+            raise ConfigError(key, f"names {point!r} twice; it is a set (§ 42).")
+        seen.add(point)
 
 
 def _validate_spec_corpus(data: dict) -> None:
@@ -10838,6 +10871,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # **not** here: it needs that facet's own carried set rather than the raw
     # block, so it runs in `_grouping_facet` where the set exists.
     _validate_spec_corpus(data)
+    _validate_built_check(data, facts)
     # § 41's block, and ⛔ **after § 33's rather than beside it**: the names its
     # `identity` is keyed on are a target's own, so this reads a list the arm
     # above has already held to being a list of targets at all.
@@ -12785,6 +12819,8 @@ SHOWN_LISTS = {
         "tooling",
     ],
     "session.parts": ["tracker", "memory", "commit"],
+    # § 42's points, read by the rule refusing a point no role's file carries.
+    BUILT_CHECK_POINTS_PATH: ["file", "start", "implement"],
     STREAMS_PATH: ["sessions", "commits", CHAT_STREAM, "meetings", "host_activity"],
 }
 
@@ -19686,6 +19722,20 @@ def _planted_violations():
         # ⚠️ The complement first, which is § 38's own arm one section over: a
         # glob stated beside a carrier that reads none is a corpus somebody
         # configured and nothing opens.
+        # § 42. A point outside the list the surface shows would be a step no
+        # role's file carries, so a project would read it as configured and no
+        # role would ever run it; a point twice is the same set written larger;
+        # and a mapping iterates as its keys, so `{start: true}` would pass the
+        # point check while meaning something no reader states.
+        ("a built-check point no role carries", BUILT_CHECK_POINTS_PATH,
+         at(BUILT_CHECK_POINTS_PATH, ["start", "deploy"])),
+        ("a built-check point named twice", BUILT_CHECK_POINTS_PATH,
+         at(BUILT_CHECK_POINTS_PATH, ["file", "file"])),
+        ("a built-check point list that is a mapping", BUILT_CHECK_POINTS_PATH,
+         at(BUILT_CHECK_POINTS_PATH, {"start": True})),
+        ("a built-check finding outcome outside the alternation",
+         f"{BUILT_CHECK_KEY}.on_finding",
+         at(f"{BUILT_CHECK_KEY}.on_finding", "close")),
         ("a glob list stated beside a corpus carrier that reads none",
          f"{SPEC_CORPUS_KEY}.files",
          at(SPEC_CORPUS_KEY, {"carrier": "none", "absent_reason": "no corpus here",

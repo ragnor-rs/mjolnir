@@ -367,6 +367,12 @@ spec_corpus:
     This project gains a grouping that names versions, which § 4.8 above is the trigger for and
     which is also the first moment one copy of the plan governs an item and another does not.
 
+# § 42 at its defaults, written out so a reader sees the step was considered: no role reads the code
+# for whether an item is already built.
+built_check:
+  points: []
+  on_finding: report
+
 # § 40's absent case, and on this project both of its shapes hold at once: no deploy target and no
 # status ladder at all. ⛔ The absence is still written rather than left out — a project that never
 # looked and a project that decided read identically otherwise.

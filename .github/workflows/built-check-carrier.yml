@@ -1,0 +1,39 @@
+name: Built check carrier
+
+# The carrier that holds a role's reading of whether an item's work is already built to its shape.
+# What a gate can hold about it is every arm that needs no project of anybody's: where the step
+# runs, that a bullet called built names a path or a commit that exists, that a bullet nobody could
+# check is never read as absent, what the role does under each `on_finding`, that a closed item whose
+# work is absent is offered for reopening beside filing anew, and that no answer performs anything.
+#
+# ⚠️ The repository is the suite's own, built per run. What stays unheld is stated rather than
+# assumed away: whether the cited code actually answers a bullet is a reading of code, and the
+# role's to make by § 42, so nothing here runs or scores one.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: the suite reads only the repository it creates.
+permissions: {}
+
+jobs:
+  built-check-carrier:
+    name: Built check carrier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⚠️ Held
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command it
+      # mirrors is configured and never inferred. The workflow *name* above is held mechanically,
+      # by the `Host checks drift` run.
+      - name: Plant each refused finding, and assert the verdict and what the role does
+        run: python3 plugins/mjolnir/scripts/built.py --self-test

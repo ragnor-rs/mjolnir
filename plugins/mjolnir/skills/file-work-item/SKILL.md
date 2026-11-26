@@ -324,6 +324,32 @@ shippable, somebody else owns it, or it is large enough that the parent cannot b
 inside. ⛔ **"It is easier to track separately" is not one of those** — that is what the parent's
 checklist is for. Where a child is genuinely right, the relation is recorded at both ends in § 5.
 
+**3b. Whether the work is already built, where the project runs that step here.**
+[`§ 42`](../../config/schema.md#42-whether-the-work-is-already-built-and-where-a-role-asks)
+states the step, the finding and what it does, and ⛔ **none of it is restated here**. What is this
+role's is where it falls and what it is run over: after the duplicate check and the relationships
+above, before anything is written, over the request and over every **closed** candidate 2c tiered
+above Low.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" decide --point file
+```
+
+- **It exits 3** ⇒ the project runs no step here, and the reply mentions none.
+- **It exits 0** ⇒ read the code against each bullet the request states, and against each closed
+  candidate's own acceptance condition. Write one finding per item in the form `built.py form`
+  prints — the request's under the identifier `request`, in the state the form gives an item
+  nobody closed — and hand each one over with
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" check --file <the finding> --root <code-root>`.
+  ⛔ **A refusal is fixed and handed over again.**
+- **What comes back decides what this role does**: proceed with the finding in the reply, stop and
+  put it to the person, or ⛔ **ask, with the two offers it names**, which is the closed candidate
+  whose work is absent or only partly built. § 3's duplicate outcome would send the request to that
+  item. Reopening it keeps its history, and filing anew starts clean. Which one is the person's
+  choice.
+- ⛔ **Nothing is reopened, closed or rewritten by this step.** Whichever offer the person takes is
+  then carried out by § 3 or by §§ 4–6, as that outcome already is.
+
 ## 4. Type, template, and the body
 
 **The type** comes from [`§ 4.1`](../../config/schema.md#41-type)'s carrier, whichever that is —

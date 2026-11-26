@@ -1592,6 +1592,18 @@ ANSWERED_BY: dict[str, Answer] = {
         "leaving it out loads the whole corpus (§ 39).",
     ),
 
+    # --- § 42. Whether the work is already built ---------------------------
+    "built_check.points": ask(
+        "Where should a role read the code to see whether an item's work is already "
+        "built — when filing, when starting, when implementing? Unstated, it reads at "
+        "none of them, which is how every role behaves today (§ 42).",
+    ),
+    "built_check.on_finding": ask(
+        "When that reading finds the work built or partly built, should the role report "
+        "it and carry on, or stop and ask you? Unstated, it reports. It never closes, "
+        "reopens or rewrites an item itself (§ 42).",
+    ),
+
     # --- § 41. What a deployed item is judged against ----------------------
     "verify.carrier": ask(
         "Does anybody judge a deployed item against its own criteria here? ⚠️ "

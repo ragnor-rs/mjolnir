@@ -151,6 +151,24 @@ their costs, and no bullet of it becomes a follow-up item for the same work. ⚠
 exception is that section's own** — work belonging to a different outcome — and its test is whether
 this item's condition passes without it.
 
+**Then whether the condition is already answered in the code, where the project runs that step
+here.** [`§ 42`](../../config/schema.md#42-whether-the-work-is-already-built-and-where-a-role-asks)
+states the step, the finding and what it does, and ⛔ **none of it is restated here**. What is this
+role's is where the step falls: after the condition is read and before any edit.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" decide --point implement
+```
+
+- **It exits 3** ⇒ the project runs no step here, and the reply mentions none.
+- **It exits 0** ⇒ read `<work-root>` against each bullet of the condition, write the finding in
+  the form `built.py form` prints, and hand it over with
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" check --file <the finding> --root <work-root>`.
+  ⛔ **A refusal is fixed and handed over again.** What comes back says whether this role
+  **proceeds** with the finding in the reply, or **stops** with it put to the person.
+- ⚠️ **A bullet the finding calls built is still read back in step 7**, with the command that
+  answers it. The finding says where the code is; step 7 says the condition passes.
+
 ## 4. The discipline, read and not carried
 
 ⛔ **Read [`§ The loop → What earns a test`](../../config/schema.md#what-earns-a-test-and-what-makes-its-red-believable)
