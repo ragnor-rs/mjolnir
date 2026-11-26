@@ -308,6 +308,17 @@ fix commit riding an open change into a merge. ⛔ **Once the branch is pushed, 
 is a second commit** — never an amend and a force push. Rewriting an open change's history is not
 implied by *review this*, and the second commit is the better record of what the review found.
 
+⛔ **Before each fix commit, ask what the branch admits, with the staged paths**
+([`§ 6 → What a commit may contain on a given branch`](../../config/schema.md#what-a-commit-may-contain-on-a-given-branch)
+states the verdicts):
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <the staged paths> --on-branch <the change's branch>
+```
+
+A path left out is named on the reply. A `stop` is a finding this pass cannot commit, and the reply
+names its paths.
+
 ⛔ **Then push, and check the upstream before doing it.** A branch cut without tracking disabled
 tracks the **base**, so a bare push writes to the base — and three of the five copies of the
 *finishing* role carried that unsafe form verbatim. This role pushes to a branch somebody else

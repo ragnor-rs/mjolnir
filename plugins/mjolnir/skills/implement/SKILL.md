@@ -123,6 +123,23 @@ reading matters most on**, the item's text being what the work is derived from h
 | none, which [`§ 4.4`](../../config/schema.md#44-template) makes a legitimate configuration | the item's stated **outcome**, and the reply reports the condition as unavailable rather than skipping it |
 | neither | a stop: there is nothing to drive the work to, and the remedy is a person's wording rather than this role's reading |
 
+**And the specification copy that governs the item, read with the condition and before any of it
+is worked** —
+[`§ 39 → The roles that read it while the work is done`](../../config/schema.md#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read)
+states who reads it and what each outcome means, and ⛔ **this file restates none of it**:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/spec_corpus.py" --role implement \
+  --version <the value the item carries for the corpus's grouping> [--keyword <a term from the item>]…
+```
+
+⛔ **The version is read off the item and never worked out** — an item carrying none is run without
+`--version`, and only the carrier's refusal for it is a stop; ⛔ **a contradiction met here or while
+working is a bullet whose answer is a decision**, asked in step 7's form rather than settled by
+choosing one side; and ⛔ **the reply carries the report's first line as it came back** — which
+copy, the fallback, *no corpus is configured*, or *not asked* — never one of the last two as
+*nothing contradicts the item*.
+
 ⛔ **The condition is restated into the reply and never into the tree.** A copy of it in a comment
 or a file is a second statement free to disagree with the item, and the item is what the next leg is
 entered against.
@@ -133,6 +150,24 @@ part is a condition unanswered, a question this role cannot settle is **asked** 
 their costs, and no bullet of it becomes a follow-up item for the same work. ⚠️ **The narrow
 exception is that section's own** — work belonging to a different outcome — and its test is whether
 this item's condition passes without it.
+
+**Then whether the condition is already answered in the code, where the project runs that step
+here.** [`§ 42`](../../config/schema.md#42-whether-the-work-is-already-built-and-where-a-role-asks)
+states the step, the finding and what it does, and ⛔ **none of it is restated here**. What is this
+role's is where the step falls: after the condition is read and before any edit.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" decide --point implement
+```
+
+- **It exits 3** ⇒ the project runs no step here, and the reply mentions none.
+- **It exits 0** ⇒ read `<work-root>` against each bullet of the condition, write the finding in
+  the form `built.py form` prints, and hand it over with
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" check --file <the finding> --root <work-root>`.
+  ⛔ **A refusal is fixed and handed over again.** What comes back says whether this role
+  **proceeds** with the finding in the reply, or **stops** with it put to the person.
+- ⚠️ **A bullet the finding calls built is still read back in step 7**, with the command that
+  answers it. The finding says where the code is; step 7 says the condition passes.
 
 ## 4. The discipline, read and not carried
 

@@ -93,6 +93,25 @@ reported as **unused** rather than silently dropped. ⛔ **And no tier is ever d
 the request's urgency, not from what the item blocks — which is the facet's own rule and the reason
 an argument that carries none leaves the item unranked.
 
+**Which grouping the item goes into is read through one command, never decided here.**
+[`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into) states the
+order: a value given on the request wins, then the project's stated map from another facet, and
+otherwise the grouping is asked for.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --grouping-default [--grouping <name>] \
+  [--from-value <the item's value of the mapped facet>] [--given <the grouping on the request>]
+```
+
+- ⛔ **`--from-value` is the value handed or already on the item**, never one worked out — a map
+  from the tier is not a licence to rank the work, which is the paragraph above.
+- **`map`** ⇒ the item goes into that grouping, and ⛔ **the report names the rule** the answer
+  carries, so the reader of the item can see the value was the project's map and not a choice.
+- **`ask`** ⇒ the grouping is asked for, with the answer's reason, before anything is written.
+- **`discoverable`** ⇒ the tracker names the current grouping, and it is read there.
+- ⚠️ **A project carrying no grouping is a refusal naming the facet**, and the item is filed with
+  none.
+
 ## 0a. The specification that governs, read before anything is judged against it
 
 **Where the project keeps a specification corpus of its own, it is read here** —
@@ -114,11 +133,11 @@ parent or new, and the contradiction outcome stops the write — so a corpus rea
 corpus read after the decisions it was for. ⚠️ **Once per request and not once per unit**: the copy
 is a fact about the version, so the split does not multiply the read.
 
-- ⛔ **The version arrives on the invocation and is never worked out.**
+- ⛔ **The version is the grouping § 0 resolved, and is never worked out here.**
   [`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into) makes which
   grouping an item is in the one field whose wrong value is invisible on the item itself, so a
-  version this role picked is a corpus read at a branch nobody chose. Where the request does not
-  say which version, **ask**.
+  version this role picked is a corpus read at a branch nobody chose. It is the value given on the
+  request or the project's stated map; where neither answers, **ask**.
 - ⚠️ **Three outcomes, and the report carries whichever one it was.** The version's own copy; the
   **fallback** to the integration branch, which is correct and is said out loud; and a branch the
   remote advertises that this clone does not hold, which is reported **unread**. ⛔ **The second and
@@ -305,6 +324,32 @@ shippable, somebody else owns it, or it is large enough that the parent cannot b
 inside. ⛔ **"It is easier to track separately" is not one of those** — that is what the parent's
 checklist is for. Where a child is genuinely right, the relation is recorded at both ends in § 5.
 
+**3b. Whether the work is already built, where the project runs that step here.**
+[`§ 42`](../../config/schema.md#42-whether-the-work-is-already-built-and-where-a-role-asks)
+states the step, the finding and what it does, and ⛔ **none of it is restated here**. What is this
+role's is where it falls and what it is run over: after the duplicate check and the relationships
+above, before anything is written, over the request and over every **closed** candidate 2c tiered
+above Low.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" decide --point file
+```
+
+- **It exits 3** ⇒ the project runs no step here, and the reply mentions none.
+- **It exits 0** ⇒ read the code against each bullet the request states, and against each closed
+  candidate's own acceptance condition. Write one finding per item in the form `built.py form`
+  prints — the request's under the identifier `request`, in the state the form gives an item
+  nobody closed — and hand each one over with
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" check --file <the finding> --root <code-root>`.
+  ⛔ **A refusal is fixed and handed over again.**
+- **What comes back decides what this role does**: proceed with the finding in the reply, stop and
+  put it to the person, or ⛔ **ask, with the two offers it names**, which is the closed candidate
+  whose work is absent or only partly built. § 3's duplicate outcome would send the request to that
+  item. Reopening it keeps its history, and filing anew starts clean. Which one is the person's
+  choice.
+- ⛔ **Nothing is reopened, closed or rewritten by this step.** Whichever offer the person takes is
+  then carried out by § 3 or by §§ 4–6, as that outcome already is.
+
 ## 4. Type, template, and the body
 
 **The type** comes from [`§ 4.1`](../../config/schema.md#41-type)'s carrier, whichever that is —
@@ -346,6 +391,24 @@ is no type to cross-check and the reply says so rather than reporting a check th
 there is no template at all, this role writes the semantic sections under headings it chooses in
 the item's own language — the outcome and the acceptance condition are the procedure's, not the
 template's, and an item that states neither is a note rather than work.
+
+**The sections this project declares beyond those are filled too**, each under the heading its
+entry states and from what its entry says fills it. What an entry carries, and what a section
+sourced from the code owes, are [`§ 4.4`](../../config/schema.md#44-template)'s and ⛔ **not
+restated here**. ⛔ **Where a section is sourced from the code, read the code before writing it,
+and name every file read** — the section is a claim about that code, and the names are what lets
+someone check it. Then hold the body to the declarations before it is written:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" check --body-file <the body> \
+  --code-root <the item's code root>
+```
+
+- **Exit 0** ⇒ the body carries every declared section it owes.
+- **Exit 1** ⇒ each problem is named with its section. ⛔ **Fix the body and run it again**; an item
+  written over a refusal is a section the next role reads as answered.
+- **Exit 3** ⇒ the project declares none, and the item is filed as it was before the key existed.
+- **Exit 2** ⇒ the configuration or the body could not be read, which is not a pass.
 
 **The body is written to be validated by whoever ordered the work**, not by whoever will do it. The
 acceptance condition is the whole point of the item: work can only be rejected against what was
@@ -470,6 +533,8 @@ Then report, in the register
   ```
 
 - the type and the template used, or that the project carries neither;
+- **the grouping each item went into, and where it came from**: given on the request, the
+  project's map with the rule it named, or asked for and answered;
 - **which code repository each item was written against**, where the project carries several — and
   where its carrier is `none`, that the item states none and the root reaches a later role on its
   invocation ([`§ 4.7`](../../config/schema.md#47-code-root));

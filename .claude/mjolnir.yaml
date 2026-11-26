@@ -93,6 +93,11 @@ host:
     - workflow: "Boundary"
       mirrors: "python3 plugins/mjolnir/scripts/boundary.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ `built_check` below names no point, so no role here hands the carrier a finding. What
+    # this run holds is every shape § 42 refuses, planted against a repository the suite builds.
+    - workflow: "Built check carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/built.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Claim carrier"
       mirrors: "python3 plugins/mjolnir/scripts/claim.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -186,6 +191,12 @@ host:
     # `hours_breakdown` carrier, so there is no real period here for a run to read.
     - workflow: "Hours breakdown carrier"
       mirrors: "python3 plugins/mjolnir/scripts/hours_breakdown.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ This project states no `work_item.template.declared`, so pointed at this tree the module
+    # answers that nothing is declared. This run holds the reading against planted declarations and
+    # bodies, which is the only place it can be held.
+    - workflow: "Item sections"
+      mirrors: "python3 plugins/mjolnir/scripts/item_sections.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Installer"
       mirrors: "python3 plugins/mjolnir/scripts/install.py --self-test"
@@ -1114,6 +1125,12 @@ spec_corpus:
     a copy of the surface that differs from the default branch's — or a project adopting these
     roles keeps its specification in its own repository, which is the shape § 39 was written from
     and which this project is not.
+
+built_check:
+  # § 42 at its defaults. Items here are filed against the code as it stands and taken within the
+  # day, so the reading would be paid on every item to catch a case nobody has measured here.
+  points: []
+  on_finding: report
 
 verify:
   # § 40's absent case, and it holds here for the first of that section's two shapes: `deploy: []`

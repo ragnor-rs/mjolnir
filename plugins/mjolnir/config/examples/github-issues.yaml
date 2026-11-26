@@ -535,6 +535,13 @@ spec_corpus:
   # reading all of it every time is what projects do until the read stops fitting.
   load_bearing: ["spec/requirements/**/*.md"]
 
+# § 42's stated arm, and the only shipped example that carries one. A backlog filed ahead of the
+# code it describes goes stale as other items land, so the filing and starting roles read the code
+# before acting on an item, and a finding stops for the person rather than being reported past.
+built_check:
+  points: [file, start]
+  on_finding: stop
+
 # § 40's absent case, in its other shape: `deploy: []` above, so there is no target for a
 # criterion to be measurable **on**. ⛔ Not a project whose work goes unjudged — somebody reads
 # the change — and nothing here says whether anybody looks at a running copy by hand.
