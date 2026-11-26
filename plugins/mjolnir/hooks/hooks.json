@@ -55,7 +55,7 @@
             "type": "command",
             "command": "python3",
             "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/enforce.py", "release"],
-            "timeout": 10,
+            "timeout": 20,
             "statusMessage": "Giving back the place this call held"
           }
         ]

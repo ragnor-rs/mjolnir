@@ -70,6 +70,7 @@ from urllib.parse import quote
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import spend as position  # noqa: E402 -- the one reading of where a command is
+import live  # noqa: E402 -- § 21's one reading of who would answer a prompt
 
 # What this carrier is, read from this file and declared nowhere else, by schema.md
 # § Whether a project can adopt this procedure at all. ⛔ The class is the hook's own and not
@@ -96,6 +97,7 @@ ARM_ANCHORS = {
     "guardable": "what-may-be-guarded-and-the-two-ways-a-refusal-stands-down",
     "behind": ("a-branch-that-has-fallen-behind-its-base-and-the-two-points-it-is-"
                "reported-at"),
+    "prompt": "a-merge-put-to-the-person-at-the-prompt-and-the-record-it-leaves",
 }
 
 RECORD_CITATION = "schema § 7 → What a hook refuses, and the record it reads"
@@ -105,6 +107,8 @@ LEASE_CITATION = ("schema § 7 → A lease on an exclusive resource, and the exi
 ALREADY_RUN_CITATION = "schema § 18 → The guard on a command the host has already run"
 GUARDED_CITATION = ("schema § 18 → What may be guarded, and the two ways a refusal stands "
                     "down")
+PROMPT_CITATION = ("schema § 7 → A merge put to the person at the prompt, and the record it "
+                   "leaves")
 BEHIND_CITATION = ("schema § 7 → A branch that has fallen behind its base, and the two points "
                    "it is reported at")
 
@@ -227,6 +231,21 @@ COMMIT = re.compile(r"^[0-9a-f]{40}(?:[0-9a-f]{24})?$")
 APPROVAL_COVERS = "host.landing.approval_covers"
 COVERS_COMMIT = "commit"
 COVERS_CONTENT = "content"
+
+# § 2's key for what a merge with no approval covering it gets, the value that
+# puts it to a person at the harness's own prompt, and the value a project that
+# states nothing has. ⛔ Which mode a person answers is § 21's reading and is
+# taken from the live guard rather than listed a second time here.
+UNRECORDED_MERGE = "host.landing.unrecorded_merge"
+UNRECORDED_DENY = "deny"
+UNRECORDED_PROMPT = "prompt"
+
+# What a record written for an answer given at the prompt states as the answer
+# and as who gave it. ⛔ The second names the route and no person: the hook sees
+# that the call was allowed and never who allowed it, and a name written here
+# would be the fabricated attestation § 7 forbids.
+PROMPT_ANSWER = "approved the merge call at the harness's permission prompt"
+PROMPT_ANSWERER = "whoever answered the harness's permission prompt"
 
 # The question a merge is held on, and where the whole vocabulary comes from.
 # ⛔ The name is read out of the surface's own alternation rather than carried
@@ -995,8 +1014,8 @@ def same_content(slug: str, base: str, approved: str, head: str, run=None) -> tu
     return True, ""
 
 
-def approval_covers(config, slug: str) -> str:
-    """What an approval covers in this repository, by § 2's key.
+def _landing(config, slug: str, key: str, narrow: str) -> str:
+    """One of § 2's landing keys for the repository a change is in.
 
     ⛔ Read from the root whose repository the change is in, and the narrow value
     where there is none: a repository the project states nothing about has not
@@ -1005,10 +1024,20 @@ def approval_covers(config, slug: str) -> str:
     for view in [*(getattr(config, "views", None) or {}).values(), config]:
         try:
             if view.get("host.repo") == slug:
-                return str(view.get(APPROVAL_COVERS) or COVERS_COMMIT)
+                return str(view.get(key) or narrow)
         except Exception:  # noqa: BLE001 -- a read that stops widens nothing
             continue
-    return COVERS_COMMIT
+    return narrow
+
+
+def approval_covers(config, slug: str) -> str:
+    """What an approval covers in this repository, by § 2's key."""
+    return _landing(config, slug, APPROVAL_COVERS, COVERS_COMMIT)
+
+
+def unrecorded_merge(config, slug: str) -> str:
+    """What a merge no approval covers gets in this repository, by § 2's key."""
+    return _landing(config, slug, UNRECORDED_MERGE, UNRECORDED_DENY)
 
 
 def _run_host(args: list[str], timeout: int) -> tuple[int, str]:
@@ -1133,11 +1162,16 @@ def _deny(reason: str) -> dict:
     }
 
 
-def merge_guard(config, command: str, *, host=None) -> dict:
+def merge_guard(config, command: str, *, host=None, mode: str = "",
+                asked: dict | None = None) -> dict:
     """Refuse a merge unless the merge ask's last record approves this commit.
 
     ⛔ Refused rather than waved through where the record could not be read at
     all, which is the surface's fail direction for an act that cannot be undone.
+    ⚠️ Where the record was read and approves nothing this commit carries, a
+    project stating `prompt` has the call put to the person instead, in a mode a
+    person answers: `asked` is then filled with the change and the commit the
+    question is about, which is what the record written afterwards states.
     """
     target = merge_target(command, config.get("host.repo"))
     if target is None:
@@ -1203,7 +1237,7 @@ def merge_guard(config, command: str, *, host=None) -> dict:
             same, why = same_content(slug, base, approved, head, run=host)
             if same:
                 return {}
-        return _deny(
+        return _unapproved(config, slug, number, head, mode, asked,
             f"This command merges {slug}#{number} at {head}, and the answer to "
             f"`{MERGE_QUESTION}` recorded on it was given at {approved}: {why} "
             f"({RECORD_CITATION}). ⛔ An approval covers the commit it was given for and no "
@@ -1228,7 +1262,7 @@ def merge_guard(config, command: str, *, host=None) -> dict:
         )
     else:
         found = f"no complete answer to `{MERGE_QUESTION}` is the last one recorded on it"
-    return _deny(
+    return _unapproved(config, slug, number, head, mode, asked,
         f"This command merges {slug}#{number}, and {found} ({RECORD_CITATION}). ⛔ Only a "
         f"recorded `{APPROVED}` allows a merge. The question is whether this change goes in "
         "now, put to a person once everything that would have stopped the merge is "
@@ -1237,6 +1271,40 @@ def merge_guard(config, command: str, *, host=None) -> dict:
         "one thing this record may not "
         f"carry. What unblocks this is their answer written onto the change:\n{again}"
     )
+
+
+def _unapproved(config, slug: str, number: str, head: str, mode: str,
+                asked: dict | None, reason: str) -> dict:
+    """The answer for a merge whose record was read and approves nothing it carries.
+
+    ⛔ The one arm `prompt` reaches. A record that could not be established is
+    refused before this, by the fail direction for an irreversible act: a prompt
+    is a way of obtaining the answer, never a way past a record nobody could read.
+    ⛔ And refused wherever the session would answer its own prompt, which is
+    § 21's reading taken whole -- a prompt nobody can answer is not an ask.
+    """
+    if unrecorded_merge(config, slug) != UNRECORDED_PROMPT:
+        return _deny(reason)
+    if live.verdict_for(mode) != "ask":
+        return _deny(
+            f"{reason}\n⚠️ This project puts such a merge to a person at the harness's prompt, "
+            f"and in the mode this session is in ({mode or 'none stated'}) no person answers "
+            f"it ({PROMPT_CITATION}), so it is refused instead."
+        )
+    if asked is not None:
+        asked.update({"slug": slug, "number": str(number), "head": head})
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": GUARD_EVENT,
+            "permissionDecision": "ask",
+            "permissionDecisionReason": (
+                f"This command merges {slug}#{number} at {head}, and no recorded answer to "
+                f"`{MERGE_QUESTION}` approves that commit. This project puts the merge to "
+                f"you here instead of refusing it ({PROMPT_CITATION}): allowing this call is "
+                "your answer, and it is recorded on the change once the call has run."
+            ),
+        }
+    }
 
 
 def unread_merge_guard(command: str, stop: str) -> dict:
@@ -1830,8 +1898,17 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
         # the configuration makes inert, so this arm composes none of it and
         # carries no prefix of its own (§ 19 -> How often).
         return _inert(str(payload.get("session_id") or ""), stop)
-    refused = merge_guard(loaded, command, host=host)
+    asked: dict = {}
+    refused = merge_guard(loaded, command, host=host, asked=asked,
+                          mode=str(payload.get(live.PERMISSION_MODE) or ""))
+    # ⛔ Settled on every call, and not only where it asks: the note is what the
+    # exit event records an approval from, so a note a declined prompt left
+    # behind is replaced or removed by the next answer to the same call rather
+    # than read as that call's approval.
+    _settle_prompt(prompts_for(loaded, store), payload, asked, now)
     if refused:
+        # ⚠️ An ask returns here too, before any place is taken: a prompt the
+        # person declines runs nothing, and no exit event gives a place back.
         return refused
     # ⛔ Before any place is taken, for the reason the arm below is ordered after
     # the merge guard: a place taken by a call that is then denied is a place
@@ -2063,7 +2140,7 @@ def behind_answer(payload: dict, *, event: str | None = None, load=None, read=No
 
 
 def release_answer(payload: dict, *, config=None, now: float | None = None,
-                   store: Path | None = None, load=None, read=None) -> dict:
+                   store: Path | None = None, load=None, read=None, host=None) -> dict:
     """The answer for whichever event gives a place back, and reports the base.
 
     ⛔ This arm was already silent in a project that states no configuration,
@@ -2085,12 +2162,87 @@ def release_answer(payload: dict, *, config=None, now: float | None = None,
         return {}
     loaded = config if config is not None else _config(payload.get("cwd"))
     said = [
+        # ⛔ First, so that a hook killed at its budget has written the record
+        # before it reaches the reads that may hang.
+        _prompt_recorded(loaded, payload, event, now=now, store=store, host=host),
         _process_recorded(loaded, payload, event, now=now, store=store),
         _places_given_back(loaded, payload, scope, now=now, store=store),
         behind_answer(payload, event=event, load=load, read=read),
     ]
     spoken = [line for line in said if line]
     return {"systemMessage": " ".join(spoken)} if spoken else {}
+
+
+def prompts_for(loaded, store: Path | None) -> Path:
+    """Where a merge put to the person at the prompt is noted until its exit event.
+
+    Beside this project's leases and not among them: the lease sweep reads the
+    files of its own directory, and a note is no place on anything.
+    """
+    return (store if store is not None else store_for(loaded.skills_root)) / "prompts"
+
+
+def _note_path(where: Path, payload: dict) -> Path:
+    return where / f"{_call_key(str(payload.get('session_id') or ''), _command(payload))}.json"
+
+
+def _command(payload: dict) -> str:
+    return str((payload.get("tool_input") or {}).get("command") or "")
+
+
+def _settle_prompt(where: Path, payload: dict, asked: dict, now: float | None) -> None:
+    """Note the change and commit a prompt is about, or clear this call's note."""
+    path = _note_path(where, payload)
+    try:
+        if asked:
+            where.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps({**asked, "at": time.time() if now is None else now}),
+                            encoding="utf-8")
+        else:
+            path.unlink(missing_ok=True)
+    except OSError:
+        # ⚠️ A note that could not be written is an answer the exit event finds
+        # nothing to record from, and so says nothing about: the ask itself is
+        # what states that its answer is recorded only once the call has run.
+        pass
+
+
+def _prompt_recorded(loaded, payload: dict, event: str, *, now: float | None,
+                     store: Path | None, host=None) -> str:
+    """Record an approval given at the prompt, or say that it was not recorded."""
+    if loaded is None or RELEASE_EVENTS.get(event) != "call":
+        return ""
+    if payload.get("tool_name") != GUARDED_TOOL:
+        return ""
+    path = _note_path(prompts_for(loaded, store), payload)
+    noted = _read_lease(path)
+    if noted is None:
+        return ""
+    with contextlib.suppress(OSError):
+        path.unlink()
+    slug, number, head = noted.get("slug"), noted.get("number"), noted.get("head")
+    if event != CALL_FINISHED:
+        # ⛔ A call that failed is not read as one the person allowed: whether
+        # the harness reports a declined prompt on this event is not something
+        # this hook can establish, and a record it cannot stand behind is the
+        # one it must not write.
+        return (
+            f"The merge of {slug}#{number} was put to the person at the prompt and the call "
+            f"failed, so whether it was allowed is not established and ⛔ no answer to "
+            f"`{MERGE_QUESTION}` was recorded ({PROMPT_CITATION})."
+        )
+    at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() if now is None else now))
+    said, code = write_record(f"{slug}#{number}", MERGE_QUESTION, PROMPT_ANSWER,
+                              PROMPT_ANSWERER, at, str(head or ""), run=host,
+                              verdict=APPROVED)
+    if code == 0:
+        return (f"The merge of {slug}#{number} at {head} was allowed at the prompt, and that "
+                f"answer is recorded on the change ({PROMPT_CITATION}).")
+    return (
+        f"The merge of {slug}#{number} at {head} was allowed at the prompt, and ⛔ that answer "
+        f"was NOT recorded on the change: {said.splitlines()[0]} Record it with `record`, "
+        f"naming who answered ({PROMPT_CITATION})."
+    )
 
 
 def _process_recorded(loaded, payload: dict, event: str, *, now: float | None,
@@ -2912,13 +3064,16 @@ def _a_carrier_that_cannot_run(which: str):
 
 
 def _call(command: str, session: str = "a-session", cwd: str = ".",
-          background: bool = False) -> dict:
-    return {
+          background: bool = False, mode: str | None = None) -> dict:
+    payload = {
         "tool_name": GUARDED_TOOL,
         "session_id": session,
         "cwd": cwd,
         "tool_input": {"command": command, "run_in_background": background},
     }
+    if mode is not None:
+        payload[live.PERMISSION_MODE] = mode
+    return payload
 
 
 def _exit(event: str, cwd: str, session: str = "a-session", command: str = "") -> dict:
@@ -3910,6 +4065,124 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               denied(guard_answer(_call("gh pr merge 7"), config=_a_config([], repo=None),
                                   now=1000.0, store=fresh("merge"),
                                   host=_a_host(comments=recorded))))
+
+        # --- a merge put to the person at the prompt ----------------------
+        out.append("")
+        out.append("A project may put a merge no approval covers to the person at the prompt:")
+        prompting = _a_config([])
+        prompting.data["host"]["landing"] = {"unrecorded_merge": UNRECORDED_PROMPT}
+        refusing = _a_config([])
+        refusing.data["host"]["landing"] = {"unrecorded_merge": UNRECORDED_DENY}
+        notes = itertools.count()
+
+        def decision(answer: dict) -> str:
+            return str((answer.get("hookSpecificOutput") or {}).get("permissionDecision") or "")
+
+        def at_prompt(project=prompting, comments=(), mode="default", where=None,
+                      command="gh pr merge 7", **host):
+            return guard_answer(_call(command, mode=mode), config=project, now=1000.0,
+                                store=where or fresh(f"prompt-{next(notes)}"),
+                                host=_a_host(comments=list(comments), **host))
+
+        for mode in sorted(live.ANSWERED_BY_A_PERSON):
+            answered = at_prompt(mode=mode)
+            check(f"no record, in {mode!r}: put to the person", decision(answered) == "ask",
+                  repr(answered)[:160])
+        answered = at_prompt()
+        check("and the prompt names the change, the commit and that the answer is recorded",
+              "an-owner/a-repository#7" in reason(answered) and A_HEAD in reason(answered)
+              and "recorded" in reason(answered), reason(answered)[:200])
+        for mode in [*sorted(live.ANSWERED_BY_THE_SESSION), "", "a-mode-nobody-named"]:
+            answered = at_prompt(mode=mode)
+            check(f"in {mode!r}, where no person answers: refused, saying why",
+                  denied(answered) and "no person answers" in reason(answered)
+                  and "--question" in reason(answered), repr(answered)[:160])
+        check("a project stating nothing is refused in a mode a person answers",
+              denied(at_prompt(project=config)))
+        check("and so is one stating deny", denied(at_prompt(project=refusing)))
+        for verdict in [*(word for word in verdicts() if word != APPROVED), ""]:
+            check(f"a last record whose verdict is {verdict!r}: put to the person",
+                  decision(at_prompt(comments=[record_body(
+                      MERGE_QUESTION, "not now", "a-person", "x", A_HEAD, verdict)])) == "ask")
+        check("an approval given at an earlier commit: put to the person",
+              decision(at_prompt(comments=recorded, head=A_LATER_HEAD)) == "ask")
+        check("an approval covering this commit is allowed without a prompt",
+              at_prompt(comments=recorded) == {})
+        for label, host in (("a record the host did not answer for", {"code": 1}),
+                            ("a change nothing could resolve", {"number": None}),
+                            ("a head the host did not answer for", {"head": None})):
+            command = "gh pr merge" if "number" in host else "gh pr merge 7"
+            check(f"{label}: refused even where the project prompts",
+                  denied(at_prompt(command=command, **host)))
+
+        out.append("")
+        out.append("An approval given at the prompt is recorded, or the report says it was not:")
+        bodies: list[str] = []
+
+        def recording(code: int = 0):
+            def run(args, _timeout):
+                bodies.append(Path(args[args.index("--body-file") + 1]).read_text(
+                    encoding="utf-8"))
+                return code, "an-address-the-host-printed"
+            return run
+
+        def finished(where, event="PostToolUse", project=prompting, code=0):
+            return release_answer({**_call("gh pr merge 7", mode="default"),
+                                   "hook_event_name": event},
+                                  config=project, now=1000.0, store=where,
+                                  host=recording(code),
+                                  read=lambda _where, load=None: (None, None, ""))
+
+        where = fresh("prompt-recorded")
+        at_prompt(where=where)
+        said = str(finished(where).get("systemMessage") or "")
+        written = answers_in(bodies[-1]) if bodies else []
+        check("the call having run, the answer is recorded as the merge ask's own",
+              [(a["question"], a["verdict"], a["at commit"]) for a in written]
+              == [(MERGE_QUESTION, APPROVED, A_HEAD)], repr(written))
+        check("and names the route as who answered, and no person",
+              [a["answered by"] for a in written] == [PROMPT_ANSWERER], repr(written))
+        check("and the report says it was recorded",
+              "recorded on the change" in said and "NOT" not in said, said[:200])
+        check("and the record it wrote is one the guard then allows",
+              at_prompt(comments=bodies[-1:]) == {})
+        before = len(bodies)
+        finished(where)
+        check("a second exit event for the same call writes nothing more", len(bodies) == before)
+        where = fresh("prompt-unwritten")
+        at_prompt(where=where)
+        said = str(finished(where, code=1).get("systemMessage") or "")
+        check("a record the host refused is reported as not recorded",
+              "NOT recorded" in said and "record" in said, said[:200])
+        where = fresh("prompt-failed")
+        at_prompt(where=where)
+        before = len(bodies)
+        said = str(finished(where, event="PostToolUseFailure").get("systemMessage") or "")
+        check("a call that failed records nothing", len(bodies) == before)
+        check("and says that nothing was recorded", "no answer" in said and "recorded" in said,
+              said[:200])
+        where = fresh("prompt-replaced")
+        at_prompt(where=where)
+        at_prompt(where=where, comments=recorded)
+        before = len(bodies)
+        finished(where)
+        check("a note a declined prompt left is cleared by the next answer to the same call",
+              len(bodies) == before)
+        where = fresh("prompt-never-asked")
+        at_prompt(where=where, comments=recorded)
+        before = len(bodies)
+        finished(where)
+        check("a merge a recorded approval allowed writes no second record",
+              len(bodies) == before)
+        allowed_after = next(
+            hook_entry["timeout"]
+            for group in json.loads(CARRIER.read_text(encoding="utf-8"))["hooks"][CALL_FINISHED]
+            for hook_entry in group["hooks"]
+            if Path(__file__).name in " ".join(hook_entry.get("args") or [])
+        )
+        check("and the write and the reads after it fit inside the exit hook's own timeout",
+              HOST_TIMEOUT + 2 * BEHIND_TIMEOUT < allowed_after,
+              f"{HOST_TIMEOUT} + 2 x {BEHIND_TIMEOUT}, {allowed_after}")
 
         # ⛔ The measured leak, asserted directly rather than implied by the
         # ordering of the code: a place taken by a call that is then refused is a
