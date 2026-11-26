@@ -98,6 +98,11 @@ host:
     - workflow: "Built check carrier"
       mirrors: "python3 plugins/mjolnir/scripts/built.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ `approach_ask` below is at its default, so no leg here asks. What this run holds is every
+    # shape § 43 refuses, against a tracker the suite fakes.
+    - workflow: "Approach ask carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/approach.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Claim carrier"
       mirrors: "python3 plugins/mjolnir/scripts/claim.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -195,9 +200,10 @@ host:
     - workflow: "Hours breakdown carrier"
       mirrors: "python3 plugins/mjolnir/scripts/hours_breakdown.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    # ⚠️ This project states no `work_item.template.declared`, so pointed at this tree the module
-    # answers that nothing is declared. This run holds the reading against planted declarations and
-    # bodies, which is the only place it can be held.
+    # ⚠️ This project states no `work_item.template.declared` and no `tracker.duplicate`, so pointed
+    # at this tree the module answers that nothing is declared and nothing is appended. This run
+    # holds both readings against planted declarations, bodies and appended sections, which is the
+    # only place they can be held.
     - workflow: "Item sections"
       mirrors: "python3 plugins/mjolnir/scripts/item_sections.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -1138,6 +1144,11 @@ built_check:
   points: []
   on_finding: report
 
+approach_ask:
+  # § 43 at its default. One person files, orders and merges here, and the merge ask is where
+  # they read the work; a second stop per item would ask them about a plan they wrote.
+  asked: never
+
 verify:
   # § 40's absent case, and it holds here for the first of that section's two shapes: `deploy: []`
   # above, so nothing this repository ships reaches an environment through the procedure and there
@@ -1153,3 +1164,8 @@ verify:
   revisit_when: >-
     This project states a deploy target, which is the same trigger the release and deploy facets
     above carry and would be answered by the same reading.
+
+open_questions:
+  # § 5 at its default. Requests here come from the person running the session, who answers a
+  # question in the same sitting, so nothing waits days for an answer.
+  mode: ask

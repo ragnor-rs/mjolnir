@@ -375,6 +375,9 @@ built_check:
   points: []
   on_finding: report
 
+approach_ask:
+  asked: never
+
 # § 40's absent case, and on this project both of its shapes hold at once: no deploy target and no
 # status ladder at all. ⛔ The absence is still written rather than left out — a project that never
 # looked and a project that decided read identically otherwise.
@@ -386,3 +389,8 @@ verify:
   revisit_when: >-
     This project states a deploy target, which is the first thing a criterion could be measured
     on.
+
+# § 5 at its default: a request that left a question open is asked about, and nothing is
+# filed until it is answered.
+open_questions:
+  mode: ask

@@ -422,6 +422,13 @@ a judgement on the host that is theirs to record because this route holds the cr
 otherwise clear its own finding. **None of those is a question about how thoroughly this route
 works before it reaches the person's act.**
 
+One ask is a project's to add, and it passes the same test only because the project states that it
+does: **the go on an item's approach before the implementing leg's first edit**
+([§ 43](#43-the-persons-go-on-the-approach-before-the-first-edit)). Where a project states it, the
+approach is part of what its person signs off, so the act is theirs. Where a project does not, the
+approach is the route's own business like every other question above, and nothing is asked. It is
+not configuration of the merge ask, which no project can turn off.
+
 **Every question narrower than that one is answered by the role that needs it, and recorded.**
 Measured on this repository: a route that also asked how deep the reading goes, who runs the plan,
 and whether anybody intends to read the diff put a person's own merge authorization behind three
@@ -539,12 +546,13 @@ content itself.
 document comes under this rule where somebody is editing it anyway. Nothing here licenses a sweep
 that rewrites every document, which is why a gate holding this reads the lines a change **adds**.
 
-[§ 3](#a-duplicate-is-the-item-rewritten-never-a-second-item-filed) applies this to a work item's
-body: it rewrites a confirmed duplicate rather than appending to it, and keeps nothing of what the
-body stated earlier.
+[§ 3](#a-duplicate-is-folded-into-the-item-never-a-second-item-filed)'s default applies this to a
+work item's body: `rewrite` keeps nothing of what the body stated earlier. Its `append` mode is not
+an exception to this rule. The dated section it adds carries the new material, which is content,
+and the pass that wrote it is recorded in the comment beside it, never in the body.
 
 Procedure rather than configuration, and **no key on this surface turns it off** — the placement
-authorship has under § 6, the reply's register under § 8 and the duplicate rule under § 3. The cost
+authorship has under § 6 and the reply's register under § 8. The cost
 was measured where the habit was: the ordering document this repository plans with had grown seven
 dated revalidation paragraphs, 70 of its 469 lines, every figure in them stale and every standing
 fact in them already argued in a row of the table.
@@ -1809,7 +1817,7 @@ the operations the survey reached and says which it did not.
 | `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
 | `read_current_grouping` | the value the tracker itself marks open for one of § 4.8's groupings under `current: discoverable`, each open value by what a write takes and by the name a person reads — ⛔ never a choice between several, which the role asks, and never asked under `stated`, where the tracker marks none | the grouping is asked for, as under `stated`, and the report says the tracker's mark went **unread**; never the first value the tracker lists, by § 2's rule that absence of signal is not an answer |
 | `open_groupings` | every value of one of § 4.8's groupings that the tracker holds open, **in the tracker's own order** — a version list's position, a milestone's due date — each by what a write takes and by the name a person reads; ⛔ never a sort of the names, and an open value with no place in that order listed apart as unplaced | a positional default (§ 4.8) has no list to count in, so the grouping is asked for and the report says the open groupings went **unread**; never the position resolved against a list nobody read, by § 2's rule that absence of signal is not an answer |
-| `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. The address a person performs it at is the tracker's own and the procedure composes none — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
+| `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it. ⛔ It writes the mark, and the date it was made where the tracker takes one, and nothing else the grouping holds; a grouping already marked is reported and left alone | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. The address a person performs it at is the tracker's own and the procedure composes none — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `read_comments` | the item's comments, oldest first and every page of them, each with who wrote it, when, and when it was last edited | the role reports the comments **unread** and never as none, by § 2's rule that absence of signal is not an answer ([below](#an-items-comments-and-what-an-unread-one-is)) |
 | `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
@@ -1931,6 +1939,12 @@ configuration.
 An adapter declares an operation by implementing it, not by listing it. The two cannot drift
 apart, and an adapter naming an operation this table does not state is refused.
 
+**A capability can be absent for one shape of a facet and present for another.** Where a tracker
+performs an operation on one shape a facet allows and has nothing to perform it on in the shape a
+project states, the implementation says so and the port answers with the operation's stated
+fallback and the implementation's reason, exactly as for an operation not implemented at all. It is
+not a refusal: a configuration the surface rules out is still refused where it is read.
+
 Where two projects on the **same** tracker genuinely differ, the difference is already a facet
 here rather than a capability: what carries the type, the estimate, the template or the priority,
 each with its own absent case (§ 4.1, § 4.3, § 4.4, § 4.6); what the tracker may hold at all
@@ -1985,29 +1999,60 @@ This is the one half of the port a **project** states, and it is content rather 
 it says what may reach an item, never which operations exist. A role meeting a policy refusal has a
 capability it may not use here, which is reported differently from an absence.
 
-### A duplicate is the item rewritten, never a second item filed
+### A duplicate is folded into the item, never a second item filed
 
-**A confirmed duplicate is the existing item's body rewritten to what the work now is.** No
-second item is created, no dated block is appended, and no record is kept of what the body used to
-say. The item states the work as it now stands, and `search_items` above is what finds the item to
-rewrite.
+```yaml
+tracker:
+  duplicate: rewrite | append    # default: rewrite
+```
 
-Two items describing one job both sit open and both read as work nobody did, and closing one closes
-nothing. An appended addendum costs the other half: the item's current scope stops being readable
-off the item and has to be reconstructed by reading its body in order of writing.
+**A confirmed duplicate never becomes a second item.** Two items describing one job both sit open
+and both read as work nobody did, and closing one closes nothing. That half is procedure and no key
+turns it off. `search_items` above is what finds the item the new material goes into. **How it goes
+in is the project's choice, and `duplicate` states it once.**
 
-**Where the provenance goes** — what the new material was and where it came from — follows the
-`comment` capability and nothing else: a note on the item where that capability exists, and the run
-report where it does not, which is `comment`'s own fallback above.
+**`rewrite` is the existing item's body rewritten to what the work now is.** No dated block is
+appended and nothing of the earlier body is kept beside the new one, so the item's current scope is
+readable off the item rather than reconstructed by reading its body in order of writing. **A
+rewrite does not license dropping what the item already stated.** A constraint, an acceptance
+condition or a dependency the old body carried is still true unless the new material replaced it.
+A rewrite that quietly narrows the item is the one failure this mode is worse at than appending.
 
-**Rewriting is not a licence to drop what the item already stated.** A constraint, an acceptance
-condition or a dependency the old body carried is still true unless the new material replaced it,
-and a rewrite that quietly narrows the item is the one failure this is worse at than appending.
+**`append` keeps the existing body byte for byte and adds one dated section after it** carrying the
+new material — its outcome, its acceptance conditions and its notes. This is for a project whose
+items are text somebody outside the build has already validated: a rewrite changes what that person
+accepted, and the only trace is a comment. The cost is the one `rewrite` avoids, since the scope is
+now read across the body and its sections in order of writing. A project that pays it states so
+here.
 
-Procedure rather than configuration, and there is no setting that turns it off — the same
-placement authorship has under § 6 and the reply's register under § 8. A project that could
-configure this would be choosing whether its own tracker is allowed to hold two statements of one
-job.
+- **The section's heading is the project's wording**, stated as
+  [§ 4.4](#44-template)'s `sections.addendum`, which carries `{date}` once where the date goes.
+  The surface states no heading text, which keeps the wording and its language out of the
+  procedure as [§ 8](#8-language-register-audience--per-artifact-not-per-project) requires. The date
+  is the day of the filing, written `YYYY-MM-DD`. The heading sits at the level of the body's first
+  heading, or at `##` where the body has none.
+- **One consumer composes the body and holds it**, so the filing role neither assembles the section
+  by hand nor judges by eye whether the old text survived:
+
+  ```bash
+  python3 plugins/mjolnir/scripts/item_sections.py addendum --before <the body as read> \
+    --material <the new material> [--date <YYYY-MM-DD>]
+  python3 plugins/mjolnir/scripts/item_sections.py appended --before <the body as read> \
+    --after <the body to write>
+  ```
+
+  `appended` runs twice: on the body about to be written, and on the body read back after the
+  write, since what the tracker holds is the claim. It refuses a body whose text before the
+  section is not the existing body exactly. It
+  also refuses one carrying no dated section or more than one, a heading that is not the project's
+  wording with a date in it, and a section with nothing under it. Each command exits 3 where the
+  project states `rewrite`, since there is no section to compose.
+
+**The provenance is written under both modes.** That is what the new material was and where it
+came from, and it follows the `comment` capability and nothing else: a note on the item where that
+capability exists, and the run report where it does not, which is `comment`'s own fallback above.
+Under `append` the dated section carries the material and the comment carries its source. One does
+not stand in for the other.
 
 ### An edge is a relation, and a body keeps the reasoning about it
 
@@ -2289,6 +2334,7 @@ work_item:
       outcome: "…"
       acceptance: "…"
       reproduction: "…"
+      addendum: "…"              # required_when: tracker.duplicate = append
     declared: []                 # the sections this project requires beyond those three; default: []
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
@@ -2298,6 +2344,13 @@ The procedure names the **semantic** sections it depends on — `outcome`, `acce
 `reproduction` — and each template declares which of its own headings fills each. That keeps the
 heading text, and its language, out of the procedure while letting the procedure still check a
 section is present and tick its items later.
+
+**`addendum` is the heading of the dated section a confirmed duplicate gains** where
+[§ 3](#a-duplicate-is-folded-into-the-item-never-a-second-item-filed)'s `duplicate` is `append`. It
+carries `{date}` exactly once, where the filing's date is written, and the reader refuses one that
+does not. No template file carries it, since a body gains it only after it is filed. So it holds
+under either carrier, as `declared` below does, and its absence is a refusal only where `append`
+is stated.
 
 **How the acceptance section's content is phrased is no part of this key**:
 [§ What an acceptance condition is written as](#what-an-acceptance-condition-is-written-as) states
@@ -2765,6 +2818,62 @@ question a role has to ask before it publishes a grouping, not derivable from th
 a key still unread when that role is written is § 1's retirement argument with a project's own
 answer behind it.
 
+### 4.9 Classification — the closed set of labels an item is filed under
+
+```yaml
+work_item:
+  classification:
+    carrier: label | none        # absent_reason
+    name: "component"            # when carrier is label; what the axis is called in a report
+    values: [backend, frontend]  # when carrier is label; the closed set, written as a list
+    at_least: 1                  # when carrier is label; 1 where unstated
+    at_most: 2                   # when carrier is label; no upper bound where unstated
+    absent_reason: "…"           # required when carrier is none
+    revisit_when: "…"
+```
+
+The labels a filing role classifies an item with, where those are a closed list the project keeps
+rather than whatever the repository's label set holds. A repository's set also carries the host's
+own defaults and labels left over from older practice, so a filing that picks from it can classify
+an item with a label nobody meant as a classification, or leave it with none. **`values` is the whole
+of what may be picked, and `at_least` and `at_most` bound how many of them one item carries.** No
+operation is added to [§ 3](#3-tracker-port) for it: the labels are written through `set_labels` and
+read back through `read_item`, as § 4.6's `label` carrier is.
+
+**A label the item carries is accounted for by this set or by the key that owns it, and by nothing
+else.** The keys that own a label are every other facet whose carrier is `label` (§ 4.1, § 4.3,
+§ 4.6, § 4.7, § 4.8), through its `label_prefix` or, where it states none, its own `values`; § 27's
+`people` under `key: label`, through its `label_prefix`; the label a
+[§ 5](#5-readiness-gate--an-ordered-predicate-list) `label_absent` entry names, and the label a
+[§ 7](#an-item-a-project-routes-to-a-carrier-of-its-own) route names. A label none of those accounts
+for is refused, which is what keeps a host default out of the place a classification goes. A value
+in `values` that one of those keys also owns is refused at load: two keys would each read the same
+label as their own fact.
+
+The reader answers the question for the labels an item carries, and the filing role asks it twice:
+when it picks, and when it reads the item back.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --classification-for <every label the item carries>
+```
+
+| what comes back | what it means |
+|---|---|
+| `holds` | the item carries between `at_least` and `at_most` of `values`, and every other label it carries is accounted for |
+| `refused` | each problem named: too few, too many, or a label nothing accounts for, with the label |
+| `none` | the project states that it classifies with no closed set (`carrier: none`), with its reason; nothing is held |
+| `unstated` | the project states no facet, and the filing role files as it did before the key existed |
+
+**A request the set cannot place is reported, never forced.** The filing role picks from `values`
+and from nothing else. Where none of them fits the request, it says so in its reply, naming the set,
+and it neither invents a label nor files the item with none. Which label the request should have is
+then the person's to answer.
+
+`carrier: none` with a stated reason is [§ 4.3](#43-estimate)'s first-class setting: a project whose
+labels carry no classification states that, and `revisit_when` carries the trigger that would give it
+a set. A project that writes no facet at all files exactly as before, since the facet is new and a
+key that became required would invalidate every configuration written before it.
+
 ## 5. Readiness gate — an ordered predicate list
 
 ```yaml
@@ -2891,7 +3000,52 @@ label would be a configuration free to disagree with itself about which items ar
 An item sent back unmarked reads exactly like one nobody has looked at. **Where a project
 configures no `label_absent`, or configures more than one, the gating role has no mark to set** —
 it says so and leaves its verdict on the item, rather than choosing between two labels or inventing
-a third.
+a third. The filing role sets the same mark where a project files an item with its questions open,
+under the subsection below, and is held to the same rule about how many labels there are.
+
+### An item filed with its questions open
+
+```yaml
+open_questions:
+  mode: ask | file_marked                    # default: ask
+  written_on: comment | section              # default: comment
+  heading: "…"
+```
+
+A request can leave a question open that only its author can answer, and some authors answer days
+later in a chat. Under `ask` the filing role puts the question and files nothing until it is
+answered, so meanwhile the work exists only in that chat. **`file_marked` files the item at once,
+carrying the open questions and the mark this section's gate refuses**, so the work is tracked
+and visible, and the gate holds it back until the questions are answered. **`ask` is the default**,
+and a project stating nothing files as it always has.
+
+- **The mark is `label_absent`'s label and no other.** A key naming a label of its own would be the
+  second statement the subsection above rules out, and could name a label the gate does not refuse.
+  **A project stating `file_marked` while `readiness` configures no `label_absent`, or more than
+  one, is refused where the configuration is read.** With none there is no mark the gate refuses.
+  With two, the filing role would be choosing which one the item carries.
+- **The questions are written on the item, never only in the reply.** `written_on` says where:
+  under `comment`, in one comment written after the item is created; under `section`, in the body
+  under `heading`, in the item's own language
+  ([§ 8](#8-language-register-audience--per-artifact-not-per-project)). **`heading` is required
+  under `section` and refused under `comment`**, where nothing would read it. A question in the
+  reply alone is invisible to whoever answers it, and to the role that next reads the item.
+- **Only a question about what the request asks for is filed open.** That is a source short of
+  what the item needs, or an acceptance condition the request cannot yet support. It is not a
+  question about whether or where to file the item: a duplicate, a parent, a contradiction, the
+  type, the code root and the grouping are each still asked first. Filing past one of those
+  produces a duplicate or a misplaced item, which the mark does not hold back.
+- **The mark comes off when every question it was filed with is answered.** The filing role, run
+  again on the answers, writes each answer where its question stands and drops the mark from the
+  item's labels. It removes no mark while any question is unanswered, and **neither does the
+  gating role**: an item carrying a question filed open is held where it stands, with its mark,
+  however its other checks come out. Clearing the mark there would admit an item whose questions
+  nobody answered.
+- **A tracker that cannot write the mark or the questions cannot file an item marked.** Where
+  `set_labels`, or `comment` under `comment`, is absent
+  ([§ 3](#the-operations-and-what-an-absent-capability-does)), the role asks instead, as under
+  `ask`, and its reply names the missing capability. An item filed without its mark reads as ready,
+  which is the one outcome this mode must not produce.
 
 ## 6. Commit behaviour
 
@@ -2905,7 +3059,8 @@ commit:
   branch_rules:                              # default: []
     - branches: ["release/*"]                # globs on the branch the commit lands on
       paths: ["docs/*", "*.md"]              # what a commit there may contain
-      otherwise: stop | leave_out
+      otherwise: stop | leave_out | commit_local
+      push: always | never                   # absent, the commit is pushed as today
 ```
 
 ### What staging is per, and the two rules that hold regardless
@@ -2964,7 +3119,22 @@ off a release branch while documents may go there, which no per-role value can e
   admitted by each, so adding a rule can only narrow what a branch accepts.
 - **`otherwise` decides a commit carrying a path that is not admitted.** `stop` makes no commit and
   names every such path. `leave_out` commits the admitted paths alone and names every path it
-  left out. Where any matching rule that refused a path says `stop`, the commit stops.
+  left out. `commit_local` commits the admitted paths and pushes them, then commits the rest
+  after them and does not push that second commit. Where any matching rule that refused a path
+  says `stop`, the commit stops. A path refused under both `leave_out` and `commit_local` is left
+  out.
+- **`push: never` commits what the rule allows and pushes nothing.** Such a rule may state no
+  `paths`, and then it allows every path: that is how a branch that takes commits and publishes
+  none is stated. `commit_local` is refused under it, since every commit there stays local
+  already.
+- **A push publishes everything under it, so a push never goes over a commit a rule kept
+  local.** A role asking about a branch whose rule says `commit_local` passes `--ahead` with every
+  path the branch's unpushed commits carry, or with no path where there are none. Where one of
+  them is a path the branch does not admit, nothing is pushed and the whole commit stays local.
+  The answer refuses to be given without `--ahead` on such a branch.
+- **A commit kept local is named in the reply, and is never rewritten or dropped.** It stays in
+  the branch's history. It reaches the remote with a later push that carries it through review,
+  such as the finishing role's push of the change it belongs to.
 - **What was left out is named in the role's reply, and is left in the tree untouched.** A
   path dropped silently reads exactly like a path that was never changed.
 - **A `leave_out` that admits nothing makes no commit**, and says so, rather than making an
@@ -2978,8 +3148,15 @@ role [§ 6's block](#6-commit-behaviour) gives a `staging` entry to, and the com
 paths are what is handed over:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <staged paths> --on-branch <branch>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <staged paths> --on-branch <branch> \
+  [--ahead [<unpushed paths>]]
 ```
+
+The answer names the paths for the first commit and whether that commit is pushed (`push`), the
+paths for the second commit, which is never pushed (`local`), and the paths left out. The
+bookkeeping role reads `push`. The finishing and reviewing roles push a change's branch, and that
+push puts the commits in front of review, so they read `push_for_review`, which only
+`push: never` makes false.
 
 The rule is read and applied by the role, and nothing on the host enforces it. A commit
 made by hand, outside every role, is held to nothing here.
@@ -9721,6 +9898,33 @@ narrative distribution of hours configures no rate, because that role has no key
 `carrier: none` is a project that bills nobody, stated with its reason and named in what the reader
 reports as unavailable; it is not a statement about whether anybody invoices by hand.
 
+### An invoice priced per deliverable, and why neither role carries it
+
+⛔ **An invoice that spreads a period's hours over the work it shipped and prices each line is a
+project's own carrier, and no role or key on this surface carries any part of it.** It joins the two
+roles [§ The loop](#the-loop) keeps apart: the distribution over shipped work is the hours-breakdown
+role's, and of the roles on that list only this one converts hours to money. Each role is forbidden
+the half the other does, so neither can carry the whole. It stays where
+[§ 36](#where-a-duplicated-utility-goes-instead) leaves a utility — in the project that wants it, or
+in the harness's user-wide root where several projects do — calling the hours-breakdown role for
+the distribution and doing the rest itself. A carrier that is no role of the loop is outside this
+surface, so what it does with a figure is bound by nothing here except that it never writes one
+back as a figure either role produced.
+
+| what such an invoice needs | why no role or key here takes it |
+|---|---|
+| hours rescaled from the rate they were worked at to the rate they are billed at | the hours on a line item are the hours the store holds, so this role may not write a rescaled figure, and the hours-breakdown role reads no rate. The rescaling replaces a figure [§ 9](#9-day-log) produced, which neither role may do |
+| a price on each deliverable rather than on each day | this role's grain is [§ 26](#26-the-day-logs-destination-port)'s entry, and it may not read the commits a deliverable is made of — that is the measuring this section forbids it. The distribution over shipped work is the hours-breakdown role's, which prices nothing |
+| one fixed line format for a spreadsheet the client keeps | a format no role reads is a template with a configuration wrapper, which § 36's condition on data-shaped values keeps from being a facet. [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property) governs a project's own documents and holds none of their content either |
+| a period that recurs on a fixed calendar | the period is an argument of the pass for both roles, told on the invocation and never configured, so a calendar rule computing it is the calling carrier's and not a key |
+| only items in given states counted | the hours-breakdown role's subject is what landed on the integration branch, which is already what the period shipped. A filter on item states would be a second answer to that question, free to disagree with the repository |
+
+The hours-breakdown role reports the total it is handed as given, with nothing on its artifact
+saying where the figure came from: a total rescaled before it is handed over reaches the artifact
+looking like any other. So the rescaling, the rate and the line format are applied by the calling
+carrier to the parts the role returns — its weights and its `--per-item` lines being the shares and
+the deliverables such an invoice spreads over.
+
 ## 38. The documents a project holds to a checkable property
 
 ```yaml
@@ -10641,7 +10845,7 @@ nobody can audit afterwards.
 
 At `file`, a closed duplicate whose work is `absent` or `partly built` is offered for reopening,
 beside filing anew. The duplicate check finds it and
-[§ 3](#a-duplicate-is-the-item-rewritten-never-a-second-item-filed) would otherwise send the request
+[§ 3](#a-duplicate-is-folded-into-the-item-never-a-second-item-filed) would otherwise send the request
 to it. That is right only where its work exists. Where it does not, the closed item's history is
 worth keeping, and a new item loses it. Which of the two to take is a person's choice:
 the filing role asks, and the step does neither.
@@ -10656,6 +10860,81 @@ at a point and what a finding does there. `check --file` reads a finding, refuse
 derives the item's verdict, and prints what the role does next and what it offers. The carrier never
 reads the code: which code answers a bullet is a reading only the role can take, and the carrier
 holds the reading to its shape.
+
+## 43. The person's go on the approach, before the first edit
+
+```yaml
+approach_ask:
+  asked: never | before_first_edit # default: never
+```
+
+Some projects treat the approach to an item as part of what the person signs off, not only the
+merge: the item is a contract the owner validated, and work written against a misreading of it is
+work the owner would have refused before it was written. Under the default the implementing leg
+writes as soon as the starting role enters it, and § 42's `on_finding: stop` holds only when the
+work reads as built, partly built or unestablished. It never holds when the work reads as absent,
+which is the usual case. This facet lets a project make the approach the person's act, which is
+the test [§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) puts every ask to.
+
+This is a facet and no further leg of [§ The loop](#the-loop), for § 42's reason. No `carriers` key
+answers for it and no role enters it. It is a step inside the implementing role, whose own file says
+where it falls: after the condition is read and after § 42's step at `implement`, and before any
+edit.
+
+⛔ **`never` is the default, and under it nothing is asked.** The loop is then exactly the loop the
+rest of this surface states, and no reply mentions an ask.
+
+### The ask, and what it carries
+
+Under `before_first_edit` the implementing leg puts **one question** to the person, once per item
+and again only where the plan it puts changes: approve this approach, or decline it. The question
+carries what the person needs to judge it, and nothing they do not:
+
+| field | what it carries |
+|---|---|
+| `item` | the item, by identifier |
+| `reading` | the item as the role read it: its outcome, in the role's words |
+| `condition` and `bullets` | the acceptance condition, bullet by bullet as the item states it, or the item's outcome as one bullet where it states none ([§ 4.4](#44-template)) |
+| `plan` | the intended change, step by step: what is written, and where |
+
+⛔ **An ask that carries its own answer is refused.** The ask is the question. The answer is the
+person's, and it is written separately once they give it.
+
+### The record, and what the leg reads before it writes
+
+The answer is **recorded on the item**, as a comment through [§ 3](#3-tracker-port)'s `comment`,
+and read back through `read_comments` before the first edit. It goes on the item because no change
+exists yet for a record to live on, and a record kept in a reply is one the next pass cannot read.
+
+| what the item says | what the leg does |
+|---|---|
+| the latest record is `approved` | writes |
+| the latest record is `declined` | ⛔ makes no edit and ends the pass. The claim and the tree stay where they are, and the reply says so |
+| no record | ⛔ makes no edit: the ask has not been answered |
+| a record edited after it was written, or comments that could not be read | ⛔ makes no edit, and reports the record as **unread**: neither is the answer as it was given |
+
+The latest record governs, so a person who declined and was asked again after the plan changed can
+approve the second plan. A comment that does not open with the carrier's marker is never read as a
+record, whatever it says.
+
+⛔ **A record answered by the route itself is refused, and nothing is written.** The go is the
+person's. A run that cannot reach a person — an unattended one, where nobody receives the
+question — states the setting as unanswerable and **stops**, rather than approving its own approach.
+Which mode a session runs in is not a project's fact
+([§ 21](#21-a-command-that-could-open-a-session-on-a-live-machine) states the same about its own
+guard), so no key here turns an unattended mode into an answer.
+
+A tracker that cannot write or read a comment cannot keep the record. The leg then stops before its
+first edit with the operation named, by the fourth row above, and never proceeds on the ask having
+been put.
+
+### What the carrier holds, and what it never decides
+
+`plugins/mjolnir/scripts/approach.py` is the one carrier. `decide` says whether the project asks.
+`check --file` holds an ask to the shape above. `record` writes an answer onto the item and refuses
+one the route gave itself. `read` reads the latest record back and exits zero only on an approval.
+The carrier never decides the approach and never answers the ask: what the plan is belongs to the
+role, and whether it is approved belongs to the person.
 
 ## What the toolkit installs into a project, and what takes it out
 

@@ -467,6 +467,12 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.policy.forbid_on_item": ask(
         "Which classes of content may not be written onto an item here?",
     ),
+    "tracker.duplicate": ask(
+        "When a request turns out to duplicate an open item, should that item's body be "
+        "rewritten to what the work now is, or kept exactly as it is with the new "
+        "material added in a dated section after it -- because somebody outside the "
+        "build has already accepted its text?",
+    ),
 
     # --- § 4. Work-item facets ---------------------------------------------
     "work_item.type.carrier": detect(
@@ -546,6 +552,28 @@ ANSWERED_BY: dict[str, Answer] = {
         "Who is allowed to set an item's priority? ⛔ The writer question, which "
         "no tracker records and which is therefore a person's to answer (§ 4.2).",
     ),
+    "work_item.classification.carrier": ask(
+        "Does a filing classify each item with labels from a closed list this "
+        "project keeps -- a component, an area -- rather than from whatever the "
+        "repository's label set holds? Leave it unstated to file as before; "
+        "state `none` with the reason where labels classify nothing here (§ 4.9).",
+    ),
+    "work_item.classification.name": ask(
+        "What is that classification called -- the word a report uses for it?",
+    ),
+    "work_item.classification.values": detect(
+        TRACKER_VOCABULARY,
+        "the labels a filing may classify an item with, picked from the "
+        "repository's own label list",
+    ),
+    "work_item.classification.at_least": ask(
+        "How many of those labels must one item carry at least? Leave it unstated "
+        "for one.",
+    ),
+    "work_item.classification.at_most": ask(
+        "How many of them may one item carry at most? Leave it unstated for no "
+        "upper bound.",
+    ),
     "work_item.grouping.carrier": ask(
         "How is the grouping above an item carried -- the iteration, sprint, "
         "version or milestone it belongs to?",
@@ -612,6 +640,10 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "work_item.template.sections.reproduction": ask(
         "Which heading does a body state a reproduction under?",
+    ),
+    "work_item.template.sections.addendum": ask(
+        "Which heading does a duplicate's dated section go under, with {date} where the "
+        "date is written?",
     ),
     "work_item.template.declared.name": ask(
         "Which section must an item carry beyond the outcome, the acceptance check "
@@ -733,8 +765,12 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which paths may a commit on those branches carry?",
     ),
     "commit.branch_rules.otherwise": ask(
-        "And a commit carrying any other path -- does it stop, or leave that path "
-        "out and commit the rest?",
+        "And a commit carrying any other path -- does it stop, leave that path "
+        "out and commit the rest, or commit it after the rest and not push it?",
+    ),
+    "commit.branch_rules.push": ask(
+        "Is there a branch commits are made on and never pushed? Absent, every "
+        "commit is pushed as it is today.",
     ),
 
     # --- § 7. Carrier ------------------------------------------------------
@@ -1764,6 +1800,30 @@ ANSWERED_BY: dict[str, Answer] = {
         "it and carry on, or stop and ask you? Unstated, it reports. It never closes, "
         "reopens or rewrites an item itself (§ 42).",
     ),
+    "approach_ask.asked": ask(
+        "Should the implementing leg show you how it read the item and what it plans to "
+        "change, and wait for your go, before it writes its first edit? Unstated, it asks "
+        "nothing and starts writing once the item is claimed (§ 43).",
+    ),
+
+    # --- § 5. An item filed with its questions open ------------------------
+    "open_questions.mode": ask(
+        "When a request leaves a question open that only its author can answer, "
+        "should the filing role ask and file nothing until it is answered, or file "
+        "the item at once carrying the questions and the gate's `label_absent` "
+        "mark? Unstated, it asks. ⛔ Filing marked needs exactly one "
+        "`label_absent` check in the readiness list, whose label is the mark (§ 5).",
+    ),
+    "open_questions.written_on": ask(
+        "Where on the item should those questions be written: in a comment after "
+        "it is created, or in its body under a heading of its own? Unstated, a "
+        "comment (§ 5).",
+    ),
+    "open_questions.heading": ask(
+        "Which heading should the open questions sit under in the body, in the "
+        "item's own language? ⛔ Asked only where they go in the body, and refused "
+        "where they go in a comment (§ 5).",
+    ),
 
     # --- § 41. What a deployed item is judged against ----------------------
     "verify.carrier": ask(
@@ -2524,6 +2584,7 @@ VOCABULARY_FOR = {
     "work_item.priority.values": "labels",
     "work_item.grouping.label_prefix": "labels",
     "work_item.code_root.label_prefix": "labels",
+    "work_item.classification.values": "labels",
     "tracker.status_field.name": "status_fields",
 }
 

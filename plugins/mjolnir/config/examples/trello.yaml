@@ -322,6 +322,14 @@ readiness:
   # claim is taken, where the two repositories above are still a question rather than a branch.
   - { check: code_root_stated, stop: "The card does not say which repository the work is in." }
 
+# § 5: a card whose request left a question open is filed at once, carrying the one
+# `label_absent` label above, and the gate holds it back until the questions are answered. In the
+# body rather than a comment, this tracker having no comment action.
+open_questions:
+  mode: file_marked
+  written_on: section
+  heading: "<open questions heading>"
+
 # ⛔ A person-answered check on the tracker with the fewest places to put the answer. There is
 # no comment action here, and `policy.forbid_on_item` above bars branch names from the card
 # anyway, so the record of who verified what goes on the **change**, in whichever inner repository
@@ -717,6 +725,9 @@ spec_corpus:
 built_check:
   points: []
   on_finding: report
+
+approach_ask:
+  asked: never
 
 # § 40's stated arm, and the only shipped example that carries one: this is the ladder with an
 # `accepted` role in it, so it is the one project here where somebody judges a deployed item

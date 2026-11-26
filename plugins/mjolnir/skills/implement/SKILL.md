@@ -150,6 +150,28 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" decide --point implement
 - A bullet the finding calls built is still read back in step 7, with the command that answers it.
   The finding says where the code is; step 7 says the condition passes.
 
+**Then whether the person's go on the approach comes before the first edit, where the project asks
+for one.** [`§ 43`](../../config/schema.md#43-the-persons-go-on-the-approach-before-the-first-edit)
+states the ask, the record and what each reading of it does. This is the last step before any edit.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/approach.py" decide
+```
+
+- **It exits 3** ⇒ the project asks nothing, and the reply mentions no ask.
+- **It exits 0** ⇒ write the ask in the form `approach.py form` prints — the reading, the condition
+  and the plan — and hold it to that form with
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/approach.py" check --file <the ask>`. Put it to the person
+  as one question, approve or decline. Record their answer as it came back:
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/approach.py" record --item <the item> --answer approved|declined --given "<their words>" --by "<who gave it>"`.
+  Then read it back, and make no edit unless the read says so:
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/approach.py" read --item <the item>`.
+- ⛔ **Only an exit of 0 from `read` lets this role write.** A decline ends the pass with the claim
+  and the tree kept, and the reply says so. No record, an edited record and unread comments are each
+  a stop, named as they came back.
+- ⛔ **A run that cannot reach a person stops here.** It states the setting as unanswerable and
+  never records an answer itself; the carrier refuses a record given by the route.
+
 ## 4. The discipline, read and not carried
 
 Read § The loop →
@@ -268,6 +290,8 @@ Register, and the language, are
   step 4;
 - where a stub, an absent import or a re-aimed test was noticed, and what was run both ways;
 - that no reading of a test was asked of anybody, which step 5 declines;
+- where the project asks for the go on the approach, the answer `read` came back with, and who gave
+  it;
 - which port fallback was taken, where one was;
 - anything that could not be established, named rather than omitted
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish));

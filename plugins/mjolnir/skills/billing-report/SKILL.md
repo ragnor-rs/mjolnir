@@ -130,6 +130,8 @@ provenance is written into an entry and none is asked for, § 26 fixing an entry
 The conversion is this role's and no other's. [§ The loop](../../config/schema.md#the-loop) rules
 that this is the only one of the three roles that converts hours to money — the narrative
 distribution of a period's hours is a different role, reads no rate, and is not entered from here.
+An invoice priced per deliverable rather than per day is neither role's, by
+[§ 37 → An invoice priced per deliverable](../../config/schema.md#an-invoice-priced-per-deliverable-and-why-neither-role-carries-it).
 
 A figure § 9 produced is never replaced. The hours on a line item are the hours the store holds. A
 period short of what somebody expected is reported short, with the roots and days it was assembled

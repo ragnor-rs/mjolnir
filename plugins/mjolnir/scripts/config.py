@@ -2695,6 +2695,25 @@ class Config:
             "identity": str(identity),
         }
 
+    def open_questions(self) -> dict:
+        """§ 5's open questions, with the mark resolved off the gate.
+
+        ⛔ The label is read off the one `label_absent` entry and never stated
+        here: the load has already refused `file_marked` with none or several,
+        so the answer carries the gate's own label and its stop. ⚠️ Null under
+        `ask`, where the filing role sets no mark.
+        """
+        mode = self.get(f"{OPEN_QUESTIONS_KEY}.mode")
+        marks = _gate_entries({"readiness": self.get("readiness")}, MARK_CHECK)
+        marked = mode == OPEN_QUESTIONS_MARKED
+        return {
+            "mode": mode,
+            "label": marks[0][1].get("label") if marked else None,
+            "stop": marks[0][1].get("stop") if marked else None,
+            "written_on": self.get(f"{OPEN_QUESTIONS_KEY}.written_on") if marked else None,
+            "heading": self.get(f"{OPEN_QUESTIONS_KEY}.heading") if marked else None,
+        }
+
     def route_for(self, values: list[str]) -> dict:
         """§ 7's route for an item, from every label it carries and its type.
 
@@ -2779,13 +2798,22 @@ class Config:
             ),
         }
 
-    def commit_rule_for(self, paths: list[str], branch: str) -> dict:
+    def commit_rule_for(
+        self, paths: list[str], branch: str, ahead: list[str] | None = None
+    ) -> dict:
         """§ 6's answer on one commit: which of its staged paths a branch admits.
 
         Every rule whose `branches` matches applies, and a path has to be
-        admitted by each. Returns the verdict, the paths to commit, the paths
-        that were not admitted, and which rules decided it -- so a committing
-        role names what it left out without deriving any of it.
+        admitted by each. Returns the verdict, the paths to commit and whether
+        that commit is pushed, whether a push carrying the commits through
+        review may be made, the paths committed after the first and never pushed,
+        the paths that were not admitted, and which rules decided it -- so a
+        committing role names what it left out or kept local without deriving
+        any of it.
+
+        `ahead` is every path the branch's unpushed commits already carry, for
+        a rule that keeps commits local: a push publishes the branch's whole
+        history, so a commit pushed over a kept one would publish it too.
         """
         held = _changed_paths(paths, BRANCH_RULES_PATH)
         # ⛔ An empty list is refused rather than admitted: every path of
@@ -2816,6 +2844,9 @@ class Config:
             "branch": branch,
             "rules": [index for index, _ in applying],
             "commit": held,
+            "push": True,
+            "push_for_review": True,
+            "local": [],
             "left_out": [],
             "why": "",
         }
@@ -2825,44 +2856,100 @@ class Config:
                 "commit carries what was staged, as it does today (§ 6)."
             )
             return answer
-        refused, stops = [], False
-        for _, rule in applying:
-            outside = [
-                p for p in held if not any(_matches(p, g) for g in rule["paths"])
-            ]
-            if outside and rule["otherwise"] == OTHERWISE_STOPS:
-                stops = True
-            refused += [p for p in outside if p not in refused]
         named = ", ".join(f"[{index}]" for index, _ in applying)
-        if not refused:
-            answer["verdict"] = ADMITTED
-            answer["why"] = (
-                f"Every staged path is admitted on `{branch}` by "
-                f"`{BRANCH_RULES_PATH}` {named} (§ 6)."
+        keeps = any(rule.get("otherwise") == OTHERWISE_KEEPS for _, rule in applying)
+        if ahead is None and keeps:
+            raise ConfigError(
+                BRANCH_RULES_PATH,
+                f"keeps commits local on `{branch}` under {named}, and was handed no "
+                "unpushed path. ⛔ Not answered as nothing unpushed: a push publishes "
+                "every commit under it, so the answer needs what the branch already "
+                "holds unpushed. Pass `--ahead`, with no path where there is none "
+                "(§ 6).",
             )
-            return answer
-        answer["left_out"] = refused
-        if stops:
-            answer["verdict"] = STOPPED
-            answer["commit"] = []
+        ahead = _changed_paths(ahead, BRANCH_RULES_PATH) if ahead else []
+
+        def refusing(path: str) -> list[str]:
+            return [
+                rule.get("otherwise")
+                for _, rule in applying
+                if "paths" in rule and not any(_matches(path, g) for g in rule["paths"])
+            ]
+
+        stopped = [p for p in held if OTHERWISE_STOPS in refusing(p)]
+        left = [p for p in held if OTHERWISE_LEAVES in refusing(p)]
+        # ⛔ A path refused by a rule that leaves it out and by one that keeps it
+        # is left out: adding a rule can only narrow what a branch takes.
+        kept = [p for p in held if refusing(p) and p not in left]
+        never = any(rule.get("push") == PUSH_NEVER for _, rule in applying)
+        if stopped:
+            refused = [p for p in held if refusing(p)]
+            answer.update(
+                verdict=STOPPED, commit=[], push=False, push_for_review=False,
+                left_out=refused,
+            )
             answer["why"] = (
                 f"`{branch}` admits none of {', '.join(refused)} under "
                 f"`{BRANCH_RULES_PATH}` {named}, and a rule refusing one says "
                 "`stop`: no commit is made (§ 6)."
             )
             return answer
-        answer["verdict"] = LEFT_OUT
-        answer["commit"] = [p for p in held if p not in refused]
-        answer["why"] = (
-            f"`{branch}` admits none of {', '.join(refused)} under "
-            f"`{BRANCH_RULES_PATH}` {named}, so they are left out and stay in the "
-            "tree (§ 6)."
-        )
+        answer["left_out"] = left
+        answer["local"] = kept
+        answer["commit"] = [p for p in held if p not in left and p not in kept]
+        reasons = []
+        if left:
+            answer["verdict"] = LEFT_OUT
+            reasons.append(
+                f"`{branch}` admits none of {', '.join(left)} under "
+                f"`{BRANCH_RULES_PATH}` {named}, so they are left out and stay in "
+                "the tree."
+            )
+        elif kept:
+            answer["verdict"] = KEPT_LOCAL
+        else:
+            answer["verdict"] = ADMITTED
+            reasons.append(
+                f"Every staged path is admitted on `{branch}` by "
+                f"`{BRANCH_RULES_PATH}` {named}."
+            )
+        # Paths an earlier commit kept local: pushing over them publishes them.
+        unpushed = [p for p in ahead if refusing(p)]
+        if never:
+            reasons.append(
+                f"A rule says `push: {PUSH_NEVER}` on `{branch}`, so nothing is "
+                "pushed and every commit stays local."
+            )
+        elif unpushed:
+            reasons.append(
+                f"The branch already holds {', '.join(unpushed)} in an unpushed "
+                "commit, and a push would publish it too, so nothing is pushed and "
+                "every commit stays local."
+            )
+        if never or unpushed or not answer["commit"]:
+            # ⛔ Nothing is published, so a split buys nothing: what is committed
+            # goes in one local commit.
+            answer["commit"] = answer["commit"] + answer["local"]
+            answer["local"] = []
+            answer["push"] = False
+        if kept and not (never or unpushed):
+            them = "it" if len(kept) == 1 else "them"
+            reasons.append(
+                f"{', '.join(kept)} {'is' if len(kept) == 1 else 'are'} not admitted "
+                f"for publishing on `{branch}`, so "
+                + (f"a second commit carries {them} after the pushed one"
+                   if answer["local"] else f"the one commit carries {them}")
+                + " and is never pushed; the reply names that commit."
+            )
+        # A push that puts the commits in front of review -- a change's own
+        # branch -- carries a kept commit through review, and only `never` stops it.
+        answer["push_for_review"] = not never and bool(answer["commit"])
         if not answer["commit"]:
-            answer["why"] += (
-                " ⚠️ Nothing is left to commit, so no commit is made rather than an "
+            reasons.append(
+                "⚠️ Nothing is left to commit, so no commit is made rather than an "
                 "empty one."
             )
+        answer["why"] = " ".join(reasons) + " (§ 6)"
         return answer
 
     def exempt_for(self, paths: list[str], kind: str | None = None) -> dict:
@@ -3401,6 +3488,11 @@ class Config:
         integration branch, empty where the project lands on that branch alone."""
         self.get("host.landing.bases")
         return host_landing_bases(self.answering.data)
+
+    def classification_for(self, labels: list[str]) -> dict:
+        """§ 4.9's verdict on every label one item carries."""
+        self.get(CLASSIFICATION_KEY)
+        return classification_for(self.answering.data, labels)
 
     def release(self) -> dict | None:
         """§ 34's `release`, or `None` where no file here carries a version.
@@ -5070,6 +5162,12 @@ FIELD_PRESENT_CHECK = "field_present"
 SPEC_CORPUS_KEY = "spec_corpus"
 BUILT_CHECK_KEY = "built_check"
 BUILT_CHECK_POINTS_PATH = f"{BUILT_CHECK_KEY}.points"
+# § 5's open questions, and the one readiness check whose label is the mark the
+# filing role sets under `file_marked`.
+OPEN_QUESTIONS_KEY = "open_questions"
+OPEN_QUESTIONS_MARKED = "file_marked"
+OPEN_QUESTIONS_SECTION = "section"
+MARK_CHECK = "label_absent"
 SPEC_CORPUS_CARRIER = f"{SPEC_CORPUS_KEY}.carrier"
 SPEC_CORPUS_REPOSITORY = "repository"
 SPEC_CORPUS_GROUPING = f"{SPEC_CORPUS_KEY}.{GROUPING_ENTRY_KEY}"
@@ -5128,17 +5226,23 @@ ASK = "ask"
 # Hand-checked for the reason § 30's classes are: an entry's first key sits behind
 # a `- ` the walk cannot see.
 BRANCH_RULES_PATH = "commit.branch_rules"
-BRANCH_RULE_KEYS = ("branches", "paths", "otherwise")
+BRANCH_RULE_KEYS = ("branches", "paths", "otherwise", "push")
 OTHERWISE_PATH = f"{BRANCH_RULES_PATH}.otherwise"
-# The `otherwise` member that makes no commit. ⛔ One sentinel: the other member
-# is *whatever is not this*, and the vocabulary itself is the surface's.
+PUSH_PATH = f"{BRANCH_RULES_PATH}.push"
+# The `otherwise` members the reader acts on. ⛔ The vocabulary itself is the
+# surface's: these name the members whose meaning the code carries.
 OTHERWISE_STOPS = "stop"
-# The four answers `commit_rule_for` gives. `unruled` is a stated absence and
+OTHERWISE_LEAVES = "leave_out"
+OTHERWISE_KEEPS = "commit_local"
+# The `push` member that pushes nothing; the other is today's push.
+PUSH_NEVER = "never"
+# The five answers `commit_rule_for` gives. `unruled` is a stated absence and
 # not an admission: no rule matched, so the commit is today's.
 UNRULED = "unruled"
 ADMITTED = "admitted"
 STOPPED = "stop"
 LEFT_OUT = "leave_out"
+KEPT_LOCAL = "commit_local"
 # The flag a committing role asks before its commit, and which the suite looks for
 # in every committing carrier.
 COMMIT_RULE_FLAG = "--commit-rule-for"
@@ -8782,6 +8886,49 @@ def _validate_built_check(data: dict, facts: dict) -> None:
         seen.add(point)
 
 
+def _validate_open_questions(data: dict) -> None:
+    """§ 5's open questions: the mark it sets, and the heading it writes under.
+
+    The alternations and defaults are marked and answered before this runs.
+    What is here is the two rules no marker can state: that `file_marked` has
+    exactly one `label_absent` to take its mark from, and that `heading` is
+    stated under `section` and only there.
+    """
+    mode = _get(data, f"{OPEN_QUESTIONS_KEY}.mode")
+    written_on = _get(data, f"{OPEN_QUESTIONS_KEY}.written_on")
+    heading = _get(data, f"{OPEN_QUESTIONS_KEY}.heading")
+    if mode == OPEN_QUESTIONS_MARKED:
+        marks = _gate_entries(data, MARK_CHECK)
+        if len(marks) != 1:
+            held = (
+                "configures none" if not marks else
+                f"configures {len(marks)} -- "
+                + ", ".join(f"readiness[{index}]" for index, _ in marks)
+            )
+            raise ConfigError(
+                f"{OPEN_QUESTIONS_KEY}.mode",
+                f"is `{OPEN_QUESTIONS_MARKED}` while `readiness` {held} "
+                f"`{MARK_CHECK}`. The item is filed carrying that check's label, "
+                "which is the one mark the gate refuses (§ 5): with none there is "
+                "no mark that holds the item back, and with several the filing "
+                "role would be choosing which one it carries.",
+            )
+    blank = heading is None or (isinstance(heading, str) and not heading.strip())
+    if written_on == OPEN_QUESTIONS_SECTION and blank:
+        raise ConfigError(
+            f"{OPEN_QUESTIONS_KEY}.heading",
+            f"required when `written_on` is `{OPEN_QUESTIONS_SECTION}`: it is the "
+            "heading the open questions are written under in the item's body, in "
+            "the item's own language (§ 5).",
+        )
+    if written_on != OPEN_QUESTIONS_SECTION and not blank:
+        raise ConfigError(
+            f"{OPEN_QUESTIONS_KEY}.heading",
+            f"is stated while `written_on` is {written_on!r}, under which the "
+            "questions go in a comment and nothing reads a heading (§ 5).",
+        )
+
+
 def _validate_spec_corpus(data: dict) -> None:
     """§ 39's two glob lists, and the keys stated beside a carrier that reads none.
 
@@ -10608,6 +10755,223 @@ def host_pull_request_title(data: dict) -> dict | None:
     }
 
 
+CLASSIFICATION_KEY = "work_item.classification"
+# The facets § 4.9 names whose `label` carrier owns every label opening with its
+# prefix, so a label one of them carries is that facet's fact and not a stray.
+CLASSIFICATION_PREFIXED = (
+    "work_item.type",
+    "work_item.estimate",
+    "work_item.priority",
+    "work_item.code_root",
+    "work_item.grouping",
+)
+
+
+def _label_owner(data: dict, label: str) -> str | None:
+    """The key § 4.9 says accounts for a label other than the classification set.
+
+    ⛔ The owners are the ones the section lists and no others: a prefixed facet
+    carried on labels, § 27's map read off a label, a `label_absent` gate and a
+    route. Whatever else a repository's label set holds -- a host default, a label
+    left over from older practice -- has no owner, which is the case the facet is
+    there to refuse.
+    """
+    for facet in CLASSIFICATION_PREFIXED:
+        if _get(data, f"{facet}.carrier") != "label":
+            continue
+        prefix = _get(data, f"{facet}.label_prefix")
+        prefix = prefix if isinstance(prefix, str) else ""
+        if prefix and label.startswith(prefix):
+            return f"{facet}.label_prefix"
+        # ⚠️ A prefix is not required of every facet on labels -- § 4.1's type may
+        # be carried on bare labels, which `route_for` reads the same way -- so the
+        # facet's own values, each under whatever prefix it states, are its labels
+        # too. Without this the item's type label reads as a stray.
+        values = _get(data, f"{facet}.values")
+        if isinstance(values, list) and label in {f"{prefix}{one}" for one in values}:
+            return f"{facet}.values"
+    prefix = _get(data, f"{PEOPLE_KEY}.label_prefix")
+    if (
+        _get(data, f"{PEOPLE_KEY}.key") == "label"
+        and isinstance(prefix, str) and prefix
+        and label.startswith(prefix)
+    ):
+        return f"{PEOPLE_KEY}.label_prefix"
+    gate = _get(data, "readiness")
+    for index, entry in enumerate(gate if isinstance(gate, list) else []):
+        if (
+            isinstance(entry, dict) and entry.get("check") == "label_absent"
+            and str(entry.get("label")) == label
+        ):
+            return f"readiness[{index}]"
+    routes = _get(data, ROUTES_KEY)
+    for index, entry in enumerate(routes if isinstance(routes, list) else []):
+        if isinstance(entry, dict) and entry.get("label") is not None and str(
+            entry["label"]
+        ) == label:
+            return f"{ROUTES_KEY}[{index}]"
+    return None
+
+
+def _count(data: dict, key: str, floor: int) -> int | None:
+    """One of § 4.9's two bounds, held to being a whole number no lower than `floor`.
+
+    ⛔ A boolean is refused although Python reads it as a number: `at_most: true`
+    is somebody's yes to a question the key does not ask, and read as 1 it would
+    refuse every item carrying two values.
+    """
+    value = _get(data, f"{CLASSIFICATION_KEY}.{key}")
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value < floor:
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.{key}",
+            f"is {value!r}; § 4.9 states it as a whole number of labels, no lower "
+            f"than {floor}.",
+        )
+    return value
+
+
+def work_item_classification(data: dict) -> dict | None:
+    """§ 4.9's facet, held to its shape: `None` where the project states none.
+
+    ⛔ Optional, and the absence is the old behaviour rather than a gap: the facet
+    is new, and a key made required would invalidate every configuration written
+    before it. `carrier: none` with its reason is the stated absence; the reason
+    itself is the surface's `# absent_reason` marker, held where every facet's is.
+    """
+    facet = _get(data, CLASSIFICATION_KEY)
+    if facet is None:
+        return None
+    if not isinstance(facet, dict):
+        raise ConfigError(
+            CLASSIFICATION_KEY,
+            f"is {facet!r}; § 4.9 states it as a block with a `carrier`.",
+        )
+    carrier = facet.get("carrier")
+    if carrier is None:
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.carrier",
+            "required where the facet is written: § 4.9 reads `label` or `none` "
+            "here, and a block with neither says nothing about which.",
+        )
+    if carrier == "none":
+        return {"carrier": "none",
+                "absent_reason": " ".join(str(facet.get("absent_reason")).split())}
+    name = facet.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.name",
+            f"is {name!r}; required when the carrier is `label`. It is what a report "
+            "calls the axis, so a refusal can say which classification an item "
+            "lacks (§ 4.9).",
+        )
+    values = facet.get("values")
+    if not isinstance(values, list) or not values:
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.values",
+            f"is {values!r}; § 4.9 states the closed set as a list, written as one "
+            "even where it holds one label. A single label written bare reads as "
+            "its letters, each of them a label nothing carries.",
+        )
+    for index, value in enumerate(values):
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(
+                f"{CLASSIFICATION_KEY}.values[{index}]",
+                f"is {value!r}, which names no label (§ 4.9).",
+            )
+        owner = _label_owner(data, value)
+        if owner:
+            raise ConfigError(
+                f"{CLASSIFICATION_KEY}.values[{index}]",
+                f"is {value!r}, which `{owner}` already reads as its own label. Two "
+                "keys reading one label each as their own fact disagree about what "
+                "the item carries (§ 4.9).",
+            )
+    if len(set(values)) != len(values):
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.values",
+            f"repeats a label in {values!r} (§ 4.9).",
+        )
+    at_least = _count(data, "at_least", 0)
+    at_least = 1 if at_least is None else at_least
+    at_most = _count(data, "at_most", max(at_least, 1))
+    if at_least > len(values):
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.at_least",
+            f"is {at_least}, and `values` holds {len(values)}: no item could carry "
+            "enough of them, so every filing would be refused (§ 4.9).",
+        )
+    return {
+        "carrier": "label",
+        "name": name.strip(),
+        "values": [value.strip() for value in values],
+        "at_least": at_least,
+        "at_most": at_most,
+    }
+
+
+def classification_for(data: dict, labels: list[str]) -> dict:
+    """§ 4.9's verdict on the labels one item carries.
+
+    ⛔ Every problem is named, not the first: a verify step that heard about one
+    stray label would fix it and be refused again on the count.
+    """
+    facet = work_item_classification(data)
+    if facet is None:
+        return {
+            "verdict": "unstated",
+            "detail": f"`{CLASSIFICATION_KEY}` is not stated, so no label set is held "
+            "and the item is filed as it was before the key existed (§ 4.9).",
+        }
+    if facet["carrier"] == "none":
+        return {
+            "verdict": "none",
+            "absent_reason": facet["absent_reason"],
+            "detail": "the project classifies with no closed set, by its own stated "
+            "reason, so nothing is held (§ 4.9).",
+        }
+    held = [str(label) for label in labels]
+    allowed = set(facet["values"])
+    classified = [label for label in held if label in allowed]
+    owned = {}
+    stray = []
+    for label in held:
+        if label in allowed:
+            continue
+        owner = _label_owner(data, label)
+        if owner:
+            owned[label] = owner
+        else:
+            stray.append(label)
+    problems = []
+    if len(classified) < facet["at_least"]:
+        problems.append(
+            f"carries {len(classified)} {facet['name']} label(s) and needs at least "
+            f"{facet['at_least']}, out of {', '.join(facet['values'])}"
+        )
+    if facet["at_most"] is not None and len(classified) > facet["at_most"]:
+        problems.append(
+            f"carries {len(classified)} {facet['name']} label(s) "
+            f"({', '.join(classified)}) and allows at most {facet['at_most']}"
+        )
+    for label in stray:
+        problems.append(
+            f"carries {label!r}, which is not in the {facet['name']} set and which no "
+            "other key accounts for"
+        )
+    return {
+        "verdict": "refused" if problems else "holds",
+        "name": facet["name"],
+        "values": facet["values"],
+        "at_least": facet["at_least"],
+        "at_most": facet["at_most"],
+        "classified": classified,
+        "accounted_elsewhere": owned,
+        "problems": problems,
+    }
+
+
 def host_landing_bases(data: dict) -> list[str]:
     """§ 2's `host.landing.bases`, held to its shape: the branches a change lands on.
 
@@ -11260,6 +11624,25 @@ def _branch_rules(data: dict, facts: dict) -> None:
                     f"{at}.branches[{position}]",
                     f"is {glob!r} and a branch glob is a non-empty string (§ 6).",
                 )
+        pushes = vocabulary(facts, PUSH_PATH, "whether a branch rule's commits are pushed")
+        if "push" in rule and rule["push"] not in pushes:
+            raise ConfigError(
+                f"{at}.push",
+                f"is {rule['push']!r}; § 6 states {' | '.join(pushes)}. Absent, "
+                "the commit is pushed as it is today.",
+            )
+        never = rule.get("push") == PUSH_NEVER
+        # ⛔ Only `push: never` may state no paths: a rule there says *commit,
+        # and publish nothing*, which narrows no path. Anywhere else a rule with
+        # no paths would admit everything and read as a rule holding something.
+        if never and "paths" not in rule:
+            if "otherwise" in rule:
+                raise ConfigError(
+                    f"{at}.otherwise",
+                    "is stated on a rule naming no `paths`, so there is no path it "
+                    "could be otherwise of (§ 6).",
+                )
+            continue
         globs = rule.get("paths")
         if not isinstance(globs, list) or not globs:
             raise ConfigError(
@@ -11267,10 +11650,19 @@ def _branch_rules(data: dict, facts: dict) -> None:
                 f"is {globs!r} and § 6 states a non-empty list of path globs. ⛔ An "
                 "empty list is not *admit nothing*: a rule admitting nothing is a "
                 "branch closed to commits, which is stated by `otherwise: stop` "
-                "over a glob, never by an empty value read either way.",
+                "over a glob, never by an empty value read either way. A branch "
+                "that takes commits and publishes none is `push: never` with no "
+                "`paths`.",
             )
         _held_to_the_class_globs(globs, at)
         published = vocabulary(facts, OTHERWISE_PATH, "what a branch rule does otherwise")
+        if never and rule.get("otherwise") == OTHERWISE_KEEPS:
+            raise ConfigError(
+                f"{at}.otherwise",
+                f"is `{OTHERWISE_KEEPS}` on a `push: {PUSH_NEVER}` rule, where every "
+                "commit already stays local, so it splits nothing. State `leave_out` "
+                "or `stop` for what the branch does not take (§ 6).",
+            )
         if rule.get("otherwise") not in published:
             raise ConfigError(
                 f"{at}.otherwise",
@@ -11440,6 +11832,35 @@ def _a_named_call(entry, where: str) -> None:
                 f"{where}.args_match",
                 f"does not compile as a pattern -- {error}. ⛔ It would match no call (§ 10).",
             ) from None
+
+
+ADDENDUM = "work_item.template.sections.addendum"
+DATE_SLOT = "{date}"
+
+
+def _validate_addendum_heading(data: dict) -> None:
+    """§ 4.4's `sections.addendum`: the dated heading § 3's `append` writes.
+
+    Whether it must be stated is the surface's `required_when` marker; what it
+    has to *be* is here. ⛔ `{date}` exactly once: a heading with no slot writes
+    an undated section, and one with two writes a date nobody can tell apart.
+    """
+    heading = _get(data, ADDENDUM)
+    if heading is None:
+        return
+    if not isinstance(heading, str) or not heading.strip():
+        raise ConfigError(
+            ADDENDUM,
+            f"is {heading!r}, and § 4.4 states it as the heading text a confirmed "
+            "duplicate's dated section is written under.",
+        )
+    if heading.count(DATE_SLOT) != 1:
+        raise ConfigError(
+            ADDENDUM,
+            f"is {heading!r}, which carries `{DATE_SLOT}` {heading.count(DATE_SLOT)} "
+            "times. § 4.4 states it once, where the filing's date is written, so the "
+            "section § 3's `append` adds is dated and its date reads one way.",
+        )
 
 
 DECLARED = "work_item.template.declared"
@@ -12767,6 +13188,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # block, so it runs in `_grouping_facet` where the set exists.
     _validate_spec_corpus(data)
     _validate_built_check(data, facts)
+    _validate_open_questions(data)
     # § 41's block, and ⛔ **after § 33's rather than beside it**: the names its
     # `identity` is keyed on are a target's own, so this reads a list the arm
     # above has already held to being a list of targets at all.
@@ -12809,6 +13231,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # gate refusing every title the finishing role writes.
     host_pull_request_title(data)
     host_landing_bases(data)
+    work_item_classification(data)
 
     # § 17. The verdicts no host run produces, and the one facet on this surface
     # whose entries carry a command the procedure runs for a verdict. Requiredness
@@ -13069,6 +13492,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
 
     _validate_declared_sections(data, facts)
     _validate_item_audience(data)
+    _validate_addendum_heading(data)
 
     # § 18. The guard on a command the host has already run. Requiredness is the
     # surface's marker and answers whether `never_guard` is written; what these
@@ -14566,6 +14990,9 @@ MARKED_REQUIRED_WHEN = [
     # and a rule of its own -- that refusal names what the role was left unable
     # to do, which a marker's message cannot say.
     ("branch_model.regenerable", "branch_model.kind", "worktree"),
+    # § 4.4's one: the heading § 3's `append` writes its dated section under,
+    # meaningless where a confirmed duplicate is rewritten instead.
+    ("work_item.template.sections.addendum", "tracker.duplicate", "append"),
     # § 9's one: the archive's address, needed by the kind that reads an archive
     # and meaningless under the kind that says there is no chat evidence at all.
     ("day_log.evidence.chat.path", CHAT_KIND_PATH, "telegram_export"),
@@ -14836,6 +15263,7 @@ MARKED_ABSENT_CAPABLE = [
     SPEC_CORPUS_KEY,
     "test_tiers",
     "verify",
+    CLASSIFICATION_KEY,
     "work_item.code_root",
     "work_item.due_date",
     "work_item.estimate",
@@ -17605,6 +18033,59 @@ def self_test() -> int:
         answer = _rule_on(paths, branch, rules)
         got = (answer["verdict"], answer["commit"], answer["left_out"])
         check(f"{label} answers `{wanted[0]}`", got == wanted, f"answered {got!r}")
+    # The answer read whole: the first commit, whether it is pushed, the commit
+    # after it that never is, what was left out, and the change's own push.
+    keeps = [{**docs_only, "otherwise": "commit_local"}]
+    never = [{"branches": ["main"], "push": "never"}]
+    for label, paths, branch, rules, ahead, wanted in (
+        ("a document and a code file under `commit_local`", mixed, "release/1.2",
+         keeps, [], (KEPT_LOCAL, ["docs/notes.md"], True, ["app/main.py"], [], True)),
+        ("only code under `commit_local`", ["app/main.py"], "release/1.2", keeps, [],
+         (KEPT_LOCAL, ["app/main.py"], False, [], [], True)),
+        ("only documents under `commit_local`", ["docs/notes.md"], "release/1.2",
+         keeps, [], (ADMITTED, ["docs/notes.md"], True, [], [], True)),
+        # ⛔ A push publishes the branch's history, so a document pushed over an
+        # earlier kept commit would publish the code in it.
+        ("a document over a kept commit", ["docs/notes.md"], "release/1.2", keeps,
+         ["app/main.py"], (ADMITTED, ["docs/notes.md"], False, [], [], True)),
+        ("both kinds over a kept commit", mixed, "release/1.2", keeps,
+         ["app/main.py"], (KEPT_LOCAL, mixed, False, [], [], True)),
+        ("a document over an unpushed document", ["README.md"], "release/1.2", keeps,
+         ["docs/notes.md"], (ADMITTED, ["README.md"], True, [], [], True)),
+        ("a rule naming no paths under `push: never`", mixed, "main", never, None,
+         (ADMITTED, mixed, False, [], [], False)),
+        ("`push: never` beside a `leave_out`", mixed, "main",
+         never + [{"branches": ["main"], "paths": ["docs/*"], "otherwise": "leave_out"}],
+         None, (LEFT_OUT, ["docs/notes.md"], False, [], ["app/main.py"], False)),
+        ("`push: never` beside a `commit_local`", mixed, "main",
+         never + [{"branches": ["main"], "paths": ["docs/*"],
+                   "otherwise": "commit_local"}],
+         [], (KEPT_LOCAL, mixed, False, [], [], False)),
+        ("a path refused by a `leave_out` and a `commit_local`", mixed, "release/1.2",
+         keeps + drops, [], (LEFT_OUT, ["docs/notes.md"], True, [], ["app/main.py"],
+                             True)),
+        ("a stop over a kept path", mixed, "release/1.2", keeps + stops, [],
+         (STOPPED, [], False, [], ["app/main.py"], False)),
+        ("an unruled branch", mixed, "feature/7-x", keeps, None,
+         (UNRULED, mixed, True, [], [], True)),
+    ):
+        answer = _rule_on(paths, branch, rules, ahead)
+        got = (answer["verdict"], answer["commit"], answer["push"], answer["local"],
+               answer["left_out"], answer["push_for_review"])
+        check(f"{label} answers {wanted!r}", got == wanted, f"answered {got!r}")
+    split = _rule_on(mixed, "release/1.2", keeps, [])
+    check("and the split names the commit that is never pushed",
+          "never pushed" in split["why"] and "app/main.py" in split["why"], split["why"])
+    held = _rule_on(["docs/notes.md"], "release/1.2", keeps, ["app/main.py"])
+    check("and a push held by an unpushed commit says why",
+          "would publish it" in held["why"], held["why"])
+    try:
+        _rule_on(mixed, "release/1.2", keeps)
+        reported = None
+    except ConfigError as error:
+        reported = error.key
+    check("a `commit_local` branch asked with no `--ahead` stops rather than pushing",
+          reported == BRANCH_RULES_PATH, f"reported {reported!r}")
     left = _rule_on(["app/main.py"], "release/1.2", drops)
     check("and the reason says nothing is left to commit",
           "no commit is made" in left["why"], left["why"])
@@ -17643,6 +18124,8 @@ def self_test() -> int:
     check("the surface names some committing role, so what follows asserts something",
           bool(committing))
     for role in committing:
+        check(f"the `{role}` carrier hands `--ahead` with its commit's question",
+              "--ahead <" in asking.get(role, ""))
         check(f"the `{role}` carrier asks `{COMMIT_RULE_FLAG}` before its commit",
               COMMIT_RULE_FLAG in asking.get(role, ""),
               "no skill declares that carrier" if role not in asking else "")
@@ -18553,6 +19036,63 @@ def self_test() -> int:
     stated = _refused(unstated)
     check("a configuration stating no routes at all loads", stated is None,
           f"refused {stated!r}")
+    # § 4.9 from the green side, and the verdict the filing role reads twice.
+    classified = at_path(_a_valid_example(), CLASSIFICATION_KEY, _a_classification())
+    stated = _refused(classified)
+    check("a classification set on labels loads", stated is None, f"refused {stated!r}")
+    stated = _refused(at_path(_a_valid_example(), CLASSIFICATION_KEY,
+                              {"carrier": "none", "absent_reason": "labels classify nothing"}))
+    check("a classification stated as none with its reason loads", stated is None,
+          f"refused {stated!r}")
+    routed = at_path(
+        _with_typed_routes(_a_valid_example(),
+                           [{"label": "design", "carrier": "c", "kind": "skill"}]),
+        CLASSIFICATION_KEY, _a_classification(at_most=1),
+    )
+    stated = _refused(routed)
+    check("a classification beside a route and a type label loads", stated is None,
+          f"refused {stated!r}")
+    for wanted, labels, problems in [
+        ("holds", ["backend"], 0),
+        ("holds", ["frontend", "design",
+                   f"{_get(routed, 'work_item.type.label_prefix')}{PLANTED_ROUTE_TYPE}"], 0),
+        ("refused", [], 1),
+        ("refused", ["backend", "frontend"], 1),
+        ("refused", ["backend", "wontfix"], 1),
+        ("refused", ["good first issue"], 2),
+    ]:
+        answer = classification_for(routed, labels)
+        check(f"§ 4.9 reads {labels!r} as {wanted} with {problems} problem(s)",
+              answer["verdict"] == wanted and len(answer["problems"]) == problems,
+              f"answered {answer!r}")
+    answer = classification_for(routed, ["frontend", "design"])
+    check("§ 4.9 names the key that accounts for a label outside its set",
+          answer["accounted_elsewhere"] == {"design": f"{ROUTES_KEY}[0]"},
+          f"answered {answer!r}")
+    bare_type = {"work_item": {
+        "type": {"carrier": "label", "values": ["bug", "feature"]},
+        "classification": _a_classification(),
+    }}
+    answer = classification_for(bare_type, ["bug", "backend"])
+    check("§ 4.9 reads a type carried on bare labels as the type's, not a stray",
+          answer["verdict"] == "holds"
+          and answer["accounted_elsewhere"] == {"bug": "work_item.type.values"},
+          f"answered {answer!r}")
+    answer = classification_for(routed, ["backend", "wontfix"])
+    check("§ 4.9 names the stray label in its refusal",
+          any("'wontfix'" in problem for problem in answer["problems"]),
+          f"answered {answer!r}")
+    bare = _a_valid_example()
+    bare.get("work_item", {}).pop("classification", None)
+    answer = classification_for(bare, ["good first issue"])
+    check("a project stating no classification holds nothing and says so",
+          answer["verdict"] == "unstated" and _refused(bare) is None,
+          f"answered {answer!r}")
+    answer = classification_for(at_path(_a_valid_example(), CLASSIFICATION_KEY,
+                                        {"carrier": "none", "absent_reason": "r"}), [])
+    check("a classification stated as none holds nothing and quotes its reason",
+          answer["verdict"] == "none" and answer["absent_reason"] == "r",
+          f"answered {answer!r}")
 
     # § 4.8's stated default from the green side: it loads, the map answers with
     # the rule named, a value given wins, and what the map does not cover is
@@ -19481,6 +20021,7 @@ def self_test() -> int:
 
     _undeclared_suite(check)
     _untracked_in_tree_suite(check)
+    _open_questions_suite(check)
 
     print("\n§ 33's choices, resolved for one run:")
 
@@ -21163,6 +21704,18 @@ def _planted_violations():
         ("a branch rule whose `otherwise` is not one", f"{BRANCH_RULES_PATH}[0].otherwise",
          at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "paths": ["docs/*"],
                                  "otherwise": "warn"}])),
+        ("a branch rule whose `push` is not one", f"{BRANCH_RULES_PATH}[0].push",
+         at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "paths": ["docs/*"],
+                                 "otherwise": "stop", "push": "later"}])),
+        ("a branch rule naming no paths that does push", f"{BRANCH_RULES_PATH}[0].paths",
+         at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "otherwise": "stop"}])),
+        ("a `push: never` rule with an `otherwise` and no paths",
+         f"{BRANCH_RULES_PATH}[0].otherwise",
+         at(BRANCH_RULES_PATH, [{"branches": ["main"], "push": "never",
+                                 "otherwise": "stop"}])),
+        ("`commit_local` on a `push: never` rule", f"{BRANCH_RULES_PATH}[0].otherwise",
+         at(BRANCH_RULES_PATH, [{"branches": ["main"], "paths": ["docs/*"],
+                                 "push": "never", "otherwise": "commit_local"}])),
         # ⚠️ The out-of-alternation case is the generic enum rule's and is
         # planted there; what this arm answers is the *empty* value, which that
         # rule reads as absent and skips.
@@ -22709,6 +23262,31 @@ def _planted_violations():
          at("host.landing.bases", "release/*")),
         ("a landing base written blank, which matches nothing", "host.landing.bases[0]",
          at("host.landing.bases", ["  "])),
+        # § 4.9's facet, one plant per refusal it makes at load.
+        ("a classification written with no carrier", f"{CLASSIFICATION_KEY}.carrier",
+         at(CLASSIFICATION_KEY, _a_classification(carrier=None))),
+        ("a classification set written as one string", f"{CLASSIFICATION_KEY}.values",
+         at(CLASSIFICATION_KEY, _a_classification(values="backend"))),
+        ("a classification label written blank", f"{CLASSIFICATION_KEY}.values[1]",
+         at(CLASSIFICATION_KEY, _a_classification(values=["backend", " "]))),
+        ("a classification label written twice", f"{CLASSIFICATION_KEY}.values",
+         at(CLASSIFICATION_KEY, _a_classification(values=["backend", "backend"]))),
+        ("a classification carried on labels with no name", f"{CLASSIFICATION_KEY}.name",
+         at(CLASSIFICATION_KEY, _a_classification(name=None))),
+        ("a classification bound written as a yes", f"{CLASSIFICATION_KEY}.at_most",
+         at(CLASSIFICATION_KEY, _a_classification(at_most=True))),
+        ("a classification upper bound below the lower one", f"{CLASSIFICATION_KEY}.at_most",
+         at(CLASSIFICATION_KEY, _a_classification(at_least=2, at_most=1))),
+        ("a classification needing more labels than its set holds",
+         f"{CLASSIFICATION_KEY}.at_least",
+         at(CLASSIFICATION_KEY, _a_classification(at_least=3))),
+        ("a classification label a route already reads as its own",
+         f"{CLASSIFICATION_KEY}.values[0]",
+         lambda data: at(CLASSIFICATION_KEY, _a_classification())(_with_typed_routes(
+             data, [{"label": "backend", "carrier": "c", "kind": "skill"}]))),
+        ("a classification stated as none with no reason",
+         f"{CLASSIFICATION_KEY}.absent_reason",
+         at(CLASSIFICATION_KEY, {"carrier": "none"})),
         # § 10's entries. ⚠️ The `claimed_by` and `cap` plants are the two whose
         # refusal direction is the permissive one: each of them leaves a reader
         # reporting the resource as configured while no call ever claims it.
@@ -22944,6 +23522,17 @@ def _planted_violations():
          _a_declared_section_of(second={"name": "another", "heading": "implementation PLAN"})),
         ("a declared section under a heading `sections` maps", f"{DECLARED}[0].heading",
          _a_declared_section_of(heading="What Is Wanted", mapped="What is wanted")),
+        # § 3's duplicate mode and § 4.4's dated heading it writes under, one plant per arm.
+        ("a duplicate mode outside the surface's alternation", "tracker.duplicate",
+         at("tracker.duplicate", "merge")),
+        ("an append mode stating no heading for its dated section", ADDENDUM,
+         _an_append_mode(_ABSENT)),
+        ("a dated-section heading with no date slot", ADDENDUM,
+         _an_append_mode("Addendum")),
+        ("a dated-section heading with two date slots", ADDENDUM,
+         _an_append_mode("Addendum {date} ({date})")),
+        ("a dated-section heading that is blank", ADDENDUM,
+         _an_append_mode("   ")),
         ("a local check list that is not a list", "checks_local",
          at("checks_local", "a-local-command")),
         ("a local check entry that is not a block", "checks_local[0]",
@@ -24253,7 +24842,7 @@ PLANTED_CLASSES = [
 NON_EXEMPT_PATH = "app/main.py"
 
 
-def _rule_on(paths, branch, rules):
+def _rule_on(paths, branch, rules, ahead=None):
     """§ 6's answer on one commit, under the branch rules handed (None: unstated)."""
     data = _a_valid_example()
     if rules is None:
@@ -24262,7 +24851,7 @@ def _rule_on(paths, branch, rules):
         data.setdefault("commit", {})["branch_rules"] = copy.deepcopy(rules)
     with open(SURFACE, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
-    return _resolve(data, EXAMPLES, facts, False).commit_rule_for(paths, branch)
+    return _resolve(data, EXAMPLES, facts, False).commit_rule_for(paths, branch, ahead)
 
 
 def _answer_on(paths, kind=None, *, classes=None, borderline=None,
@@ -26481,6 +27070,22 @@ def _without(data: dict, path: str) -> dict:
     return data
 
 
+def _an_append_mode(heading):
+    """§ 3's `append` stated, with § 4.4's dated heading written as `heading`."""
+
+    def mutate(data: dict) -> dict:
+        _with(data, "tracker.duplicate", "append")
+        sections = data.setdefault("work_item", {}).setdefault("template", {}).setdefault(
+            "sections", {})
+        if heading is _ABSENT:
+            sections.pop("addendum", None)
+        else:
+            sections["addendum"] = heading
+        return data
+
+    return mutate
+
+
 def _with(data: dict, path: str, value) -> dict:
     """The same configuration with one key written back into it."""
     node, parts = data, path.split(".")
@@ -26583,6 +27188,84 @@ def _example_without(path: str, _loaded) -> str | None:
 PLANTED_ROLE = "the role the work is for"
 PLANTED_IDENTITY = "an-identity-no-tracker-resolves"
 PLANTED_MAP_FILE = "a-role-to-person-map.yaml"
+
+
+PLANTED_MARK = "a-mark-the-gate-refuses"
+
+
+def _with_marks(data: dict, count: int, **stated) -> dict:
+    """The example with exactly `count` `label_absent` entries and § 5's block.
+
+    Every entry the example already carries for the check is taken out first,
+    so the count is the arm's and not the example's.
+    """
+    gate = [entry for entry in (data.get("readiness") or [])
+            if not (isinstance(entry, dict) and entry.get("check") == MARK_CHECK)]
+    for n in range(count):
+        gate.append({"check": MARK_CHECK, "label": f"{PLANTED_MARK}-{n}",
+                     "stop": f"The item carries mark {n}."})
+    data["readiness"] = gate
+    if stated:
+        data[OPEN_QUESTIONS_KEY] = stated
+    else:
+        data.pop(OPEN_QUESTIONS_KEY, None)
+    return data
+
+
+def _open_questions_suite(check) -> None:
+    """§ 5's open questions: the default, the mark resolved off the gate, the refusals."""
+    print("\n§ 5's open questions, filed under the gate's own mark:")
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+
+    def answered(data: dict) -> dict:
+        return _resolve(data, EXAMPLES, facts, False).open_questions()
+
+    nothing = answered(_with_marks(_a_valid_example(), 0))
+    check("a project stating nothing asks, and sets no mark",
+          nothing == {"mode": "ask", "label": None, "stop": None,
+                      "written_on": None, "heading": None},
+          f"answered {nothing!r}")
+    marked = answered(_with_marks(_a_valid_example(), 1, mode="file_marked"))
+    check("file_marked takes the one label_absent entry's label and stop, in a comment",
+          marked == {"mode": "file_marked", "label": f"{PLANTED_MARK}-0",
+                     "stop": "The item carries mark 0.", "written_on": "comment",
+                     "heading": None},
+          f"answered {marked!r}")
+    sectioned = answered(_with_marks(_a_valid_example(), 1, mode="file_marked",
+                                     written_on="section", heading="Open questions"))
+    check("under section the heading is answered with the mark",
+          (sectioned["written_on"], sectioned["heading"], sectioned["label"])
+          == ("section", "Open questions", f"{PLANTED_MARK}-0"),
+          f"answered {sectioned!r}")
+    asking = _with_marks(_a_valid_example(), 2, mode="ask")
+    check("ask loads beside any number of label_absent entries",
+          _refused(asking) is None, f"refused on {_refused(asking)!r}")
+    for count, label in ((0, "no"), (2, "two")):
+        data = _with_marks(_a_valid_example(), count, mode="file_marked")
+        said = _refusal_said(data)
+        check(f"file_marked with {label} label_absent entries is refused on the mode",
+              _refused(data) == f"{OPEN_QUESTIONS_KEY}.mode" and MARK_CHECK in said,
+              f"refused on {_refused(data)!r}: {said!r}")
+    bare = _with_marks(_a_valid_example(), 1, mode="file_marked", written_on="section")
+    check("section with no heading is refused on the heading",
+          _refused(bare) == f"{OPEN_QUESTIONS_KEY}.heading"
+          and "required" in _refusal_said(bare),
+          f"refused on {_refused(bare)!r}")
+    idle = _with_marks(_a_valid_example(), 1, mode="file_marked", heading="Open questions")
+    check("a heading under comment is refused, nothing reading it",
+          _refused(idle) == f"{OPEN_QUESTIONS_KEY}.heading"
+          and "is stated" in _refusal_said(idle),
+          f"refused on {_refused(idle)!r}")
+    wrong = _with_marks(_a_valid_example(), 1, mode="file_open")
+    check("a mode outside the alternation is refused",
+          _refused(wrong) == f"{OPEN_QUESTIONS_KEY}.mode",
+          f"refused on {_refused(wrong)!r}")
+    stated = _resolve(_with_marks(_a_valid_example(), 1, mode="file_marked"),
+                      EXAMPLES, facts, False).unavailable()
+    check("the block is declared, so the reader reports none of it as undeclared",
+          not any(OPEN_QUESTIONS_KEY in line for line in stated),
+          f"reported {[line for line in stated if OPEN_QUESTIONS_KEY in line]!r}")
 
 
 def _untracked_in_tree_suite(check) -> None:
@@ -26742,6 +27425,22 @@ PLANTED_CARRIER = "a-carrier-of-the-projects-own"
 # Stands in for the label an item carries for the planted type, which `_routed`
 # reads off the example once the prefix that example states is known.
 TYPE_LABEL_HELD = object()
+
+
+def _a_classification(**over) -> dict:
+    """§ 4.9's facet on labels over a two-label set, with `over` written in."""
+    facet = {"carrier": "label", "name": "component", "values": ["backend", "frontend"]}
+    facet.update(over)
+    return {key: value for key, value in facet.items() if value is not None}
+
+
+def at_path(data: dict, path: str, value) -> dict:
+    """`data` with `value` written at the dotted `path`, intermediate blocks made."""
+    node, parts = data, path.split(".")
+    for part in parts[:-1]:
+        node = node.setdefault(part, {})
+    node[parts[-1]] = value
+    return data
 
 
 def _with_typed_routes(data: dict, routes: list) -> dict:
@@ -27387,6 +28086,21 @@ def main(argv: list[str]) -> int:
         "carrier that is not where its kind puts it, are each a stop",
     )
     parser.add_argument(
+        "--classification-for",
+        nargs="*",
+        metavar="LABEL",
+        help="every label one item carries, held against § 4.9's closed set: "
+        "holds, refused with each problem named, none where the project states "
+        "no set, or unstated where it writes no facet",
+    )
+    parser.add_argument(
+        "--open-questions",
+        action="store_true",
+        help="§ 5's open questions: whether the filing role asks or files an item "
+        "marked, and under `file_marked` the label it sets -- the one "
+        "`label_absent` entry's -- with where the questions are written",
+    )
+    parser.add_argument(
         "--commitment",
         action="store_true",
         help="§ 4.2's commitment: each carried value the gate commits an item "
@@ -27440,6 +28154,14 @@ def main(argv: list[str]) -> int:
         "--on-branch",
         metavar="BRANCH",
         help="the branch the commit lands on, for `--commit-rule-for`",
+    )
+    parser.add_argument(
+        "--ahead",
+        nargs="*",
+        metavar="PATH",
+        help="every path the branch's unpushed commits already carry, for "
+        "`--commit-rule-for` on a branch whose rule keeps commits local; given "
+        "with no path where nothing is unpushed",
     )
     parser.add_argument(
         "--of-kind",
@@ -27573,10 +28295,15 @@ def main(argv: list[str]) -> int:
         # project's rather than a root's.
         if args.route_for:
             answer = config.route_for(args.route_for)
+        if args.classification_for is not None:
+            answer = config.classification_for(args.classification_for)
         # The project's, for § 27's reason above: statuses and the work-item
         # facets are not stated per root.
         if args.commitment:
             answer = config.commitment()
+        # The project's, for § 27's reason above: the gate is not stated per root.
+        if args.open_questions:
+            answer = config.open_questions()
         if args.grouping_default:
             answer = config.grouping_default(
                 args.grouping, from_value=args.from_value, given=args.given
@@ -27697,11 +28424,14 @@ def main(argv: list[str]) -> int:
                     "cannot be asked about a commit with no branch: a rule is chosen "
                     "by the branch the commit lands on. Pass `--on-branch`.",
                 )
-            answer = config.commit_rule_for(args.commit_rule_for, args.on_branch)
-        elif args.on_branch is not None:
+            answer = config.commit_rule_for(
+                args.commit_rule_for, args.on_branch, args.ahead
+            )
+        elif args.on_branch is not None or args.ahead is not None:
             raise ConfigError(
                 BRANCH_RULES_PATH,
-                "cannot be asked about a branch with no staged path. Pass "
+                "cannot be asked about a branch or unpushed paths with no staged "
+                "path. Pass "
                 "`--commit-rule-for` with the commit's paths.",
             )
         if args.exempt_for:

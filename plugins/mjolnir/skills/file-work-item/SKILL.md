@@ -297,12 +297,26 @@ neither.
 
 ## 3. The three relationships, and the parent case that reads like a clean check
 
-- **Duplicate — the same outcome or the same defect.** The existing item is **rewritten** to what
-  the work now is, per
-  [`§ 3`](../../config/schema.md#a-duplicate-is-the-item-rewritten-never-a-second-item-filed), and
-  sections 4–6 do not run for it. Reworded, differently scoped, or classified under another area is
-  still the same work — the test is whether doing one leaves the other with nothing to do, never
-  whether the two read alike.
+- **Duplicate — the same outcome or the same defect.** The new material goes into the existing
+  item, and sections 4–6 do not run for it. How it goes in is `tracker.duplicate`, which
+  [`§ 3`](../../config/schema.md#a-duplicate-is-folded-into-the-item-never-a-second-item-filed)
+  states:
+  - **`rewrite`**: the body is rewritten to what the work now is.
+  - **`append`**: the body is kept byte for byte and gains one dated section. The section is
+    composed and held by the carrier, never by hand. `addendum` prints the body to write, and
+    `appended` holds it against the body as read before the write. `appended` runs again on the
+    body read back after the write, and a refusal there is reported, not retried:
+
+    ```bash
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" addendum --before <the body as read> --material <the new material>
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" appended --before <the body as read> --after <the body to write>
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" appended --before <the body as read> --after <the body read back>
+    ```
+
+  Under either mode the source is cited in a comment, or in the run report where the tracker
+  has no comments. Reworded, differently scoped, or classified under another area is still the
+  same work — the test is whether doing one leaves the other with nothing to do, never whether
+  the two read alike.
 - **Parent — the request is a *piece* of an item that is already open**, named in its body, its
   acceptance condition or its checklist. ⛔ **The default is a check item on the parent, not a new
   item.** A child restates a promise the parent already made: both then sit open, both read as
@@ -459,6 +473,35 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" register --body-file <t
 item's own title verbatim. A bare locator names no item and an unattributed quote names no source.
 An identifier is owed only where the source has one.
 
+## 4a. A question the request left open
+
+A question about what the request asks for — a source short of what the item needs, or an
+acceptance condition the request cannot yet support — is asked, and nothing is filed until it is
+answered. That holds unless the project files such an item marked, which one command answers:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --open-questions
+```
+
+[`§ 5 → An item filed with its questions open`](../../config/schema.md#an-item-filed-with-its-questions-open)
+states which questions qualify, where they are written, and when the mark comes off. What this role
+does with the answer:
+
+- **`ask`** ⇒ the question is asked with its options, and the pass is not finished while it is open.
+- **`file_marked`** ⇒ the item is filed with the semantic sections the request does support, carrying
+  the `label` the answer names, and every open question is written on the item: in the body under
+  `heading` where `written_on` is `section`, in one comment after the create where it is `comment`.
+  ⛔ **The label is the answer's, never a word chosen here** — it is the gate's own mark, and any
+  other label leaves an item that reads as ready.
+- **A question about whether or where to file is still asked first** — a duplicate, a parent, a
+  contradiction, the type, the code root, the grouping. The mark does not hold back an item filed in
+  the wrong place.
+- **Where `set_labels` is absent, or `comment` is absent under `comment`**, the item cannot carry its
+  mark or its questions. Ask instead, as under `ask`, and name the missing capability in the reply.
+- **Run again on the answers to an item filed marked**, this role writes each answer where its
+  question stands and sets the item's labels without the mark. Only once every question is answered;
+  an item with one question still open keeps the mark.
+
 ## 5. Write it, and record the relations
 
 **The fields the tracker requires at creation go in that call**, where
@@ -474,6 +517,23 @@ retry the create.
 
 Then set what the project carries, each through its own operation, taking the stated fallback where
 a capability is absent: the labels, the assignee, and the relations below.
+
+**The labels that classify the item come from
+[`§ 4.9`](../../config/schema.md#49-classification--the-closed-set-of-labels-an-item-is-filed-under)'s
+set and from nothing else**, where the project states one. Ask the reader before `set_labels`, with
+every label the item is about to carry:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --classification-for <every label the item will carry>
+```
+
+- **`holds`** ⇒ write them.
+- **`refused`** ⇒ each problem is named. Change the labels and ask again; never write over a
+  refusal.
+- **`none` or `unstated`** ⇒ the project holds no set, and the labels are written as before.
+- **A request the set cannot place** — no value in it fits — is reported in the reply with the set
+  named. No label is invented, and the item is not left unclassified: which label it needs is then
+  the person's to answer, and § 4.9 states why.
 
 **Relations are recorded through `link_dependency`, in the tracker, never as a line of prose in the
 body** — except where that capability is absent, which is the one case its fallback allows.
@@ -507,10 +567,14 @@ nothing is waiting on.
 ## 6. Verify, and report
 
 Read each item back rather than trusting the write. Check the body rendered, the semantic sections
-are present and filled, the type and the template agree, every label the project requires is
-attached, the item is in the configured language throughout, and every relation reads correctly
+are present and filled, the type and the template agree, the labels the item carries hold against
+§ 4.9's set, the item is in the configured language throughout, and every relation reads correctly
 from **both** ends — the reverse end is a write to a different item, so it is the one most easily
 skipped.
+
+The labels are checked by asking `--classification-for` again with every label the read-back item
+carries, not the labels this role meant to write. A `refused` answer is a filing that is not done:
+fix the labels and read the item back again.
 
 **Read the language check literally, against the fetched text.** Where the request arrived in
 another language, one heading or one acceptance condition slips through in it, and nobody catches it
@@ -532,6 +596,8 @@ Then report, in the register
 - **on the parent outcome**: the check item written, the parent, and the condition it serves — and
   that no item was filed, said plainly;
 - every relation written, and which other items were edited to carry the reverse end;
+- the labels each item carries and § 4.9's verdict on the read-back, and every request the set
+  could not place, with the set named;
 - **which copy of the specification corpus was read** — the ref, and which of § 39's three
   outcomes it was: the version's own, the **fallback** to the integration branch, or a ref this
   clone does not hold and so left **unread**. **Where the project carries no corpus, that no
@@ -548,6 +614,8 @@ Then report, in the register
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/file_window.py" check --reply <the reply>
   ```
 
+- **every item filed with its questions open**: the mark it carries, where its questions were
+  written, and each question — or, run on answers, each one answered and whether the mark came off;
 - the type and the template used, or that the project carries neither;
 - **the item's audience and its register reading**: the register and audience the triple states,
   the sections it exempts, and every finding with what became of it — or that **no item audience is
@@ -563,7 +631,8 @@ Then report, in the register
 A question this role cannot answer is asked, not noted
 ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): the question, the options,
 what each costs, and which is recommended. The pass is not finished while a question it raised is
-open.
+open — except a question section 4a filed on a marked item, which is open on the item rather than
+in this pass.
 
 ## What this carrier is
 

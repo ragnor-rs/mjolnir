@@ -76,6 +76,10 @@ tracker:
   # No capability is stated here — schema § 3, `Who declares a capability`.
   policy:
     forbid_on_item: []
+  # The items here are accepted by somebody outside the build before the work starts, so a
+  # confirmed duplicate keeps the text they accepted and gains a dated section after it. The
+  # heading that section is written under is the template's, below.
+  duplicate: append
 
 work_item:
   type:
@@ -114,6 +118,7 @@ work_item:
       outcome: "<this template's own heading>"
       acceptance: "<this template's own heading>"
       reproduction: "<this template's own heading>"
+      addendum: "<this template's own heading, with {date} where the date goes>"
   due_date:
     carrier: none
     absent_reason: >-
@@ -820,6 +825,9 @@ built_check:
   points: []
   on_finding: report
 
+approach_ask:
+  asked: never
+
 # § 40's absent case. Two environments and no accepted role: a release branch is verified on the
 # first and shipped from the second, and both moves write the finished state — so there is no
 # state a verdict could be recorded into, and ⛔ nothing here reads one as a precondition either.
@@ -832,3 +840,8 @@ verify:
   revisit_when: >-
     The ladder grows a state between code landed and finished, or a release target starts
     refusing to carry an item nobody has judged.
+
+# § 5 at its default: a request that left a question open is asked about, and nothing is
+# filed until it is answered.
+open_questions:
+  mode: ask

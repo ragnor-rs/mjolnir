@@ -619,6 +619,9 @@ built_check:
   points: []
   on_finding: report
 
+approach_ask:
+  asked: never
+
 # § 40's absent case, and the shape worth showing: this project **deploys** and still judges
 # nothing through the procedure, because its ladder maps no `accepted` role at all — an item goes
 # from code landed to finished and there is no state between them for a verdict to be written
@@ -634,3 +637,8 @@ verify:
   revisit_when: >-
     A state between code landed and finished is added to the ladder, which is the first moment a
     verdict has somewhere to go.
+
+# § 5 at its default: a request that left a question open is asked about, and nothing is
+# filed until it is answered.
+open_questions:
+  mode: ask
