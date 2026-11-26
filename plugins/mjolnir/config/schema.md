@@ -9634,7 +9634,10 @@ nothing else** — no toolkit, no configuration, no credential — which is why 
 rather than read: a checkout carries neither the plugin nor, where a project withholds it, the
 configuration. ⚠️ **What the run reads beyond the tree is the event's own statement**: a change's
 base arrives with a pull-request event, so a gate whose check reads a base runs on that event and
-refuses where none is stated, rather than deriving one. ⛔ **A facet stated absent gets no gate**,
+refuses where none is stated, rather than deriving one. ⚠️ **And § 38's documents are read from
+the skills root**, so where that root sits above the code root the gate would sit in, a checkout of
+that repository does not hold them, and the gate is refused as the next paragraph refuses one.
+⛔ **A facet stated absent gets no gate**,
 and a project that stops carrying one has the gate taken out, file and entry, which is the removable
 property above with nothing added.
 

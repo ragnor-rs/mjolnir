@@ -3829,6 +3829,20 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             status = main(["install", "--skills-root", tmp, "--dry-run"])
         check("and the install exits non-zero", status != 0, str(status))
     with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The documents are read from the skills root, and the gate sits in the
+        # code root: where the first is above the second, a checkout of the code
+        # root's repository does not hold the tree the copy would read.
+        above = _a_project(tmp, facets=dict(_A_FACET))
+        os.makedirs(os.path.join(tmp, "a-code-root"))
+        above.data["roots"] = {"code": "a-code-root"}
+        checker = next(a for a in ARTIFACTS if a.name == "documents-checker")
+        answered = one(above, checker, write=True)
+        check("a documents root above the code root is refused as one a checkout cannot run",
+              answered["answer"] == CANNOT_RUN and "outside the repository"
+              in answered.get("because", ""), str(answered))
+        check("and nothing is written there",
+              not os.path.exists(os.path.join(tmp, "a-code-root", TOOLKIT_DIRECTORY)))
+    with tempfile.TemporaryDirectory() as tmp:
         # ⚠️ Untracked is not ignored: a configuration written and not yet added
         # is one the project can commit, and refusing it would refuse every
         # adoption on its first day.

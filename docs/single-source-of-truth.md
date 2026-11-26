@@ -3530,7 +3530,9 @@ derivation free to disagree with it.
 
 ⚠️ **The ignored-configuration arm is held against both halves of the bound**: the facet gates
 refused with nothing written, and the body gate keeping the answer it had — the item's own bound
-that a project stating nothing new behaves as it did, asserted rather than assumed.
+that a project stating nothing new behaves as it did, asserted rather than assumed. ⚠️ **A
+documents root above the code root has an arm of its own**, the refusal being reachable by no
+configuration the ignored-file arm builds.
 
 ### What this check deliberately does not hold
 
