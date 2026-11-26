@@ -1325,8 +1325,10 @@ def self_test() -> int:
                   encoding="utf-8") as handle:
             handle.write(example_text)
 
-        # And one it cannot: no configuration of its own, and a carrier whose role nothing here
-        # ships yet.
+        # And one it cannot: no configuration of its own, and a carrier whose role the toolkit
+        # this run is held against does not ship. ⛔ That toolkit is the real one with one
+        # carrier withheld, below, rather than a role nothing ships today: the loop's every role
+        # ships, and an arm resting on one that does not breaks the day a sibling ships it.
         short = os.path.join(stage, "not-served")
         os.makedirs(os.path.join(short, ".claude", SKILLS_DIR, "its-summary"))
         with open(os.path.join(short, ".claude", SKILLS_DIR, "its-summary", "SKILL.md"), "w",
@@ -1359,7 +1361,17 @@ def self_test() -> int:
         check("a project this toolkit can fully serve is READY, and the run exits 0",
               code == 0 and "VERDICT                   READY" in text)
 
-        code, text = run([f"{short}:github-issues", "--carriers", carriers_file, "--no-host"])
+        real_carriers = shipped_carriers
+
+        def withholding(plugin_root: str = PLUGIN_ROOT) -> list[tuple[str, str]]:
+            return [(kind, name) for kind, name in real_carriers(plugin_root)
+                    if shipped_word(kind, name, plugin_root) != "session_summary"]
+
+        globals()["shipped_carriers"] = withholding
+        try:
+            code, text = run([f"{short}:github-issues", "--carriers", carriers_file, "--no-host"])
+        finally:
+            globals()["shipped_carriers"] = real_carriers
         check("a project it cannot serve is NOT READY and every gap is named",
               code == 1 and "NOT READY" in text
               and "no configuration written" in text and "1 role(s) unshipped" in text
