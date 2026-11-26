@@ -95,11 +95,10 @@ can read nothing but a file, the toolkit writes that file itself, under
 marked as generated, byte-identical on a second run, and removed again when your configuration stops
 asking for it.
 
-**One cost is not a file anybody writes, and it is the one worth knowing before you start.** If your
-project **already** describes its own process — in the file your agent reads every session, or in
-the memory it keeps about your repository — that description does not stop being read when the local
-copies go, and the toolkit cannot reach it to take it out. What is owed there, ruling by ruling, and
-which half of it a check can hold at all, is
+**One cost is not a file anybody writes.** If your project **already** describes its own process
+— in the file your agent reads every session, or in the memory it keeps about your repository — that
+description does not stop being read when the local copies go, and the toolkit cannot reach it to
+take it out. What is owed there, ruling by ruling, and which half of it a check can hold at all, is
 [stated rather than left to you to discover](plugins/mjolnir/config/schema.md#what-a-project-already-holds-that-states-the-loop-and-what-adopting-it-does-to-that).
 
 ## What you type
@@ -183,12 +182,10 @@ you, and what it then carries is derived rather than remembered.
 | [`plugins/mjolnir/scripts/live.py`](plugins/mjolnir/scripts/live.py) | The live half: a guard that holds a command your configuration says opens a session on another machine, naming the segment, the machine it reaches and the file a name is cleared in — putting it to you where you would answer the prompt and refusing it outright where the session would answer for itself, and passing in silence where the machine is one you named as not live |
 | [`plugins/mjolnir/scripts/spend.py`](plugins/mjolnir/scripts/spend.py) | The spend half: a guard that puts a command your configuration says costs money to you on every invocation — or refuses it outright where you said so — naming the segment that spends and what you said it costs, and reading the command's own position in the call rather than the text of it, so a path mentioned in an edit is not a call of anything; and the one price the harness states before a turn runs, reported against a bar you set and reported as *no figure* where it gave none |
 
-The loop's remaining roles land here as they are reconciled. ⛔ **No count of them is written
-here** — the table above says which are shipped, and
-[`docs/building-itself.md`](docs/building-itself.md) names the command that derives it; a figure in
-this sentence is a copy of that, and it had already drifted once. A project that has not been
-migrated keeps working throughout — that is a safety property of the migration, not an acceptable
-end state.
+The loop's remaining roles land here as they are reconciled. The table above says which are
+shipped, and [`docs/building-itself.md`](docs/building-itself.md) names the command that derives it.
+A project that has not been migrated keeps working throughout — a safety property of the migration,
+not an acceptable end state.
 
 ## Where the rules live
 
@@ -202,26 +199,13 @@ refresh it, and what a role holds and what may cross the boundary out of it.
 Everything else written about the procedure, in this repository or on a work item, explains or
 records; none of it is a second authority.
 
-That is enforced rather than asserted: the `Single source of truth` workflow holds every document
-to it on every change — see [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md)
-for the checks and what they deliberately leave alone.
-
-The why sits beside it: [`docs/configuration-surface.md`](docs/configuration-surface.md) holds
-the measurements the surface was derived from and
-[`docs/build-surface.md`](docs/build-surface.md) those behind what it deliberately leaves to a
-project's own commands, while
-[`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md) records every divergence
-found between the old copies and the decision that settled it.
+The `Single source of truth` workflow holds every document to it on every change.
 
 ## Why this shape, and not a template you copy
 
 This surface was not designed and then justified. Every copy of every process role across the
 projects that ran this pattern was read first, and each key here exists because the reading forced
-it. What drifted, how far it drifted and the decision that settled each divergence are in
-[`docs/divergences-and-rulings.md`](docs/divergences-and-rulings.md), which opens on the
-measurement; what each key cost to arrive at is in
-[`docs/configuration-surface.md`](docs/configuration-surface.md), section by section, and what the
-build half of the same reading settled is in [`docs/build-surface.md`](docs/build-surface.md).
+it — the documents listed under [*What is in it*](#what-is-in-it) hold that reading.
 
 Only a closed set of facts actually differs between projects. Those facts belong in
 configuration, and the procedure belongs in one place.
@@ -265,9 +249,8 @@ toolkit [builds itself with itself](https://github.com/ragnor-rs/mjolnir/issues/
 public artifacts cited as evidence — the plugin cited as
 [prior art](docs/configuration-surface.md#prior-art), and the published practice the
 [window-as-a-resource measurements](docs/configuration-surface.md#the-window-is-a-resource-the-loop-spends)
-are drawn from — each an artifact rather than a project in scope. Nothing under a carrier root
-carries a value — which since the reply hook means the hooks root as well as the skills
-one.
+are drawn from — each an artifact rather than a project in scope. Nothing under a carrier root,
+skills or hooks, carries a value.
 
 That is a **search** rather than a reading of the procedure, and the search is the check:
 [`tools/check_no_project_names.py`](tools/check_no_project_names.py) runs in the `Names no other
@@ -277,200 +260,125 @@ carrier root, whether it holds skills, commands or hooks, to a stricter rule tha
 tree. Its exceptions are in the script, and what it deliberately leaves to a reviewer is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-second-sweep-naming-no-other-project).
 
-⛔ **Nothing is deferred.** A role that reaches a question it cannot answer asks, with the options
-stated, rather than noting it and carrying on; and no change merges carrying an item raised
-against it. The
-[completeness rule](plugins/mjolnir/config/schema.md#nothing-is-deferred) is the single statement
-of it, the exception for genuinely separate work, and the test that tells the two apart. It is
-held by the `Nothing deferred` workflow rather than by a reviewer noticing, and what it
-deliberately leaves to a reviewer is in
+**Nothing is deferred**: a role that cannot answer a question asks, with the options stated, and no
+change merges carrying an item raised against it —
+[the completeness rule](plugins/mjolnir/config/schema.md#nothing-is-deferred). Held by the
+`Nothing deferred` workflow; what it leaves to a reviewer is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-gate-on-the-change-nothing-is-deferred)
 — a comment finding, a `None.` that is not true, and the closing half of the rule.
 
-⛔ **Prose here wraps at the width this repository's own configuration states, and nothing
-written to the host is wrapped at all.** The
-[width rule](plugins/mjolnir/config/schema.md#prose-line-width) is the single statement of which
-surface answers how, what it excludes and why one half is configuration while the other is
-procedure. The files half is held by the `Prose width` workflow, reading the width from
-`.claude/mjolnir.yaml` rather than carrying one; the bodies half is held by nobody, which is
-stated with the check in
+**Prose wraps at the width this repository's own configuration states, and nothing written to the
+host is wrapped** — [the width rule](plugins/mjolnir/config/schema.md#prose-line-width). The files
+half is held by the `Prose width` workflow and the bodies half by nobody:
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#prose-line-width-held-on-the-gate-for-files-and-nowhere-for-bodies).
 
-⛔ **An artifact states what is true now, and carries no record of the pass that wrote it unless
-somebody asked for one.** The
-[audit-trail rule](plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now) is the
-single statement of the four forbidden shapes, the ask that is the exception, and why the past is
-left alone. A stale line is replaced rather than annotated, and what a pass did goes in the reply.
-It is held on the lines a change adds by the `No audit trail` workflow; what that cannot reach —
-the ordering document the habit was measured on and the day log, both outside every tree — is
-stated with the check in
+**An artifact states what is true now, and carries no record of the pass that wrote it unless
+somebody asked for one** —
+[the audit-trail rule](plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now). Held
+on the lines a change adds by the `No audit trail` workflow; what that cannot reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#an-artifact-states-what-is-true-now-held-on-the-lines-a-change-adds).
 
-⛔ **The only author is the authenticated user** — here and in every project the toolkit drives.
-The [authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration)
-is the single statement of what that means, why it is procedure rather than a setting, and the
-one trap in it.
-
-**And it is a rail rather than a request.** A `commit-msg` hook takes a tool's trailer out of the
-message as it is written — below the model, on every commit from any path, where a setting that is
-not reliably honoured and an instruction no compaction survives both leak. What decides a line is
-the **address** and not a display name anybody chose, because the product name in use here is also
-an ordinary given name and a human co-author is the one thing the rule has never excluded. The rule,
-the list it recognises, and the three parts of itself no git hook reaches are
+**The only author is the authenticated user**, here and in every project the toolkit drives —
+[the authorship rule](plugins/mjolnir/config/schema.md#authorship-is-procedure-not-configuration).
+A `commit-msg` hook takes a tool's trailer out of the message as it is written, below the model,
+where a setting that is not reliably honoured and an instruction no compaction survives both leak;
+it decides by the **address**, not a display name —
 [§ 6 → The rail](plugins/mjolnir/config/schema.md#the-rail-under-the-authorship-rule-and-the-three-halves-it-cannot-reach).
-⚠️ **The honest bound: a fresh clone has no git hook**, whichever route it was installed by, so a
-clone is one command away from the rail — and the install step tells you which of the two gaps you
-have rather than reporting a rail that is not there.
+A fresh clone has no git hook, and the install step tells you which gap you have rather than
+reporting a rail that is not there.
 
-⛔ **Who *holds* a role is looked up, and never answered by asking who is running.** The author of a
-commit is the authenticated user by the rule above; the dev, the owner and the reviewer are not —
-they coincide only while one person runs everything, and a gate that asked the tracker *who am I*
-would quietly become *assigned to whoever is asking* and pass every item, including the ones on the
-wrong person. So you point at the map you already keep and say how to read an entry, and the toolkit
-holds **no name, no handle and no account id**: the
-[role-to-person rule](plugins/mjolnir/config/schema.md#27-the-role-to-person-map) is the single
-statement of the pointer, the shape, the absent case and the shortcut nothing may take. The survey
+**Who *holds* a role is looked up, and never answered by asking who is running**: you point at the
+map you already keep, and the toolkit holds **no name, no handle and no account id** —
+[the role-to-person rule](plugins/mjolnir/config/schema.md#27-the-role-to-person-map). The survey
 behind it found the same map in four stores, each carrying the argument against copying in its own
 words — [the measurement](docs/configuration-surface.md#the-role-to-person-map-four-stores-and-one-pointer).
 
-⛔ **Which of your changes skip the loop entirely is yours to state, and nothing infers it.** A
-one-line documentation fix does not need a branch, three gate jobs, a merge commit and a branch
-deletion while the document stays wrong — and a project that never says so either pays for all of
-that or bypasses the loop ad hoc, undocumented and differently each time. So you name the classes:
-path globs, change kinds, or both as a conjunction, with the branch they are committed to and who
-decides a case the paths do not settle. The
+**Which of your changes skip the loop entirely is yours to state, and nothing infers it** — so a
+one-line documentation fix need not pay for a branch, three gate jobs and a merge. Stating nothing
+sends everything through the loop; the
 [exemption rule](plugins/mjolnir/config/schema.md#30-the-changes-that-do-not-go-through-the-loop) is
-the single statement of it, and ⛔ **the axis is what a change is and never how big it is** — in one
-measured release the unticketed tooling work was *larger* than the ticketed product changes beside
-it, so the decision is handed no count at all. Stating nothing is the default and sends everything
-through the loop —
+where this is stated.
+The axis is what a change is, never its size: in one measured release the
+unticketed tooling work was *larger* than the ticketed product changes beside it —
 [the measurement](docs/configuration-surface.md#the-changes-that-never-entered-the-loop-and-the-rule-nobody-had-written).
 
-⛔ **A role's reply to the person running it has a fixed register** — procedure too, and for the
-same kind of reason. The
-[register rule](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) is the
-single statement of what it requires and why a project does not choose it. It is held in the
-session by a hook rather than by the gate, since a reply is not a file; the checks, and what they
-leave to a reader, are in
+**A role's reply to the person running it has a fixed register** —
+[the register rule](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role). It is
+held in the session by a hook, since a reply is not a file:
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-reply-defers-nothing-held-in-the-session-not-on-the-gate).
 
-⛔ **A guard refuses an act on the strength of a record, never on a reading of the work.** Procedure
-produces the record and enforcement reads it, so the question *does this change go in now* is asked
-and its answer written onto the change whether or not a hook is installed — and where one is, a
-merge with no recorded approval is refused, with what would unblock it named in the refusal. The
+**A guard refuses an act on the strength of a record, never on a reading of the work** — where a
+hook is installed, a merge with no recorded approval is refused, naming what would unblock it. The
 [enforcement rule](plugins/mjolnir/config/schema.md#what-a-hook-refuses-and-the-record-it-reads) is
-the single statement of the record's form and keying,
+stated with
 [which direction a guard fails in](plugins/mjolnir/config/schema.md#which-direction-a-guard-fails-in)
-of the two answers to a record it could not read, and
+and
 [the lease](plugins/mjolnir/config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
-of how a place on a contended resource is held and given back. A project that states nothing
-exclusive gets no capacity guard at all; what no check can reach is in
+— what no check can reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-enforcement-half-a-guard-that-refuses-and-a-place-that-comes-back).
 
-⛔ **A command that costs money does not run because nobody was there to stop it.** You list the
-calls that spend, what each costs and whether a go covers one invocation; the guard reads where the
-command *is* in the call — behind an assignment, behind an elevation wrapper, inside a substitution,
-in a later segment of a chain — and puts it to you with your own figure attached, so the one
-thing it never does is refuse a call that merely mentions the path. A session nobody is watching
-gets no answer, and then the call does not run. The
+**A command that costs money does not run because nobody was there to stop it.** The guard finds
+the command wherever it sits in the call — behind an assignment, behind an elevation wrapper,
+inside a substitution, in a later segment of a chain — and puts it to you with your own figure; a
+session nobody is watching gets no answer, and then the call does not run. The
 [spend rule](plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
-is the single statement of the list and its keys,
+is stated with
 [the command position](plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
-of the parse and the defect that was paid for once, and
+and
 [what an approval is per](plugins/mjolnir/config/schema.md#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs)
-of the go and of the one price the harness states before a turn runs. A project that denies no
-command gets no spend hook at all; what no check can reach is in
+— what no check can reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-spend-half-a-call-put-to-somebody-and-the-one-price-stated-beforehand).
 
-⛔ **Nothing opens a session on your live machine without somebody being asked.** You name the
-commands that open one; the machines that are *not* live are named in a file outside every working
-tree, so your repository carries the mechanism and your machine carries the names — and on a
-machine with no such file yet, every name that file would have cleared reads as live, which is
-the safe way round. ⛔ **The
-verdict turns on who would answer the prompt**: you get the ask where you would answer it, and
-the call is refused outright where the session would answer on its own behalf,
-because a prompt a session can clear for itself is not approval. The
+**Nothing opens a session on your live machine without somebody being asked.** The machines that
+are *not* live are named in a file outside every working tree, and on a machine with no such file
+yet every name reads as live. You get the ask where you would answer it, and the call is refused
+outright where the session would answer for itself, because a prompt a session can clear for itself
+is not approval. The
 [live rule](plugins/mjolnir/config/schema.md#21-a-command-that-could-open-a-session-on-a-live-machine)
-is the single statement of the list and its keys,
-[which verdict](plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt)
-of the line the whole guard rests on,
+is stated with
+[which verdict](plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt),
 [the machines named](plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)
-of why the list is inverted and where it lives, and
-[the four ways it fails closed](plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed)
-of what a fact it cannot establish does. A project whose commands reach no other machine gets no
-live hook at all; what no check can reach is in
+and
+[the four ways it fails closed](plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed);
+what no check can reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-live-half-a-session-put-to-somebody-and-the-names-that-clear-one).
 
-⛔ **The window the session thinks in is not spent on a dump nobody wanted.** Summarising a window
-is lossy and silent — what it dropped is gone, and nothing left says what was lost — so the lever
-is what gets in: you list the commands whose output nothing bounds and what bounds each, and the
-call is **rewritten** with your own flag added where one exists, refused with your bounded form
-named where none does, and left alone where it already carries a bound of its own. What comes back
-longer than the size you stated reaches the window as a path, a head and a tail, with the whole of
-it on disk at that path to read the part you need from. And a file this session has already read,
-unchanged since, is not read into the window twice. ⛔ **The command you may not truncate is your
-list too**: name it, and neither the refusal nor the replacement touches it. The
+**The window the session thinks in is not spent on a dump nobody wanted.** A command whose output
+nothing bounds is rewritten with your flag, or refused with your bounded form named; a result
+longer than your stated size arrives as a path, a head and a tail; and a file already read and
+unchanged is not read twice. The
 [context rule](plugins/mjolnir/config/schema.md#22-what-enters-the-window-bounded-where-the-call-is-made)
-is the single statement of the list and its keys,
+is stated with
 [the three arms](plugins/mjolnir/config/schema.md#the-three-arms-and-the-one-that-rewrites-rather-than-refuses)
-of which one rewrites and what the session is told when it does,
-[a read already made](plugins/mjolnir/config/schema.md#a-read-this-session-has-already-made)
-of what is compared and what releases it,
+and
+[a read already made](plugins/mjolnir/config/schema.md#a-read-this-session-has-already-made),
 [the commands never bounded](plugins/mjolnir/config/schema.md#the-commands-a-project-names-as-never-bounded)
-of the exemption, and
+and
 [why every unestablished fact proceeds](plugins/mjolnir/config/schema.md#why-every-unestablished-fact-here-proceeds)
-of the direction it fails in. A project that lists no command and states no size gets no refusal
-and no replacement — the read is the one arm that needs no list, and `reread: allow` is how you say
-no to it; what no check can reach is in
+— what no check can reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-context-half-a-call-bounded-where-it-is-made-and-what-comes-back).
 
-⛔ **What a session remembers is not quietly written where the next one will never look for it.**
-An agent harness names its memory store after the directory the session is standing in, so work in
-a per-item tree gets a *different* store: the index every session loads is absent, and a save lands
-somewhere the checkout never reads — and nothing says so, because the save reports success. You name
-the store once, or you say that the harness decides it and the toolkit must not guess, and the
-difference is what you get back: a store you pinned is written from any tree with its index appended
-**under a lock**, and a store the harness derives has the memory step **refuse** from a tree and
-name the checkout it would have run from. Either way the answer is one of two things a role has to
-say out loud rather than a write nobody sees. A pinned store also holds what goes into it to
-carrying where the fact came from and what it rests on, so a later pass reads a fact it can check
-instead of restating one — and where the harness decides the store, that admission cannot run at
-all, so the reading says what each entry is missing rather than pretending it is there. The
+**What a session remembers is not quietly written where the next one will never look for it.** A
+harness names its memory store after the session's directory, so a per-item tree gets a different
+one. A store you pin is written from any tree with its index appended **under a lock**; a store the
+harness derives has the memory step refuse from a tree and name the checkout — never a write
+nobody sees. The
 [memory rule](plugins/mjolnir/config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)
-is the single statement of the block,
-[the carriers](plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
-of what each one closes and what it leaves open,
+is stated with
+[the carriers](plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes),
 [write_from](plugins/mjolnir/config/schema.md#write_from-and-the-pair-of-outcomes-a-refusal-is-one-half-of)
-of the pair of outcomes, and
+and
 [what may enter](plugins/mjolnir/config/schema.md#what-may-enter-the-store-and-what-a-reader-does-with-what-is-in-it)
-of the admission. A project that keeps no memory says so with a reason and the step does not run;
-what no check can reach is in
+— what no check can reach is in
 [`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-memory-store-the-write-decision-and-the-two-arms-on-the-index).
 
 ### Who this page is written for
 
-**This page is written to sell the toolkit to whoever is deciding whether to adopt it**, and its
-register is a product page's rather than a document's: it leads with what you get, it is meant to
-be read in under a minute, and it is the only artifact here written to persuade. What it leaves out
-is one hop away — the measurements the surface was derived from in
-[`docs/configuration-surface.md`](docs/configuration-surface.md), and what registering this tree
-writes in [`docs/working-on-the-toolkit.md`](docs/working-on-the-toolkit.md).
-
-Two things bound the persuasion, and both are the reason it can be trusted at all. **Every claim
-above is checkable in this repository**, by reading the surface it links or by running the gate
-that holds it; and a measurement this page rests on is cited where that measurement lives rather
-than copied here, because a front page is kept while a reply is spent as it is read. No survey
-figure appears above: a number a reader cannot check is asserted at them rather than argued.
-
-⚠️ The register [§ 8](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role)
-fixes is a **reply's**, and it forbids exactly this one — persuasive, for an artifact whose reader
-a project does not choose. This page's reader is chosen, so that register does not reach it.
-
-That register is a rule rather than a check, and nothing mechanical reads it: a page's prose is
-held by whoever writes it. The one thing a check does hold over a role's output is that no work is
-named and left undone, which is a property of the work rather than of the writing — stated with the
-gate's other limits in
-[`docs/single-source-of-truth.md`](docs/single-source-of-truth.md#the-reply-defers-nothing-held-in-the-session-not-on-the-gate).
+Whoever is deciding whether to adopt the toolkit. Every claim above is checkable in this
+repository, by reading the surface it links or by running the gate that holds it, and a measurement
+is cited where it lives rather than copied here. The reply register
+[§ 8](plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role) fixes does not reach
+this page, whose reader is chosen; a page's prose is held by whoever writes it.
 
 ## License
 

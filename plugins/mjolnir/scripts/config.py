@@ -1414,7 +1414,10 @@ def _deploy_root_facet(data: dict, roots: dict[str, dict]) -> None:
         return
     named = ", ".join(repr(key) for key in roots)
     for index, entry in enumerate(targets):
-        if not isinstance(entry, dict):
+        # ⛔ A target nothing reaches has no act to be in a repository, and its
+        # entry may carry no `code_root` (§ 33) -- so the several-roots arm
+        # below would refuse it for a key it is refused for stating.
+        if not isinstance(entry, dict) or entry.get("invoke") == NOT_IMPLEMENTED:
             continue
         where = f"deploy[{index}]"
         stated = entry.get(DEPLOY_CODE_ROOT)
@@ -2654,6 +2657,90 @@ class Config:
             "identity": str(identity),
         }
 
+    def route_for(self, values: list[str]) -> dict:
+        """§ 7's route for an item, from every label it carries and its type.
+
+        ⛔ **Every failure is a stop and none of them falls back to the loop's
+        own implementing leg**: two routes naming different carriers, and a
+        carrier whose file is not where its kind puts it, are each refused. A
+        route the item matches is a statement that the work is not the loop's
+        to do, so entering the loop's leg instead would do the work the project
+        routed away.
+
+        ⚠️ **A namespaced carrier is unestablished rather than present**: where
+        a plugin is installed is the harness's to know, so the answer says so
+        and the starting role's invocation is the test.
+        """
+        held = {str(value) for value in values}
+        # ⚠️ Under a `label` carrier the type an item carries *is* the prefixed
+        # label, so the bare word is a different label and matches nothing.
+        prefix = (
+            str(self.get("work_item.type.label_prefix") or "")
+            if self.get("work_item.type.carrier") == "label" else ""
+        )
+        matched = []
+        for index, entry in enumerate(self.get(ROUTES_KEY) or []):
+            # ⛔ Which half an entry routes on is the one it states a value for,
+            # as the reader decided it at load -- never whichever key is present,
+            # a `label: null` beside a `type` being a type route.
+            on = "label" if entry.get("label") is not None else "type"
+            wanted = str(entry[on]) if on == "label" else f"{prefix}{entry[on]}"
+            if wanted in held:
+                matched.append((index, entry, on))
+        if not matched:
+            return {
+                "routed": False,
+                "carrier": None,
+                "detail": "no route matches the item, so its work is entered "
+                "through `carriers.implement` (§ 7).",
+            }
+        carriers = {entry["carrier"] for _, entry, _ in matched}
+        if len(carriers) > 1:
+            raise ConfigError(
+                ROUTES_KEY,
+                "routes this item to "
+                + " and to ".join(
+                    f"`{entry['carrier']}` (entry {index}, by {on})"
+                    for index, entry, on in matched
+                )
+                + ". Which carrier the work belongs to is the project's to state, "
+                "so this is a stop rather than the first of them (§ 7).",
+            )
+        index, entry, on = matched[0]
+        carrier, kind = entry["carrier"], entry["kind"]
+        if ":" in carrier:
+            present, where = "unestablished", None
+        else:
+            # ⛔ The name goes into the place's own parts and never into the
+            # joined path, which carries the skills root and whatever it spells.
+            where = os.path.join(
+                self.skills_root,
+                *(part.format(name=carrier) for part in ROUTE_PLACES[kind]),
+            )
+            present = os.path.isfile(where)
+        if present is False:
+            raise ConfigError(
+                f"{ROUTES_KEY}[{index}].carrier",
+                f"names the {kind} `{carrier}`, and nothing is at {where!r}. A route "
+                "to a carrier that is not there is a stop naming it, never the "
+                "loop's own leg entered in its place (§ 7).",
+            )
+        return {
+            "routed": True,
+            "carrier": carrier,
+            "kind": kind,
+            "by": {on: entry[on]},
+            "present": present,
+            "read_at": where,
+            "detail": (
+                f"the item is handed to the {kind} `{carrier}` after the gate and "
+                "the claim, in place of `carriers.implement` (§ 7)."
+                + (" Its install is the harness's to know, so the invocation is "
+                   "the test and a refused one is the stop."
+                   if present == "unestablished" else "")
+            ),
+        }
+
     def commit_rule_for(self, paths: list[str], branch: str) -> dict:
         """§ 6's answer on one commit: which of its staged paths a branch admits.
 
@@ -3383,6 +3470,9 @@ class Config:
                 f"names no target {target!r}. It names "
                 f"{', '.join(repr(one.get('name')) for one in entries) or 'none'} (§ 33).",
             )
+        refusal = _not_implemented_refusal(entry)
+        if refusal is not None:
+            raise refusal
         choices = {choice["name"]: choice for choice in entry.get("choices") or ()}
         asked: dict[str, list[str]] = {}
         for stated in chosen or ():
@@ -3629,6 +3719,9 @@ class Config:
                     "it does.",
                 )
         entry = stated[0]
+        refusal = _not_implemented_refusal(entry)
+        if refusal is not None:
+            raise refusal
         named = entry.get(ADVANCE_REQUIRES)
         by_name = isinstance(named, list)
         required: list[tuple[str, str]] = []
@@ -3688,6 +3781,138 @@ class Config:
             "checks": checks,
             "held": bool(holding),
             "holding": holding,
+            "report": report,
+        }
+
+    def after_verified(
+        self,
+        target: str,
+        readings: dict[str, str],
+        chosen: list[str] | None = None,
+        commit: str | None = None,
+        outcomes: dict[str, str] | None = None,
+    ) -> dict:
+        """§ 33's steps run once a deploy's verification is clean, in order.
+
+        ⛔ **Clean is `advance`'s verdict and not a second reading of it**: the
+        same outcomes are handed over, and a verification holding the advance
+        runs no step at all. `chosen` is the run's selection, resolved and
+        refused by `deploy_target` exactly as the go showed it, and `commit` the
+        commit this deploy serves.
+
+        `outcomes`, where handed, is what each performed step came back with, and
+        turns the plan into the report: the first step that did not come back
+        `done` is where the sequence stopped, every step after it is `not_run`,
+        and ⛔ **the deploy is reported delivered whatever they say** -- what a
+        step's failure leaves standing is named, and the target already serves
+        the commit.
+        """
+        verdict = self.advance(target, readings)
+        shown = self.deploy_target(target, chosen)
+        entry = next(one for one in self.get("deploy") if one.get("name") == target)
+        steps = entry.get(AFTER_VERIFIED) or []
+        if commit is not None and not _OBJECT_NAME.fullmatch(commit):
+            raise ConfigError(
+                f"deploy.{AFTER_VERIFIED}",
+                f"was handed the commit {commit!r}, which is not an object name "
+                "(§ 33): seven to sixty-four lowercase hexadecimal characters.",
+            )
+        for name, outcome in (outcomes or {}).items():
+            if name not in {step["name"] for step in steps}:
+                raise ConfigError(
+                    f"deploy[{target}].{AFTER_VERIFIED}",
+                    f"was handed an outcome for {name!r}, which names no step of "
+                    "this target. It names "
+                    + (", ".join(repr(step["name"]) for step in steps) or "none")
+                    + " (§ 33).",
+                )
+            if outcome not in STEP_OUTCOMES:
+                raise ConfigError(
+                    f"deploy[{target}].{AFTER_VERIFIED}",
+                    f"was handed {outcome!r} for {name!r}; the outcomes § 33 states "
+                    f"are {' | '.join(STEP_OUTCOMES)}.",
+                )
+        clean = not verdict["held"]
+        values = {one["name"]: one["value"] for one in shown["choices"]}
+        root = entry.get(DEPLOY_CODE_ROOT)
+        view = self.root(root) if root is not None else self.only_root
+        # ⚠️ A step runs where the target's own act runs, which is `batch`'s rule.
+        where = entry.get(COMMAND_ROOT_REF) if entry.get("invoke") == "command" else None
+        resolved = []
+        stopped_at = None
+        for step in steps:
+            text = step["command"]
+            placed = set(_BATCH_PLACED.findall(text))
+            if clean and BATCH_COMMIT in placed and commit is None:
+                raise ConfigError(
+                    f"deploy[{target}].{AFTER_VERIFIED}",
+                    f"the step {step['name']!r} places {{deploy:{BATCH_COMMIT}}} and no "
+                    "commit was handed over (§ 33). The commit is the one this "
+                    "deploy serves, as the run established it.",
+                )
+            text = _CHOICE_PLACED.sub(lambda found: values[found.group(1)], text)
+            words = {BATCH_TARGET: target, BATCH_COMMIT: commit or ""}
+            text = _BATCH_PLACED.sub(lambda found: words[found.group(1)], text)
+            one = {
+                "name": step["name"],
+                "performed_by": step["performed_by"],
+                "runs": clean,
+                **view.command(text, where),
+            }
+            if outcomes is not None:
+                if not clean or stopped_at is not None:
+                    one["outcome"] = STEP_NOT_RUN
+                else:
+                    one["outcome"] = outcomes.get(step["name"], STEP_UNREPORTED)
+                    if one["outcome"] != STEP_DONE:
+                        stopped_at = step["name"]
+            resolved.append(one)
+        report = []
+        if not steps:
+            report.append(
+                f"The target {target!r} states no step after its verification "
+                f"(`{AFTER_VERIFIED}` omitted), so nothing runs after it but the "
+                "advance of its items."
+            )
+        elif not clean:
+            report.append(
+                f"The verification of {target!r} is not clean -- "
+                + ", ".join(repr(name) for name in verdict["holding"])
+                + " held it -- so none of its "
+                f"{len(steps)} step(s) after the verification runs (§ 33)."
+            )
+        if stopped_at is not None:
+            done = [one["name"] for one in resolved if one.get("outcome") == STEP_DONE]
+            failed = next(one for one in resolved if one["name"] == stopped_at)
+            left = [one["name"] for one in resolved if one.get("outcome") == STEP_NOT_RUN]
+            report.append(
+                f"The step {stopped_at!r} came back `{failed['outcome']}`, so the "
+                "sequence stopped there. The deploy stands: the target serves "
+                + (f"{commit}" if commit else "what was delivered")
+                + ", and it is not reported failed. Left standing: "
+                + (
+                    "the step(s) " + ", ".join(repr(name) for name in done) + " done"
+                    if done
+                    else "no step done"
+                )
+                + (
+                    "; not run: " + ", ".join(repr(name) for name in left)
+                    if left
+                    else ""
+                )
+                + "."
+            )
+        return {
+            "target": target,
+            "clean": clean,
+            "holding": verdict["holding"],
+            "commit": commit,
+            "choices": shown["choices"],
+            "steps": resolved,
+            "stopped_at": stopped_at,
+            # ⛔ Constant and stated: no outcome of a step reaches the deploy's own
+            # verdict, which was read before any step ran.
+            "deploy_failed": False,
             "report": report,
         }
 
@@ -3897,6 +4122,16 @@ class Config:
                 "it, and it says nothing about a deploy somebody makes by hand "
                 "(§ 33)."
             )
+        for entry in self.get("deploy") or ():
+            refusal = isinstance(entry, dict) and _not_implemented_refusal(entry)
+            if refusal:
+                out.append(
+                    f"The deploy target {entry.get('name')!r} is not implemented "
+                    f"(`invoke: {NOT_IMPLEMENTED}`): "
+                    f"{' '.join(str(entry.get(NOT_IMPLEMENTED_REASON)).split())} "
+                    "Asking for it stops with that reason, and nothing is run, "
+                    "batched or advanced for it (§ 33)."
+                )
         if not self.get("readiness"):
             out.append("The readiness gate is empty, so there is nothing to gate.")
         if not self.get("done"):
@@ -5565,6 +5800,16 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
                 "carrying one name leave the ask undefined.",
             )
         seen_names[name] = index
+        if entry.get("invoke") == NOT_IMPLEMENTED and NOT_IMPLEMENTED in shapes:
+            _validate_not_implemented(where, entry)
+            continue
+        if NOT_IMPLEMENTED_REASON in entry:
+            raise ConfigError(
+                f"{where}.{NOT_IMPLEMENTED_REASON}",
+                f"is stated beside `invoke: {entry.get('invoke')}`, which never "
+                f"reads it (§ 33). It is read beside `invoke: {NOT_IMPLEMENTED}` "
+                "alone, as why nothing reaches the target yet.",
+            )
         # ⛔ Boolean, and read for neither truth nor presence -- § 1's rule for
         # `code_root_runs_nothing`, arriving at the key where getting it wrong is
         # worst. Read as truthy, `false` spelled as a word would make a live
@@ -5806,7 +6051,35 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
         _validate_advance_requires(where, entry, data, facts)
+        _validate_after_verified(where, entry, facts)
         _validate_figures(where, entry, facts)
+
+
+def _validate_not_implemented(where: str, entry: dict) -> None:
+    """§ 33's `not_implemented` entry: a name, the shape and a reason, nothing else.
+
+    ⛔ Every other key is refused with its own name, `not_live` among them: each
+    describes how the target is reached, and a target nothing reaches has no
+    answer to any of them -- so a value written there is a fact nothing reads.
+    """
+    for stated_key in entry:
+        if stated_key not in NOT_IMPLEMENTED_KEYS:
+            raise ConfigError(
+                f"{where}.{stated_key}",
+                f"is stated beside `invoke: {NOT_IMPLEMENTED}`, which takes "
+                f"{', '.join(f'`{key}`' for key in NOT_IMPLEMENTED_KEYS)} and "
+                "nothing else (§ 33). Nothing reaches this target yet, so how it "
+                "is reached is stated when it is implemented, as one of the "
+                "other shapes.",
+            )
+    reason = entry.get(NOT_IMPLEMENTED_REASON)
+    if not isinstance(reason, str) or not reason.strip():
+        raise ConfigError(
+            f"{where}.{NOT_IMPLEMENTED_REASON}",
+            f"required where `invoke` is {NOT_IMPLEMENTED!r}, and a non-empty "
+            "string (§ 33). It is what a deploy of this target stops with, so a "
+            "target stated without one would stop saying nothing.",
+        )
 
 
 def _stated_tier_names(data: dict) -> set[str]:
@@ -5905,6 +6178,124 @@ def _validate_advance_requires(where: str, entry: dict, data: dict, facts: dict)
                 "one name leave which of them it answers undefined.",
             )
         seen[name] = position
+
+
+def _validate_after_verified(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `after_verified` on one target, which no marker can reach.
+
+    ⚠️ Optional: an entry that omits it runs nothing after its verification, which
+    is what every target did before the key existed. ⛔ What a stated list has to
+    *be* is held here, every arm refusing rather than skipping -- a step a reader
+    could not make sense of is a step run against a target nobody checked.
+    """
+    if AFTER_VERIFIED not in entry:
+        return
+    at = f"{where}.{AFTER_VERIFIED}"
+    # ⛔ A target reached by hand is deployed by nobody this procedure watches, so
+    # there is no verification of it for a step to follow.
+    if entry.get("invoke") == "by_hand":
+        raise ConfigError(
+            at,
+            "is stated beside `invoke: by_hand`, where this procedure makes no "
+            "deploy and verifies none, so no step would ever follow one (§ 33).",
+        )
+    steps = entry[AFTER_VERIFIED]
+    if not isinstance(steps, list) or not steps:
+        raise ConfigError(
+            at,
+            "must be a non-empty list of the steps run once this target's "
+            "verification is clean (§ 33); omit it where none runs.",
+        )
+    prefix = f"deploy.{AFTER_VERIFIED}."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a step could be held "
+            "to nothing; § 33 states a step's keys in the entry's own fence.",
+        )
+    performers = vocabulary(
+        facts, f"deploy.{AFTER_VERIFIED}.performed_by", "who performs a step after a deploy"
+    )
+    chosen = {
+        choice.get("name")
+        for choice in entry.get("choices") or ()
+        if isinstance(choice, dict)
+    }
+    names: dict[str, int] = {}
+    for index, step in enumerate(steps):
+        here = f"{at}[{index}]"
+        if not isinstance(step, dict):
+            raise ConfigError(
+                here,
+                "must be a mapping stating the step's name, its command and who "
+                "performs it (§ 33).",
+            )
+        for key in step:
+            if key not in declared:
+                raise ConfigError(
+                    f"{here}.{key}",
+                    "is a key § 33 does not declare on a step, so nothing reads it. "
+                    f"The keys it declares are: {', '.join(sorted(declared))}.",
+                )
+        name = step.get("name")
+        if not isinstance(name, str) or not _CHOICE_NAME.fullmatch(name):
+            raise ConfigError(
+                f"{here}.name",
+                f"is {name!r}; it must be letters, digits, `_` and `-`, opening with "
+                "a letter or `_` (§ 33). An outcome is handed to a step by this name.",
+            )
+        if name in names:
+            raise ConfigError(
+                f"{here}.name",
+                f"is {name!r}, which {at}[{names[name]}] already names (§ 33), so an "
+                "outcome handed to it would answer for two steps.",
+            )
+        names[name] = index
+        command = step.get("command")
+        if not _one_line(command):
+            raise ConfigError(
+                f"{here}.command",
+                f"is {command!r}; it must be the whole command, a non-empty string "
+                "on one line (§ 33).",
+            )
+        if step.get("performed_by") not in performers:
+            raise ConfigError(
+                f"{here}.performed_by",
+                f"is {step.get('performed_by')!r}; the surface states "
+                f"{' | '.join(performers)} (§ 33). Who performs a step is the "
+                "target's own fact, and a step nobody named a performer for is one "
+                "nobody performs.",
+            )
+        for placed in _BATCH_PLACED.findall(command):
+            if placed not in AFTER_VERIFIED_PLACEMENTS:
+                raise ConfigError(
+                    f"{here}.command",
+                    f"places {{deploy:{placed}}}; a step may place "
+                    + ", ".join(f"{{deploy:{one}}}" for one in AFTER_VERIFIED_PLACEMENTS)
+                    + " and a choice the target declares (§ 33).",
+                )
+            # ⛔ `batch`'s rule, for its reason: a step reaches a shell too, and a
+            # name a shell splits would run a different command than the one
+            # written.
+            if placed == BATCH_TARGET and not (
+                isinstance(entry.get("name"), str) and _PLAIN_VALUE.fullmatch(entry["name"])
+            ):
+                raise ConfigError(
+                    f"{here}.command",
+                    f"places {{deploy:{BATCH_TARGET}}} while the target's name "
+                    f"{entry.get('name')!r} is not one plain word a shell reads as "
+                    "itself (§ 33). Name the target in the command instead.",
+                )
+        for placed in _CHOICE_PLACED.findall(command):
+            if placed not in chosen:
+                raise ConfigError(
+                    f"{here}.command",
+                    f"places {placed!r}, which no choice of this target declares "
+                    "(§ 33).",
+                )
 
 
 def _validate_figures(where: str, entry: dict, facts: dict) -> None:
@@ -6072,6 +6463,9 @@ _PLAIN_JOIN = re.compile(r"[A-Za-z0-9_./:@%+,=-]+")
 _BATCH_PLACED = re.compile(r"\{deploy:([^}]*)\}")
 BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE = "target", "commit", "purpose"
 BATCH_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE)
+# What a step run after a clean verification may place: the purpose is a batch's
+# own and names nothing a step is run for.
+AFTER_VERIFIED_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT)
 # § 33's three purposes a batch command is run for, one run each.
 ADVANCE, PRECONDITION, REPORT = "advance", "precondition", "report"
 # ⛔ An object name and nothing else: hexadecimal is a word every shell reads as
@@ -6181,6 +6575,11 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
         if isinstance(entry.get("batch"), str)
         else set()
     )
+    # ⛔ And so does one a step after the verification places, a step's command
+    # being run in a shell on every shape too.
+    for step in entry.get(AFTER_VERIFIED) or ():
+        if isinstance(step, dict) and isinstance(step.get("command"), str):
+            batched |= set(_CHOICE_PLACED.findall(step["command"]))
     always = entry["inputs"] if isinstance(entry.get("inputs"), dict) else {}
     names: list[str] = []
     for index, choice in enumerate(choices):
@@ -6231,7 +6630,7 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                     f"{here}.values[{position}]",
                     f"is {value!r}, which a shell would not read as one plain word "
                     "(§ 33). On a `command` target, and for a choice its `batch` "
-                    "places, a value is letters, digits and `_ . / : @ % + , = -`, "
+                    "or a step after its verification places, a value is letters, digits and `_ . / : @ % + , = -`, "
                     "opening with a letter, a digit, `_`, `.` or `/`.",
                 )
             if value in values[:position]:
@@ -6319,13 +6718,14 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                 f"places {name!r}, which no choice of this target declares (§ 33).",
             )
     for key, value in entry.items():
-        if key in ("choices", "batch") or (key == "command" and shell):
+        if key in ("choices", "batch", AFTER_VERIFIED) or (key == "command" and shell):
             continue
         for path, name in _placed_elsewhere(value, f"{where}.{key}"):
             raise ConfigError(
                 path,
                 f"places the choice {name!r}, which is read in a `command` target's "
-                "`command` and in a `batch`, and nowhere else (§ 33).",
+                "`command`, in a `batch` and in a step's `command`, and nowhere "
+                "else (§ 33).",
             )
 
 
@@ -6515,7 +6915,37 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
 # § 35's sequence, which the sides a step's phases fall on may never run
 # backwards through. ⛔ Phases rather than commands: `backup.verify` belongs to
 # the backup and falls where it does.
-LIVE_DATA_PHASES = ("backup", "rehearse", "apply")
+LIVE_DATA_PHASES = ("backup", "preview", "rehearse", "apply")
+
+# The phases a step may omit, each read by `live_data_command` -- and the only two
+# whose absence leaves a phase with no side at all.
+LIVE_DATA_OPTIONAL = ("preview", "rehearse")
+
+
+def live_data_command(block: dict, phase: str) -> str | None:
+    """The command one optional phase of a step states, or `None` where none.
+
+    ⛔ The one reading of whether `preview` or `rehearse` is stated, which the
+    placement below and the carrier's sequence both take: `rehearse` is a command
+    stated whole, and `preview` a mapping whose `run` is (§ 35).
+    """
+    value = block.get(phase)
+    if phase == "preview":
+        value = value.get("run") if isinstance(value, dict) else None
+    return value if isinstance(value, str) and value.strip() else None
+
+# § 35's stated absence of a dump, carried inside `backup` in place of its two
+# commands. ⛔ Its name is the surface's own key, and the loader and the carrier
+# read it through this one constant rather than each spelling it.
+BACKUP_ABSENT_KEY = "absent_reason"
+
+
+def backup_absent(block: dict) -> str | None:
+    """The reason a step takes no backup, or `None` where it takes one (§ 35)."""
+    backup = block.get("backup")
+    if isinstance(backup, dict) and BACKUP_ABSENT_KEY in backup:
+        return str(backup[BACKUP_ABSENT_KEY])
+    return None
 
 
 def live_data_sides(block: dict) -> dict:
@@ -6523,14 +6953,15 @@ def live_data_sides(block: dict) -> dict:
 
     ⛔ The one derivation of a step's placement, which the loader holds and the
     carrier performs: a phase `sides` does not name falls where `order` says, and
-    a `rehearse` the step does not state has no side at all.
+    a `preview` or `rehearse` the step does not state has no side at all.
     """
     placed = block.get("sides") if isinstance(block.get("sides"), dict) else {}
     out = {}
     for phase in LIVE_DATA_PHASES:
-        if phase == "rehearse" and not (
-            isinstance(block.get("rehearse"), str) and block["rehearse"].strip()
-        ):
+        if phase in LIVE_DATA_OPTIONAL and live_data_command(block, phase) is None:
+            out[phase] = None
+            continue
+        if phase == "backup" and backup_absent(block) is not None:
             out[phase] = None
             continue
         out[phase] = placed.get(phase, block.get("order"))
@@ -6588,7 +7019,8 @@ def _validate_one_live_data_step(
         raise ConfigError(
             f"{at}.backup",
             "must be a mapping of the command that dumps the live store and the "
-            "command that reads the dump back (§ 35).",
+            "command that reads the dump back, or of `absent_reason` alone where "
+            "the step takes no backup (§ 35).",
         )
     inside = {
         path[len("backup."):]
@@ -6602,16 +7034,35 @@ def _validate_one_live_data_step(
                 "is a key § 35 does not declare on a backup, so it is a fact "
                 f"nothing reads. The keys it declares are: {', '.join(sorted(inside))}.",
             )
+    # ⛔ A stated absence in place of the dump, and never beside it: a step either
+    # dumps the store or says why it does not, and one stating both lets a reader
+    # believe whichever half they read first (§ 35).
+    if BACKUP_ABSENT_KEY in backup:
+        both = sorted(key for key in backup if key != BACKUP_ABSENT_KEY)
+        if both:
+            raise ConfigError(
+                f"{at}.backup.{BACKUP_ABSENT_KEY}",
+                f"is stated beside {', '.join(both)}. A step takes a backup or "
+                "says why it takes none, never both (§ 35).",
+            )
+        reason = backup[BACKUP_ABSENT_KEY]
+        if not isinstance(reason, str) or not reason.strip():
+            raise ConfigError(
+                f"{at}.backup.{BACKUP_ABSENT_KEY}",
+                "must say why this step takes no backup. An absence with no reason "
+                "is the unstated backup § 35 requires against.",
+            )
     # ⛔ Two keys and not one, because a dump that failed still leaves a file:
     # what says the artifact is a backup is a second command reading it back, and
     # its exit status is the whole of the verdict (§ 35).
-    for key in ("run", "verify"):
+    for key in () if BACKUP_ABSENT_KEY in backup else ("run", "verify"):
         value = backup.get(key)
         if not isinstance(value, str) or not value.strip():
             raise ConfigError(
                 f"{at}.backup.{key}",
                 "required, and a non-empty command stated whole (§ 35).",
             )
+    _validate_live_data_preview(at, block, declared)
     for key in ("apply", "rehearse", "record"):
         if key in block and (
             not isinstance(block[key], str) or not block[key].strip()
@@ -6652,6 +7103,50 @@ def _validate_one_live_data_step(
     _validate_live_data_sides(at, block, declared, facts)
 
 
+def _validate_live_data_preview(at: str, block: dict, declared: set) -> None:
+    """`preview`, a read-only listing of the pending writes that is never a rehearsal.
+
+    ⛔ A mapping rather than a command, because where the listing lands is part of
+    what is stated: the output whole, or the file `at` names (§ 35).
+    """
+    if "preview" not in block:
+        return
+    preview = block["preview"]
+    if not isinstance(preview, dict):
+        raise ConfigError(
+            f"{at}.preview",
+            "must be a mapping of `run`, the read-only command printing the writes "
+            "this deploy would make, and optionally `at`, the file it writes them to "
+            "(§ 35). Omit it where the project has no preview.",
+        )
+    inside = {
+        path[len("preview."):]
+        for path in declared
+        if path.startswith("preview.") and "." not in path[len("preview."):]
+    }
+    for stated_key in preview:
+        if stated_key not in inside:
+            raise ConfigError(
+                f"{at}.preview.{stated_key}",
+                "is a key § 35 does not declare on a preview, so it is a fact "
+                f"nothing reads. The keys it declares are: {', '.join(sorted(inside))}.",
+            )
+    if live_data_command(block, "preview") is None:
+        raise ConfigError(
+            f"{at}.preview.run",
+            "required of a stated preview, and a non-empty command stated whole "
+            "(§ 35).",
+        )
+    if "at" in preview and (
+        not isinstance(preview["at"], str) or not preview["at"].strip()
+    ):
+        raise ConfigError(
+            f"{at}.preview.at",
+            "must be a non-empty path, the file the preview command writes to; "
+            "omit it where the command prints its preview (§ 35).",
+        )
+
+
 def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) -> None:
     """`sides`, and the placement no deploy may perform: a write ahead of its evidence.
 
@@ -6665,7 +7160,7 @@ def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) 
         if not isinstance(sides, dict):
             raise ConfigError(
                 f"{at}.sides",
-                "must be a mapping of a phase -- backup, rehearse, apply -- to the "
+                "must be a mapping of a phase -- backup, preview, rehearse, apply -- to the "
                 "side of the invocation it falls on (§ 35). Omit it where every "
                 "phase falls where `order` says.",
             )
@@ -6691,12 +7186,19 @@ def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) 
                     f"{at}.sides.{phase}",
                     f"is {side!r}; the surface states {' | '.join(stated)}.",
                 )
-        if "rehearse" in sides and "rehearse" not in block:
+        if "backup" in sides and backup_absent(block) is not None:
             raise ConfigError(
-                f"{at}.sides.rehearse",
-                "places a rehearsal this step does not state, which is a placement "
-                "of nothing (§ 35). State `rehearse`, or omit its side.",
+                f"{at}.sides.backup",
+                "places a backup this step states it does not take, which is a "
+                "placement of nothing (§ 35). Omit its side.",
             )
+        for phase in LIVE_DATA_OPTIONAL:
+            if phase in sides and phase not in block:
+                raise ConfigError(
+                    f"{at}.sides.{phase}",
+                    f"places a {phase} this step does not state, which is a "
+                    f"placement of nothing (§ 35). State `{phase}`, or omit its side.",
+                )
     rank = vocabulary(
         facts, "deploy.live_data_step.order",
         "which side of the invocation a live data step falls on",
@@ -8002,6 +8504,89 @@ def _validate_transition_fields(data: dict) -> None:
         seen.add((status, name))
 
 
+# § 7's routes, by the key the surface states them under.
+ROUTES_KEY = "carrier_routes"
+# The two things an entry may route on. ⛔ Exactly one per entry: an entry naming
+# both has no reading of which of them the item has to carry.
+ROUTE_ON = ("label", "type")
+# Where a project's own carrier of each kind sits under the skills root -- the
+# harness's convention for a project-local skill and command, and not a choice
+# of this module's. ⚠️ A namespaced carrier is read at no path: where a plugin is
+# installed is the harness's alone, so § 7 reports one unestablished.
+ROUTE_PLACES = {
+    "skill": (".claude", "skills", "{name}", "SKILL.md"),
+    "command": (".claude", "commands", "{name}.md"),
+}
+
+
+def _validate_carrier_routes(data: dict, facts: dict) -> None:
+    """§ 7's routes, each one a carrier the starting role can hand an item to.
+
+    ⛔ Refused at load: each of these otherwise surfaces after an item has been
+    gated and claimed, which is a claim held on work nothing can be entered for.
+    """
+    entries = _get(data, ROUTES_KEY)
+    if entries is None:
+        return
+    if not isinstance(entries, list):
+        raise ConfigError(
+            ROUTES_KEY,
+            f"is {entries!r}; § 7 states it as a list of entries, each naming a "
+            "`label` or a `type`, the `carrier` an item carrying it is handed to, "
+            "and that carrier's `kind`.",
+        )
+    kinds = vocabulary(facts, f"{ROUTES_KEY}.kind", "a routed carrier's kind")
+    type_carrier = _get(data, "work_item.type.carrier")
+    # ⚠️ No values at all where § 4.1 carries no type, so one test refuses both a
+    # type that facet does not state and a type where it states none.
+    type_values = [] if type_carrier in (None, "none") else [
+        str(value) for value in _get(data, "work_item.type.values") or []
+    ]
+    seen = set()
+    for index, entry in enumerate(entries):
+        where = f"{ROUTES_KEY}[{index}]"
+        entry = entry if isinstance(entry, dict) else {}
+        named = [part for part in ROUTE_ON if entry.get(part) is not None]
+        if len(named) != 1:
+            raise ConfigError(
+                where,
+                f"names {' and '.join(named) or 'neither'} of `label` and `type`. A "
+                "route matches an item on exactly one of them, so an entry naming "
+                "neither routes nothing and one naming both has no reading (§ 7).",
+            )
+        on = named[0]
+        value = str(entry[on])
+        if on == "type" and value not in type_values:
+            raise ConfigError(
+                where,
+                f"routes on the type {value!r}, and § 4.1 "
+                + ("carries no type here"
+                   if type_carrier in (None, "none")
+                   else f"states only {', '.join(type_values) or 'no values'}")
+                + ". A type nothing reads off an item routes nothing (§ 7).",
+            )
+        carrier = entry.get("carrier")
+        if not isinstance(carrier, str) or not carrier.strip():
+            raise ConfigError(
+                where,
+                "names no `carrier`. The route is the carrier an item is handed to, "
+                "so an entry without one hands it to nothing (§ 7).",
+            )
+        if entry.get("kind") not in kinds:
+            raise ConfigError(
+                where,
+                f"states the kind {entry.get('kind')!r}; § 7 allows "
+                f"{' | '.join(kinds)}, each a carrier with an invocation name.",
+            )
+        if (on, value) in seen:
+            raise ConfigError(
+                where,
+                f"routes the {on} {value!r} a second time. Two carriers for one "
+                "item have no reading of which one the work is entered through (§ 7).",
+            )
+        seen.add((on, value))
+
+
 # The two wordings a link type may be read from, as § 3's `tracker.relations`
 # names them. ⛔ A side is which wording the item named first reads, never which
 # position a call puts it in -- the two run opposite ways on the tracker this was
@@ -8607,6 +9192,34 @@ PARTS = "parts"
 # `A command root is not a code root` read at the one key pair that carries it.
 DEPLOY_CODE_ROOT = "code_root"
 
+# § 33's shape for a target the project names and nothing reaches yet, and the
+# keys such an entry carries. ⛔ The shape's word is on the surface's `invoke`
+# line and is read from there by `vocabulary`; it is named here because the
+# readers below branch on it, and the keys are a literal because what the
+# surface states is the rule *every other key is refused*, which a fence cannot
+# carry -- the suite holds the two together by planting each key the fence
+# declares beside the shape and asserting the refusal.
+NOT_IMPLEMENTED = "not_implemented"
+NOT_IMPLEMENTED_REASON = "reason"
+NOT_IMPLEMENTED_KEYS = ("name", "invoke", NOT_IMPLEMENTED_REASON)
+
+
+def _not_implemented_refusal(entry: dict) -> "ConfigError | None":
+    """The stop § 33 makes for a target nothing reaches yet, or `None`.
+
+    ⛔ One wording for every ask -- a deploy, a batch, an advance -- so the
+    person asking hears the project's own reason whichever act they asked for.
+    """
+    if entry.get("invoke") != NOT_IMPLEMENTED:
+        return None
+    reason = " ".join(str(entry.get(NOT_IMPLEMENTED_REASON)).split())
+    return ConfigError(
+        f"deploy.{entry.get('name')}",
+        f"is not implemented (`invoke: {NOT_IMPLEMENTED}`): {reason} Nothing "
+        "reaches this target yet, so nothing is run, batched or advanced for it "
+        "(§ 33).",
+    )
+
 # § 33's key naming the checks a target's advance rests on, and the outcomes one
 # comes back with. ⛔ The outcomes are a literal because the surface states them
 # in a table rather than on a key line -- they are what a role hands the carrier,
@@ -8626,6 +9239,17 @@ FIGURE_BOUNDS = "bounds"
 # name the command's output can carry and the other way round.
 FIGURE_NAME = re.compile(r"[A-Za-z0-9_.-]+")
 FIGURE_LINE = re.compile(r"([A-Za-z0-9_.-]+)[ \t]+(-?[0-9]+(?:\.[0-9]+)?)")
+
+# § 33's key naming the steps a target runs once its verification is clean, the
+# outcomes a performed step comes back with, and what a step's command may place.
+# ⛔ The outcomes are a literal for `ADVANCE_OUTCOMES`'s reason -- the surface
+# states them in a table, as what a role hands the carrier -- and the suite holds
+# the two together. ⛔ `done` is the one outcome that lets the next step run.
+AFTER_VERIFIED = "after_verified"
+STEP_OUTCOMES = ("done", "failed", "running", "unanswered")
+STEP_DONE = "done"
+STEP_UNREPORTED = "unanswered"
+STEP_NOT_RUN = "not_run"
 
 # Where the command goes inside an `invoke` form (§ 1). ⛔ A form and not a
 # pattern, which is `PLACEHOLDER`'s own reason one facet over: what reads this
@@ -11300,6 +11924,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     _validate_billing(data)
     _validate_create_fields(data)
     _validate_transition_fields(data)
+    _validate_carrier_routes(data, facts)
     _validate_relations(data)
     _validate_commitment_writers(data, facts)
     _validate_search(data, facts)
@@ -15572,6 +16197,51 @@ def self_test() -> int:
         f"answered {resolved!r}",
     )
 
+    # § 7's routes. ⛔ Every arm reads the whole answer: the failure this facet
+    # exists against is a route that quietly lands on the loop's own leg, which
+    # is an ordinary-looking answer rather than an error.
+    check(
+        "every kind § 7 allows a route has a place its carrier is read at",
+        sorted(vocabulary(facts, f"{ROUTES_KEY}.kind", "a routed carrier's kind"))
+        == sorted(ROUTE_PLACES),
+        f"the surface allows {vocabulary(facts, f'{ROUTES_KEY}.kind', 'kind')!r}",
+    )
+    design = {"label": PLANTED_ROUTE_LABEL, "carrier": PLANTED_CARRIER, "kind": "skill"}
+    for label, routes, values, written, wanted in (
+        ("an item no route matches enters the loop's own leg",
+         [design], ["another label"], True, "loop"),
+        ("an item a label routes is handed to that carrier",
+         [design], [PLANTED_ROUTE_LABEL, "another label"], True,
+         f"skill {PLANTED_CARRIER} True"),
+        ("a command carrier is read where a command sits",
+         [{**design, "kind": "command"}], [PLANTED_ROUTE_LABEL], True,
+         f"command {PLANTED_CARRIER} True"),
+        ("a routed carrier that is not there is a stop naming it",
+         [design], [PLANTED_ROUTE_LABEL], False, f"stop {ROUTES_KEY}[0].carrier"),
+        ("a namespaced carrier is unestablished rather than present",
+         [{**design, "carrier": f"a-plugin:{PLANTED_CARRIER}"}], [PLANTED_ROUTE_LABEL],
+         False, f"skill a-plugin:{PLANTED_CARRIER} unestablished"),
+        ("two routes naming different carriers are a stop",
+         [design, {"label": "another label", "carrier": "another", "kind": "skill"}],
+         [PLANTED_ROUTE_LABEL, "another label"], True, f"stop {ROUTES_KEY}"),
+        ("a type routes an item carrying it under its label prefix",
+         [{"type": PLANTED_ROUTE_TYPE, "carrier": PLANTED_CARRIER, "kind": "skill"}],
+         # the item's type label, under whatever prefix the example states
+         [TYPE_LABEL_HELD], True,
+         f"skill {PLANTED_CARRIER} True"),
+        ("a bare type word is not the prefixed label a type is carried as",
+         [{"type": PLANTED_ROUTE_TYPE, "carrier": PLANTED_CARRIER, "kind": "skill"}],
+         [PLANTED_ROUTE_TYPE], True, "loop"),
+        ("a null label beside a type routes on the type and never on its text",
+         [{"label": None, "type": PLANTED_ROUTE_TYPE, "carrier": PLANTED_CARRIER,
+           "kind": "skill"}], ["None"], True, "loop"),
+    ):
+        answered = _routed(routes, values, written=written)
+        check(label, answered == wanted, f"answered {answered!r}")
+    braced = _routed([design], [PLANTED_ROUTE_LABEL], root_name="a{root}")
+    check("a skills root spelling a brace still resolves its carrier",
+          braced == f"skill {PLANTED_CARRIER} True", f"answered {braced!r}")
+
     # § 28's layer. ⛔ The answering arm first, and it reads the value: every
     # refusal below is sound only if the facet resolves at all, and a reader that
     # resolved nothing would pass each of them while leaving a project unable to
@@ -16812,6 +17482,21 @@ def self_test() -> int:
     ))
     check("a move stating two fields for one status loads", stated is None,
           f"refused {stated!r}")
+    # And § 7's routes from the green side, so each arm above refuses what it
+    # names rather than every route.
+    stated = _refused(_with_typed_routes(_a_valid_example(), [
+        {"label": "a", "carrier": "c", "kind": "skill"},
+        {"type": PLANTED_ROUTE_TYPE, "carrier": "c", "kind": "command"},
+    ]))
+    check("a route on a label and one on a type load together", stated is None,
+          f"refused {stated!r}")
+    # ⛔ And a project stating no route at all loads as it did before the key
+    # existed, which is § 7's absent reading rather than a refusal.
+    unstated = _a_valid_example()
+    unstated.pop(ROUTES_KEY, None)
+    stated = _refused(unstated)
+    check("a configuration stating no routes at all loads", stated is None,
+          f"refused {stated!r}")
 
     # § 4.8's stated default from the green side: it loads, the map answers with
     # the rule named, a value given wins, and what the map does not cover is
@@ -17706,6 +18391,8 @@ def self_test() -> int:
         check(label, refusal is None, f"refused on {refusal!r}")
 
     _advance_requires_suite(check, surface)
+    _after_verified_suite(check, surface)
+    _not_implemented_suite(check, surface)
 
     _undeclared_suite(check)
 
@@ -18100,6 +18787,19 @@ def self_test() -> int:
          {"live_data_step": _a_live_data_step()}),
         ("and the same step with a rehearsal stated loads",
          {"live_data_step": _a_live_data_step(rehearse="a-dry-run")}),
+        # ⛔ The preview in both of the shapes § 35 states for where it lands, and
+        # beside no rehearsal -- the target the key was written for.
+        ("a step with a preview printing its writes and no rehearsal loads",
+         {"live_data_step": _a_live_data_step(preview={"run": "a-listing-of-writes"})}),
+        ("a step with a preview written to a stated path loads",
+         {"live_data_step": _a_live_data_step(
+             preview={"run": "a-listing-of-writes", "at": "pending.txt"})}),
+        ("a preview after the invocation, ahead of the rehearsal and the write, loads",
+         {"live_data_step": _a_live_data_step(
+             preview={"run": "a-listing-of-writes"}, rehearse="a-dry-run",
+             order=_the_sides()[0],
+             sides={"preview": _the_sides()[1], "rehearse": _the_sides()[1],
+                    "apply": _the_sides()[1]})}),
         # ⚠️ Both members of each alternation, written out rather than sampled:
         # the fixture carries the surface's *first* member, so an arm that
         # exercised only the fixture would say nothing about the second -- and the
@@ -18112,6 +18812,27 @@ def self_test() -> int:
          {"live_data_step": _a_live_data_step(order="before_invoke")}),
         ("a step that runs after the invocation loads",
          {"live_data_step": _a_live_data_step(order="after_invoke")}),
+        # ⛔ § 35's stated absence of a dump, on a live target and on one that is
+        # not: the reason licenses it, never the target's liveness.
+        ("a step that says why it takes no backup loads",
+         {"live_data_step": _a_live_data_step(
+             backup={"absent_reason": "the staging store is rebuilt nightly"})}),
+        ("a step taking no backup loads on a target that is not live",
+         {"not_live": True, "live_data_step": _a_live_data_step(
+             backup={"absent_reason": "the staging store is rebuilt nightly"})}),
+        ("a step taking no backup, with its other phases placed, loads",
+         {"live_data_step": _a_live_data_step(
+             backup={"absent_reason": "the staging store is rebuilt nightly"},
+             rehearse="a-dry-run",
+             sides={"rehearse": _the_sides()[0], "apply": _the_sides()[1]})}),
+        # ⛔ A backup the step does not take has no side of its own: were it
+        # placed where `order` says, an order after the invocation would put it
+        # behind a rehearsal placed before, and refuse a step that is sound.
+        ("a step taking no backup, its rehearsal before an order after, loads",
+         {"live_data_step": _a_live_data_step(
+             backup={"absent_reason": "the staging store is rebuilt nightly"},
+             rehearse="a-dry-run", order=_the_sides()[1],
+             sides={"rehearse": _the_sides()[0]})}),
         # ⛔ The first false-refusal bound, and it is a real project's real
         # command: the surveyed copy whose writes take their statements on
         # standard input redirects a **file** into the command. A rule refusing
@@ -19075,6 +19796,35 @@ def _planted_violations():
         ("a move field stated twice for one status", "tracker.transitions.fields[1]",
          lambda data: _with_move_fields(
              data, [{"field": "a", "value": "b"}, {"field": "a", "value": "c"}])),
+        # § 7's routes, one plant per arm.
+        ("routes that are not a list", ROUTES_KEY, at(ROUTES_KEY, "design")),
+        ("a route naming neither a label nor a type", f"{ROUTES_KEY}[0]",
+         lambda data: _with_typed_routes(data, [{"carrier": "c", "kind": "skill"}])),
+        ("a route naming both a label and a type", f"{ROUTES_KEY}[0]",
+         lambda data: _with_typed_routes(data, [{
+             "label": "a", "type": PLANTED_ROUTE_TYPE, "carrier": "c", "kind": "skill",
+         }])),
+        ("a route on a type § 4.1 does not state", f"{ROUTES_KEY}[0]",
+         lambda data: _with_typed_routes(data, [{
+             "type": "a type nothing states", "carrier": "c", "kind": "skill",
+         }])),
+        ("a route on a type where § 4.1 carries none", f"{ROUTES_KEY}[0]",
+         lambda data: {**data, ROUTES_KEY: [{
+             "type": PLANTED_ROUTE_TYPE, "carrier": "c", "kind": "skill",
+         }], "work_item": {**data.get("work_item", {}), "type": {
+             "carrier": "none", "absent_reason": "nothing is typed here",
+         }}}),
+        ("a route with no carrier", f"{ROUTES_KEY}[0]",
+         lambda data: _with_typed_routes(data, [{"label": "a", "kind": "skill"}])),
+        ("a route to a carrier with no invocation name", f"{ROUTES_KEY}[0]",
+         lambda data: _with_typed_routes(data, [{
+             "label": "a", "carrier": "c", "kind": "hook",
+         }])),
+        ("one label routed twice", f"{ROUTES_KEY}[1]",
+         lambda data: _with_typed_routes(data, [
+             {"label": "a", "carrier": "c", "kind": "skill"},
+             {"label": "a", "carrier": "d", "kind": "command"},
+         ])),
         # § 3's non-blocking relations, one plant per arm.
         ("relations that are not a mapping", "tracker.relations",
          at("tracker.relations", ["related"])),
@@ -19695,6 +20445,62 @@ def _planted_violations():
         ("one name carried by two checks", f"deploy[0].{ADVANCE_REQUIRES}[1].reading",
          at("deploy", [_an_advancing_target(
              advance_requires=[{"reading": "a reading"}, {"reading": "a reading"}])])),
+        # ⛔ § 33's `after_verified`, every arm. ⚠️ Each plant breaks one key of a
+        # step that `_a_step_after` builds whole, so a refusal under another key
+        # is the plant missing rather than the rule holding.
+        ("steps after a verification on a target reached by hand",
+         f"deploy[0].{AFTER_VERIFIED}",
+         at("deploy", [_a_deploy_target(
+             invoke="by_hand", command=_ABSENT, ref="a-ref",
+             workflow=_a_workflow_the_example_states(),
+             after_verified=[_a_step_after()])])),
+        ("steps after a verification written as something that is not a list",
+         f"deploy[0].{AFTER_VERIFIED}",
+         at("deploy", [_a_deploy_target(after_verified=_a_step_after())])),
+        ("an empty list of steps after a verification", f"deploy[0].{AFTER_VERIFIED}",
+         at("deploy", [_a_deploy_target(after_verified=[])])),
+        ("a step that is not a mapping", f"deploy[0].{AFTER_VERIFIED}[0]",
+         at("deploy", [_a_deploy_target(after_verified=["git tag"])])),
+        ("a step carrying a key § 33 does not declare",
+         f"deploy[0].{AFTER_VERIFIED}[0].when",
+         at("deploy", [_a_deploy_target(after_verified=[_a_step_after(when="after")])])),
+        ("a step with no name", f"deploy[0].{AFTER_VERIFIED}[0].name",
+         at("deploy", [_a_deploy_target(after_verified=[_a_step_after(name=_ABSENT)])])),
+        ("a step named with a space", f"deploy[0].{AFTER_VERIFIED}[0].name",
+         at("deploy", [_a_deploy_target(after_verified=[_a_step_after(name="a tag")])])),
+        ("one name carried by two steps", f"deploy[0].{AFTER_VERIFIED}[1].name",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(), _a_step_after()])])),
+        ("a step with no command", f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(after_verified=[_a_step_after(command=_ABSENT)])])),
+        ("a step's command on two lines", f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(command="git tag v1\ngit push")])])),
+        ("a step naming no performer", f"deploy[0].{AFTER_VERIFIED}[0].performed_by",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(performed_by=_ABSENT)])])),
+        ("a step's performer outside the vocabulary",
+         f"deploy[0].{AFTER_VERIFIED}[0].performed_by",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(performed_by="anybody")])])),
+        ("a step placing the batch's purpose", f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(command="tag {deploy:purpose}")])])),
+        ("a step placing a target name a shell reads as more",
+         f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(name="a target",
+                                        after_verified=[_a_step_after()])])),
+        ("a step placing a choice the target does not declare",
+         f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(command="tag {choose:scope}")])])),
+        ("a dispatch's choice value a shell reads as more, where a step places it",
+         "deploy[0].choices[0].values[1]",
+         at("deploy", [_a_deploy_target(
+             invoke="dispatch", command=_ABSENT, ref="a-ref",
+             workflow=_a_workflow_the_example_states(),
+             choices=[_a_choice(values=["some", "all of it"])],
+             after_verified=[_a_step_after(command="tag {choose:scope}")])])),
         # ⛔ § 33's `figures`, every arm, each on a target that loads without it.
         ("figures written as something that is not a list", f"deploy[0].{FIGURES}",
          at("deploy", [_an_advancing_target(figures="cases")])),
@@ -19803,6 +20609,23 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(apply="   "))])),
         ("a rehearsal written blank", "deploy[0].live_data_step.rehearse",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(rehearse="   "))])),
+        # ⛔ The preview's own shape: a mapping, its keys, a `run` and an `at` that
+        # each name something (§ 35).
+        ("a preview stated as a bare command", "deploy[0].live_data_step.preview",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview="a-listing-of-writes"))])),
+        ("a key § 35 declares on no preview", "deploy[0].live_data_step.preview.format",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes", "format": "json"}))])),
+        ("a preview with no command to run", "deploy[0].live_data_step.preview.run",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"at": "pending.txt"}))])),
+        ("a preview command written blank", "deploy[0].live_data_step.preview.run",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "   "}))])),
+        ("a preview path written blank", "deploy[0].live_data_step.preview.at",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes", "at": "  "}))])),
         ("a record command written blank", "deploy[0].live_data_step.record",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(record="   "))])),
         ("who performs the write, outside its alternation",
@@ -19849,10 +20672,49 @@ def _planted_violations():
              rehearse="a-dry-run",
              sides={"backup": _the_sides()[1], "rehearse": _the_sides()[0],
                     "apply": _the_sides()[1]}))])),
+        ("an absent backup stated beside its dump",
+         "deploy[0].live_data_step.backup.absent_reason",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"run": "a-dump", "absent_reason": "no store worth keeping"}))])),
+        ("an absent backup stated beside its reading-back",
+         "deploy[0].live_data_step.backup.absent_reason",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"verify": "a-read-back", "absent_reason": "no store worth keeping"}))])),
+        ("an absent backup whose reason is blank",
+         "deploy[0].live_data_step.backup.absent_reason",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"absent_reason": "   "}))])),
+        ("an absent backup whose reason is not a sentence",
+         "deploy[0].live_data_step.backup.absent_reason",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"absent_reason": True}))])),
+        ("a backup stated as an empty block",
+         "deploy[0].live_data_step.backup.run",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={}))])),
+        ("a side for a backup the step says it does not take",
+         "deploy[0].live_data_step.sides.backup",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"absent_reason": "no store worth keeping"},
+             sides={"backup": _the_sides()[0]}))])),
         ("a side for a rehearsal the step does not state",
          "deploy[0].live_data_step.sides.rehearse",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
              sides={"rehearse": _the_sides()[0]}))])),
+        ("a side for a preview the step does not state",
+         "deploy[0].live_data_step.sides.preview",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             sides={"preview": _the_sides()[0]}))])),
+        ("a preview placed before the backup it follows",
+         "deploy[0].live_data_step.sides.preview",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes"}, order=_the_sides()[1],
+             sides={"preview": _the_sides()[0]}))])),
+        ("a write placed before the preview it follows",
+         "deploy[0].live_data_step.sides.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes"},
+             sides={"preview": _the_sides()[1], "apply": _the_sides()[0]}))])),
         ("a side for a phase § 35 does not declare",
          "deploy[0].live_data_step.sides.record",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
@@ -23154,6 +24016,110 @@ def _undeclared_suite(check) -> None:
               "declare", mine.undeclared() == [], f"reported {mine.undeclared()!r}")
 
 
+def _a_target_not_implemented(**overrides) -> dict:
+    """§ 33's `not_implemented` entry, minimal and correct."""
+    target = {
+        "name": "a-planned-target",
+        "invoke": NOT_IMPLEMENTED,
+        NOT_IMPLEMENTED_REASON: "The host it would reach is not provisioned yet.",
+    }
+    target.update(overrides)
+    return {key: value for key, value in target.items() if value is not _ABSENT}
+
+
+def _not_implemented_suite(check, facts: dict) -> None:
+    """§ 33's `not_implemented` shape: what loads, what is refused, and the stop.
+
+    ⛔ The planted violation is a target nothing reaches carrying a key that
+    says how it is reached -- each key the surface's entry fence declares is
+    planted beside the shape in turn, so a key added to the fence is held with
+    no edit here, and a reader that tolerated one would redden on its name.
+    """
+    print("\n§ 33, a target nothing reaches yet:")
+    shapes = vocabulary(facts, "deploy.invoke", "a deploy invocation shape")
+    check("the surface states `not_implemented` among the invocation shapes",
+          NOT_IMPLEMENTED in shapes, f"states {shapes}")
+
+    def resolved(*targets):
+        loaded = _a_valid_example()
+        loaded["deploy"] = [dict(one) for one in targets]
+        return loaded
+
+    beside = resolved(_a_deploy_target(), _a_target_not_implemented())
+    refusal = _refused(beside)
+    check("a target stating only a name, the shape and a reason loads beside a live one",
+          refusal is None, f"refused on {refusal!r}")
+
+    declared = sorted({
+        path.split(".")[1] for path in facts["declared"] if path.startswith("deploy.")
+    })
+    for key in declared:
+        if key in NOT_IMPLEMENTED_KEYS:
+            continue
+        planted = resolved(_a_target_not_implemented(**{key: "anything"}))
+        refusal = _refused(planted)
+        check(f"`{key}` beside `not_implemented` is refused by name",
+              refusal == f"deploy[0].{key}", f"refused on {refusal!r}")
+    for value, label in ((_ABSENT, "absent"), ("  ", "blank"), (["a"], "not a string")):
+        refusal = _refused(resolved(_a_target_not_implemented(
+            **{NOT_IMPLEMENTED_REASON: value})))
+        check(f"a `not_implemented` target with its reason {label} is refused",
+              refusal == f"deploy[0].{NOT_IMPLEMENTED_REASON}", f"refused on {refusal!r}")
+    refusal = _refused(resolved(_a_deploy_target(**{NOT_IMPLEMENTED_REASON: "why"})))
+    check("a `reason` beside a shape that reaches the target is refused",
+          refusal == f"deploy[0].{NOT_IMPLEMENTED_REASON}", f"refused on {refusal!r}")
+
+    view = _resolve(beside, EXAMPLES, facts, False)
+    stops = {}
+    for label, ask in (
+        ("a deploy", lambda: view.deploy_target("a-planned-target")),
+        ("a batch", lambda: view.deploy_batch("a-planned-target")),
+        ("an advance", lambda: view.advance("a-planned-target", {})),
+    ):
+        try:
+            ask()
+            stops[label] = None
+        # ⚠️ Any exception and not only the refusal: a reader that reached the
+        # entry's absent keys raises something else, and that is this arm's
+        # failure to report rather than a crash taking the arms after it.
+        except Exception as error:  # noqa: BLE001
+            stops[label] = f"{type(error).__name__}: {error}"
+    for label, stop in stops.items():
+        check(f"{label} of a target nothing reaches stops with its reason",
+              stop is not None and "not provisioned yet" in stop
+              and NOT_IMPLEMENTED in stop,
+              f"answered {stop!r}")
+    try:
+        live = view.deploy_target("a-target")["target"]
+    except ConfigError as error:
+        live = str(error)
+    check("the live target beside it is still reached as before",
+          live == "a-target", f"answered {live!r}")
+    listed = [line for line in view.unavailable() if "'a-planned-target'" in line]
+    check("the target is listed among what is unavailable, with its reason",
+          len(listed) == 1 and "not provisioned yet" in listed[0], f"listed {listed!r}")
+    check("a live target is not listed among what is unavailable",
+          not any("'a-target'" in line for line in view.unavailable()),
+          "listed")
+
+    collection = _a_collection_example()
+    if collection is None:
+        check("a shipped example carries several code roots", False, "none does")
+        return
+    collection = copy.deepcopy(collection)
+    collection["deploy"] = [
+        *_absent_as(collection.get("deploy"), []), _a_target_not_implemented()
+    ]
+    refusal = _refused(collection)
+    check("under several code roots, a target nothing reaches names no root and loads",
+          refusal is None, f"refused on {refusal!r}")
+    collection["deploy"][-1][DEPLOY_CODE_ROOT] = _collection_keys()[0]
+    refusal = _refused(collection)
+    check("under several code roots, a root named beside `not_implemented` is refused",
+          refusal == f"deploy[{len(collection['deploy']) - 1}].{DEPLOY_CODE_ROOT}",
+          f"refused on {refusal!r}")
+
+
 def _advance_requires_suite(check, facts: dict) -> None:
     """§ 33's `advance_requires`: the green side of the load, and the carrier's verdicts.
 
@@ -23285,6 +24251,175 @@ def _advance_requires_suite(check, facts: dict) -> None:
             check(label, False, "parsed")
 
 
+def _a_step_after(**overrides) -> dict:
+    """One whole step of § 33's `after_verified`, to break one key of at a time."""
+    step = {
+        "name": "a-tag",
+        "command": "git tag deployed-{deploy:target} {deploy:commit}",
+        "performed_by": "procedure",
+    }
+    step.update(overrides)
+    return {key: value for key, value in step.items() if value is not _ABSENT}
+
+
+def _surface_step_outcomes() -> list[str]:
+    """§ 33's step outcome table, read back in the order it states them.
+
+    ⛔ Read off the subsection's own rows -- a backticked word in the first of
+    two cells -- so the suite compares the carrier's literal with the surface
+    rather than with a third copy written here.
+    """
+    with open(SURFACE, encoding="utf-8") as handle:
+        text = handle.read()
+    start = text.find("### What runs after a verified deploy, and what a failed step leaves standing")
+    if start < 0:
+        return []
+    end = text.find("\n### ", start + 1)
+    rows = []
+    for line in text[start:end].splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) == 2 and re.fullmatch(r"`[a-z_]+`", cells[0]):
+            rows.append(cells[0].strip("`"))
+    return rows
+
+
+def _after_verified_suite(check, facts: dict) -> None:
+    """§ 33's `after_verified`: the green side of the load, the plan and the report.
+
+    ⛔ The planted violations this facet exists for are a step that runs on a
+    verification that is not clean, a step run after one that failed, and a
+    failed step reported as a failed deploy; each is planted and must come out
+    the other way.
+    """
+    print("\n§ 33, what runs after a verified deploy -- the load, the plan, the report:")
+    check(
+        "the surface's step outcome table and the carrier's outcomes are the same, in order",
+        _surface_step_outcomes() == list(STEP_OUTCOMES),
+        f"surface states {_surface_step_outcomes()}, carrier {list(STEP_OUTCOMES)}",
+    )
+    steps = [
+        _a_step_after(),
+        _a_step_after(name="a-fast-forward", command="git push origin {deploy:commit}:{choose:scope}"),
+        _a_step_after(name="a-rebase", command="rebase-next", performed_by="human"),
+    ]
+    loaded = _a_valid_example()
+    loaded["deploy"] = [_an_advancing_target(
+        command="ship {choose:scope}", choices=[_a_choice()],
+        advance_requires=[{"reading": "the served commit"}],
+        after_verified=steps,
+    )]
+    refusal = _refused(loaded)
+    check("a target stating steps after its verification loads",
+          refusal is None, f"refused on {refusal!r}")
+    if refusal is not None:
+        return
+    commit = "0123456789abcdef0123456789abcdef01234567"
+    clean = {"the served commit": "passed"}
+
+    def plan(readings, chosen=(), handed=commit, outcomes=None):
+        return _resolve(loaded, EXAMPLES, facts, False).after_verified(
+            "a-target", readings, list(chosen), handed, outcomes
+        )
+
+    got = plan(clean, ["scope=all"])
+    check("a clean verification runs every step, in the order stated",
+          [s["name"] for s in got["steps"] if s["runs"]] == ["a-tag", "a-fast-forward", "a-rebase"],
+          f"read {got['steps']}")
+    check("a step reads the deployed commit and the target",
+          got["steps"][0]["command"] == f"git tag deployed-a-target {commit}",
+          f"read {got['steps'][0]['command']!r}")
+    check("a step reads the value the run chose",
+          got["steps"][1]["command"] == f"git push origin {commit}:all",
+          f"read {got['steps'][1]['command']!r}")
+    check("a step reads the default where the run chose nothing",
+          plan(clean)["steps"][1]["command"].endswith(":" + _a_choice()["default"]),
+          f"read {plan(clean)['steps'][1]['command']!r}")
+    check("each step carries who performs it",
+          [s["performed_by"] for s in got["steps"]] == ["procedure", "procedure", "human"],
+          f"read {got['steps']}")
+    for outcome in ADVANCE_OUTCOMES:
+        if outcome == ADVANCE_RELEASES:
+            continue
+        held = plan({"the served commit": outcome})
+        check(f"a verification whose required check came back `{outcome}` runs no step",
+              held["clean"] is False and not any(s["runs"] for s in held["steps"]),
+              f"read {held}")
+    unread = plan({})
+    check("a verification nothing reported runs no step",
+          unread["clean"] is False and not any(s["runs"] for s in unread["steps"]),
+          f"read {unread}")
+    reported = plan({"the served commit": "failed"}, outcomes={})
+    check("a step on a verification that is not clean is reported not run",
+          all(s["outcome"] == STEP_NOT_RUN for s in reported["steps"]),
+          f"read {reported['steps']}")
+
+    done = plan(clean, outcomes={"a-tag": "done", "a-fast-forward": "done", "a-rebase": "done"})
+    check("every step done stops nowhere", done["stopped_at"] is None, f"read {done}")
+    for outcome in STEP_OUTCOMES:
+        if outcome == STEP_DONE:
+            continue
+        failed = plan(clean, outcomes={"a-tag": "done", "a-fast-forward": outcome})
+        check(
+            f"a step that came back `{outcome}` stops the sequence there",
+            failed["stopped_at"] == "a-fast-forward"
+            and [s["outcome"] for s in failed["steps"]] == ["done", outcome, STEP_NOT_RUN],
+            f"read {failed['steps']}",
+        )
+        check(
+            f"a step that came back `{outcome}` does not report the deploy failed",
+            failed["deploy_failed"] is False,
+            f"read {failed}",
+        )
+        check(
+            f"a step that came back `{outcome}` names what it left standing",
+            any("'a-tag' done" in line and "'a-rebase'" in line and commit in line
+                for line in failed["report"]),
+            f"read {failed['report']}",
+        )
+    silent = plan(clean, outcomes={"a-tag": "done"})
+    check("a step handed no outcome is unanswered and stops the sequence",
+          silent["stopped_at"] == "a-fast-forward"
+          and silent["steps"][1]["outcome"] == STEP_UNREPORTED,
+          f"read {silent['steps']}")
+
+    for label, call in (
+        ("a step placing the commit with none handed over is refused",
+         lambda: plan(clean, handed=None)),
+        ("a commit that is not an object name is refused",
+         lambda: plan(clean, handed="HEAD; rm -rf /")),
+        ("an outcome for a step the target does not state is refused",
+         lambda: plan(clean, outcomes={"a-deploy": "done"})),
+        ("an outcome outside the table is refused",
+         lambda: plan(clean, outcomes={"a-tag": "green"})),
+        ("a value the choice does not allow is refused",
+         lambda: plan(clean, ["scope=most"])),
+    ):
+        try:
+            call()
+        except ConfigError:
+            check(label, True, "")
+        else:
+            check(label, False, "answered rather than refused")
+    for label, pairs in (
+        ("a step outcome with no separator is refused", ["a-tag"]),
+        ("one step handed two outcomes is refused", ["a-tag=done", "a-tag=failed"]),
+    ):
+        try:
+            _parse_steps(pairs)
+        except ConfigError:
+            check(label, True, "")
+        else:
+            check(label, False, "parsed")
+
+    # ⛔ The half that keeps a project stating nothing new where it was.
+    plain = _a_valid_example()
+    plain["deploy"] = [_a_deploy_target()]
+    none = _resolve(plain, EXAMPLES, facts, False).after_verified("a-target", {}, [], None)
+    check("a target stating no step runs none, and says so",
+          none["steps"] == [] and none["clean"] is True and none["report"],
+          f"read {none}")
+
+
 def _a_figures_block(**overrides) -> dict:
     """One § 33 `figures` entry that loads, for the arms that plant one key wrong.
 
@@ -23389,9 +24524,9 @@ def _a_live_data_step(**overrides) -> dict:
     ⛔ Built here rather than borrowed from whichever example carries the facet,
     for `_a_deploy_target`'s reason: a plant that broke one key of a shipped file
     would stop asserting the moment that file grew a second target.
-    ⚠️ It states no `rehearse`, that being the one key § 35 lets a block omit, so
-    the arms about it state it themselves and the arm about its absence is the
-    fixture as it stands.
+    ⚠️ It states neither `preview` nor `rehearse`, those being the two commands
+    § 35 lets a block omit, so the arms about each state it themselves and the arm
+    about their absence is the fixture as it stands.
     """
     step = {
         "backup": {"run": "a-dump", "verify": "a-read-back"},
@@ -23914,6 +25049,85 @@ def _looked_up(role: str, mapping, *, key: str = "handle", written: bool = True,
             return f"stop {error.key}"
 
 
+# § 7's routes, written for the run. ⛔ The carrier is planted in a directory the
+# run deletes, and its name is a word no project uses.
+PLANTED_ROUTE_LABEL = "a-label-a-route-names"
+PLANTED_ROUTE_TYPE = "a-type-a-route-names"
+PLANTED_TYPE_PREFIX = "kind/"
+PLANTED_CARRIER = "a-carrier-of-the-projects-own"
+# Stands in for the label an item carries for the planted type, which `_routed`
+# reads off the example once the prefix that example states is known.
+TYPE_LABEL_HELD = object()
+
+
+def _with_typed_routes(data: dict, routes: list) -> dict:
+    """§ 7's routes written in, over a § 4.1 type carried as a prefixed label.
+
+    ⚠️ The planted type is **added** to whatever the example states rather than
+    replacing it, since an example's template and prefix map are keyed by its
+    own types and a replaced list is refused there before a route is read.
+    """
+    item = data.setdefault("work_item", {})
+    facet = item.get("type") if isinstance(item.get("type"), dict) else {}
+    if facet.get("carrier") != "label":
+        facet = {"carrier": "label", "label_prefix": PLANTED_TYPE_PREFIX, "values": []}
+        item.pop("template", None)
+        item["type_branch_prefix"] = {}
+    facet["values"] = [*(facet.get("values") or []), PLANTED_ROUTE_TYPE]
+    item["type"] = facet
+    item.setdefault("type_branch_prefix", {})[PLANTED_ROUTE_TYPE] = "feature"
+    by_type = _get(data, "work_item.template.by_type")
+    if isinstance(by_type, dict) and by_type:
+        by_type[PLANTED_ROUTE_TYPE] = next(iter(by_type.values()))
+    data[ROUTES_KEY] = routes
+    return data
+
+
+def _planted_type_label(data: dict) -> str:
+    """The label an item carries for the planted type, under the stated prefix."""
+    return f"{_get(data, 'work_item.type.label_prefix') or ''}{PLANTED_ROUTE_TYPE}"
+
+
+# Where the harness reads a project's own carrier of each kind, written out
+# rather than taken from `ROUTE_PLACES`: a fixture placed through the table it
+# tests follows that table wherever it points, and asserts nothing about it.
+HARNESS_PLACES = {
+    "skill": f".claude/skills/{PLANTED_CARRIER}/SKILL.md",
+    "command": f".claude/commands/{PLANTED_CARRIER}.md",
+}
+
+
+def _routed(routes: list, values: list, *, written: bool = True,
+            root_name: str = "root") -> str:
+    """`<kind> <carrier> <present>`, `loop` where nothing routes, `stop <key>`.
+
+    The carrier's file is written only where the harness reads the first
+    route's own kind, so a kind read at another kind's place answers absent.
+    """
+    import tempfile  # noqa: PLC0415 -- one of the arms that needs a directory
+
+    data = _with_typed_routes(_a_valid_example(), routes)
+    values = [_planted_type_label(data) if value is TYPE_LABEL_HELD else value
+              for value in values]
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    with tempfile.TemporaryDirectory() as scratch:
+        root = os.path.join(scratch, root_name)
+        os.makedirs(root)
+        if written:
+            path = os.path.join(root, HARNESS_PLACES[routes[0]["kind"]])
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write("a carrier of the project's own\n")
+        try:
+            answer = _resolve(data, root, facts, False).route_for(values)
+        except ConfigError as error:
+            return f"stop {error.key}"
+    if not answer["routed"]:
+        return "loop"
+    return f"{answer['kind']} {answer['carrier']} {answer['present']}"
+
+
 # § 28's layer, written for the run rather than shipped, and for the reason
 # § 27's map is: what the pointer addresses is the class of value this repository
 # may not hold, so a shipped fixture would be the tree holding one. ⛔ The value
@@ -24385,6 +25599,30 @@ def _parse_readings(pairs: list[str]) -> dict[str, str]:
     return readings
 
 
+def _parse_steps(pairs: list[str]) -> dict[str, str]:
+    """`NAME=OUTCOME` pairs, as `--step` hands them, into one mapping.
+
+    ⛔ The same refusals as `_parse_readings`, said about a step: two outcomes for
+    one step leave where the sequence stopped undefined.
+    """
+    outcomes: dict[str, str] = {}
+    for pair in pairs:
+        name, sep, outcome = pair.rpartition("=")
+        name = name.strip()
+        if not sep or not name:
+            raise ConfigError(
+                f"deploy.{AFTER_VERIFIED}",
+                f"was handed {pair!r} as a step's outcome; the form is NAME=OUTCOME (§ 33).",
+            )
+        if name in outcomes:
+            raise ConfigError(
+                f"deploy.{AFTER_VERIFIED}",
+                f"was handed {name!r} twice; one step has one outcome (§ 33).",
+            )
+        outcomes[name] = outcome.strip()
+    return outcomes
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="Read a project's configuration, once, for every role.",
@@ -24424,6 +25662,15 @@ def main(argv: list[str]) -> int:
         "project with no map, an unreadable pointer and a role the map does not "
         "name are each reported, and none of them answers with whoever is "
         "running this",
+    )
+    parser.add_argument(
+        "--route-for",
+        nargs="+",
+        metavar="VALUE",
+        help="every label the item carries and its type, held against § 7's "
+        "routes. Prints the carrier the work is handed to and what routed it, or "
+        "that no route matches. Two routes naming different carriers, and a "
+        "carrier that is not where its kind puts it, are each a stop",
     )
     parser.add_argument(
         "--commitment",
@@ -24557,6 +25804,29 @@ def main(argv: list[str]) -> int:
         f"{' | '.join(ADVANCE_OUTCOMES)}",
     )
     parser.add_argument(
+        "--after-verified-for",
+        metavar="TARGET",
+        help="one of § 33's deploy targets: the steps it runs once its "
+        "verification is clean, in order and resolved -- each command with the "
+        "commit and the choices placed, where it runs, and who performs it. "
+        "Clean is `--advance-for`'s verdict over the same `--reading` outcomes, "
+        "and a verification holding the advance runs no step. With `--step`, "
+        "where the sequence stopped and what the deploy left standing",
+    )
+    parser.add_argument(
+        "--deployed-commit",
+        metavar="SHA",
+        help="the commit the deploy serves, for `--after-verified-for`",
+    )
+    parser.add_argument(
+        "--step",
+        action="append",
+        default=[],
+        metavar="NAME=OUTCOME",
+        help="one performed step's outcome for `--after-verified-for`, repeated "
+        f"per step: one of {' | '.join(STEP_OUTCOMES)}",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="hold this reader to the surface and the examples",
@@ -24577,6 +25847,10 @@ def main(argv: list[str]) -> int:
         # project's rather than a root's, so either form resolves it, and a role
         # that has narrowed to a root still asks the same question.
         answer = config.person_for(args.person_for) if args.person_for else None
+        # ⛔ After the root narrowing for § 27's reason: § 7's routes are the
+        # project's rather than a root's.
+        if args.route_for:
+            answer = config.route_for(args.route_for)
         # The project's, for § 27's reason above: statuses and the work-item
         # facets are not stated per root.
         if args.commitment:
@@ -24625,7 +25899,27 @@ def main(argv: list[str]) -> int:
                 "`--command` with it, or read the roots this project declares "
                 "out of the report this run prints without either.",
             )
-        if args.advance_for:
+        if args.after_verified_for:
+            if args.advance_for or args.deploy_target:
+                raise ConfigError(
+                    f"deploy.{AFTER_VERIFIED}",
+                    "is asked about on its own: `--after-verified-for` reads the "
+                    "advance verdict and resolves the target itself (§ 33).",
+                )
+            answer = config.after_verified(
+                args.after_verified_for,
+                _parse_readings(args.reading),
+                args.choose,
+                args.deployed_commit,
+                _parse_steps(args.step) if args.step else None,
+            )
+        elif args.step or args.deployed_commit:
+            raise ConfigError(
+                f"deploy.{AFTER_VERIFIED}",
+                "cannot be asked about with no target named: § 33 states the steps "
+                "after a verification per target. Pass `--after-verified-for`.",
+            )
+        elif args.advance_for:
             answer = config.advance(args.advance_for, _parse_readings(args.reading))
         elif args.reading:
             raise ConfigError(
@@ -24634,7 +25928,7 @@ def main(argv: list[str]) -> int:
                 "states which checks an advance rests on per target, so a reading "
                 "alone holds nothing. Pass `--advance-for` with it.",
             )
-        if args.deploy_target:
+        if args.deploy_target and not args.after_verified_for:
             # ⛔ The repository is the entry's own fact, so a root handed over
             # beside the target is a second answer to it.
             if args.root or args.root_for:
@@ -24650,7 +25944,7 @@ def main(argv: list[str]) -> int:
                     "command is not passed beside `--deploy-target`.",
                 )
             answer = config.deploy_target(args.deploy_target, args.choose)
-        elif args.choose:
+        elif args.choose and not args.after_verified_for:
             raise ConfigError(
                 "deploy.choices",
                 "cannot be chosen with no target named: § 33 states a choice per "
