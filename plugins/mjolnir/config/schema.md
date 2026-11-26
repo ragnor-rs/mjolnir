@@ -9417,12 +9417,22 @@ above each meet that condition. A candidate whose values nothing reads is a temp
 configuration wrapper, which is what § 38 refuses for prose by declaring no document's content, no
 heading, no wording and no style. The measured candidate is a role that writes a specification from
 raw sources: its per-project values are a document set, a section list per document, a directory
-convention and a validation pass per document, every one of them arriving as data, and not one of
-them read by any leg of the route — nothing downstream waits on a specification, and a project
-keeping none files its items unchanged. What is left once those values are configuration is a role
-that asks the configured questions and writes the configured headings, which is the pointer
+convention and a validation pass per document, every one of them arriving as data. Legs of the
+route do read a specification: § 39's corpus is read by
+[the roles that section names](#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read),
+and
+[§ 42](#42-whether-the-work-is-already-built-and-where-a-role-asks) reads the code against an item
+that may have been written from one. What each of them reads is the document a project already
+holds, at its ref, and not one of them reads the writer's values — no leg asks which documents a
+specification was written as, under which headings, in which directory or after which validation
+pass, and § 39 reports a project keeping no corpus as a stated absence and proceeds. What is left
+once those values are configuration is a role that asks the configured questions and writes the
+configured headings, which is the pointer
 [the subsection below](#why-a-utility-has-no-home-on-this-surface-from-either-direction) forecloses
 ([the measurement](../../../docs/configuration-surface.md#the-role-that-writes-a-specification-two-implementations-and-the-half-already-carried)).
+A project that writes its specification by a procedure of its own routes to it, as
+[the last subsection](#a-project-that-writes-its-own-specification-routes-to-a-carrier-of-its-own)
+states.
 
 ### Why a utility has no home on this surface, from either direction
 
@@ -9451,6 +9461,32 @@ No count of what is carried is written here or anywhere else. [§ 7](#7-carrier)
 directory sweep answers which carriers a thing has rather than which roles; a carrier directory
 under a plugin holds a role of the loop, so a sweep cannot find more carriers than there are
 roles carried, whichever kind each one is.
+
+### A project that writes its own specification routes to a carrier of its own
+
+⛔ **[`carrier_routes`](#an-item-a-project-routes-to-a-carrier-of-its-own) is the permanent answer
+for a project that turns raw sources into a specification, and no role for that work is carried
+here.** The project states a route for the label or type its specification items carry, and its
+own carrier does the writing. A route names which carrier a leg the loop already has is entered
+through, so it does not reopen the closed list above.
+
+What the project keeps in its own carrier:
+
+- source intake, under whatever directory convention it uses;
+- the document set, each document's sections, and the marks tying a statement to its source or
+  labelling it reconstruction or open question;
+- the validation passes over those documents, in whichever directions it runs them;
+- the breakdown, and any task record a later pass of that carrier resumes from.
+
+What the loop still does around it, unchanged by the route:
+
+- [§ 5](#5-readiness-gate--an-ordered-predicate-list)'s gate and
+  [§ 10](#the-claim-on-a-work-item)'s claim, on the routed item as on any other;
+- [§ 11](#what-a-source-establishes-and-the-hole-a-distillation-reads-over)'s source rules,
+  on the filing leg;
+- the filing role's duplicate search, for every item the breakdown files through that role;
+- § 39's reading of the specification once the project configures it as a corpus — the document
+  the carrier wrote, never the values it was written with.
 
 ## 37. The projects a billing period is assembled from
 
