@@ -1999,7 +1999,7 @@ turns it off. `search_items` above is what finds the item the new material goes 
 in is the project's choice, and `duplicate` states it once.**
 
 **`rewrite` is the existing item's body rewritten to what the work now is.** No dated block is
-appended and no record is kept of what the body used to say, so the item's current scope is
+appended and nothing of the earlier body is kept beside the new one, so the item's current scope is
 readable off the item rather than reconstructed by reading its body in order of writing. **A
 rewrite does not license dropping what the item already stated.** A constraint, an acceptance
 condition or a dependency the old body carried is still true unless the new material replaced it.
