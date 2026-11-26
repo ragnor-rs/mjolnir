@@ -83,7 +83,7 @@ NO_STEP = 3
 # ⛔ **The write is not in it**, and that is the whole point of the split: every
 # step below runs without a go, and the one that needs one is a subcommand of its
 # own.
-PREPARED = ("backup.run", "backup.verify", "rehearse")
+PREPARED = ("backup.run", "backup.verify", "preview", "rehearse")
 
 # What the go has to name, and ⛔ **not a form the go is composed to satisfy.**
 # § 29 states the rule for a dispatch and § 35 states it for this write: a go is
@@ -120,6 +120,34 @@ def _phase(step: str) -> str:
     a store the new code may already have written.
     """
     return step.split(".", 1)[0]
+
+def _preview_at(block: dict, root: str) -> str | None:
+    """The file a step's preview writes to, resolved against the code root, or `None`.
+
+    ⛔ `None` is the preview printing its listing, which the go then carries whole;
+    a path is where the listing is read from instead (§ 35).
+    """
+    preview = block.get("preview")
+    at = preview.get("at") if isinstance(preview, dict) else None
+    if not isinstance(at, str) or not at.strip():
+        return None
+    return at if os.path.isabs(at) else os.path.join(root, at)
+
+
+def _read_preview(outcome: dict, at: str | None) -> tuple[str | None, str]:
+    """What a preview that ran showed, and why it is empty where it is.
+
+    ⛔ Empty is a failure and never a clean answer (§ 35): a preview with nothing
+    pending says so, and a go given on nothing is given on nothing.
+    """
+    if at is None:
+        return (outcome["output"] or None), "printed nothing"
+    if not os.path.isfile(at):
+        return None, f"wrote no file at {at}"
+    with open(at, encoding="utf-8", errors="replace") as handle:
+        text = handle.read().strip()
+    return (text or None), f"left {at} empty"
+
 
 # ⚠️ What a rehearsal that said nothing is reported as. A stand-in and never a
 # default: every arm that would compare against it is dropped instead, which is
@@ -224,15 +252,15 @@ def _run(command: str, root: str) -> dict:
 def _steps(block: dict) -> list[dict]:
     """The ordered sequence, one entry per step, with the command for each.
 
-    ⚠️ A `rehearse` the project does not state is **in the list** and marked as
-    stated-nowhere rather than dropped: § 35 makes an omitted rehearsal a step
-    reported as no rehearsal, and a list that silently lost the row would be a
-    plan a reader counts the steps of and gets the wrong answer.
+    ⚠️ A `preview` or `rehearse` the project does not state is **in the list** and
+    marked as stated-nowhere rather than dropped: § 35 makes an omitted one a step
+    reported as absent, and a list that silently lost the row would be a plan a
+    reader counts the steps of and gets the wrong answer.
     """
     out = []
     for name in PREPARED:
-        if name == "rehearse":
-            command = block.get("rehearse")
+        if name in config.LIVE_DATA_OPTIONAL:
+            command = config.live_data_command(block, name)
         else:
             # ⚠️ A step stating `absent_reason` keeps both rows, stated nowhere,
             # for the reason an omitted rehearsal keeps its row (§ 35).
@@ -336,6 +364,12 @@ def _plan_of(configuration: config.Config, target: str, read: dict, block: dict)
             "recover the store from this write, so the go is asked with that said "
             "and names *no backup* beside what every go names (§ 35)."
         )
+    if config.live_data_command(block, "preview") is None:
+        report.append(
+            "This target states no preview, so the go shows nothing of the writes "
+            "this deploy would make and ⛔ says no preview is stated rather than "
+            "that nothing is pending (§ 35)."
+        )
     if not any(step["step"] == "rehearse" and step["stated"] for step in _steps(block)):
         report.append(
             "This target states no rehearsal, which § 35 makes a key a block may "
@@ -357,6 +391,7 @@ def _plan_of(configuration: config.Config, target: str, read: dict, block: dict)
         "apply_by": block["apply_by"],
         "steps": _steps(block),
         "backup_absent": absent,
+        "preview_at": _preview_at(block, configuration.code_root),
         "apply": block["apply"],
         "record": block["record"],
         # ⛔ Read from live targets only, which is § 35's liveness pairing and is
@@ -410,7 +445,7 @@ def _position(block: dict, index: int, sides: list[str]) -> tuple[int, int]:
     """
     placed = _sides_of(block)
     # ⚠️ A step taking no backup starts at its first phase that has a side: the
-    # rehearsal where one is stated, and the write otherwise (§ 35).
+    # preview or rehearsal where one is stated, and the write otherwise (§ 35).
     first = next(placed[phase] for phase in config.LIVE_DATA_PHASES if placed[phase])
     return sides.index(first), index
 
@@ -508,6 +543,7 @@ def prepare(
     path = _record_path(configuration, target, name)
     answer["ran"] = []
     answer["stopped_at"] = None
+    answer["preview"] = None
     answer["rehearsal"] = None
     answer["side"] = side
     stated = [each for each in answer["steps"] if each["stated"]]
@@ -522,19 +558,20 @@ def prepare(
         )
         return answer
     if not stated:
-        # ⛔ No backup and no rehearsal: nothing is prepared, and the reading is
-        # still recorded, so the write is entered no differently (§ 35).
+        # ⛔ No backup, preview or rehearsal: nothing is prepared, and the reading
+        # is still recorded, so the write is entered no differently (§ 35).
         if os.path.exists(path):
             os.remove(path)
         _clear_later(configuration, target, read, block)
         _keep(path, {"target": target, "step": name, "order": answer["order"],
-                     "sides": sides, "rehearsal": None, "verified": []})
+                     "sides": sides, "preview": None, "rehearsal": None,
+                     "verified": []})
         answer["record_at"] = path
         answer["report"].insert(
             0,
-            "Nothing was prepared: this step takes no backup and states no "
-            "rehearsal. ⛔ The step stops here: the write is the person's act, and "
-            "the go is asked on the plan above alone (§ 35).",
+            "Nothing was prepared: this step takes no backup and states no preview "
+            "and no rehearsal. ⛔ The step stops here: the write is the person's "
+            "act, and the go is asked on the plan above alone (§ 35).",
         )
         return answer
     here = _on_this_side(stated, sides, side)
@@ -547,7 +584,7 @@ def prepare(
         )
         return answer
     # ⛔ A step's sequence starts at its first stated phase -- the dump, or the
-    # rehearsal where the step takes no backup (§ 35).
+    # first of preview and rehearsal where the step takes no backup (§ 35).
     starts_here = stated[0] in here
     before = [each["step"] for each in stated[: stated.index(here[0])]]
     if starts_here:
@@ -557,7 +594,7 @@ def prepare(
             os.remove(path)
         _clear_later(configuration, target, read, block)
         record = {"target": target, "step": name, "order": answer["order"],
-                  "sides": sides, "rehearsal": None, "verified": []}
+                  "sides": sides, "preview": None, "rehearsal": None, "verified": []}
     else:
         # ⛔ A later side of a sequence that began earlier: what it follows has to
         # be on record, or this side would be a rehearsal with no dump behind it.
@@ -580,6 +617,13 @@ def prepare(
             )
             return answer
     for each in here:
+        if each["step"] == "preview" and answer["preview_at"] and os.path.isfile(
+            answer["preview_at"]
+        ):
+            # ⛔ An earlier run's listing is not this one's: cleared before the
+            # command runs, so a preview that wrote nothing reads as empty rather
+            # than as the last deploy's pending writes (§ 35).
+            os.remove(answer["preview_at"])
         outcome = _run(each["command"], root)
         answer["ran"].append(dict(outcome, step=each["step"]))
         if not outcome["ran"] or outcome["status"] != 0:
@@ -599,6 +643,20 @@ def prepare(
                 + (" " + _writes_line(answer["writes"]) if read.get("listed") else ""),
             )
             return answer
+        if each["step"] == "preview":
+            shown, why = _read_preview(outcome, answer["preview_at"])
+            answer["preview"] = shown
+            if shown is None:
+                answer["stopped_at"] = each["step"]
+                answer["writes"] = _writes(configuration, target, read)
+                answer["report"].insert(
+                    0,
+                    f"The deploy stops: the preview {why}, so the go would show "
+                    "nothing of the writes it approves. ⛔ Empty is a failed preview "
+                    "and not a clean one (§ 35), and nothing after this ran."
+                    + (" " + _writes_line(answer["writes"]) if read.get("listed") else ""),
+                )
+                return answer
         if each["step"] == "rehearse":
             answer["rehearsal"] = outcome["output"] or _UNREAD
             if not outcome["output"]:
@@ -617,13 +675,13 @@ def prepare(
     record["verified"] = list(record.get("verified") or []) + [
         outcome["step"] for outcome in answer["ran"]
     ]
-    if answer["rehearsal"] is not None:
-        record["rehearsal"] = answer["rehearsal"]
-    else:
-        answer["rehearsal"] = record.get("rehearsal")
+    for kept in ("preview", "rehearsal"):
+        if answer[kept] is not None:
+            record[kept] = answer[kept]
+        else:
+            answer[kept] = record.get(kept)
     _keep(path, record)
     answer["record_at"] = path
-    rehearsal_stated = any(each["step"] == "rehearse" for each in stated)
     owed = [each["step"] for each in stated if each["step"] not in record["verified"]]
     took = (
         "The dump is taken and read back"
@@ -635,6 +693,16 @@ def prepare(
         (
             took
             + (
+                (
+                    f", the preview of the pending writes is at {answer['preview_at']}"
+                    if answer["preview_at"]
+                    else ", the preview of the pending writes is above, whole"
+                )
+                + " -- ⛔ a preview and not a rehearsal"
+                if answer["preview"]
+                else ", this target states no preview"
+            )
+            + (
                 ", the rehearsal ran and its output is above"
                 if answer["rehearsal"]
                 else " and this target states no rehearsal"
@@ -644,12 +712,14 @@ def prepare(
         )
         if not owed
         else (
+            # ⛔ Whatever is owed is named, the preview as much as the rehearsal: a
+            # report saying only that the dump was taken reads as a step ready
+            # for its go.
             took + "; "
             + ", ".join(owed)
             + " falls on the other side of the invocation and is still owed, so no go "
-            "is asked yet — a write is never reached before its own rehearsal (§ 35)."
-            if rehearsal_stated
-            else took + " (§ 35)."
+            "is asked yet — a write is never reached before its own preview or "
+            "rehearsal (§ 35)."
         ),
     )
     return answer
@@ -743,6 +813,7 @@ def apply(
         )
         return answer
     answer["go"] = go
+    answer["preview_shown"] = held.get("preview")
     answer["rehearsal_read_as"] = held.get("rehearsal")
     if answer["apply_by"] == "person":
         answer["handed_over"] = True
@@ -932,6 +1003,7 @@ def _scripts(**status) -> dict[str, str]:
         "dump": (0, "wrote a dump"),
         "read-back": (0, "every table is in it"),
         "dry": (0, "no divergence; two statements would run"),
+        "preview": (0, "pending: store/0002.sql, store/0003.sql"),
         "write": (0, "two statements ran"),
         "released": (0, "store/0001.sql"),
     }.items():
@@ -1024,8 +1096,9 @@ def self_test() -> int:
     ready = _Stated(_a_block(), tree, artifacts=artifacts)
     answer = prepare(ready, "a-target")
     check(
-        "every step ran, in order",
-        [outcome["step"] for outcome in answer["ran"]] == list(PREPARED),
+        "every step the block states ran, in order",
+        [outcome["step"] for outcome in answer["ran"]]
+        == ["backup.run", "backup.verify", "rehearse"],
         f"ran {[outcome['step'] for outcome in answer['ran']]!r}",
     )
     check(
@@ -1203,8 +1276,131 @@ def self_test() -> int:
     )
     check(
         "while the row stays in the plan, marked stated nowhere",
-        [step["stated"] for step in answer["steps"]] == [True, True, False],
+        [step["stated"] for step in answer["steps"]] == [True, True, False, False],
         f"planned {answer['steps']!r}",
+    )
+
+    print("\nThe preview of the pending writes, which is never a rehearsal:")
+    with_preview = _Stated(
+        _a_block(preview={"run": "./preview"}), _a_tree(_scripts()), artifacts=_a_tree({})
+    )
+    answer = prepare(with_preview, "a-target")
+    check(
+        "the preview runs after the verified dump and before the rehearsal",
+        [outcome["step"] for outcome in answer["ran"]]
+        == ["backup.run", "backup.verify", "preview", "rehearse"],
+        f"ran {[outcome['step'] for outcome in answer['ran']]!r}",
+    )
+    check(
+        "its output is carried whole for the go, beside the rehearsal's and apart from it",
+        answer["preview"] == "pending: store/0002.sql, store/0003.sql"
+        and "no divergence" in (answer["rehearsal"] or "")
+        and "pending" not in (answer["rehearsal"] or ""),
+        f"preview {answer['preview']!r}, rehearsal {answer['rehearsal']!r}",
+    )
+    answer = apply(with_preview, "a-target", _a_go())
+    check(
+        "and the write made under the go carries the preview it was shown",
+        answer["written"] is True
+        and answer.get("preview_shown") == "pending: store/0002.sql, store/0003.sql",
+        f"reported {answer['report'][:1]!r}",
+    )
+    # ⛔ The target the key was written for: a preview and no rehearsal. The
+    # listing is shown and the step is still reported as having no rehearsal.
+    alone = _Stated(
+        _a_block(preview={"run": "./preview"}, rehearse=None),
+        _a_tree(_scripts()), artifacts=_a_tree({}),
+    )
+    answer = prepare(alone, "a-target")
+    check(
+        "a preview with no rehearsal is reported as no rehearsal, the preview beside it",
+        answer["stopped_at"] is None
+        and answer["rehearsal"] is None
+        and answer["preview"]
+        and "states no rehearsal" in answer["report"][0]
+        and "a preview and not a rehearsal" in answer["report"][0],
+        f"reported {answer['report'][:1]!r}",
+    )
+    at_path = _a_tree(dict(_scripts(), **{
+        "preview-to-file": "#!/bin/sh\necho 'pending: store/0002.sql' > pending.txt\n",
+    }))
+    answer = prepare(
+        _Stated(_a_block(preview={"run": "./preview-to-file", "at": "pending.txt"}),
+                at_path, artifacts=_a_tree({})),
+        "a-target",
+    )
+    check(
+        "a preview written to a stated path is read back there, and the go names the path",
+        answer["stopped_at"] is None
+        and answer["preview_at"] == os.path.join(at_path, "pending.txt")
+        and answer["preview"] == "pending: store/0002.sql"
+        and os.path.join(at_path, "pending.txt") in answer["report"][0],
+        f"reported {answer['report'][:1]!r}",
+    )
+    stale = _a_tree(dict(_scripts(), **{"pending.txt": "an earlier deploy's listing"}))
+    answer = prepare(
+        _Stated(_a_block(preview={"run": "./preview", "at": "pending.txt"}),
+                stale, artifacts=_a_tree({})),
+        "a-target",
+    )
+    check(
+        "a file an earlier run left at the stated path is not read as this run's preview",
+        answer["stopped_at"] == "preview" and answer["preview"] is None,
+        f"read {answer['preview']!r}",
+    )
+    for label, broken, overrides in (
+        ("a preview that exits non-zero", {"preview": (1, "no such store")},
+         {"preview": {"run": "./preview"}}),
+        ("a preview that printed nothing", {"preview": (0, "")},
+         {"preview": {"run": "./preview"}}),
+        ("a preview that wrote no file at its stated path", {},
+         {"preview": {"run": "./preview", "at": "never-written.txt"}}),
+        ("a preview that left its stated path empty", {},
+         {"preview": {"run": "./preview", "at": "empty.txt"}}),
+    ):
+        tree = _a_tree(dict(_scripts(**broken), **{"empty.txt": ""}))
+        stated_here = _Stated(_a_block(**overrides), tree, artifacts=_a_tree({}))
+        answer = prepare(stated_here, "a-target")
+        check(
+            f"{label} stops the deploy at the preview, with no rehearsal run",
+            answer["stopped_at"] == "preview"
+            and "rehearse" not in [outcome["step"] for outcome in answer["ran"]]
+            and answer.get("record_at") is None,
+            f"stopped at {answer['stopped_at']!r}",
+        )
+        check(
+            f"and after {label} the write is refused",
+            apply(stated_here, "a-target", _a_go())["written"] is False,
+        )
+    # ⛔ The placement rule for the new phase: a preview owed on the later side
+    # holds the write however good the go.
+    before, after = _the_sides()
+    owed = _Stated(
+        _a_block(preview={"run": "./preview"}, rehearse=None, order=before,
+                 sides={"preview": after, "apply": after}),
+        _a_tree(_scripts()), artifacts=_a_tree({}),
+    )
+    answer = prepare(owed, "a-target", side=before)
+    check(
+        "the earlier side names the preview still owed and asks no go, with no rehearsal stated",
+        "preview falls on the other side" in answer["report"][0]
+        and "no go is asked yet" in answer["report"][0],
+        f"reported {answer['report'][:1]!r}",
+    )
+    answer = apply(owed, "a-target", _a_go())
+    check(
+        "the write is refused while its preview is still owed",
+        answer["written"] is False and "preview is not on record" in answer["report"][0],
+        f"reported {answer['report'][:1]!r}",
+    )
+    prepare(owed, "a-target", side=after)
+    check(
+        "and made once the later side has shown it",
+        apply(owed, "a-target", _a_go())["written"] is True,
+    )
+    check(
+        "a step stating no preview says so in its plan rather than that nothing is pending",
+        "states no preview" in " ".join(plan(ready, "a-target")["report"]),
     )
 
     print("\nWhat the plan says about the order and who performs the write:")
@@ -1464,6 +1660,16 @@ def self_test() -> int:
         and "no dump was taken" in " ".join(answer["report"])
         and reason in " ".join(answer["report"]),
         f"reported {answer['report'][:1]!r}",
+    )
+    previewed = _Stated(
+        _a_block(backup={"absent_reason": reason}, preview={"run": "./preview"}),
+        root, artifacts=_a_tree({}))
+    answer = prepare(previewed, "a-target")
+    check(
+        "with a preview stated, the sequence starts at the preview and no dump runs",
+        answer["stopped_at"] is None
+        and [outcome["step"] for outcome in answer["ran"]] == ["preview", "rehearse"],
+        f"ran {[outcome['step'] for outcome in answer['ran']]!r} / {answer['report'][:1]!r}",
     )
     bare = _Stated(_a_block(backup={"absent_reason": reason}, rehearse=None),
                    root, artifacts=_a_tree({}))
