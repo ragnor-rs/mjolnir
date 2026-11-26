@@ -6266,6 +6266,19 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
 # the backup and falls where it does.
 LIVE_DATA_PHASES = ("backup", "rehearse", "apply")
 
+# § 35's stated absence of a dump, carried inside `backup` in place of its two
+# commands. ⛔ Its name is the surface's own key, and the loader and the carrier
+# read it through this one constant rather than each spelling it.
+BACKUP_ABSENT_KEY = "absent_reason"
+
+
+def backup_absent(block: dict) -> str | None:
+    """The reason a step takes no backup, or `None` where it takes one (§ 35)."""
+    backup = block.get("backup")
+    if isinstance(backup, dict) and BACKUP_ABSENT_KEY in backup:
+        return str(backup[BACKUP_ABSENT_KEY])
+    return None
+
 
 def live_data_sides(block: dict) -> dict:
     """Which side of the invocation each phase of one step falls on.
@@ -6280,6 +6293,9 @@ def live_data_sides(block: dict) -> dict:
         if phase == "rehearse" and not (
             isinstance(block.get("rehearse"), str) and block["rehearse"].strip()
         ):
+            out[phase] = None
+            continue
+        if phase == "backup" and backup_absent(block) is not None:
             out[phase] = None
             continue
         out[phase] = placed.get(phase, block.get("order"))
@@ -6337,7 +6353,8 @@ def _validate_one_live_data_step(
         raise ConfigError(
             f"{at}.backup",
             "must be a mapping of the command that dumps the live store and the "
-            "command that reads the dump back (§ 35).",
+            "command that reads the dump back, or of `absent_reason` alone where "
+            "the step takes no backup (§ 35).",
         )
     inside = {
         path[len("backup."):]
@@ -6351,10 +6368,28 @@ def _validate_one_live_data_step(
                 "is a key § 35 does not declare on a backup, so it is a fact "
                 f"nothing reads. The keys it declares are: {', '.join(sorted(inside))}.",
             )
+    # ⛔ A stated absence in place of the dump, and never beside it: a step either
+    # dumps the store or says why it does not, and one stating both lets a reader
+    # believe whichever half they read first (§ 35).
+    if BACKUP_ABSENT_KEY in backup:
+        both = sorted(key for key in backup if key != BACKUP_ABSENT_KEY)
+        if both:
+            raise ConfigError(
+                f"{at}.backup.{BACKUP_ABSENT_KEY}",
+                f"is stated beside {', '.join(both)}. A step takes a backup or "
+                "says why it takes none, never both (§ 35).",
+            )
+        reason = backup[BACKUP_ABSENT_KEY]
+        if not isinstance(reason, str) or not reason.strip():
+            raise ConfigError(
+                f"{at}.backup.{BACKUP_ABSENT_KEY}",
+                "must say why this step takes no backup. An absence with no reason "
+                "is the unstated backup § 35 requires against.",
+            )
     # ⛔ Two keys and not one, because a dump that failed still leaves a file:
     # what says the artifact is a backup is a second command reading it back, and
     # its exit status is the whole of the verdict (§ 35).
-    for key in ("run", "verify"):
+    for key in () if BACKUP_ABSENT_KEY in backup else ("run", "verify"):
         value = backup.get(key)
         if not isinstance(value, str) or not value.strip():
             raise ConfigError(
@@ -6440,6 +6475,12 @@ def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) 
                     f"{at}.sides.{phase}",
                     f"is {side!r}; the surface states {' | '.join(stated)}.",
                 )
+        if "backup" in sides and backup_absent(block) is not None:
+            raise ConfigError(
+                f"{at}.sides.backup",
+                "places a backup this step states it does not take, which is a "
+                "placement of nothing (§ 35). Omit its side.",
+            )
         if "rehearse" in sides and "rehearse" not in block:
             raise ConfigError(
                 f"{at}.sides.rehearse",
@@ -17605,6 +17646,27 @@ def self_test() -> int:
          {"live_data_step": _a_live_data_step(order="before_invoke")}),
         ("a step that runs after the invocation loads",
          {"live_data_step": _a_live_data_step(order="after_invoke")}),
+        # ⛔ § 35's stated absence of a dump, on a live target and on one that is
+        # not: the reason licenses it, never the target's liveness.
+        ("a step that says why it takes no backup loads",
+         {"live_data_step": _a_live_data_step(
+             backup={"absent_reason": "the staging store is rebuilt nightly"})}),
+        ("a step taking no backup loads on a target that is not live",
+         {"not_live": True, "live_data_step": _a_live_data_step(
+             backup={"absent_reason": "the staging store is rebuilt nightly"})}),
+        ("a step taking no backup, with its other phases placed, loads",
+         {"live_data_step": _a_live_data_step(
+             backup={"absent_reason": "the staging store is rebuilt nightly"},
+             rehearse="a-dry-run",
+             sides={"rehearse": _the_sides()[0], "apply": _the_sides()[1]})}),
+        # ⛔ A backup the step does not take has no side of its own: were it
+        # placed where `order` says, an order after the invocation would put it
+        # behind a rehearsal placed before, and refuse a step that is sound.
+        ("a step taking no backup, its rehearsal before an order after, loads",
+         {"live_data_step": _a_live_data_step(
+             backup={"absent_reason": "the staging store is rebuilt nightly"},
+             rehearse="a-dry-run", order=_the_sides()[1],
+             sides={"rehearse": _the_sides()[0]})}),
         # ⛔ The first false-refusal bound, and it is a real project's real
         # command: the surveyed copy whose writes take their statements on
         # standard input redirects a **file** into the command. A rule refusing
@@ -19252,6 +19314,31 @@ def _planted_violations():
              rehearse="a-dry-run",
              sides={"backup": _the_sides()[1], "rehearse": _the_sides()[0],
                     "apply": _the_sides()[1]}))])),
+        ("an absent backup stated beside its dump",
+         "deploy[0].live_data_step.backup.absent_reason",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"run": "a-dump", "absent_reason": "no store worth keeping"}))])),
+        ("an absent backup stated beside its reading-back",
+         "deploy[0].live_data_step.backup.absent_reason",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"verify": "a-read-back", "absent_reason": "no store worth keeping"}))])),
+        ("an absent backup whose reason is blank",
+         "deploy[0].live_data_step.backup.absent_reason",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"absent_reason": "   "}))])),
+        ("an absent backup whose reason is not a sentence",
+         "deploy[0].live_data_step.backup.absent_reason",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"absent_reason": True}))])),
+        ("a backup stated as an empty block",
+         "deploy[0].live_data_step.backup.run",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={}))])),
+        ("a side for a backup the step says it does not take",
+         "deploy[0].live_data_step.sides.backup",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             backup={"absent_reason": "no store worth keeping"},
+             sides={"backup": _the_sides()[0]}))])),
         ("a side for a rehearsal the step does not state",
          "deploy[0].live_data_step.sides.rehearse",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(

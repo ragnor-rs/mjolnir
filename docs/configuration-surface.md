@@ -3556,6 +3556,21 @@ release carries anything to apply, with no override, because what a release turn
 against a store is not fully known until it has run and a dump taken afterwards records the damage
 rather than the state before it.
 
+### A step that takes no backup, which neither copy carries
+
+⚠️ **Both copies dump before every write, and an adopter's report is what added the other case.**
+Its staging target's writes take no backup, and the facet as both copies shaped it made `backup` a
+pair of commands no such step can state. ⚠️ **The case was read against the shipped surface rather
+than run**, so the reasoning is this repository's own and not a copy's.
+
+⛔ **So the absence is stated, never omitted**: `backup` stays required and may carry a reason in
+place of its two commands, on any target, live or not. The ruling weighed allowing it only where
+the target is not live, and declined that limit: what licenses the absence is the project saying
+why, where every go on that write reads it — and the go on such a step has to say there is no
+backup, so an approval of a write nothing can recover from is one that said so —
+[`schema.md § 35 → A step that takes no
+backup`](../plugins/mjolnir/config/schema.md#a-step-that-takes-no-backup-and-the-go-that-says-so).
+
 ### A rehearsal one copy has for everything and the other has for nothing
 
 ⚠️ **C carries a dry variant for every write it performs and B carries none**, and both arrangements
