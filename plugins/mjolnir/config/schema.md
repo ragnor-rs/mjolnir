@@ -3697,6 +3697,7 @@ branch_model:
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
   teardown: "<the command that stops what a tree started>"   # may be left unwritten; read only under worktree
   resource_up: "<the command that prints what a tree started and is still up>"   # may be left unwritten; read only under worktree
+  prune_on_merge: false                      # may be left unwritten; read only under worktree
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
@@ -4436,7 +4437,8 @@ another session, or before this rule existed. ⚠️ **The sweep is not a tidy-u
 not cosmetic**: one project counted **seventeen** landed trees by the time anybody looked, each
 holding a checkout of the repository. ⛔ **Procedure with no key**, the placement § 7's invocation
 rule and the claim above both have: a project that could switch the second carrier off would
-accumulate trees exactly as the project with no rule at all did.
+accumulate trees exactly as the project with no rule at all did. ⚠️ **A third carrier, on a merge
+the session makes with a bare command, is a project's to turn on**, and it is stated below.
 
 ⛔ **The landed reading is [the claim's](#the-claim-on-a-work-item), and nothing here carries a
 second one.** Two oracles for *has this landed* are allowed to disagree, and the reading that ships
@@ -4622,6 +4624,35 @@ bound when it starts. One with too little left is not started, one that outlasts
 either way the tree is kept and the person is told. ⚠️ A teardown that takes the whole bound leaves
 the trees after it unreached, and they are named; a release has no bound and is how such a tree is
 removed.
+
+⛔ **A merge the session makes with a bare command is a third carrier's, and a project turns that
+one on.** The merge carrier above is the finishing role's. A session that types the host's merge
+command never reaches it, so the tree waits for the next session to open. `prune_on_merge` runs the
+sweep on the event after that call, narrowed to the one branch the merge landed.
+
+```yaml
+branch_model:
+  prune_on_merge: true
+```
+
+- **It runs only after the host confirms the merge.** Which call is a merge is the
+  [merge guard's grammar](#what-a-hook-refuses-and-the-record-it-reads), and no second one. ⛔ **The
+  call finishing is not the confirmation**: a merge queued behind the host's automatic merge
+  finishes too, so the carrier reads the host's own record of the change. Only a change the host
+  reports merged has its branch's tree examined. A record that cannot be read, or that names no
+  branch, examines nothing and says so.
+- **The tree is decided by this subsection's rules, unchanged**: the landed reading, the oracle,
+  the occupancy reading and the caller's own tree. ⛔ **So the tree the session stands in is never
+  removed.** That is the stop above, cleared by leaving, and the next sweep takes the tree.
+- **It says what it left.** This event answers an act the person has just taken, so every tree it
+  examined is named, removed or kept, with what kept it. That includes the states the opening
+  event's table keeps out of the message. A merge whose branch no tree holds says nothing, because
+  nothing was left.
+- ⚠️ **Off unless stated.** `false`, or the key unwritten, is the two carriers above and nothing
+  else. The sweep has no key because its absence accumulates trees. This carrier's absence only
+  delays a removal until the next session opens, and turning it on adds a host read after every
+  merge the session makes.
+- ⚠️ **It is read only under `kind: worktree`**, there being no tree to prune under `in_place`.
 
 ```yaml
 branch_model:
