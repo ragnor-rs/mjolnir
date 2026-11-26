@@ -10599,9 +10599,9 @@ rest of this surface states, and no reply mentions an ask.
 
 ### The ask, and what it carries
 
-Under `before_first_edit` the implementing leg puts **one question** to the person, once per item:
-approve this approach, or decline it. The question carries what the person needs to judge it, and
-nothing they do not:
+Under `before_first_edit` the implementing leg puts **one question** to the person, once per item
+and again only where the plan it puts changes: approve this approach, or decline it. The question
+carries what the person needs to judge it, and nothing they do not:
 
 | field | what it carries |
 |---|---|

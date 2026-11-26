@@ -487,6 +487,17 @@ def self_test() -> int:
     edited = read(tracker, "7")
     check_that("⛔ a record edited after it was written is not read as an approval",
                edited["answer"] == UNREAD and edited["writes"] is False, f"{edited}")
+    # ⛔ A record has to survive the tracker's own document conversion: Jira
+    # writes a comment as a document and reads it back as text, and a marker or
+    # an answer line lost on the way reads as no record at all.
+    from adapters import jira  # noqa: PLC0415 -- the one tracker that converts a body
+
+    body = record_body(APPROVED, "yes", "the person", "2026-11-27T00:00:00Z")
+    round_trip = jira.as_text(jira.as_document(body))
+    converted = _FakeTracker()
+    converted.comments.append({"body": round_trip, "created": "x", "edited": None})
+    check_that("a record read back through Jira's document conversion still reads approved",
+               read(converted, "7")["writes"] is True, f"{round_trip!r}")
     unreadable = read(_FakeTracker(readable=False), "7")
     check_that("⛔ comments that could not be read are not an approval",
                unreadable["answer"] == UNREAD and unreadable["writes"] is False, f"{unreadable}")
