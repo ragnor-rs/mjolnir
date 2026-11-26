@@ -9490,9 +9490,9 @@ the same rule and no table of them can drift from the block.
 
 ⛔ **The check is the project's to turn on**, by `box_diagrams.held: true`, and a project that states
 no `box_diagrams` block holds no diagram — which makes it a key directly under `documents` that is
-not required, as `exempt_targets` is, and the exception is stated rather than slipped in: the key arrived after
-every configuration in § 1's sense had been written, and a required key would refuse each of them
-for a check none of them asked for. ⚠️ **`held: false` and the block absent are the same answer**,
+not required, as `exempt_targets` is, and the exception is stated rather than slipped in: the key
+arrived after every configuration in § 1's sense had been written, and a required key would refuse
+each of them for a check none of them asked for. ⚠️ **`held: false` and the block absent are the same answer**,
 and the run says no diagram is held rather than reporting the diagrams as aligned.
 
 ⛔ **A block is exempted by a row of `exempt`, and the row names the block by its own text** — an
