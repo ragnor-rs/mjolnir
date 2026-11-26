@@ -165,6 +165,8 @@ CURRENT = "current"
 DISCOVERABLE = "discoverable"
 GROUPING_ITEMS = "grouping_items"
 READ_CURRENT = "read_current_grouping"
+OPEN_GROUPINGS = "open_groupings"
+BY_POSITION_SOURCE = config.BY_POSITION
 MARK_RELEASED = "mark_grouping_released"
 CREATE_GROUPING = "create_grouping"
 
@@ -1663,6 +1665,37 @@ class Port:
         outcome.grouping = block.get("name")
         return outcome
 
+    def default_in(
+        self,
+        grouping: str | None = None,
+        *,
+        from_value: str | None = None,
+        given: str | None = None,
+    ) -> dict:
+        """§ 4.8's value for one item's grouping, a positional map counted here.
+
+        ⛔ **The order of decision is the reader's**, `Config.grouping_default`:
+        a value given wins, then the map, then `ask`. This adds only the count a
+        reader holding no tracker cannot make -- under `default_by: position`,
+        the position over `open_groupings`, in the tracker's own order.
+
+        ⛔ **Never the first open grouping in place of an answer.** No open
+        grouping is a stop, a listing that is cut or holds an unplaced value is
+        `ask` with every open value listed, and the capability absent is § 3's
+        fallback, which is `ask` too.
+        """
+        answer = self.config.grouping_default(grouping, from_value=from_value, given=given)
+        if answer.get("source") != config.BY_POSITION:
+            return answer
+        self._stated(OPEN_GROUPINGS)
+        block = self.config.grouping(grouping)
+        outcome = self.invoke(OPEN_GROUPINGS, grouping=block)
+        if not outcome.performed:
+            return {**answer, "source": "ask", "failed": outcome.failed,
+                    "report": f"{answer['report']}; the open groupings went unread "
+                    f"({outcome.detail}), so the grouping is asked for (§ 3, § 4.8)"}
+        return {**answer, **placed(answer["position"], outcome.result or {})}
+
     def create_in(self, grouping: str | None = None, *args, **kwargs) -> Outcome:
         """One of § 4.8's groupings brought into existence (§ 40).
 
@@ -1925,6 +1958,65 @@ class Port:
             },
             "report": self.report(),
         }
+
+
+def _ordinal(index: int) -> str:
+    """The position word for a zero-based index, the form a map entry takes."""
+    if index < len(config.POSITIONS):
+        return config.POSITIONS[index]
+    return f"position {index + 1}"
+
+
+def placed(position: str, reading: dict) -> dict:
+    """One position of § 4.8's positional default, counted over `open_groupings`.
+
+    ⛔ **Counted in the order the tracker answered and never re-sorted**: that
+    order is the implementation's statement of the tracker's own, and a sort here
+    would be a second order free to disagree with it.
+
+    Four answers. No open value is a stop. An unplaced value or a cut listing is
+    `ask`, every open value listed. A position inside the list is that value. A
+    position past the end takes the last open value, and `fallback` names both
+    positions -- the rule § 4.8 states once.
+    """
+    ordered = list(reading.get("open") or [])
+    unplaced = list(reading.get("unplaced") or [])
+    listed = {"open": ordered, "unplaced": unplaced, "order": reading.get("order")}
+    if reading.get("at_limit"):
+        return {**listed, "value": None, "source": "ask",
+                "report": "the open groupings reached the listing's page bound, so "
+                "the list is not whole and no position in it is an answer (§ 4.8)"}
+    if unplaced:
+        names = ", ".join(repr(one.get("name")) for one in unplaced)
+        return {**listed, "value": None, "source": "ask",
+                "report": f"{len(unplaced)} open grouping(s) have no place in the "
+                f"tracker's order ({names}), so no position is countable and the "
+                "grouping is asked for (§ 4.8)"}
+    if not ordered:
+        return {**listed, "value": None, "source": "none_open",
+                "report": "the tracker holds no open grouping, so nothing is written "
+                "and a grouping has to be created first (§ 4.8)"}
+    index = len(ordered) - 1 if position == config.LAST_POSITION else (
+        config.POSITIONS.index(position)
+    )
+    fallback = None
+    if index >= len(ordered):
+        index = len(ordered) - 1
+        fallback = {"asked": position, "took": _ordinal(index)}
+    chosen = ordered[index]
+    report = (
+        f"the {position} of {len(ordered)} open grouping(s) in the tracker's order "
+        f"is {chosen.get('name')!r} (§ 4.8)"
+    )
+    if fallback:
+        report = (
+            f"the {position} open grouping does not exist with {len(ordered)} open, "
+            f"so the last open one, the {fallback['took']}, is taken: "
+            f"{chosen.get('name')!r} (§ 4.8)"
+        )
+    return {**listed, "value": chosen.get("value"), "name": chosen.get("name"),
+            "source": BY_POSITION_SOURCE, "taken": _ordinal(index),
+            "fallback": fallback, "report": report}
 
 
 def invocation_report(name: str, operation: str, outcome: "Outcome") -> dict:
@@ -2362,6 +2454,27 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
             "telepathy" not in read_back,
             f"read {sorted(read_back)!r}",
         )
+
+    # § 4.8's positional default, counted over what `open_groupings` answered: the
+    # order handed over is kept, a position past the end takes the last, and a
+    # listing that is cut or holds an unplaced value is never counted.
+    three = {"open": [{"value": v, "name": v} for v in ("z", "a", "m")], "unplaced": []}
+    for label, position, reading, expected in (
+        ("the first position is the first in the order handed over, not by name",
+         "first", three, ("position", "z", None)),
+        ("`last` is the last in that order", "last", three, ("position", "m", None)),
+        ("a position past the end takes the last open value",
+         "fifth", three, ("position", "m", {"asked": "fifth", "took": "third"})),
+        ("an unplaced value makes the position unanswerable",
+         "first", {**three, "unplaced": [{"value": "u", "name": "u"}]}, ("ask", None, None)),
+        ("a listing cut by a page bound is never counted",
+         "first", {**three, "at_limit": True}, ("ask", None, None)),
+        ("no open value is a stop", "last", {"open": [], "unplaced": []},
+         ("none_open", None, None)),
+    ):
+        answer = placed(position, reading)
+        check(label, (answer["source"], answer["value"], answer.get("fallback")) == expected,
+              f"answered {answer!r}")
 
     # An absent capability resolves to the stated fallback, for every operation,
     # and nothing raises on the way. This is the acceptance item that would be
@@ -4494,6 +4607,29 @@ def main(argv: list[str]) -> int:
         "status move's is",
     )
     parser.add_argument(
+        "--default-of",
+        metavar="GROUPING",
+        nargs="?",
+        const="",
+        help="the grouping one item goes into under § 4.8, by the name that facet "
+        "keys it on -- omitted where the project carries one: the value given, "
+        "else the project's map from `--from-value`, else `ask`. Under "
+        "`default_by: position` the position is counted over `open_groupings` in "
+        "the tracker's own order",
+    )
+    parser.add_argument(
+        "--from-value",
+        metavar="VALUE",
+        help="with `--default-of`: the item's value of the facet the map reads, as "
+        "handed or already on the item -- never derived (§ 4.6)",
+    )
+    parser.add_argument(
+        "--given",
+        metavar="VALUE",
+        help="with `--default-of`: the grouping given on the request, which wins "
+        "over any map (§ 4.8)",
+    )
+    parser.add_argument(
         "--current-of",
         metavar="GROUPING",
         nargs="?",
@@ -4656,6 +4792,50 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 2
+    if args.invoke == OPEN_GROUPINGS:
+        print(
+            f"Refused: `{OPEN_GROUPINGS}` is reached through `--default-of "
+            "[<grouping>]`, which hands the implementation § 4.8's block for that "
+            "grouping and counts a positional default over what it answers.",
+            file=sys.stderr,
+        )
+        return 2
+    if (args.from_value is not None or args.given is not None) and args.default_of is None:
+        print(
+            "Refused: `--from-value` and `--given` are `--default-of`'s inputs, and "
+            "asked without it they answer nothing (§ 4.8).",
+            file=sys.stderr,
+        )
+        return 2
+    if args.default_of is not None:
+        if args.ports:
+            print(
+                "Refused: `--default-of` reads one grouping on one port, so it is "
+                "not asked of every port at once.",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            answering = load(
+                args.skills_root,
+                args.port,
+                root=args.root,
+                check_paths=not args.no_check_paths,
+            )
+            answer = answering.default_in(
+                args.default_of or None, from_value=args.from_value, given=args.given
+            )
+        except ConfigError as error:
+            print(
+                json.dumps(
+                    refusal_report(args.port, OPEN_GROUPINGS, error),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            return 1
+        print(json.dumps(answer, indent=2, ensure_ascii=False, default=str))
+        return 1 if answer.get("source") == "none_open" else 0
     if args.current_of is not None:
         if args.ports:
             print(

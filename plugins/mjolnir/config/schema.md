@@ -1794,6 +1794,7 @@ the operations the survey reached and says which it did not.
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
 | `read_current_grouping` | the value the tracker itself marks open for one of § 4.8's groupings under `current: discoverable`, each open value by what a write takes and by the name a person reads — ⛔ never a choice between several, which the role asks, and never asked under `stated`, where the tracker marks none | the grouping is asked for, as under `stated`, and the report says the tracker's mark went **unread**; never the first value the tracker lists, by § 2's rule that absence of signal is not an answer |
+| `open_groupings` | every value of one of § 4.8's groupings that the tracker holds open, **in the tracker's own order** — a version list's position, a milestone's due date — each by what a write takes and by the name a person reads; ⛔ never a sort of the names, and an open value with no place in that order listed apart as unplaced | a positional default (§ 4.8) has no list to count in, so the grouping is asked for and the report says the open groupings went **unread**; never the position resolved against a list nobody read, by § 2's rule that absence of signal is not an answer |
 | `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. The address a person performs it at is the tracker's own and the procedure composes none — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `read_comments` | the item's comments, oldest first and every page of them, each with who wrote it, when, and when it was last edited | the role reports the comments **unread** and never as none, by § 2's rule that absence of signal is not an answer ([below](#an-items-comments-and-what-an-unread-one-is)) |
@@ -2530,6 +2531,7 @@ work_item:
     ref_prefix: "release/"       # when a ref is named after the grouping's own value
     default_from: priority       # under `current: stated` only; a § 4 facet that lists its values
     default_map: {}              # that facet's value -> this grouping's value; with default_from
+    default_by: value | position # with default_map; what each of its values names; value when absent
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2598,11 +2600,32 @@ it through `config.py --grouping-default` rather than applying the map itself:
 - **The source value is the one handed or already on the item, never derived.** § 4.6's rule
   stands: a map from the tier does not license working out the tier, and an item with no tier gets
   the grouping asked for.
-- A map can go stale, and that is the cost the project accepts by stating one. An entry naming a
-  grouping that has since closed fills the field with that grouping's name. The report names the
-  rule every time it is used, so the reader of the item sees where the value came from.
+- A map of names can go stale, and that is the cost the project accepts by stating one. An entry
+  naming a grouping that has since closed fills the field with that grouping's name. The report
+  names the rule every time it is used, so the reader of the item sees where the value came from.
 - **Neither key without the other**: a source with no map, or a map with no source, is refused
   with both keys named. A project that states neither is asked for the grouping exactly as before.
+
+**A map's value can be a position among the open groupings instead of a grouping's name, and
+`default_by: position` says so.** Under `value`, the reading where the key is absent, each entry
+names one grouping. Under `position` each entry is one of `first`, `second` … `tenth`, or `last`,
+counted when the item is filed over the groupings [§ 3](#the-operations-and-what-an-absent-capability-does)'s
+`open_groupings` returns — so the same map keeps naming the nearest unreleased grouping after every
+release with no edit. A role reads it through `port.py --default-of`, which decides in the table's
+order above and counts the position only where the map answers:
+
+- **The order is the tracker's own**, as `open_groupings` returns it, and never a sort of the
+  names.
+- **No open grouping is a stop**: nothing is written, and the report says a grouping has to be
+  created first.
+- **A position past the end takes the last open grouping**, so `second` with one open grouping
+  takes that one. The report names the position asked for and the position taken.
+- **An open grouping with no place in the tracker's order, or a listing cut by a page bound, leaves
+  the position unanswerable**, and the grouping is asked for with every open grouping listed.
+- **The capability absent is § 3's fallback**: the grouping is asked for, and the report says the
+  open groupings went unread.
+- `config.py --grouping-default` answers `position` with the position and no value, the reader
+  holding no tracker to count in.
 
 **`closed_by` is [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s writer argument one
 level up: a role that closes a grouping is refused where this is not the writer that role asks

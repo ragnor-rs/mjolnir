@@ -1616,6 +1616,19 @@ def _mappable_facets(facts: dict) -> list[str]:
 def _grouping_default(data: dict, facts: dict, entry: dict, at: str) -> None:
     """§ 4.8's stated default: `default_from` and `default_map`, held together."""
     source, mapping = entry.get(DEFAULT_FROM_KEY), entry.get(DEFAULT_MAP_KEY)
+    by = entry.get(DEFAULT_BY_KEY)
+    if by is not None and by not in DEFAULTS_BY:
+        raise ConfigError(
+            f"{at}.{DEFAULT_BY_KEY}",
+            f"is {by!r}; it says what each `{DEFAULT_MAP_KEY}` value names, which "
+            f"is {' | '.join(DEFAULTS_BY)} (§ 4.8).",
+        )
+    if by is not None and mapping is None:
+        raise ConfigError(
+            f"{at}.{DEFAULT_BY_KEY}",
+            f"is stated with no `{DEFAULT_MAP_KEY}`: it says what that map's values "
+            "name, so with no map it describes nothing (§ 4.8).",
+        )
     if source is None and mapping is None:
         return
     if source is None or mapping is None:
@@ -1669,6 +1682,13 @@ def _grouping_default(data: dict, facts: dict, entry: dict, at: str) -> None:
                 f"{at}.{DEFAULT_MAP_KEY}",
                 f"maps {key!r} to {value!r}; each entry names the grouping an item "
                 "with that value goes into, as a non-empty string (§ 4.8).",
+            )
+        if by == BY_POSITION and value not in (*POSITIONS, LAST_POSITION):
+            raise ConfigError(
+                f"{at}.{DEFAULT_MAP_KEY}",
+                f"maps {key!r} to {value!r} under `{DEFAULT_BY_KEY}: {BY_POSITION}`, "
+                "where each entry is a position among the open groupings: "
+                f"{', '.join(POSITIONS)} or {LAST_POSITION} (§ 4.8).",
             )
 
 
@@ -2284,6 +2304,17 @@ class Config:
                     "report": f"`{at}.{DEFAULT_MAP_KEY}` carries no entry for `{source}` "
                     f"{from_value!r}, so the grouping is asked for (§ 4.8)"}
         value = mapping[from_value]
+        if block.get(DEFAULT_BY_KEY) == BY_POSITION:
+            # ⛔ The reader holds no tracker, so the position is handed on rather
+            # than counted here: a value worked out from a list this module never
+            # read would be the guess § 4.8 forbids.
+            return {**answer, "source": BY_POSITION, "position": value,
+                    "rule": {"from": source, "value": from_value,
+                             "entry": f"{at}.{DEFAULT_MAP_KEY}"},
+                    "report": f"mapped from `{source}` {from_value!r} to the {value} "
+                    f"open grouping by `{at}.{DEFAULT_MAP_KEY}`; the position is "
+                    "counted over the tracker's open groupings by `port.py "
+                    "--default-of` (§ 4.8)"}
         return {**answer, "value": value, "source": "map",
                 "rule": {"from": source, "value": from_value, "entry": f"{at}.{DEFAULT_MAP_KEY}"},
                 "report": f"mapped from `{source}` {from_value!r} to {value!r} by "
@@ -4951,6 +4982,18 @@ GROUPING_REF_CHECK = "grouping_ref_exists"
 # facet's values to the grouping's.
 DEFAULT_FROM_KEY = "default_from"
 DEFAULT_MAP_KEY = "default_map"
+# What each value of that map names: a grouping by its own value, or a position
+# among the groupings the tracker holds open, counted in the tracker's order.
+# ⛔ `value` is the reading where the key is absent, so a project stating nothing
+# new reads its map exactly as before.
+DEFAULT_BY_KEY = "default_by"
+BY_VALUE, BY_POSITION = "value", "position"
+DEFAULTS_BY = (BY_VALUE, BY_POSITION)
+LAST_POSITION = "last"
+POSITIONS = (
+    "first", "second", "third", "fourth", "fifth",
+    "sixth", "seventh", "eighth", "ninth", "tenth",
+)
 
 # The key an entry of either gate check names a grouping by, and the key a
 # `field_present` entry names its field by. ⛔ Spelled here rather than at each
@@ -18048,6 +18091,28 @@ def self_test() -> int:
         from_value="High")
     check("a stated grouping with no default is asked for, as before",
           (plain["source"], plain["value"]) == ("ask", None), f"answered {plain!r}")
+    # § 4.8's positional map: the reader hands the position on with no value,
+    # since it holds no tracker to count in; a given value still wins.
+    positional = _resolve(
+        _a_stated_default(_a_valid_example(), default_by=BY_POSITION,
+                          default_map={"Highest": "first", "High": LAST_POSITION}),
+        EXAMPLES, default_facts, False,
+    )
+    counted = positional.grouping_default(from_value="High")
+    check("a positional map answers its position and no value",
+          (counted["source"], counted["value"], counted.get("position"))
+          == (BY_POSITION, None, LAST_POSITION)
+          and counted.get("rule", {}).get("value") == "High",
+          f"answered {counted!r}")
+    given = positional.grouping_default(from_value="High", given="a-scope")
+    check("a grouping given wins over a positional map too",
+          (given["source"], given["value"]) == ("given", "a-scope"), f"answered {given!r}")
+    named = _resolve(
+        _a_stated_default(_a_valid_example(), default_by=BY_VALUE), EXAMPLES,
+        default_facts, False,
+    ).grouping_default(from_value="High")
+    check("a map stated as names reads as one with no `default_by`",
+          (named["source"], named["value"]) == ("map", "a-scope"), f"answered {named!r}")
 
     # § 4.2 → A commitment written apart from the move, read through the one
     # answer the gating role acts on.
@@ -20525,6 +20590,16 @@ def _planted_violations():
          lambda data: _a_stated_default(data, default_map={"High": "  "})),
         ("a grouping map with no entries", f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
          lambda data: _a_stated_default(data, default_map={})),
+        ("a grouping map read as neither names nor positions",
+         f"{GROUPING_KEY}.{DEFAULT_BY_KEY}",
+         lambda data: _a_stated_default(data, default_by="ordinal")),
+        ("a grouping map's reading stated with no map", f"{GROUPING_KEY}.{DEFAULT_BY_KEY}",
+         lambda data: _a_stated_default(data, default_from=_ABSENT, default_map=_ABSENT,
+                                        default_by=BY_POSITION)),
+        ("a positional grouping map naming a grouping rather than a position",
+         f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
+         lambda data: _a_stated_default(data, default_by=BY_POSITION,
+                                        default_map={"High": "a-scope"})),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
