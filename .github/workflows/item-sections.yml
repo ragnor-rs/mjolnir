@@ -1,0 +1,35 @@
+name: Item sections
+
+# The sections a project declares for a work item beyond the procedure's own, and the one consumer
+# that holds a body to them. Held to § 4.4 of plugins/mjolnir/config/schema.md; no copy of it is
+# carried here.
+#
+# ⚠️ This repository declares no section, so pointed at this tree the module answers that nothing
+# is declared. What this run holds is the reading itself, against planted declarations and bodies.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The module reads a configuration and a body; it reaches no host and no
+# tracker.
+permissions: {}
+
+jobs:
+  item-sections:
+    name: Item sections
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned for the reason the sibling workflows pin it: the module runs on the shared reader,
+      # which needs the parser.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors.
+      - name: Hold a body to the declared sections
+        run: python3 plugins/mjolnir/scripts/item_sections.py --self-test

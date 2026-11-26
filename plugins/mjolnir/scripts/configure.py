@@ -553,6 +553,22 @@ ANSWERED_BY: dict[str, Answer] = {
     "work_item.template.sections.reproduction": ask(
         "Which heading does a body state a reproduction under?",
     ),
+    "work_item.template.declared.name": ask(
+        "Which section must an item carry beyond the outcome, the acceptance check "
+        "and the reproduction -- an implementation plan, say -- and what is it called?",
+    ),
+    "work_item.template.declared.heading": ask(
+        "Which heading does a body state it under?",
+    ),
+    "work_item.template.declared.fills": ask(
+        "What goes under it?",
+    ),
+    "work_item.template.declared.source": ask(
+        "Is it written from the request, or from reading the code?",
+    ),
+    "work_item.template.declared.required": ask(
+        "Must every item carry it, or only where it applies?",
+    ),
     "work_item.code_root.carrier": ask(
         "How does an item say which code repository it belongs to? ⛔ Asked "
         "whatever the tracker answers: the carrier is a convention this project "

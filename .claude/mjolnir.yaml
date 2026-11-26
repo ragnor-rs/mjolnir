@@ -187,6 +187,12 @@ host:
     - workflow: "Hours breakdown carrier"
       mirrors: "python3 plugins/mjolnir/scripts/hours_breakdown.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ The same reading as the entries below whose facet this project does not state:
+    # `work_item.template.declared` is absent here, so pointed at this tree the module answers that
+    # nothing is declared. This run holds the reading against planted declarations and bodies.
+    - workflow: "Item sections"
+      mirrors: "python3 plugins/mjolnir/scripts/item_sections.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Installer"
       mirrors: "python3 plugins/mjolnir/scripts/install.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
