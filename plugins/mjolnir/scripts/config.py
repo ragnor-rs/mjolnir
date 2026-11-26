@@ -78,6 +78,7 @@ import contextlib
 import copy
 import fnmatch
 import io
+import itertools
 import json
 import os
 import re
@@ -3587,11 +3588,17 @@ class Config:
         }
         if entry["invoke"] != "command":
             # ⚠️ The two halves cannot meet: a name in both is refused at the load.
+            # ⛔ A choice a live data step's side places is the step's, performed
+            # here, and is sent to the host as no input (§ 35).
+            sided = _side_choices_of(entry)
             return {
                 **answer,
                 "workflow": entry["workflow"],
                 "ref": entry["ref"],
-                "inputs": {**(entry.get("inputs") or {}), **sent},
+                "inputs": {
+                    **(entry.get("inputs") or {}),
+                    **{name: value for name, value in sent.items() if name not in sided},
+                },
             }
         command = entry["command"]
         if choices:
@@ -3659,7 +3666,7 @@ class Config:
             purposes.append({"purpose": purpose, **view.command(text, where)})
         return {**answer, "batch": entry["batch"], "purposes": purposes}
 
-    def live_data_step(self, target: str) -> dict:
+    def live_data_step(self, target: str, chosen: list[str] | None = None) -> dict:
         """§ 35's block on one § 33 target, with which answer it is said out loud.
 
         ⛔ **Three answers and not two**, because the two absences are not the
@@ -3675,6 +3682,13 @@ class Config:
         targets only, a store the session is the only user of being one it can
         rebuild — and a target is live unless the configuration says otherwise
         (§ 35).
+
+        ⛔ **`chosen` is the run's § 33 choices**, `name=value` strings resolved by
+        `deploy_target` and refused there, so a step whose side is a choice is
+        handed back with the side this run takes in place of the placement --
+        and with `side_chosen` naming each such choice, its value, whether the run
+        chose it and its warnings, for the go to show (§ 35). A step stating fixed
+        sides is handed back exactly as stated, and `side_chosen` is empty.
         """
         stated = [
             entry
@@ -3718,10 +3732,16 @@ class Config:
         # order stated -- each with the side every phase falls on, derived once
         # (§ 35).
         listed = block if isinstance(block, list) else [block]
-        steps = [
-            dict(step, name=step.get("name"), sides=live_data_sides(step))
-            for step in listed
-        ]
+        shown = (
+            {one["name"]: one for one in self.deploy_target(target, chosen)["choices"]}
+            if entry.get("choices")
+            else {}
+        )
+        if chosen and not shown:
+            # ⚠️ The refusal `deploy_target` makes for a choice the target does
+            # not declare, made by it rather than restated.
+            self.deploy_target(target, chosen)
+        steps = live_data_steps(listed, shown)
         return {
             "target": dict(entry),
             "found": block,
@@ -6755,14 +6775,18 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                 raise ConfigError(
                     f"{here}.warnings", f"states nothing about {value!r} (§ 33)."
                 )
+    # ⛔ A choice a live data step's side places reaches that step, so it is not a
+    # choice the command has to place too (§ 35).
+    sided = _side_choices_of(entry)
     if shell:
         placed = _CHOICE_PLACED.findall(entry["command"])
         for name in names:
-            if name not in placed:
+            if name not in placed and name not in sided:
                 raise ConfigError(
                     f"{where}.command",
                     f"never places the choice {name!r}, written {{choose:{name}}}, "
-                    "so its value would be shown in a go and reach nothing (§ 33).",
+                    "and no live data step's side places it, so its value would be "
+                    "shown in a go and reach nothing (§ 33).",
                 )
         for name in placed:
             if name not in names:
@@ -6780,12 +6804,40 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
         if key in ("choices", "batch", AFTER_VERIFIED) or (key == "command" and shell):
             continue
         for path, name in _placed_elsewhere(value, f"{where}.{key}"):
+            # ⚠️ A step's side is held by § 35's own validator, which says what is
+            # wrong with a placement there rather than that it is out of place.
+            if key == "live_data_step" and _A_SIDE_PATH.search(path):
+                continue
             raise ConfigError(
                 path,
                 f"places the choice {name!r}, which is read in a `command` target's "
-                "`command`, in a `batch` and in a step's `command`, and nowhere "
-                "else (§ 33).",
+                "`command`, in a `batch`, in a step's `command` and in a live data "
+                "step's `order` and `sides`, and nowhere else (§ 33).",
             )
+
+
+# Where § 35 lets a step place a choice: its `order`, and one phase's side.
+_A_SIDE_PATH = re.compile(r"\.live_data_step(\[\d+\])?\.(order|sides\.[^.]+)$")
+
+
+def _side_choices_of(entry: dict) -> set:
+    """Every choice a live data step's side places on one § 33 entry (§ 35).
+
+    ⚠️ Every placement under a side, whole or beside other text: one stating both
+    forms is § 35's to refuse with both named, and § 33 reading it as a choice
+    placed nowhere would refuse it first under the wrong rule.
+    """
+    stated = entry.get("live_data_step")
+    blocks = stated if isinstance(stated, list) else [stated]
+    out = set()
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        sides = block.get("sides") if isinstance(block.get("sides"), dict) else {}
+        for value in [block.get("order"), *sides.values()]:
+            if isinstance(value, str):
+                out |= set(_CHOICE_PLACED.findall(value))
+    return out
 
 
 def _validate_background(where: str, entry: dict, facts: dict) -> None:
@@ -6976,6 +7028,13 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
         return
     at = f"{where}.live_data_step"
     stated = entry["live_data_step"]
+    # § 33's choices on this entry, which a step's side may place (§ 35). Already
+    # validated by the time this runs, `_validate_choices` coming first.
+    choices = {
+        choice["name"]: choice
+        for choice in entry.get("choices") or ()
+        if isinstance(choice, dict) and isinstance(choice.get("name"), str)
+    }
     if isinstance(stated, dict):
         # ⛔ One step, exactly as it always was -- and no `name`, a name on the
         # only step being a fact nothing reads (§ 35).
@@ -6986,7 +7045,7 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
                 "is what addresses one step of a list; a target with one step "
                 "states the block alone.",
             )
-        _validate_one_live_data_step(at, stated, facts, listed=False)
+        _validate_one_live_data_step(at, stated, facts, listed=False, choices=choices)
         return
     if not isinstance(stated, list) or not stated:
         raise ConfigError(
@@ -7021,7 +7080,7 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
                 "licensing either write (§ 35).",
             )
         seen.add(name)
-        _validate_one_live_data_step(here, block, facts, listed=True)
+        _validate_one_live_data_step(here, block, facts, listed=True, choices=choices)
 
 
 # § 35's sequence, which the sides a step's phases fall on may never run
@@ -7080,8 +7139,84 @@ def live_data_sides(block: dict) -> dict:
     return out
 
 
+def live_data_side_choices(block: dict) -> dict:
+    """Where one step lets a run choose a side, as `{"order" | "sides.<phase>": name}`.
+
+    ⛔ A side is chosen by placing a § 33 choice as the whole value, `{choose:<name>}`
+    -- the placement § 33 already writes in a command, read one key over (§ 35). A
+    value carrying a placement beside anything else is not read as one here; the
+    loader refuses it as both forms.
+    """
+    stated = [("order", block.get("order"))]
+    sides = block.get("sides")
+    if isinstance(sides, dict):
+        stated += [(f"sides.{phase}", side) for phase, side in sides.items()]
+    out = {}
+    for where, value in stated:
+        found = _CHOICE_PLACED.fullmatch(value) if isinstance(value, str) else None
+        if found:
+            out[where] = found.group(1)
+    return out
+
+
+def live_data_steps(listed: list, shown: dict) -> list:
+    """Every step of one target as a run performs it, its chosen sides resolved.
+
+    `shown` is `deploy_target`'s choices keyed by name. ⛔ The one construction
+    of a step as the carrier reads it -- the side each phase falls on, and which
+    choice placed it, with its value and warnings for the go (§ 35).
+    """
+    values = {name: one["value"] for name, one in shown.items()}
+    steps = []
+    for step in listed:
+        placed = live_data_side_choices(step)
+        resolved = live_data_resolved(step, values)
+        steps.append(
+            dict(
+                resolved,
+                name=step.get("name"),
+                sides=live_data_sides(resolved),
+                side_chosen=[
+                    {
+                        "name": name,
+                        "value": shown[name]["value"],
+                        "chosen": shown[name]["chosen"],
+                        "warnings": list(shown[name]["warnings"]),
+                        "places": sorted(
+                            where for where, one in placed.items() if one == name
+                        ),
+                    }
+                    for name in sorted(set(placed.values()))
+                ],
+            )
+        )
+    return steps
+
+
+def live_data_resolved(block: dict, values: dict) -> dict:
+    """One step with every chosen side replaced by the value the run takes.
+
+    `values` maps a choice's name to the side taken. ⛔ The one resolution of a
+    chosen side, which the loader runs once per allowed value and the accessor
+    once per run: a step's placement is then read by `live_data_sides` exactly as
+    a fixed one is (§ 35).
+    """
+    placed = live_data_side_choices(block)
+    if not placed:
+        return block
+    out = dict(block)
+    if isinstance(block.get("sides"), dict):
+        out["sides"] = dict(block["sides"])
+    for where, name in placed.items():
+        if where == "order":
+            out["order"] = values[name]
+        else:
+            out["sides"][where.split(".", 1)[1]] = values[name]
+    return out
+
+
 def _validate_one_live_data_step(
-    at: str, block: dict, facts: dict, *, listed: bool
+    at: str, block: dict, facts: dict, *, listed: bool, choices: dict
 ) -> None:
     """One step of § 35, whether it is the target's only one or one of a list."""
     # ⛔ Read off § 35's own entry fence rather than listed here, which is
@@ -7202,17 +7337,65 @@ def _validate_one_live_data_step(
                 "be read back. ⚠️ A file redirected into the command is its "
                 "payload rather than an answer and is not what this refuses.",
             )
-    for key, what in (
-        ("apply_by", "who performs a live data step's write"),
-        ("order", "which side of the invocation a live data step falls on"),
-    ):
-        stated = vocabulary(facts, f"deploy.live_data_step.{key}", what)
-        if block[key] not in stated:
+    stated = vocabulary(
+        facts, "deploy.live_data_step.apply_by", "who performs a live data step's write"
+    )
+    if block["apply_by"] not in stated:
+        raise ConfigError(
+            f"{at}.apply_by",
+            f"is {block['apply_by']!r}; the surface states {' | '.join(stated)}.",
+        )
+    _validate_a_side(
+        f"{at}.order", block["order"], facts, choices, "deploy.live_data_step.order"
+    )
+    _validate_live_data_sides(at, block, declared, facts, choices)
+
+
+def _validate_a_side(at: str, value, facts: dict, choices: dict, path: str) -> None:
+    """One side a step states: fixed, or a § 33 choice whose every value is a side.
+
+    ⛔ **Fixed or chosen, never both.** A value placing a choice beside a fixed side
+    would let a reader believe whichever half they read first, so it is refused with
+    both named -- the rule `absent_reason` is held to beside a dump (§ 35).
+    """
+    sides = vocabulary(facts, path, "which side of the invocation a live data step falls on")
+    placed = _CHOICE_PLACED.findall(value) if isinstance(value, str) else []
+    if not placed:
+        if value not in sides:
+            raise ConfigError(at, f"is {value!r}; the surface states {' | '.join(sides)}.")
+        return
+    if not _CHOICE_PLACED.fullmatch(value):
+        fixed = [side for side in sides if side in value]
+        raise ConfigError(
+            at,
+            f"is {value!r}, which states both forms -- "
+            + (f"the fixed side {fixed[0]!r}" if fixed else f"the text {value!r}")
+            + " and the choice "
+            + ", ".join(repr(name) for name in placed)
+            + ". ⛔ A side is fixed or chosen, never both: write one side, or "
+            "`{choose:<name>}` alone (§ 35).",
+        )
+    name = placed[0]
+    if name not in choices:
+        raise ConfigError(
+            at,
+            f"places the choice {name!r}, which no choice of this target declares "
+            f"(§ 33). It declares {', '.join(repr(one) for one in choices) or 'none'}.",
+        )
+    choice = choices[name]
+    if "joined_by" in choice:
+        raise ConfigError(
+            at,
+            f"places the choice {name!r}, which a run may give several values, and "
+            "a phase falls on one side (§ 35). Drop its `joined_by`.",
+        )
+    for value_stated in choice["values"]:
+        if value_stated not in sides:
             raise ConfigError(
-                f"{at}.{key}",
-                f"is {block[key]!r}; the surface states {' | '.join(stated)}.",
+                at,
+                f"places the choice {name!r}, which allows {value_stated!r}, not a "
+                f"side; every value of a chosen side is one of {' | '.join(sides)} (§ 35).",
             )
-    _validate_live_data_sides(at, block, declared, facts)
 
 
 def _validate_live_data_preview(at: str, block: dict, declared: set) -> None:
@@ -7259,7 +7442,9 @@ def _validate_live_data_preview(at: str, block: dict, declared: set) -> None:
         )
 
 
-def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) -> None:
+def _validate_live_data_sides(
+    at: str, block: dict, declared: set, facts: dict, choices: dict
+) -> None:
     """`sides`, and the placement no deploy may perform: a write ahead of its evidence.
 
     ⛔ **Refused at the load rather than discovered at a deploy** that has already
@@ -7289,15 +7474,10 @@ def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) 
                     "placement nothing performs. The phases it declares are: "
                     f"{', '.join(sorted(inside))}.",
                 )
-            stated = vocabulary(
-                facts, f"deploy.live_data_step.sides.{phase}",
-                "which side of the invocation a phase falls on",
+            _validate_a_side(
+                f"{at}.sides.{phase}", side, facts, choices,
+                f"deploy.live_data_step.sides.{phase}",
             )
-            if side not in stated:
-                raise ConfigError(
-                    f"{at}.sides.{phase}",
-                    f"is {side!r}; the surface states {' | '.join(stated)}.",
-                )
         if "backup" in sides and backup_absent(block) is not None:
             raise ConfigError(
                 f"{at}.sides.backup",
@@ -7315,22 +7495,34 @@ def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) 
         facts, "deploy.live_data_step.order",
         "which side of the invocation a live data step falls on",
     )
-    placed = live_data_sides(block)
-    previous = None
-    for phase in LIVE_DATA_PHASES:
-        side = placed[phase]
-        if side is None:
-            continue
-        if previous is not None and rank.index(side) < rank.index(placed[previous]):
-            raise ConfigError(
-                f"{at}.sides.{phase}",
-                f"puts the {phase} {side}, ahead of the {previous} it follows "
-                f"({placed[previous]}). ⛔ A write is never reached before its own "
-                "verified backup, nor before its own rehearsal, whatever the "
-                "placement, and an order a deploy could not perform is refused "
-                "here rather than discovered after the invocation (§ 35).",
-            )
-        previous = phase
+    # ⛔ A chosen side is held under **every** value its choice allows, not only
+    # the default: a run may take any of them, and a placement one of them would
+    # run backwards is a deploy the go could license and no rail could perform.
+    names = sorted(set(live_data_side_choices(block).values()))
+    for taken in itertools.product(*(choices[name]["values"] for name in names)):
+        values = dict(zip(names, taken))
+        placed = live_data_sides(live_data_resolved(block, values))
+        under = (
+            " when the run chooses "
+            + ", ".join(f"{name}={value}" for name, value in values.items())
+            if values
+            else ""
+        )
+        previous = None
+        for phase in LIVE_DATA_PHASES:
+            side = placed[phase]
+            if side is None:
+                continue
+            if previous is not None and rank.index(side) < rank.index(placed[previous]):
+                raise ConfigError(
+                    f"{at}.sides.{phase}",
+                    f"puts the {phase} {side}, ahead of the {previous} it follows "
+                    f"({placed[previous]}){under}. ⛔ A write is never reached before "
+                    "its own verified backup, nor before its own rehearsal, whatever "
+                    "the placement, and an order a deploy could not perform is "
+                    "refused here rather than discovered after the invocation (§ 35).",
+                )
+            previous = phase
 
 
 # § 34's one capture, and the one name in this module that is a *grammar* rather
@@ -18670,6 +18862,65 @@ def self_test() -> int:
             f"and the answer says it is reached by {shape}",
             isinstance(got, dict) and got["reached_by"] == shape, f"answered {got!r}",
         )
+    got = choosing("side=" + _the_sides()[1], "scope=all", **{
+        **dispatched, "inputs": {"always": "sent"},
+        "choices": [_a_choice(), _a_side_choice()],
+        "live_data_step": _a_live_data_step(order="{choose:side}"),
+    })
+    check(
+        "a choice a live data step's side places is sent to the host as no input (§ 35)",
+        isinstance(got, dict) and got["inputs"] == {"always": "sent", "scope": "all"},
+        f"answered {got!r}",
+    )
+
+    def stepping(*handed, **overrides):
+        loaded = _a_valid_example()
+        loaded["deploy"] = [_a_deploy_target(**overrides)]
+        with open(SURFACE, encoding="utf-8") as handle:
+            facts = surface_facts(handle.read())
+        try:
+            read = _resolve(loaded, EXAMPLES, facts, False).live_data_step(
+                loaded["deploy"][0]["name"], list(handed)
+            )
+        except ConfigError as error:
+            return error.key
+        return read["steps"][0]
+
+    before, after = _the_sides()
+    sided = {
+        "choices": [_a_side_choice()],
+        "live_data_step": _a_live_data_step(
+            order="{choose:side}", sides={"backup": before}),
+    }
+    for label, handed, side, chosen in (
+        ("a step read with no choice takes the choice's default side", (), before, False),
+        ("and read with the other side chosen, takes it", ("side=" + after,), after, True),
+    ):
+        got = stepping(*handed, **sided)
+        check(
+            label,
+            isinstance(got, dict) and got["order"] == side
+            and got["sides"] == {"backup": before, "preview": None,
+                                 "rehearse": None, "apply": side}
+            and got["side_chosen"] == [{
+                "name": "side", "value": side, "chosen": chosen,
+                "warnings": ["the new code serves first"] if side == after else [],
+                "places": ["order"],
+            }],
+            f"answered {got!r}",
+        )
+    got = stepping("side=whenever", **sided)
+    check(
+        "a side the choice does not allow is refused by § 33's own resolution",
+        got == "deploy.choices.side", f"answered {got!r}",
+    )
+    got = stepping(**{"live_data_step": _a_live_data_step(order=after)})
+    check(
+        "a step stating a fixed order is read exactly as stated, with no chosen side",
+        isinstance(got, dict) and got["order"] == after and got["side_chosen"] == [],
+        f"answered {got!r}",
+    )
+
     got = choosing(**placed)
     check(
         "and a command's answer says the same beside its root's own form",
@@ -19095,6 +19346,25 @@ def self_test() -> int:
         ("a side naming the side order already states loads",
          {"live_data_step": _a_live_data_step(
              order=_the_sides()[0], sides={"apply": _the_sides()[0]})}),
+        # ⛔ A side chosen for one run, from a § 33 choice the target declares --
+        # placed in `order`, and in one phase's side with the dump fixed before.
+        # The command places no choice: the step's side is what the choice reaches.
+        ("a step whose order is a choice between both sides loads",
+         {"choices": [_a_side_choice()],
+          "live_data_step": _a_live_data_step(order="{choose:side}")}),
+        ("a step whose write's side is a choice, its dump fixed before, loads",
+         {"choices": [_a_side_choice()],
+          "live_data_step": _a_live_data_step(
+              rehearse="a-dry-run", order=_the_sides()[0],
+              sides={"rehearse": "{choose:side}", "apply": "{choose:side}"})}),
+        ("a chosen side on a dispatching target loads",
+         {"invoke": "dispatch", "command": _ABSENT, "ref": "a-ref",
+          "workflow": _a_workflow_the_example_states(),
+          "choices": [_a_side_choice()],
+          "live_data_step": _a_live_data_step(order="{choose:side}")}),
+        ("a choice the command places and a step's side places too loads",
+         {"command": "a-command --when={choose:side}", "choices": [_a_side_choice()],
+          "live_data_step": _a_live_data_step(order="{choose:side}")}),
     ):
         loaded = _a_valid_example()
         loaded["deploy"] = [_a_deploy_target(**overrides)]
@@ -20884,6 +21154,47 @@ def _planted_violations():
         ("an order outside its alternation", "deploy[0].live_data_step.order",
          at("deploy", [_a_deploy_target(
              live_data_step=_a_live_data_step(order="whenever"))])),
+        # ⛔ A side chosen for one run, each way it can name less than a side.
+        ("an order placing a choice the target does not declare",
+         "deploy[0].live_data_step.order",
+         at("deploy", [_a_deploy_target(
+             live_data_step=_a_live_data_step(order="{choose:side}"))])),
+        ("an order placing a choice whose values are not sides",
+         "deploy[0].live_data_step.order",
+         at("deploy", [_a_deploy_target(
+             choices=[_a_choice()],
+             live_data_step=_a_live_data_step(order="{choose:scope}"))])),
+        ("an order placing a choice a run may give several values",
+         "deploy[0].live_data_step.order",
+         at("deploy", [_a_deploy_target(
+             choices=[_a_side_choice(default=[_the_sides()[0]], joined_by=",")],
+             live_data_step=_a_live_data_step(order="{choose:side}"))])),
+        ("an order stating both a fixed side and a choice",
+         "deploy[0].live_data_step.order",
+         at("deploy", [_a_deploy_target(
+             choices=[_a_side_choice()],
+             live_data_step=_a_live_data_step(
+                 order=_the_sides()[0] + "{choose:side}"))])),
+        ("a phase's side stating both a fixed side and a choice",
+         "deploy[0].live_data_step.sides.apply",
+         at("deploy", [_a_deploy_target(
+             choices=[_a_side_choice()],
+             live_data_step=_a_live_data_step(
+                 sides={"apply": "{choose:side} " + _the_sides()[1]}))])),
+        # ⛔ Held under every value the choice allows, not the default alone: the
+        # default here places the write after its dump, the other value ahead.
+        ("a chosen order putting the write before a dump fixed after it",
+         "deploy[0].live_data_step.sides.apply",
+         at("deploy", [_a_deploy_target(
+             choices=[_a_side_choice(default=_the_sides()[1])],
+             live_data_step=_a_live_data_step(
+                 order=_the_sides()[1], sides={"apply": "{choose:side}"}))])),
+        ("a choice placed in a step's own command rather than its side",
+         "deploy[0].live_data_step.apply",
+         at("deploy", [_a_deploy_target(
+             choices=[_a_side_choice()],
+             live_data_step=_a_live_data_step(
+                 order="{choose:side}", apply="a-write --{choose:side}"))])),
         # ⛔ The three shapes an answer is fed by, each planted alone, and the
         # false-refusal bound beside them in the green side below. ⚠️ The pipe is
         # planted on both of the commands this rule reaches, since a rule written
@@ -24082,6 +24393,20 @@ def _a_choice(**overrides) -> dict:
     choice.update(overrides)
     if "values" in overrides and "warnings" not in overrides:
         choice.pop("warnings")
+    return {key: value for key, value in choice.items() if value is not _ABSENT}
+
+
+def _a_side_choice(**overrides) -> dict:
+    """One § 33 choice between § 35's two sides, earlier first by default.
+
+    ⛔ Its values read off the surface, for `_the_sides`'s reason.
+    """
+    before, after = _the_sides()
+    choice = {
+        "name": "side", "values": [before, after], "default": before,
+        "warnings": {after: "the new code serves first"},
+    }
+    choice.update(overrides)
     return {key: value for key, value in choice.items() if value is not _ABSENT}
 
 

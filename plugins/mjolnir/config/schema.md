@@ -8075,6 +8075,7 @@ they were handed over in, so one selection has one spelling.
 | `command` | in place of `{choose:<name>}`, everywhere the command carries it |
 | `dispatch` | as a typed input of that name, beside the ones `inputs` always sends |
 | `by_hand` | named with the workflow and the ref, as every input is |
+| any shape, for a choice a live data step's side places | as the side that step's phases fall on, [§ 35](#a-side-chosen-for-one-run-and-the-go-that-names-it)'s — and on a `dispatch` or `by_hand` target, as no input |
 
 ⛔ **On a `command` target a value is held to words a shell reads as themselves, and that is the
 quoting.** Every value and every `joined_by` is ASCII letters, digits and `_ . / : @ % + , = -`, and
@@ -8083,10 +8084,12 @@ not quoted at the substitution, because a command may already place the word ins
 [§ 1](#a-command-root-is-not-a-code-root)'s form may place the whole command inside another: quotes
 added here would close those. A value needing a space is a word the project's own command maps.
 
-The command and the declaration agree in both directions: a declared choice the command never places
-would be shown in a go and reach nothing, and a placed name no choice declares would reach the shell
-as written. Each is refused with the name. A choice reaches `command` and `batch` and no other
-command of the entry, so a placement written in any other key is refused too — and one `batch`
+The command and the declaration agree in both directions: a declared choice neither the command nor
+a live data step's side places would be shown in a go and reach nothing, and a placed name no choice
+declares would reach the shell as written. Each is refused with the name. A choice reaches
+`command`, `batch`, a step's `command` under `after_verified`, and a live data step's `order` and
+`sides`, and no other key of the entry: a placement written anywhere else, a live data step's own
+commands included, is refused too. One `batch`
 places is held to the plain words above whatever the target's shape, since
 [the batch](#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against) runs in a
 shell on every shape. `batch` need not place a choice, and a name it places that no choice declares
@@ -9034,7 +9037,9 @@ have turned off this section's rail.
 
 `order` is required and states which side of § 33's invocation the step runs on — the whole of it,
 unless `sides` places a phase of it elsewhere
-([below](#several-steps-on-one-target-and-the-side-each-phase-falls-on)).
+([below](#several-steps-on-one-target-and-the-side-each-phase-falls-on)). It, and any phase's side,
+is either one of the two sides or a choice the run makes
+([below](#a-side-chosen-for-one-run-and-the-go-that-names-it)).
 
 | `order` | when the step runs |
 |---|---|
@@ -9053,6 +9058,71 @@ schema is knowledge of that project's code, which is
 [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle column. The
 role states the order it is taking, and says that it took the configured one rather than a judgement
 of its own.
+
+### A side chosen for one run, and the go that names it
+
+A project whose releases want the write on either side states the side as a choice rather than as
+two targets differing only in `order`, which would duplicate every other key and let the batch be
+advanced under either name. The surveyed copy that decides it per release writes **before** the
+image whenever the new code hard-requires the schema, and **after** it only for writes purely
+additive to code already running — or where the running code still reads what the write drops.
+
+⛔ **The choice is § 33's, and this section adds no second vocabulary for it.** The target declares
+it under [`choices`](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target) — its allowed
+values, the default a run choosing nothing takes, and a warning per value — and the step places it
+as the **whole** value of `order`, or of one phase's side, with § 33's own placement — here with
+the dump held before the invocation and the rest of the step on the side the run takes:
+
+```yaml
+deploy:
+  - name: production
+    choices:
+      - name: side
+        values: [before_invoke, after_invoke]
+        default: before_invoke
+    live_data_step:
+      backup:
+        run: "<the command that dumps the live store>"
+        verify: "<the command that reads the dump back>"
+      apply: "<the command that writes to the live store>"
+      apply_by: procedure
+      order: "{choose:side}"
+      sides:
+        backup: before_invoke
+      record: "<a command printing one path per line>"
+```
+
+A `warnings` entry for `after_invoke` — that the new code serves before the write lands — is the
+one most projects stating this want, and it is § 33's key, written there as for any other value.
+
+| what a side states | what the loader does |
+|---|---|
+| one of the two sides | loads: the side is fixed, read exactly as the sections above describe |
+| `{choose:<name>}` alone, naming a choice whose every value is a side and which states no `joined_by` | loads: the side is the run's |
+| a placement naming a choice the target does not declare | refused, naming the choices it does declare |
+| a placement naming a choice with a value that is not a side, or a `joined_by` | refused — a phase falls on one side |
+| a placement beside a fixed side, or beside any other text | refused with both named — a side is fixed or chosen, never both |
+
+⛔ **The placement rule holds under every value the choice allows**, not under the default alone: a
+step whose write would fall ahead of its own dump or rehearsal under one allowed value is refused at
+the load with that value named, since a run may take it. So a dump fixed `before_invoke` beside a
+chosen `order` is the shape that moves the write and never the backup ahead of it.
+
+**The run's value is resolved by § 33's reader**, before the go and with § 33's refusals, from
+exactly the selection the deploy was handed. The sequence the step performs follows the side it
+resolves to, and the backup still opens it whichever side that is. A choice a step's side places is
+the step's: on a `dispatch` or `by_hand` target it is sent and named as no input, and on a `command`
+target the command need not place it, though it may.
+
+⛔ **The go names the side taken**, beside the preview's output and with the choice's warning for
+that side, and says whether the run chose it or took the default. A go on such a step that does not
+name the side is refused like any other go naming too little. ⛔ **A reading is for the side it was
+taken under**: a later side or a write handed a selection that places the phases otherwise reaches
+nothing, the dump and the rehearsal being taken again — § 33's *a different selection is a
+different deploy*, met at the write.
+
+A step stating fixed sides is untouched by any of this, and its go names no side beyond the order
+the plan already states.
 
 ### Several steps on one target, and the side each phase falls on
 
@@ -9139,7 +9209,8 @@ The report names what it could not establish, by
 [§ 11](#a-report-names-what-it-could-not-establish). This step adds its own list: whether the dump
 was verified and by what, or that the step takes none and why, whether a preview ran and where its
 output is, whether a rehearsal ran at all, what its output was read as, which order was taken and
-whether the configured one was overruled, whether the apply ran or was handed over, and — where it
+whether the configured one was overruled — or, where the side is a choice, the value taken and
+whether the run chose it — whether the apply ran or was handed over, and — where it
 ran and failed — what the store is left holding, and — where the target lists several steps — each
 of them by name as written, handed over or not made.
 
