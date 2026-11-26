@@ -7,8 +7,8 @@ this module states none of it. What is here is what the deploying role should no
   * **The handed set** -- the backlog read through the port's `search_items` (§ 3), each item
     placed against `statuses` by the port, and the ones holding the roles a purpose hands kept.
   * **The run** -- the project's own command, resolved by the reader with the run's target,
-    commit and choices put in place, run once per purpose with the handed identifiers on its
-    input.
+    commit, grouping value and choices put in place, run once per purpose with the handed
+    identifiers on its input.
   * **The match** -- what it printed against what it was handed, naming both differences.
 
 ⚠️ **Nothing here advances, holds or decides.** The carried set is a candidate list: the role
@@ -16,7 +16,7 @@ reads each item's role again where it advances it, and whether a precondition ho
 is the role's reading of the answer rather than this module's verdict.
 
 Usage:
-    batch.py run --target NAME [--commit SHA] [--choose NAME=VALUE ...]
+    batch.py run --target NAME [--commit SHA] [--grouping-value VALUE] [--choose NAME=VALUE ...]
     batch.py --self-test
 
 Exit status: 0 answered; 2 the configuration, the backlog or the command could not be read or
@@ -172,7 +172,7 @@ def answer(tracker, resolved: dict, read: dict | None, run=_ran) -> dict:
 def run(args, tracker, resolved_by=None, ran=_ran) -> int:
     """`run`, over whichever tracker and reader it was handed."""
     resolved = (resolved_by or config.load(args.skills_root)).deploy_batch(
-        args.target, args.choose, args.commit
+        args.target, args.choose, args.commit, getattr(args, "grouping_value", None)
     )
     if resolved["batch"] is None:
         print(f"The target {args.target!r} carries no batch (§ 33), so nothing is handed "
@@ -193,6 +193,9 @@ def main(argv: list[str] | None = None) -> int:
     running.add_argument("--commit", help="the commit this deploy serves, as the run read it")
     running.add_argument("--choose", action="append", metavar="NAME=VALUE",
                          help="one of the run's choices, exactly as the go shows it")
+    running.add_argument("--grouping-value", metavar="VALUE",
+                         help="the grouping's own value the go names, for a command "
+                         "placing {deploy:grouping}")
     args = parser.parse_args(argv)
     if args.self_test:
         return self_test()

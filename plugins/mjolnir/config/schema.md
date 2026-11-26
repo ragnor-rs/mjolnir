@@ -7992,7 +7992,7 @@ deploy:
       reading:    "<a reading the project's own verification reports under>"
     after_verified:            # a list; one entry per step, run in order once the verification is clean
       name:       "<the name a step's outcome is handed back under>"
-      command:    "<the whole command; it may place {deploy:commit}, {deploy:target} and {choose:<name>}>"
+      command:    "<the whole command; it may place {deploy:commit}, {deploy:target}, {deploy:grouping} and {choose:<name>}>"
       performed_by: procedure | human
     figures:                   # a list; one entry per check whose figures the reply carries
       check:      "<the check's name, as the verification reports its outcome>"
@@ -8323,6 +8323,7 @@ port could not place is named as unplaced, by [§ 11](#a-report-names-what-it-co
 | `{deploy:target}` | the target's `name` |
 | `{deploy:commit}` | the commit this deploy serves, as the run established it — an object name, seven to sixty-four lowercase hexadecimal characters |
 | `{deploy:purpose}` | `advance`, `precondition` or `report` |
+| `{deploy:grouping}` | the grouping value the go shows, by [its own rule](#the-grouping-value-a-targets-commands-are-handed) |
 | `{choose:<name>}` | the value [the run's choice](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target) takes — the one the go shows |
 
 Every value is a word a shell reads as itself, for the reason a choice's is, so nothing is quoted at
@@ -8484,7 +8485,7 @@ collected per change, and the two keys do not stand in for each other.
 | the key | what it states | what is refused where it is written |
 |---|---|---|
 | `name` | the name a step's outcome is handed back under: letters, digits, `_` and `-` | a name another step of the target carries |
-| `command` | the whole command, on one line | a `{deploy:<word>}` other than `commit` and `target`, `{deploy:target}` on a target whose name is not one plain word, and a `{choose:<name>}` no choice of the target declares |
+| `command` | the whole command, on one line | a `{deploy:<word>}` other than `commit`, `target` and `grouping`, `{deploy:target}` on a target whose name is not one plain word, and a `{choose:<name>}` no choice of the target declares |
 | `performed_by` | `procedure` runs the command; `human` hands it to the person running the deploy, who answers whether it was done | anything outside the alternation |
 
 ⛔ **The steps run in the order the list states them, and none runs unless the verification is
@@ -8494,12 +8495,13 @@ outcomes, and not a second reading of them: a verification holding the advance r
 the report names the checks that held it. ⚠️ **The key is refused beside `invoke: by_hand`**, where
 this procedure makes no deploy and reads no verification for a step to follow.
 
-⛔ **A step reads the deploy through two placements and the run's choices.** `{deploy:commit}` is
-the commit the deploy serves, as the run established it, and a step placing it with no commit
-handed over is a stop; `{deploy:target}` is the target's name. `{choose:<name>}` is the value the
-go showed for that choice, and ⛔ **a choice a step places is held to the plain words a `command`
-target's are**, whatever the target's shape, since a step's command reaches a shell on every one. A
-step runs where the target's own act runs, which is the rule its `batch` already has.
+⛔ **A step reads the deploy through three placements and the run's choices.** `{deploy:commit}`
+is the commit the deploy serves, as the run established it, and a step placing it with no commit
+handed over is a stop; `{deploy:target}` is the target's name; `{deploy:grouping}` is
+[the grouping value](#the-grouping-value-a-targets-commands-are-handed). `{choose:<name>}` is the
+value the go showed for that choice, and ⛔ **a choice a step places is held to the plain words a
+`command` target's are**, whatever the target's shape, since a step's command reaches a shell on
+every one. A step runs where the target's own act runs, which is the rule its `batch` already has.
 
 **Every performed step comes back with one outcome, and only one lets the next step run:**
 
@@ -8664,6 +8666,41 @@ A project carrying no grouping publishes nothing and says so: `grouping: none` o
 `publishes: false`, and the release writes the items the batch carried, advanced to the role the
 entry names. That is not a deploy that writes nothing on the tracker at all, and the report says
 which of the two the project is.
+
+### The grouping value a target's commands are handed
+
+The grouping value the invocation carries — `5.7`, never the name the entry keys its grouping on —
+is the one the go shows. A command that builds, migrates or tags per version is handed that value
+by placing `{deploy:grouping}`, so it never derives the version again from the branch it happens to
+be checked out on. Two derivations nothing compares are how a go approving `5.7` from a tree on
+`release/5.8` builds, migrates and tags `5.8`.
+
+| where it may be placed | beside what else |
+|---|---|
+| `command`, on a `command` target | the run's choices; no other `{deploy:<word>}` |
+| `batch` | [the batch's own placements](#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against) |
+| each `after_verified` step's `command` | [a step's own placements](#what-runs-after-a-verified-deploy-and-what-a-failed-step-leaves-standing) |
+| each `figures` entry's `reads` | nothing else |
+| a live data step's `backup.run`, `backup.verify`, `preview.run`, `rehearse` and `apply` | nothing else |
+
+⛔ **A placement on a target whose `grouping` is `none` is refused at the load**, with its path
+named: no run has a value to hand it, so the command would run with the placement's own text where
+the version belongs. A live data step's `record` places nothing, refused the same way: it is read
+by a check on the change, where no deploy and no go exist to name a value
+([§ 35](#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under)).
+
+The value is a word a shell reads as itself, for the reason a choice's is, and nothing is quoted at
+the substitution. One that is not, or one handed to a target scoped to no grouping, is refused
+before anything is resolved. ⛔ **A command placing the value with none handed over is a stop
+before the go**, and so is a batch or a live data step placing it; a figure command is refused
+where it would be read, and a step after the verification only where it would run. Every carrier
+that resolves one of these commands takes the same value, as it takes the same choices.
+
+Where a live data step places the value, the go names it, and a reading prepared under one value
+licenses no write under another, by the rule a chosen side is held to
+([§ 35](#a-side-chosen-for-one-run-and-the-go-that-names-it)).
+
+A target placing nothing is handed nothing and runs as it did before the placement existed.
 
 ### What a change in the batch owes this target, and where the step falls
 
@@ -9199,6 +9236,10 @@ different deploy*, met at the write.
 
 A step stating fixed sides is untouched by any of this, and its go names no side beyond the order
 the plan already states.
+
+A step whose commands place [the grouping value](#the-grouping-value-a-targets-commands-are-handed)
+is held the same way: its go names the value, and a reading prepared under one value licenses no
+write under another.
 
 ### Several steps on one target, and the side each phase falls on
 

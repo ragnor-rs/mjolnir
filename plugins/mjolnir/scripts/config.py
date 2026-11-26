@@ -3513,12 +3513,20 @@ class Config:
             "narrowed_to": list(working["files"]) if "files" in working else None,
         }
 
-    def deploy_target(self, target: str, chosen: list[str] | None = None) -> dict:
+    def deploy_target(
+        self, target: str, chosen: list[str] | None = None, grouping: str | None = None
+    ) -> dict:
         """One § 33 target as a run would invoke it, its choices resolved.
 
         `chosen` is `name=value` strings, a name repeated where its choice may
         take several. ⛔ Every refusal is made here, ahead of any go: what comes
         back is the whole of what the go shows and the whole of what is run.
+
+        `grouping` is the grouping's own value the go names, placed where the
+        command states `{deploy:grouping}`. ⚠️ A command placing it with no value
+        handed comes back unfilled and with `grouping_unhanded` set, so a reader
+        after the tree or the choices alone is answered; ⛔ whatever runs the
+        command refuses that answer (§ 33).
         """
         entries = [one for one in self.get("deploy") or () if isinstance(one, dict)]
         entry = next((one for one in entries if one.get("name") == target), None)
@@ -3531,6 +3539,7 @@ class Config:
         refusal = _not_implemented_refusal(entry)
         if refusal is not None:
             raise refusal
+        grouping = _grouping_word(target, entry, grouping)
         choices = {choice["name"]: choice for choice in entry.get("choices") or ()}
         asked: dict[str, list[str]] = {}
         for stated in chosen or ():
@@ -3588,6 +3597,8 @@ class Config:
             "reached_by": entry["invoke"],
             DEPLOY_CODE_ROOT: entry.get(DEPLOY_CODE_ROOT),
             "choices": shown,
+            "grouping": grouping,
+            "grouping_unhanded": False,
             # ⚠️ Empty where the entry states none, which is a stated absence the
             # carrier reading it reports rather than a list of conditions all met.
             "tree": [dict(one) for one in entry.get("tree") or ()],
@@ -3609,6 +3620,10 @@ class Config:
         command = entry["command"]
         if choices:
             command = _CHOICE_PLACED.sub(lambda found: sent[found.group(1)], command)
+        if grouping is not None:
+            command = _place_grouping(command, grouping, f"deploy[{target}].command")
+        elif f"{{deploy:{BATCH_GROUPING}}}" in command:
+            answer["grouping_unhanded"] = True
         root = entry.get(DEPLOY_CODE_ROOT)
         view = self.root(root) if root is not None else self.only_root
         # ⚠️ `None` where the entry states no background run, which is the
@@ -3621,7 +3636,11 @@ class Config:
         }
 
     def deploy_batch(
-        self, target: str, chosen: list[str] | None = None, commit: str | None = None
+        self,
+        target: str,
+        chosen: list[str] | None = None,
+        commit: str | None = None,
+        grouping: str | None = None,
     ) -> dict:
         """One § 33 target's `batch` command, as each of its purposes runs it.
 
@@ -3630,7 +3649,7 @@ class Config:
         command is handed on its input is the caller's -- the tracker's answer,
         which no reader of this file holds.
         """
-        shown = self.deploy_target(target, chosen)
+        shown = self.deploy_target(target, chosen, grouping)
         entry = next(one for one in self.get("deploy") if one.get("name") == target)
         answer = {
             "target": target,
@@ -3660,6 +3679,7 @@ class Config:
         if entry.get("choices"):
             values = {one["name"]: one["value"] for one in shown["choices"]}
             batch = _CHOICE_PLACED.sub(lambda found: values[found.group(1)], batch)
+        batch = _place_grouping(batch, shown["grouping"], "deploy.batch")
         root = entry.get(DEPLOY_CODE_ROOT)
         view = self.root(root) if root is not None else self.only_root
         # ⚠️ The command root is `command`'s, which a `command` target alone may
@@ -3672,7 +3692,9 @@ class Config:
             purposes.append({"purpose": purpose, **view.command(text, where)})
         return {**answer, "batch": entry["batch"], "purposes": purposes}
 
-    def live_data_step(self, target: str, chosen: list[str] | None = None) -> dict:
+    def live_data_step(
+        self, target: str, chosen: list[str] | None = None, grouping: str | None = None
+    ) -> dict:
         """§ 35's block on one § 33 target, with which answer it is said out loud.
 
         ⛔ **Three answers and not two**, because the two absences are not the
@@ -3695,6 +3717,11 @@ class Config:
         and with `side_chosen` naming each such choice, its value, whether the run
         chose it and its warnings, for the go to show (§ 35). A step stating fixed
         sides is handed back exactly as stated, and `side_chosen` is empty.
+
+        `grouping` is the grouping value the go names, placed in each command
+        `LIVE_DATA_GROUPED` lists. ⚠️ A step placing it with no value handed comes
+        back unfilled, its paths under `grouping_unhanded`, so a check reading
+        `record` alone is answered; ⛔ the carrier refuses to plan or run that step.
         """
         stated = [
             entry
@@ -3738,16 +3765,13 @@ class Config:
         # order stated -- each with the side every phase falls on, derived once
         # (§ 35).
         listed = block if isinstance(block, list) else [block]
+        resolved = self.deploy_target(target, chosen, grouping)
         shown = (
-            {one["name"]: one for one in self.deploy_target(target, chosen)["choices"]}
+            {one["name"]: one for one in resolved["choices"]}
             if entry.get("choices")
             else {}
         )
-        if chosen and not shown:
-            # ⚠️ The refusal `deploy_target` makes for a choice the target does
-            # not declare, made by it rather than restated.
-            self.deploy_target(target, chosen)
-        steps = live_data_steps(listed, shown)
+        steps = live_data_steps(listed, shown, resolved["grouping"])
         return {
             "target": dict(entry),
             "found": block,
@@ -3875,6 +3899,7 @@ class Config:
         chosen: list[str] | None = None,
         commit: str | None = None,
         outcomes: dict[str, str] | None = None,
+        grouping: str | None = None,
     ) -> dict:
         """§ 33's steps run once a deploy's verification is clean, in order.
 
@@ -3892,7 +3917,7 @@ class Config:
         the commit.
         """
         verdict = self.advance(target, readings)
-        shown = self.deploy_target(target, chosen)
+        shown = self.deploy_target(target, chosen, grouping)
         entry = next(one for one in self.get("deploy") if one.get("name") == target)
         steps = entry.get(AFTER_VERIFIED) or []
         if commit is not None and not _OBJECT_NAME.fullmatch(commit):
@@ -3935,7 +3960,15 @@ class Config:
                     "deploy serves, as the run established it.",
                 )
             text = _CHOICE_PLACED.sub(lambda found: values[found.group(1)], text)
-            words = {BATCH_TARGET: target, BATCH_COMMIT: commit or ""}
+            # ⚠️ Refused only where the step would run, which is the commit's rule:
+            # a verification holding the advance runs none and needs no value.
+            if clean:
+                text = _place_grouping(
+                    text, shown["grouping"],
+                    f"deploy[{target}].{AFTER_VERIFIED}.{step['name']}",
+                )
+            words = {BATCH_TARGET: target, BATCH_COMMIT: commit or "",
+                     BATCH_GROUPING: shown["grouping"] or ""}
             text = _BATCH_PLACED.sub(lambda found: words[found.group(1)], text)
             one = {
                 "name": step["name"],
@@ -6150,6 +6183,7 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         _validate_advance_requires(where, entry, data, facts)
         _validate_after_verified(where, entry, facts)
         _validate_figures(where, entry, facts)
+        _validate_grouping_placed(where, entry)
 
 
 def _validate_not_implemented(where: str, entry: dict) -> None:
@@ -6559,10 +6593,20 @@ _PLAIN_JOIN = re.compile(r"[A-Za-z0-9_./:@%+,=-]+")
 # placement is, and each word here is one row of that subsection's table.
 _BATCH_PLACED = re.compile(r"\{deploy:([^}]*)\}")
 BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE = "target", "commit", "purpose"
-BATCH_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE)
+# The grouping's own value the go named -- `5.7`, not the name the target keys
+# its grouping on -- which § 33 lets every command a target states place.
+BATCH_GROUPING = "grouping"
+BATCH_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE, BATCH_GROUPING)
 # What a step run after a clean verification may place: the purpose is a batch's
 # own and names nothing a step is run for.
-AFTER_VERIFIED_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT)
+AFTER_VERIFIED_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT, BATCH_GROUPING)
+# What the target's own `command` and a live data step's commands may place: the
+# grouping value alone, every other fact of the run reaching them already (§ 33).
+COMMAND_PLACEMENTS = (BATCH_GROUPING,)
+# ⛔ The live data step's commands a run hands the grouping value to. `record` is
+# not one: it is read by a check on the change, where no deploy and no go exist to
+# name a value (§ 35).
+LIVE_DATA_GROUPED = ("backup.run", "backup.verify", "preview.run", "rehearse", "apply")
 # § 33's three purposes a batch command is run for, one run each.
 ADVANCE, PRECONDITION, REPORT = "advance", "precondition", "report"
 # ⛔ An object name and nothing else: hexadecimal is a word every shell reads as
@@ -6619,6 +6663,117 @@ def _validate_batch_placements(where: str, entry: dict) -> None:
                 path,
                 f"places the choice {name!r}, and this target declares no choice (§ 33).",
             )
+
+
+def _deploy_placed_in(entry: dict, where: str):
+    """Every (path, word) a `{deploy:<word>}` is placed at in a command the target states.
+
+    ⚠️ The command-bearing keys alone -- `command`, `batch`, `after_verified`,
+    `figures` and `live_data_step` -- and never `inputs`, which a dispatch sends
+    as written.
+    """
+    for key in ("command", "batch", AFTER_VERIFIED, FIGURES, "live_data_step"):
+        if key in entry:
+            yield from _deploy_placed_below(entry[key], f"{where}.{key}")
+
+
+def _deploy_placed_below(value, at: str):
+    if isinstance(value, str):
+        for name in _BATCH_PLACED.findall(value):
+            yield at, name
+    elif isinstance(value, dict):
+        for key, inner in value.items():
+            yield from _deploy_placed_below(inner, f"{at}.{key}")
+    elif isinstance(value, list):
+        for index, inner in enumerate(value):
+            yield from _deploy_placed_below(inner, f"{at}[{index}]")
+
+
+_LIVE_DATA_AT = re.compile(r"\.live_data_step(?:\[\d+\])?\.(.+)$")
+_FIGURES_AT = re.compile(r"\.figures\[\d+\]\.(.+)$")
+
+
+def _validate_grouping_placed(where: str, entry: dict) -> None:
+    """§ 33's `{deploy:grouping}`, held wherever a command the target states places it.
+
+    ⛔ **Refused at the load on a target naming no grouping**: there is no value
+    for the run to hand, and a command placing one would be run with the
+    placement unfilled. ⚠️ A target placing nothing is held to nothing new.
+    """
+    for path, name in _deploy_placed_in(entry, where):
+        if f"{where}.command" == path and name not in COMMAND_PLACEMENTS:
+            raise ConfigError(
+                path,
+                f"places {{deploy:{name}}}; a target's command may place "
+                + ", ".join(f"{{deploy:{one}}}" for one in COMMAND_PLACEMENTS)
+                + " and a choice the target declares (§ 33).",
+            )
+        inside = _LIVE_DATA_AT.search(path)
+        if inside is not None and not (
+            name == BATCH_GROUPING and inside.group(1) in LIVE_DATA_GROUPED
+        ):
+            raise ConfigError(
+                path,
+                f"places {{deploy:{name}}}; a live data step's "
+                + ", ".join(f"`{one}`" for one in LIVE_DATA_GROUPED)
+                + f" may place {{deploy:{BATCH_GROUPING}}} and nothing else (§ 35). "
+                "⚠️ `record` places none: a check on the change reads it, where no "
+                "deploy names a grouping value.",
+            )
+        figure = _FIGURES_AT.search(path)
+        if figure is not None and not (
+            name == BATCH_GROUPING and figure.group(1) == "reads"
+        ):
+            raise ConfigError(
+                path,
+                f"places {{deploy:{name}}}; a figure's `reads` may place "
+                f"{{deploy:{BATCH_GROUPING}}} and nothing else (§ 33).",
+            )
+        if name == BATCH_GROUPING and entry.get("grouping", "none") == "none":
+            raise ConfigError(
+                path,
+                f"places {{deploy:{BATCH_GROUPING}}} while the target's `grouping` "
+                "is `none`, so no run has a grouping value to hand it (§ 33). Name "
+                "the grouping the target is scoped to, or take the placement out.",
+            )
+
+
+def _grouping_word(target: str, entry: dict, grouping: str | None) -> str | None:
+    """The grouping value a run handed over, refused before anything is resolved.
+
+    ⛔ A word a shell reads as itself, for the reason a choice's value is: it is
+    substituted unquoted. ⛔ And handed only to a target scoped to a grouping -- a
+    value for one that names none is a deploy confused about what it carries.
+    """
+    if grouping is None:
+        return None
+    if entry.get("grouping", "none") == "none":
+        raise ConfigError(
+            f"deploy[{target}].grouping",
+            f"is `none`, and the run handed the grouping value {grouping!r} (§ 33). "
+            "A target scoped to no grouping is handed no grouping value.",
+        )
+    if not _PLAIN_VALUE.fullmatch(grouping):
+        raise ConfigError(
+            f"deploy[{target}].grouping",
+            f"was handed the grouping value {grouping!r}, which is not one plain "
+            "word a shell reads as itself (§ 33), so it is placed in no command.",
+        )
+    return grouping
+
+
+def _place_grouping(text: str, value: str | None, at: str) -> str:
+    """`text` with its grouping placement filled, or refused where no value was handed."""
+    if f"{{deploy:{BATCH_GROUPING}}}" not in text:
+        return text
+    if value is None:
+        raise ConfigError(
+            at,
+            f"places {{deploy:{BATCH_GROUPING}}} and no grouping value was handed "
+            "over (§ 33). The value is the one the go names, as the invocation "
+            "carried it.",
+        )
+    return text.replace(f"{{deploy:{BATCH_GROUPING}}}", value)
 
 
 def _one_line(value) -> bool:
@@ -7177,22 +7332,29 @@ def live_data_side_choices(block: dict) -> dict:
     return out
 
 
-def live_data_steps(listed: list, shown: dict) -> list:
+def live_data_steps(listed: list, shown: dict, grouping: str | None = None) -> list:
     """Every step of one target as a run performs it, its chosen sides resolved.
 
     `shown` is `deploy_target`'s choices keyed by name. ⛔ The one construction
     of a step as the carrier reads it -- the side each phase falls on, and which
     choice placed it, with its value and warnings for the go (§ 35).
+
+    `grouping` is the run's grouping value, filled into every command
+    `LIVE_DATA_GROUPED` lists that places it; `grouping_places` names those, and
+    `grouping_unhanded` the ones left unfilled because no value was handed.
     """
     values = {name: one["value"] for name, one in shown.items()}
     steps = []
     for step in listed:
         placed = live_data_side_choices(step)
-        resolved = live_data_resolved(step, values)
+        resolved, grouped = live_data_grouped(live_data_resolved(step, values), grouping)
         steps.append(
             dict(
                 resolved,
                 name=step.get("name"),
+                grouping=grouping if grouped else None,
+                grouping_places=grouped,
+                grouping_unhanded=grouped if grouping is None else [],
                 sides=live_data_sides(resolved),
                 side_chosen=[
                     {
@@ -7209,6 +7371,31 @@ def live_data_steps(listed: list, shown: dict) -> list:
             )
         )
     return steps
+
+
+def live_data_grouped(block: dict, grouping: str | None) -> tuple[dict, list]:
+    """One step with the grouping value filled in, and where it was placed.
+
+    ⚠️ With no value, the step comes back as stated and the places are still
+    named, which is what lets the carrier refuse it by name (§ 33).
+    """
+    placement = f"{{deploy:{BATCH_GROUPING}}}"
+    out = dict(block)
+    places = []
+    for path in LIVE_DATA_GROUPED:
+        head, _, tail = path.partition(".")
+        holder = out.get(head) if tail else out
+        key = tail or head
+        if not isinstance(holder, dict) or not isinstance(holder.get(key), str):
+            continue
+        if placement not in holder[key]:
+            continue
+        places.append(path)
+        if grouping is not None:
+            if tail:
+                holder = out[head] = dict(holder)
+            holder[key] = holder[key].replace(placement, grouping)
+    return out, places
 
 
 def live_data_resolved(block: dict, values: dict) -> dict:
@@ -18949,6 +19136,7 @@ def self_test() -> int:
 
     _advance_requires_suite(check, surface)
     _after_verified_suite(check, surface)
+    _grouping_value_suite(check, surface)
     _not_implemented_suite(check, surface)
 
     _undeclared_suite(check)
@@ -25209,6 +25397,181 @@ def _after_verified_suite(check, facts: dict) -> None:
           f"read {none}")
 
 
+def _grouping_value_suite(check, facts: dict) -> None:
+    """§ 33's `{deploy:grouping}`: the load, and the value reaching every command.
+
+    ⛔ The planted violations are a placement on a target scoped to no grouping, a
+    placement in the one live data command a check reads with no deploy behind
+    it, and a placement no value was handed for; each must come out refused.
+    """
+    print("\n§ 33's grouping value, placed in every command a target states:")
+    grouping = _a_grouping_the_example_plans_in()
+    placed = "{deploy:grouping}"
+    commit = "0123456789abcdef0123456789abcdef01234567"
+
+    def target(**overrides):
+        stated = {
+            "advances": _a_role_some_status_maps(),
+            "grouping": grouping,
+            "command": f"ship {placed}",
+            "batch": f"carried {placed}",
+            "advance_requires": [{"reading": "the served commit"}],
+            "after_verified": [
+                _a_step_after(command=f"git tag v{placed} {{deploy:commit}}")
+            ],
+            FIGURES: [_a_figures_block(reads=f"read-figures {placed}")],
+            "live_data_step": _a_live_data_step(
+                backup={"run": f"a-dump {placed}", "verify": f"a-read-back {placed}"},
+                preview={"run": f"a-preview {placed}"},
+                rehearse=f"a-write --dry {placed}",
+                apply=f"a-write {placed}",
+            ),
+        }
+        stated.update(overrides)
+        return _a_deploy_target(**stated)
+
+    def loaded_with(**overrides):
+        loaded = _a_valid_example()
+        loaded["deploy"] = [target(**overrides)]
+        return loaded
+
+    refusal = _refused(loaded_with())
+    check(
+        "a target scoped to a grouping places its value in its command, batch, "
+        "steps, figure commands and live data commands, and loads",
+        refusal is None, f"refused on {refusal!r}",
+    )
+    if refusal is not None:
+        return
+    for label, overrides, key in (
+        ("a command placing it on a target scoped to no grouping",
+         {"grouping": "none", "batch": "carried", "after_verified": _ABSENT,
+          "advance_requires": _ABSENT, "live_data_step": _ABSENT, FIGURES: _ABSENT},
+         "deploy[0].command"),
+        ("a batch placing it on a target scoped to no grouping",
+         {"grouping": "none", "command": "ship", "after_verified": _ABSENT,
+          "advance_requires": _ABSENT, "live_data_step": _ABSENT, FIGURES: _ABSENT},
+         "deploy[0].batch"),
+        ("a step after the verification placing it on a target scoped to no grouping",
+         {"grouping": "none", "command": "ship", "batch": "carried",
+          "live_data_step": _ABSENT, FIGURES: _ABSENT},
+         "deploy[0].after_verified[0].command"),
+        ("a live data write placing it on a target scoped to no grouping",
+         {"grouping": "none", "command": "ship", "batch": "carried",
+          "after_verified": _ABSENT, "advance_requires": _ABSENT, FIGURES: _ABSENT,
+          "live_data_step": _a_live_data_step(apply=f"a-write {placed}")},
+         "deploy[0].live_data_step.apply"),
+        ("a figure command placing it on a target scoped to no grouping",
+         {"grouping": "none", "command": "ship", "batch": "carried",
+          "after_verified": _ABSENT, "live_data_step": _ABSENT},
+         f"deploy[0].{FIGURES}[0].reads"),
+        ("a figure command placing a run fact other than the grouping value",
+         {FIGURES: [_a_figures_block(reads="read-figures {deploy:commit}")]},
+         f"deploy[0].{FIGURES}[0].reads"),
+        ("a live data `record` placing it",
+         {"live_data_step": _a_live_data_step(record=f"a-listing {placed}")},
+         "deploy[0].live_data_step.record"),
+        ("a command placing a run fact other than the grouping value",
+         {"command": "ship {deploy:commit}"}, "deploy[0].command"),
+        ("a live data write placing a run fact other than the grouping value",
+         {"live_data_step": _a_live_data_step(apply="a-write {deploy:target}")},
+         "deploy[0].live_data_step.apply"),
+    ):
+        got = _refused(loaded_with(**overrides))
+        check(f"{label} is refused at the load, with the path named",
+              got == key, f"refused on {got!r}")
+
+    reader = _resolve(loaded_with(), EXAMPLES, facts, False)
+    got = reader.deploy_target("a-target", None, "5.7")
+    check(
+        "the target's command is handed the value the go named",
+        got["command"].startswith("ship 5.7") and got["grouping"] == "5.7"
+        and got["grouping_unhanded"] is False,
+        f"answered {got!r}",
+    )
+    got = reader.deploy_target("a-target")
+    check(
+        "a command placing it with no value handed comes back marked unhanded, unfilled",
+        got["grouping_unhanded"] is True and placed in got["command"],
+        f"answered {got!r}",
+    )
+    for label, value, key in (
+        ("a value a shell would split", "5.7; rm", "deploy[a-target].grouping"),
+        ("a value opening with an option's dash", "-rf", "deploy[a-target].grouping"),
+    ):
+        try:
+            reader.deploy_target("a-target", None, value)
+            said = None
+        except ConfigError as error:
+            said = error.key
+        check(f"{label} is refused before anything is resolved", said == key,
+              f"refused on {said!r}")
+    plain = _a_valid_example()
+    plain["deploy"] = [_a_deploy_target()]
+    plain_reader = _resolve(plain, EXAMPLES, facts, False)
+    try:
+        plain_reader.deploy_target("a-target", None, "5.7")
+        said = None
+    except ConfigError as error:
+        said = error.key
+    check("a value handed to a target scoped to no grouping is refused",
+          said == "deploy[a-target].grouping", f"refused on {said!r}")
+    got = plain_reader.deploy_target("a-target")
+    check(
+        "a target placing nothing answers as before, with no grouping value",
+        got["command"].startswith("a-command") and got["grouping"] is None
+        and got["grouping_unhanded"] is False,
+        f"answered {got!r}",
+    )
+
+    got = reader.deploy_batch("a-target", None, commit, "5.7")
+    check("the batch is handed the value",
+          got["purposes"][0]["command"].startswith("carried 5.7"), f"answered {got!r}")
+    try:
+        reader.deploy_batch("a-target", None, commit)
+        said = None
+    except ConfigError as error:
+        said = error.key
+    check("a batch placing it with no value handed is a stop",
+          said == "deploy.batch", f"refused on {said!r}")
+
+    clean = {"the served commit": "passed"}
+    got = reader.after_verified("a-target", clean, [], commit, None, "5.7")
+    check("a step after a clean verification is handed the value beside the commit",
+          got["steps"][0]["command"] == f"git tag v5.7 {commit}", f"read {got['steps']}")
+    try:
+        reader.after_verified("a-target", clean, [], commit)
+        said = None
+    except ConfigError as error:
+        said = error.key
+    check("a step placing it with no value handed is a stop where it would run",
+          said == "deploy[a-target].after_verified.a-tag", f"refused on {said!r}")
+    held = reader.after_verified("a-target", {"the served commit": "failed"}, [], commit)
+    check("and is no stop where a held verification runs no step",
+          not any(step["runs"] for step in held["steps"]), f"read {held['steps']}")
+
+    step = reader.live_data_step("a-target", None, "5.7")["steps"][0]
+    check(
+        "every live data command placing it is handed the value, and the places named",
+        step["apply"] == "a-write 5.7" and step["rehearse"] == "a-write --dry 5.7"
+        and step["backup"] == {"run": "a-dump 5.7", "verify": "a-read-back 5.7"}
+        and step["preview"]["run"] == "a-preview 5.7"
+        and step["grouping"] == "5.7" and step["grouping_unhanded"] == []
+        and step["grouping_places"] == list(LIVE_DATA_GROUPED),
+        f"answered {step!r}",
+    )
+    step = reader.live_data_step("a-target")["steps"][0]
+    check(
+        "with no value handed the live data commands come back unfilled, each named",
+        step["apply"] == f"a-write {placed}" and step["grouping"] is None
+        and step["grouping_unhanded"] == list(LIVE_DATA_GROUPED),
+        f"answered {step!r}",
+    )
+    step = plain_reader.live_data_step("a-target")
+    check("a target stating no step is untouched by the grouping value",
+          step["found"] is None, f"answered {step!r}")
+
+
 def _a_figures_block(**overrides) -> dict:
     """One § 33 `figures` entry that loads, for the arms that plant one key wrong.
 
@@ -26586,6 +26949,14 @@ def main(argv: list[str]) -> int:
         "stop. A choice left out takes its default",
     )
     parser.add_argument(
+        "--grouping-value",
+        metavar="VALUE",
+        help="the grouping's own value the go names, for `--deploy-target` and "
+        "`--after-verified-for`: placed wherever a command of the target states "
+        "{deploy:grouping}. A target scoped to no grouping, or a value that is not "
+        "one plain word, is a stop",
+    )
+    parser.add_argument(
         "--tier",
         metavar="TIER",
         help="the § 31 tier to report: every suite classified under it, what each "
@@ -26731,6 +27102,7 @@ def main(argv: list[str]) -> int:
                 args.choose,
                 args.deployed_commit,
                 _parse_steps(args.step) if args.step else None,
+                args.grouping_value,
             )
         elif args.step or args.deployed_commit:
             raise ConfigError(
@@ -26762,12 +27134,29 @@ def main(argv: list[str]) -> int:
                     "is the target's own statement of what it runs (§ 33), so a "
                     "command is not passed beside `--deploy-target`.",
                 )
-            answer = config.deploy_target(args.deploy_target, args.choose)
+            answer = config.deploy_target(
+                args.deploy_target, args.choose, args.grouping_value
+            )
+            # ⛔ This answer is what the go shows and what is run, so a command
+            # left unfilled is a stop here rather than a command handed on (§ 33).
+            if answer["grouping_unhanded"]:
+                raise ConfigError(
+                    f"deploy[{args.deploy_target}].command",
+                    f"places {{deploy:{BATCH_GROUPING}}} and no grouping value was "
+                    "handed over (§ 33). Pass `--grouping-value` with the value the go "
+                    "names.",
+                )
         elif args.choose and not args.after_verified_for:
             raise ConfigError(
                 "deploy.choices",
                 "cannot be chosen with no target named: § 33 states a choice per "
                 "target. Pass `--deploy-target` with it.",
+            )
+        elif args.grouping_value is not None and not args.after_verified_for:
+            raise ConfigError(
+                "deploy.grouping",
+                "was handed a value with no target named: § 33 places a grouping "
+                "value per target. Pass `--deploy-target` with it.",
             )
         if args.commit_rule_for:
             if args.on_branch is None:
