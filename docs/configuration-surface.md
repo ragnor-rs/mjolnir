@@ -3891,7 +3891,9 @@ change in either direction, and what a Jira item shows is written by a code-host
 somebody installed. The grouping create is implemented on plain issues alone, the milestone being
 an object; everywhere else the grouping is a field's value, which nothing creates. The release mark
 is not absent on that argument everywhere: where a Jira grouping's field holds versions, the value
-names a version object, and `mark_grouping_released` writes its released mark and date.
+names a version object, which `mark_grouping_released` marks by
+[`schema.md § 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)'s
+rule for it.
 
 ### The prototype's own rule the promotion kept, and the one it had to make general
 

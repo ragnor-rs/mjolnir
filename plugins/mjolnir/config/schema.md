@@ -1794,7 +1794,7 @@ the operations the survey reached and says which it did not.
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
 | `read_current_grouping` | the value the tracker itself marks open for one of § 4.8's groupings under `current: discoverable`, each open value by what a write takes and by the name a person reads — ⛔ never a choice between several, which the role asks, and never asked under `stated`, where the tracker marks none | the grouping is asked for, as under `stated`, and the report says the tracker's mark went **unread**; never the first value the tracker lists, by § 2's rule that absence of signal is not an answer |
-| `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it. ⛔ It writes the mark and the date it was made, and nothing else the grouping holds; a grouping already marked is reported and left alone | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. The address a person performs it at is the tracker's own and the procedure composes none — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
+| `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it. ⛔ It writes the mark, and the date it was made where the tracker takes one, and nothing else the grouping holds; a grouping already marked is reported and left alone | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. The address a person performs it at is the tracker's own and the procedure composes none — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `read_comments` | the item's comments, oldest first and every page of them, each with who wrote it, when, and when it was last edited | the role reports the comments **unread** and never as none, by § 2's rule that absence of signal is not an answer ([below](#an-items-comments-and-what-an-unread-one-is)) |
 | `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
@@ -1894,6 +1894,12 @@ configuration.
 
 An adapter declares an operation by implementing it, not by listing it. The two cannot drift
 apart, and an adapter naming an operation this table does not state is refused.
+
+**A capability can be absent for one shape of a facet and present for another.** Where a tracker
+performs an operation on one shape a facet allows and has nothing to perform it on in the shape a
+project states, the implementation says so and the port answers with the operation's stated
+fallback and the implementation's reason, exactly as for an operation not implemented at all. It is
+not a refusal: a configuration the surface rules out is still refused where it is read.
 
 Where two projects on the **same** tracker genuinely differ, the difference is already a facet
 here rather than a capability: what carries the type, the estimate, the template or the priority,

@@ -26,10 +26,12 @@ module imported would leave the implementation calling its own.
 
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import re
 import sys
+import zoneinfo
 
 _SUITE_SCRIPTS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _SUITE_SCRIPTS not in sys.path:
@@ -346,8 +348,9 @@ SPRINTS = {7: [CLOSED_SPRINT, OPEN_SPRINT], 8: [SECOND_SPRINT]}
 
 # The versions this project holds, as the project interface lists them. ⚠️ Every
 # member the host answers is here, the ones a release mark must leave alone
-# included -- so a write that carried any of them back is visible as a change to
-# them rather than as a field nobody stored.
+# included. A write carrying them back unchanged leaves them equal, so what holds
+# a release mark to its two members is the whole-body assertion and not a read
+# of the version afterwards.
 SHIPPED_VERSION = {
     "id": "10100", "name": "1.0", "description": "the first one",
     "startDate": "2026-09-01", "released": True, "releaseDate": "2026-09-30",
@@ -2689,14 +2692,11 @@ def self_test() -> int:
             == {"released": True, "releaseDate": A_RELEASE_DATE},
             f"sent {releasing.sent_for('version')!r}",
         )
-        held = next(one for one in releasing.versions if one["id"] == OPEN_VERSION["id"])
         check(
-            "and the version keeps its name, description and start date",
-            all(held[member] == OPEN_VERSION[member]
-                for member in ("name", "description", "startDate"))
-            and got(answered, "marked") is True and got(answered, "already") is False
+            "and the answer reports the mark made, with the date the host stored",
+            got(answered, "marked") is True and got(answered, "already") is False
             and got(answered, "release_date") == A_RELEASE_DATE,
-            f"holds {held!r}, answered {answered!r}",
+            f"answered {answered!r}",
         )
         again = host()
         answered = with_host(again, lambda: under_test.mark_grouping_released(
@@ -2720,28 +2720,41 @@ def self_test() -> int:
             and unheld.sent_for("version") == [],
             f"reported {reported!r} after {unheld.calls}",
         )
+        # ⛔ Another shape of grouping is a configuration the surface allows, so it
+        # is the operation absent for that shape -- never a refusal, which would
+        # stop a deploy that § 3's fallback lets carry on.
+        def absent_for_shape(call) -> str | None:
+            try:
+                call()
+            except port.AbsentForShape as error:
+                return str(error)
+            except Exception as error:
+                return f"<raised {type(error).__name__}>"
+            return None
+
         sprint_field = host()
-        reported = with_host(sprint_field, lambda: refused(
+        reported = with_host(sprint_field, lambda: absent_for_shape(
             lambda: under_test.mark_grouping_released(
                 OPEN_VERSION["name"], grouping={**in_versions, "field": "Sprint"}
             )
         ))
         check(
-            "a grouping held in a field whose values are not versions is refused, "
-            "naming its field, before the versions are read",
-            reported == "work_item.grouping.release_scope.field"
+            "a grouping held in a field whose values are not versions is the mark "
+            "absent for that shape, naming the field, before the versions are read",
+            isinstance(reported, str) and "`Sprint`" in reported
             and "versions" not in sprint_field.calls,
             f"reported {reported!r} after {sprint_field.calls}",
         )
         labelled = host()
-        reported = with_host(labelled, lambda: refused(
+        reported = with_host(labelled, lambda: absent_for_shape(
             lambda: under_test.mark_grouping_released(
                 OPEN_VERSION["name"], grouping={**in_versions, "carrier": "label"}
             )
         ))
         check(
-            "and one held in a label is refused before any call",
-            reported == "work_item.grouping.release_scope.carrier"
+            "and a release mark for a grouping held in a label is absent before any "
+            "call",
+            isinstance(reported, str) and "'label'" in reported
             and labelled.calls == [],
             f"reported {reported!r} after {labelled.calls}",
         )
@@ -2761,11 +2774,11 @@ def self_test() -> int:
         # ⛔ Through the port, with the example's own release scope: who closes it
         # is § 4.8's `closed_by`, read before the adapter is reached, so a project
         # naming a person there gets the close reported and no version written.
-        def _releasing_configuration(closed_by: str):
+        def _releasing_configuration(closed_by: str, field: str = "Ships in"):
             path = os.path.join(config.EXAMPLES, f"{KIND}.yaml")
             with open(path, encoding="utf-8") as handle:
                 text = handle.read().replace(
-                    "<the field the release scope is held in>", "Ships in"
+                    "<the field the release scope is held in>", field
                 )
             loaded = config.load_text(text, config.EXAMPLES)
             loaded.data["tracker"].pop("create_fields", None)
@@ -2777,9 +2790,11 @@ def self_test() -> int:
                             .mark_released("release_scope", OPEN_VERSION["name"],
                                            as_writer="deploy"))
         check(
-            "where `closed_by` names a person the close is reported for them, and "
-            "no version is written",
+            "where `closed_by` names a person the close is refused for that writer, "
+            "and no version is written",
             not getattr(outcome, "performed", True)
+            and getattr(outcome, "refused", False)
+            and getattr(outcome, "writer", None) == "orderer"
             and by_a_person.sent_for("version") == [],
             f"answered {outcome!r} after {by_a_person.calls}",
         )
@@ -2794,8 +2809,45 @@ def self_test() -> int:
             and len(by_the_procedure.sent_for("version")) == 1,
             f"answered {outcome!r} after {by_the_procedure.calls}",
         )
+        in_a_sprint = host()
+        outcome = with_host(in_a_sprint, lambda: _releasing_configuration(
+            "procedure", field="Sprint"
+        ).mark_released("release_scope", OPEN_VERSION["name"], as_writer="procedure"))
+        check(
+            "a release scope held in a field with no version takes § 3's fallback "
+            "through the port -- not performed, not failed, nothing raised",
+            getattr(outcome, "performed", True) is False
+            and getattr(outcome, "failed", True) is False
+            and str(getattr(outcome, "detail", "")).startswith(
+                port.surface_operations()["mark_grouping_released"]
+            )
+            and "versions" not in in_a_sprint.calls,
+            f"answered {outcome!r} after {in_a_sprint.calls}",
+        )
     finally:
         under_test._released_on = was_released_on
+
+    # ⛔ The date is the day in the zone the credential's account states, read off
+    # the site's own payload. Two zones 26 hours apart answer different days at
+    # every instant, so a date taken from this machine's clock reddens one of them.
+    def _day_in(zone: str):
+        zoned = host({"me": lambda *_: {"accountId": ME, "timeZone": zone}})
+        return with_host(zoned, under_test._released_on)
+
+    ahead, behind = _day_in("Pacific/Kiritimati"), _day_in("Etc/GMT+12")
+    check(
+        "the release date is the day in the zone the account states",
+        ahead == datetime.datetime.now(zoneinfo.ZoneInfo("Pacific/Kiritimati")).date().isoformat()
+        and behind == datetime.datetime.now(zoneinfo.ZoneInfo("Etc/GMT+12")).date().isoformat()
+        and ahead != behind,
+        f"answered {ahead!r} and {behind!r}",
+    )
+    unknown = _day_in("Nowhere/Such_Zone")
+    check(
+        "and a zone this machine cannot read falls back to its own day, not a failure",
+        unknown == datetime.date.today().isoformat(),
+        f"answered {unknown!r}",
+    )
 
     # --- `advance_on_merge`: the tracker's half of the question ---------------
     def _history(account: str) -> dict:

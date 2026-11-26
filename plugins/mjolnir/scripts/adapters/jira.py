@@ -98,6 +98,7 @@ from __future__ import annotations
 import argparse
 import base64
 import datetime
+import zoneinfo
 import json
 import os
 import re
@@ -118,7 +119,7 @@ import port  # noqa: E402
 from adapters._policy import forbidden  # noqa: E402
 from adapters import _search as coverage  # noqa: E402
 from adapters import _comments  # noqa: E402
-from port import ConfigError, HostUnavailable  # noqa: E402
+from port import AbsentForShape, ConfigError, HostUnavailable  # noqa: E402
 
 KIND = "jira"
 
@@ -2425,12 +2426,20 @@ def read_current_grouping(*, grouping: dict) -> dict:
 
 
 def _released_on() -> str:
-    """The date a release mark carries: today, as this machine's clock reads it.
+    """The date a release mark carries: today, in the zone this credential's account states.
 
-    ⚠️ A seam of its own so the suite can hold the write to one date. The host
-    takes the date as a calendar day with no zone, so the day is the local one.
+    The host takes the date as a calendar day with no zone, and a person reading
+    the version reads it in their account's own zone -- which `/myself` states,
+    and which the site's own payload already carries. ⚠️ An account stating no
+    zone, or one this machine has no definition for, falls back to this machine's
+    day, which can differ from the site's near midnight.
     """
-    return datetime.date.today().isoformat()
+    stated = (_site_facts().get("me") or {}).get("timeZone")
+    try:
+        zone = zoneinfo.ZoneInfo(str(stated)) if stated else None
+    except (zoneinfo.ZoneInfoNotFoundError, ValueError):
+        zone = None
+    return datetime.datetime.now(zone).date().isoformat()
 
 
 def _holds_versions(found: dict) -> bool:
@@ -2445,16 +2454,17 @@ def mark_grouping_released(value: str, *, grouping: dict) -> dict:
     """Mark released the version a grouping's value names, and nothing else about it.
 
     ⛔ **Answered for a grouping held in a field whose values are versions, and
-    nothing else.** A version is an object of the project's that carries its own
-    released mark; a sprint, an option or a label is a value with no such mark,
-    so a grouping held in one is refused with its field named rather than marked
-    some other way.
+    absent for every other shape.** A version is an object of the project's that
+    carries its own released mark; a sprint, an option or a label is a value with
+    no such mark. A grouping held in one is a configuration the surface allows,
+    so it is answered as the absence it is -- § 3's fallback, the step handed to
+    a person -- and never refused.
 
-    ⛔ **Two fields are written: `released` and `releaseDate`.** The version's
-    name, description and start date are the project's, and the write leaves
-    them untouched. **Idempotent by reading before writing**, which is the
-    milestone close's rule on the other host: a version already released is
-    reported and left alone, so a retried deploy writes nothing a second time.
+    ⛔ **The write is § 3's rule for this operation**: the version's released
+    mark and its date, with its name, description and start date untouched.
+    **Idempotent by reading before writing**, which is the milestone close's
+    rule on the other host: a version already released is reported and left
+    alone, so a retried deploy writes nothing a second time.
 
     ⚠️ The version is matched on its exact name among the project's own. The
     value is the word on the item, and an id this tracker assigns is not; a value
@@ -2465,19 +2475,17 @@ def mark_grouping_released(value: str, *, grouping: dict) -> dict:
     name = (grouping or {}).get("name")
     key = f"work_item.grouping.{name}.field"
     if (grouping or {}).get("carrier") != "field":
-        raise ConfigError(
-            f"work_item.grouping.{name}.carrier",
-            f"is {(grouping or {}).get('carrier')!r}, and a release is marked here "
-            "on the version a field's value names. A grouping held anywhere else "
-            "has no version object to mark.",
+        raise AbsentForShape(
+            f"the `{name}` grouping is held in a {(grouping or {}).get('carrier')!r} "
+            "carrier, and a release is marked here on the version a field's value "
+            "names -- a grouping held anywhere else has no version object to mark."
         )
     field = str((grouping or {}).get("field"))
     if not _holds_versions(_field_named(field, key=key)):
-        raise ConfigError(
-            key,
-            f"names `{field}`, whose values are not this tracker's versions. A "
-            "version is the one grouping value here that carries a released mark, "
-            "so a grouping held in another field has nothing to mark.",
+        raise AbsentForShape(
+            f"the `{name}` grouping is held in `{field}`, whose values are not this "
+            "tracker's versions -- a version is the one grouping value here that "
+            "carries a released mark."
         )
     project = _project_key()
     listed = _call("GET", f"/project/{project}/versions")
