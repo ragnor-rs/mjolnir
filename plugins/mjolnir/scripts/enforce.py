@@ -3090,6 +3090,10 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
             leases = live_leases(where, moment)
             standing, keys, _added = occupancy(entry, leases, counted, moment)
             if key in keys:
+                if queued:
+                    # ⛔ Out of line too: a ticket left standing would count against
+                    # the cap for a place this waiter no longer needs.
+                    _ticket_path(where, name, session).unlink(missing_ok=True)
                 return (f"{name}: this tree already holds a place after "
                         f"{int(moment - started)}s, so the call is made in it."), 0
             if not queued and standing < cap:
@@ -4393,6 +4397,31 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               live_leases(where, unclaimed.at + 31) == [])
         check("a wait for a resource keeping a line names its session or is misuse",
               wait_for(lined, 1, store=where)[1] == 2)
+
+        treed = _a_config([_a_resource(cap=2, subject="tree", wait_up_to=1,
+                                       wait_holds_for=30)])
+        where = fresh("line-tree")
+        trees = {name: fresh(f"line-tree-{name}") for name in ("t", "x", "y", "c")}
+        sibling = _Clock()
+
+        def claim_in(session: str, tree: str) -> dict:
+            return guard_answer(_call("a-claiming-command", session=session,
+                                      cwd=str(trees[tree])),
+                                config=treed, now=sibling.at, store=where)
+
+        claim_in("x", "x")
+        claim_in("y", "y")
+        wait_for(treed, 1, session="a", cwd=str(trees["t"]), store=where, clock=sibling.now,
+                 rest=sibling.rest)
+        for holder in ("x", "y"):
+            release(where, holder, "call", "a-claiming-command", sibling.at)
+        claim_in("b", "t")
+        wait_for(treed, 1, session="a", cwd=str(trees["t"]), store=where, clock=sibling.now,
+                 rest=sibling.rest)
+        check("a waiter whose tree came to hold a place leaves the line, so its ticket holds "
+              "no second place",
+              live_tickets(where, "a-held-thing", sibling.at) == []
+              and not denied(claim_in("c", "c")))
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import config as reader  # noqa: PLC0415 -- the path is set one line up
         check("the least `wait_holds_for` the reader admits outlasts the longest gap between "
