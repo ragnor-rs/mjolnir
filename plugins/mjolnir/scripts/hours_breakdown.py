@@ -61,6 +61,7 @@ import re
 import subprocess
 import sys
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal, InvalidOperation
+from fractions import Fraction
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -536,7 +537,8 @@ def breakdown(skills_root: str, first: str, last: str, hours: str | None, weight
         "units_per_hour": duration.per_hour,
         "total_at_resolution": duration.write(units),
         "total_units": units,
-        "rounded": Decimal(units) / duration.per_hour != total,
+        # Exact, since a decimal context's precision would read a long total as already whole.
+        "rounded": Fraction(total) * duration.per_hour != units,
         "day_start": None if day_start is None else day_start.isoformat("minutes"),
         "read_from": read_from,
         "sum_of_parts": duration.write(sum(parts)),
@@ -1018,6 +1020,10 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
               and report["total_at_resolution"] == "120ч 29мин" and report["rounded"]
               and [c["hours"] for c in report["changes"]] == ["40ч 10мин", "40ч 10мин",
                                                              "40ч 9мин"], report)
+        status, report = breakdown(stated, "2026-11-01", "2026-11-30", "0." + "3" * 28, [],
+                                   tracker_from=lambda c: _Tracker(None))
+        check("a total past the decimal context's precision is still reported rounded",
+              report["total_units"] == 20 and report["rounded"], report)
         check("the surface declares the duration keys, so the reader reports none of them",
               not any("duration" in path
                       for path in reader.load(stated, check_paths=False).undeclared()),
