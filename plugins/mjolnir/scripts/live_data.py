@@ -636,7 +636,6 @@ def prepare(
             answer[kept] = record.get(kept)
     _keep(path, record)
     answer["record_at"] = path
-    rehearsal_stated = any(each["step"] == "rehearse" for each in stated)
     owed = [each["step"] for each in stated if each["step"] not in record["verified"]]
     answer["report"].insert(
         0,
@@ -662,12 +661,14 @@ def prepare(
         )
         if not owed
         else (
+            # ⛔ Whatever is owed is named, the preview as much as the rehearsal: a
+            # report saying only that the dump was taken reads as a step ready
+            # for its go.
             "The dump is taken and read back; "
             + ", ".join(owed)
             + " falls on the other side of the invocation and is still owed, so no go "
-            "is asked yet — a write is never reached before its own rehearsal (§ 35)."
-            if rehearsal_stated
-            else "The dump is taken and read back (§ 35)."
+            "is asked yet — a write is never reached before its own preview or "
+            "rehearsal (§ 35)."
         ),
     )
     return answer
@@ -1318,7 +1319,13 @@ def self_test() -> int:
                  sides={"preview": after, "apply": after}),
         _a_tree(_scripts()), artifacts=_a_tree({}),
     )
-    prepare(owed, "a-target", side=before)
+    answer = prepare(owed, "a-target", side=before)
+    check(
+        "the earlier side names the preview still owed and asks no go, with no rehearsal stated",
+        "preview falls on the other side" in answer["report"][0]
+        and "no go is asked yet" in answer["report"][0],
+        f"reported {answer['report'][:1]!r}",
+    )
     answer = apply(owed, "a-target", _a_go())
     check(
         "the write is refused while its preview is still owed",

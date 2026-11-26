@@ -9638,7 +9638,7 @@ for this store*, which a listing does not establish.
 | what the step states | what the go shows |
 |---|---|
 | `preview.run` alone | the command's output, **whole** |
-| `preview.run` and `preview.at` | the path `at` names, which the command writes its preview to — resolved against the code root where it is relative, and read back before the go is asked |
+| `preview.run` and `preview.at` | the path `at` names, which the command writes its preview to — resolved against the code root where it is relative, cleared before the command runs so an earlier run's listing is never read as this one's, and read back before the go is asked |
 | no `preview` | nothing about the pending writes, and ⛔ **the go says no preview is stated** rather than that nothing is pending |
 
 ⛔ **A failed preview stops the step**, by the rule every phase before the write is held to: a
