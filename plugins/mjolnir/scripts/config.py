@@ -3700,6 +3700,138 @@ class Config:
             "report": report,
         }
 
+    def after_verified(
+        self,
+        target: str,
+        readings: dict[str, str],
+        chosen: list[str] | None = None,
+        commit: str | None = None,
+        outcomes: dict[str, str] | None = None,
+    ) -> dict:
+        """§ 33's steps run once a deploy's verification is clean, in order.
+
+        ⛔ **Clean is `advance`'s verdict and not a second reading of it**: the
+        same outcomes are handed over, and a verification holding the advance
+        runs no step at all. `chosen` is the run's selection, resolved and
+        refused by `deploy_target` exactly as the go showed it, and `commit` the
+        commit this deploy serves.
+
+        `outcomes`, where handed, is what each performed step came back with, and
+        turns the plan into the report: the first step that did not come back
+        `done` is where the sequence stopped, every step after it is `not_run`,
+        and ⛔ **the deploy is reported delivered whatever they say** -- what a
+        step's failure leaves standing is named, and the target already serves
+        the commit.
+        """
+        verdict = self.advance(target, readings)
+        shown = self.deploy_target(target, chosen)
+        entry = next(one for one in self.get("deploy") if one.get("name") == target)
+        steps = entry.get(AFTER_VERIFIED) or []
+        if commit is not None and not _OBJECT_NAME.fullmatch(commit):
+            raise ConfigError(
+                f"deploy.{AFTER_VERIFIED}",
+                f"was handed the commit {commit!r}, which is not an object name "
+                "(§ 33): seven to sixty-four lowercase hexadecimal characters.",
+            )
+        for name, outcome in (outcomes or {}).items():
+            if name not in {step["name"] for step in steps}:
+                raise ConfigError(
+                    f"deploy[{target}].{AFTER_VERIFIED}",
+                    f"was handed an outcome for {name!r}, which names no step of "
+                    "this target. It names "
+                    + (", ".join(repr(step["name"]) for step in steps) or "none")
+                    + " (§ 33).",
+                )
+            if outcome not in STEP_OUTCOMES:
+                raise ConfigError(
+                    f"deploy[{target}].{AFTER_VERIFIED}",
+                    f"was handed {outcome!r} for {name!r}; the outcomes § 33 states "
+                    f"are {' | '.join(STEP_OUTCOMES)}.",
+                )
+        clean = not verdict["held"]
+        values = {one["name"]: one["value"] for one in shown["choices"]}
+        root = entry.get(DEPLOY_CODE_ROOT)
+        view = self.root(root) if root is not None else self.only_root
+        # ⚠️ A step runs where the target's own act runs, which is `batch`'s rule.
+        where = entry.get(COMMAND_ROOT_REF) if entry.get("invoke") == "command" else None
+        resolved = []
+        stopped_at = None
+        for step in steps:
+            text = step["command"]
+            placed = set(_BATCH_PLACED.findall(text))
+            if clean and BATCH_COMMIT in placed and commit is None:
+                raise ConfigError(
+                    f"deploy[{target}].{AFTER_VERIFIED}",
+                    f"the step {step['name']!r} places {{deploy:{BATCH_COMMIT}}} and no "
+                    "commit was handed over (§ 33). The commit is the one this "
+                    "deploy serves, as the run established it.",
+                )
+            text = _CHOICE_PLACED.sub(lambda found: values[found.group(1)], text)
+            words = {BATCH_TARGET: target, BATCH_COMMIT: commit or ""}
+            text = _BATCH_PLACED.sub(lambda found: words[found.group(1)], text)
+            one = {
+                "name": step["name"],
+                "performed_by": step["performed_by"],
+                "runs": clean,
+                **view.command(text, where),
+            }
+            if outcomes is not None:
+                if not clean or stopped_at is not None:
+                    one["outcome"] = STEP_NOT_RUN
+                else:
+                    one["outcome"] = outcomes.get(step["name"], STEP_UNREPORTED)
+                    if one["outcome"] != STEP_DONE:
+                        stopped_at = step["name"]
+            resolved.append(one)
+        report = []
+        if not steps:
+            report.append(
+                f"The target {target!r} states no step after its verification "
+                f"(`{AFTER_VERIFIED}` omitted), so nothing runs after it but the "
+                "advance of its items."
+            )
+        elif not clean:
+            report.append(
+                f"The verification of {target!r} is not clean -- "
+                + ", ".join(repr(name) for name in verdict["holding"])
+                + " held it -- so none of its "
+                f"{len(steps)} step(s) after the verification runs (§ 33)."
+            )
+        if stopped_at is not None:
+            done = [one["name"] for one in resolved if one.get("outcome") == STEP_DONE]
+            failed = next(one for one in resolved if one["name"] == stopped_at)
+            left = [one["name"] for one in resolved if one.get("outcome") == STEP_NOT_RUN]
+            report.append(
+                f"The step {stopped_at!r} came back `{failed['outcome']}`, so the "
+                "sequence stopped there. The deploy stands: the target serves "
+                + (f"{commit}" if commit else "what was delivered")
+                + ", and it is not reported failed. Left standing: "
+                + (
+                    "the step(s) " + ", ".join(repr(name) for name in done) + " done"
+                    if done
+                    else "no step done"
+                )
+                + (
+                    "; not run: " + ", ".join(repr(name) for name in left)
+                    if left
+                    else ""
+                )
+                + "."
+            )
+        return {
+            "target": target,
+            "clean": clean,
+            "holding": verdict["holding"],
+            "commit": commit,
+            "choices": shown["choices"],
+            "steps": resolved,
+            "stopped_at": stopped_at,
+            # ⛔ Constant and stated: no outcome of a step reaches the deploy's own
+            # verdict, which was read before any step ran.
+            "deploy_failed": False,
+            "report": report,
+        }
+
     def _report_roots(self) -> "list[tuple[str, Config]]":
         """(what to prefix a line with, the root to read it from).
 
@@ -5810,6 +5942,7 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
         _validate_advance_requires(where, entry, data, facts)
+        _validate_after_verified(where, entry, facts)
         _validate_figures(where, entry, facts)
 
 
@@ -5936,6 +6069,124 @@ def _validate_advance_requires(where: str, entry: dict, data: dict, facts: dict)
                 "one name leave which of them it answers undefined.",
             )
         seen[name] = position
+
+
+def _validate_after_verified(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `after_verified` on one target, which no marker can reach.
+
+    ⚠️ Optional: an entry that omits it runs nothing after its verification, which
+    is what every target did before the key existed. ⛔ What a stated list has to
+    *be* is held here, every arm refusing rather than skipping -- a step a reader
+    could not make sense of is a step run against a target nobody checked.
+    """
+    if AFTER_VERIFIED not in entry:
+        return
+    at = f"{where}.{AFTER_VERIFIED}"
+    # ⛔ A target reached by hand is deployed by nobody this procedure watches, so
+    # there is no verification of it for a step to follow.
+    if entry.get("invoke") == "by_hand":
+        raise ConfigError(
+            at,
+            "is stated beside `invoke: by_hand`, where this procedure makes no "
+            "deploy and verifies none, so no step would ever follow one (§ 33).",
+        )
+    steps = entry[AFTER_VERIFIED]
+    if not isinstance(steps, list) or not steps:
+        raise ConfigError(
+            at,
+            "must be a non-empty list of the steps run once this target's "
+            "verification is clean (§ 33); omit it where none runs.",
+        )
+    prefix = f"deploy.{AFTER_VERIFIED}."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a step could be held "
+            "to nothing; § 33 states a step's keys in the entry's own fence.",
+        )
+    performers = vocabulary(
+        facts, f"deploy.{AFTER_VERIFIED}.performed_by", "who performs a step after a deploy"
+    )
+    chosen = {
+        choice.get("name")
+        for choice in entry.get("choices") or ()
+        if isinstance(choice, dict)
+    }
+    names: dict[str, int] = {}
+    for index, step in enumerate(steps):
+        here = f"{at}[{index}]"
+        if not isinstance(step, dict):
+            raise ConfigError(
+                here,
+                "must be a mapping stating the step's name, its command and who "
+                "performs it (§ 33).",
+            )
+        for key in step:
+            if key not in declared:
+                raise ConfigError(
+                    f"{here}.{key}",
+                    "is a key § 33 does not declare on a step, so nothing reads it. "
+                    f"The keys it declares are: {', '.join(sorted(declared))}.",
+                )
+        name = step.get("name")
+        if not isinstance(name, str) or not _CHOICE_NAME.fullmatch(name):
+            raise ConfigError(
+                f"{here}.name",
+                f"is {name!r}; it must be letters, digits, `_` and `-`, opening with "
+                "a letter or `_` (§ 33). An outcome is handed to a step by this name.",
+            )
+        if name in names:
+            raise ConfigError(
+                f"{here}.name",
+                f"is {name!r}, which {at}[{names[name]}] already names (§ 33), so an "
+                "outcome handed to it would answer for two steps.",
+            )
+        names[name] = index
+        command = step.get("command")
+        if not _one_line(command):
+            raise ConfigError(
+                f"{here}.command",
+                f"is {command!r}; it must be the whole command, a non-empty string "
+                "on one line (§ 33).",
+            )
+        if step.get("performed_by") not in performers:
+            raise ConfigError(
+                f"{here}.performed_by",
+                f"is {step.get('performed_by')!r}; the surface states "
+                f"{' | '.join(performers)} (§ 33). Who performs a step is the "
+                "target's own fact, and a step nobody named a performer for is one "
+                "nobody performs.",
+            )
+        for placed in _BATCH_PLACED.findall(command):
+            if placed not in AFTER_VERIFIED_PLACEMENTS:
+                raise ConfigError(
+                    f"{here}.command",
+                    f"places {{deploy:{placed}}}; a step may place "
+                    + ", ".join(f"{{deploy:{one}}}" for one in AFTER_VERIFIED_PLACEMENTS)
+                    + " and a choice the target declares (§ 33).",
+                )
+            # ⛔ `batch`'s rule, for its reason: a step reaches a shell too, and a
+            # name a shell splits would run a different command than the one
+            # written.
+            if placed == BATCH_TARGET and not (
+                isinstance(entry.get("name"), str) and _PLAIN_VALUE.fullmatch(entry["name"])
+            ):
+                raise ConfigError(
+                    f"{here}.command",
+                    f"places {{deploy:{BATCH_TARGET}}} while the target's name "
+                    f"{entry.get('name')!r} is not one plain word a shell reads as "
+                    "itself (§ 33). Name the target in the command instead.",
+                )
+        for placed in _CHOICE_PLACED.findall(command):
+            if placed not in chosen:
+                raise ConfigError(
+                    f"{here}.command",
+                    f"places {placed!r}, which no choice of this target declares "
+                    "(§ 33).",
+                )
 
 
 def _validate_figures(where: str, entry: dict, facts: dict) -> None:
@@ -6103,6 +6354,9 @@ _PLAIN_JOIN = re.compile(r"[A-Za-z0-9_./:@%+,=-]+")
 _BATCH_PLACED = re.compile(r"\{deploy:([^}]*)\}")
 BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE = "target", "commit", "purpose"
 BATCH_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE)
+# What a step run after a clean verification may place: the purpose is a batch's
+# own and names nothing a step is run for.
+AFTER_VERIFIED_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT)
 # § 33's three purposes a batch command is run for, one run each.
 ADVANCE, PRECONDITION, REPORT = "advance", "precondition", "report"
 # ⛔ An object name and nothing else: hexadecimal is a word every shell reads as
@@ -6212,6 +6466,11 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
         if isinstance(entry.get("batch"), str)
         else set()
     )
+    # ⛔ And so does one a step after the verification places, a step's command
+    # being run in a shell on every shape too.
+    for step in entry.get(AFTER_VERIFIED) or ():
+        if isinstance(step, dict) and isinstance(step.get("command"), str):
+            batched |= set(_CHOICE_PLACED.findall(step["command"]))
     always = entry["inputs"] if isinstance(entry.get("inputs"), dict) else {}
     names: list[str] = []
     for index, choice in enumerate(choices):
@@ -6262,7 +6521,7 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                     f"{here}.values[{position}]",
                     f"is {value!r}, which a shell would not read as one plain word "
                     "(§ 33). On a `command` target, and for a choice its `batch` "
-                    "places, a value is letters, digits and `_ . / : @ % + , = -`, "
+                    "or a step after its verification places, a value is letters, digits and `_ . / : @ % + , = -`, "
                     "opening with a letter, a digit, `_`, `.` or `/`.",
                 )
             if value in values[:position]:
@@ -6350,13 +6609,14 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                 f"places {name!r}, which no choice of this target declares (§ 33).",
             )
     for key, value in entry.items():
-        if key in ("choices", "batch") or (key == "command" and shell):
+        if key in ("choices", "batch", AFTER_VERIFIED) or (key == "command" and shell):
             continue
         for path, name in _placed_elsewhere(value, f"{where}.{key}"):
             raise ConfigError(
                 path,
                 f"places the choice {name!r}, which is read in a `command` target's "
-                "`command` and in a `batch`, and nowhere else (§ 33).",
+                "`command`, in a `batch` and in a step's `command`, and nowhere "
+                "else (§ 33).",
             )
 
 
@@ -8746,6 +9006,17 @@ FIGURE_BOUNDS = "bounds"
 # name the command's output can carry and the other way round.
 FIGURE_NAME = re.compile(r"[A-Za-z0-9_.-]+")
 FIGURE_LINE = re.compile(r"([A-Za-z0-9_.-]+)[ \t]+(-?[0-9]+(?:\.[0-9]+)?)")
+
+# § 33's key naming the steps a target runs once its verification is clean, the
+# outcomes a performed step comes back with, and what a step's command may place.
+# ⛔ The outcomes are a literal for `ADVANCE_OUTCOMES`'s reason -- the surface
+# states them in a table, as what a role hands the carrier -- and the suite holds
+# the two together. ⛔ `done` is the one outcome that lets the next step run.
+AFTER_VERIFIED = "after_verified"
+STEP_OUTCOMES = ("done", "failed", "running", "unanswered")
+STEP_DONE = "done"
+STEP_UNREPORTED = "unanswered"
+STEP_NOT_RUN = "not_run"
 
 # Where the command goes inside an `invoke` form (§ 1). ⛔ A form and not a
 # pattern, which is `PLACEHOLDER`'s own reason one facet over: what reads this
@@ -17826,6 +18097,7 @@ def self_test() -> int:
         check(label, refusal is None, f"refused on {refusal!r}")
 
     _advance_requires_suite(check, surface)
+    _after_verified_suite(check, surface)
     _not_implemented_suite(check, surface)
 
     print("\n§ 33's choices, resolved for one run:")
@@ -19827,6 +20099,62 @@ def _planted_violations():
         ("one name carried by two checks", f"deploy[0].{ADVANCE_REQUIRES}[1].reading",
          at("deploy", [_an_advancing_target(
              advance_requires=[{"reading": "a reading"}, {"reading": "a reading"}])])),
+        # ⛔ § 33's `after_verified`, every arm. ⚠️ Each plant breaks one key of a
+        # step that `_a_step_after` builds whole, so a refusal under another key
+        # is the plant missing rather than the rule holding.
+        ("steps after a verification on a target reached by hand",
+         f"deploy[0].{AFTER_VERIFIED}",
+         at("deploy", [_a_deploy_target(
+             invoke="by_hand", command=_ABSENT, ref="a-ref",
+             workflow=_a_workflow_the_example_states(),
+             after_verified=[_a_step_after()])])),
+        ("steps after a verification written as something that is not a list",
+         f"deploy[0].{AFTER_VERIFIED}",
+         at("deploy", [_a_deploy_target(after_verified=_a_step_after())])),
+        ("an empty list of steps after a verification", f"deploy[0].{AFTER_VERIFIED}",
+         at("deploy", [_a_deploy_target(after_verified=[])])),
+        ("a step that is not a mapping", f"deploy[0].{AFTER_VERIFIED}[0]",
+         at("deploy", [_a_deploy_target(after_verified=["git tag"])])),
+        ("a step carrying a key § 33 does not declare",
+         f"deploy[0].{AFTER_VERIFIED}[0].when",
+         at("deploy", [_a_deploy_target(after_verified=[_a_step_after(when="after")])])),
+        ("a step with no name", f"deploy[0].{AFTER_VERIFIED}[0].name",
+         at("deploy", [_a_deploy_target(after_verified=[_a_step_after(name=_ABSENT)])])),
+        ("a step named with a space", f"deploy[0].{AFTER_VERIFIED}[0].name",
+         at("deploy", [_a_deploy_target(after_verified=[_a_step_after(name="a tag")])])),
+        ("one name carried by two steps", f"deploy[0].{AFTER_VERIFIED}[1].name",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(), _a_step_after()])])),
+        ("a step with no command", f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(after_verified=[_a_step_after(command=_ABSENT)])])),
+        ("a step's command on two lines", f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(command="git tag v1\ngit push")])])),
+        ("a step naming no performer", f"deploy[0].{AFTER_VERIFIED}[0].performed_by",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(performed_by=_ABSENT)])])),
+        ("a step's performer outside the vocabulary",
+         f"deploy[0].{AFTER_VERIFIED}[0].performed_by",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(performed_by="anybody")])])),
+        ("a step placing the batch's purpose", f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(command="tag {deploy:purpose}")])])),
+        ("a step placing a target name a shell reads as more",
+         f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(name="a target",
+                                        after_verified=[_a_step_after()])])),
+        ("a step placing a choice the target does not declare",
+         f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(
+             after_verified=[_a_step_after(command="tag {choose:scope}")])])),
+        ("a dispatch's choice value a shell reads as more, where a step places it",
+         "deploy[0].choices[0].values[1]",
+         at("deploy", [_a_deploy_target(
+             invoke="dispatch", command=_ABSENT, ref="a-ref",
+             workflow=_a_workflow_the_example_states(),
+             choices=[_a_choice(values=["some", "all of it"])],
+             after_verified=[_a_step_after(command="tag {choose:scope}")])])),
         # ⛔ § 33's `figures`, every arm, each on a target that loads without it.
         ("figures written as something that is not a list", f"deploy[0].{FIGURES}",
          at("deploy", [_an_advancing_target(figures="cases")])),
@@ -23451,6 +23779,175 @@ def _advance_requires_suite(check, facts: dict) -> None:
             check(label, False, "parsed")
 
 
+def _a_step_after(**overrides) -> dict:
+    """One whole step of § 33's `after_verified`, to break one key of at a time."""
+    step = {
+        "name": "a-tag",
+        "command": "git tag deployed-{deploy:target} {deploy:commit}",
+        "performed_by": "procedure",
+    }
+    step.update(overrides)
+    return {key: value for key, value in step.items() if value is not _ABSENT}
+
+
+def _surface_step_outcomes() -> list[str]:
+    """§ 33's step outcome table, read back in the order it states them.
+
+    ⛔ Read off the subsection's own rows -- a backticked word in the first of
+    two cells -- so the suite compares the carrier's literal with the surface
+    rather than with a third copy written here.
+    """
+    with open(SURFACE, encoding="utf-8") as handle:
+        text = handle.read()
+    start = text.find("### What runs after a verified deploy, and what a failed step leaves standing")
+    if start < 0:
+        return []
+    end = text.find("\n### ", start + 1)
+    rows = []
+    for line in text[start:end].splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) == 2 and re.fullmatch(r"`[a-z_]+`", cells[0]):
+            rows.append(cells[0].strip("`"))
+    return rows
+
+
+def _after_verified_suite(check, facts: dict) -> None:
+    """§ 33's `after_verified`: the green side of the load, the plan and the report.
+
+    ⛔ The planted violations this facet exists for are a step that runs on a
+    verification that is not clean, a step run after one that failed, and a
+    failed step reported as a failed deploy; each is planted and must come out
+    the other way.
+    """
+    print("\n§ 33, what runs after a verified deploy -- the load, the plan, the report:")
+    check(
+        "the surface's step outcome table and the carrier's outcomes are the same, in order",
+        _surface_step_outcomes() == list(STEP_OUTCOMES),
+        f"surface states {_surface_step_outcomes()}, carrier {list(STEP_OUTCOMES)}",
+    )
+    steps = [
+        _a_step_after(),
+        _a_step_after(name="a-fast-forward", command="git push origin {deploy:commit}:{choose:scope}"),
+        _a_step_after(name="a-rebase", command="rebase-next", performed_by="human"),
+    ]
+    loaded = _a_valid_example()
+    loaded["deploy"] = [_an_advancing_target(
+        command="ship {choose:scope}", choices=[_a_choice()],
+        advance_requires=[{"reading": "the served commit"}],
+        after_verified=steps,
+    )]
+    refusal = _refused(loaded)
+    check("a target stating steps after its verification loads",
+          refusal is None, f"refused on {refusal!r}")
+    if refusal is not None:
+        return
+    commit = "0123456789abcdef0123456789abcdef01234567"
+    clean = {"the served commit": "passed"}
+
+    def plan(readings, chosen=(), handed=commit, outcomes=None):
+        return _resolve(loaded, EXAMPLES, facts, False).after_verified(
+            "a-target", readings, list(chosen), handed, outcomes
+        )
+
+    got = plan(clean, ["scope=all"])
+    check("a clean verification runs every step, in the order stated",
+          [s["name"] for s in got["steps"] if s["runs"]] == ["a-tag", "a-fast-forward", "a-rebase"],
+          f"read {got['steps']}")
+    check("a step reads the deployed commit and the target",
+          got["steps"][0]["command"] == f"git tag deployed-a-target {commit}",
+          f"read {got['steps'][0]['command']!r}")
+    check("a step reads the value the run chose",
+          got["steps"][1]["command"] == f"git push origin {commit}:all",
+          f"read {got['steps'][1]['command']!r}")
+    check("a step reads the default where the run chose nothing",
+          plan(clean)["steps"][1]["command"].endswith(":" + _a_choice()["default"]),
+          f"read {plan(clean)['steps'][1]['command']!r}")
+    check("each step carries who performs it",
+          [s["performed_by"] for s in got["steps"]] == ["procedure", "procedure", "human"],
+          f"read {got['steps']}")
+    for outcome in ADVANCE_OUTCOMES:
+        if outcome == ADVANCE_RELEASES:
+            continue
+        held = plan({"the served commit": outcome})
+        check(f"a verification whose required check came back `{outcome}` runs no step",
+              held["clean"] is False and not any(s["runs"] for s in held["steps"]),
+              f"read {held}")
+    unread = plan({})
+    check("a verification nothing reported runs no step",
+          unread["clean"] is False and not any(s["runs"] for s in unread["steps"]),
+          f"read {unread}")
+    reported = plan({"the served commit": "failed"}, outcomes={})
+    check("a step on a verification that is not clean is reported not run",
+          all(s["outcome"] == STEP_NOT_RUN for s in reported["steps"]),
+          f"read {reported['steps']}")
+
+    done = plan(clean, outcomes={"a-tag": "done", "a-fast-forward": "done", "a-rebase": "done"})
+    check("every step done stops nowhere", done["stopped_at"] is None, f"read {done}")
+    for outcome in STEP_OUTCOMES:
+        if outcome == STEP_DONE:
+            continue
+        failed = plan(clean, outcomes={"a-tag": "done", "a-fast-forward": outcome})
+        check(
+            f"a step that came back `{outcome}` stops the sequence there",
+            failed["stopped_at"] == "a-fast-forward"
+            and [s["outcome"] for s in failed["steps"]] == ["done", outcome, STEP_NOT_RUN],
+            f"read {failed['steps']}",
+        )
+        check(
+            f"a step that came back `{outcome}` does not report the deploy failed",
+            failed["deploy_failed"] is False,
+            f"read {failed}",
+        )
+        check(
+            f"a step that came back `{outcome}` names what it left standing",
+            any("'a-tag' done" in line and "'a-rebase'" in line and commit in line
+                for line in failed["report"]),
+            f"read {failed['report']}",
+        )
+    silent = plan(clean, outcomes={"a-tag": "done"})
+    check("a step handed no outcome is unanswered and stops the sequence",
+          silent["stopped_at"] == "a-fast-forward"
+          and silent["steps"][1]["outcome"] == STEP_UNREPORTED,
+          f"read {silent['steps']}")
+
+    for label, call in (
+        ("a step placing the commit with none handed over is refused",
+         lambda: plan(clean, handed=None)),
+        ("a commit that is not an object name is refused",
+         lambda: plan(clean, handed="HEAD; rm -rf /")),
+        ("an outcome for a step the target does not state is refused",
+         lambda: plan(clean, outcomes={"a-deploy": "done"})),
+        ("an outcome outside the table is refused",
+         lambda: plan(clean, outcomes={"a-tag": "green"})),
+        ("a value the choice does not allow is refused",
+         lambda: plan(clean, ["scope=most"])),
+    ):
+        try:
+            call()
+        except ConfigError:
+            check(label, True, "")
+        else:
+            check(label, False, "answered rather than refused")
+    for label, pairs in (
+        ("a step outcome with no separator is refused", ["a-tag"]),
+        ("one step handed two outcomes is refused", ["a-tag=done", "a-tag=failed"]),
+    ):
+        try:
+            _parse_steps(pairs)
+        except ConfigError:
+            check(label, True, "")
+        else:
+            check(label, False, "parsed")
+
+    # ⛔ The half that keeps a project stating nothing new where it was.
+    plain = _a_valid_example()
+    plain["deploy"] = [_a_deploy_target()]
+    none = _resolve(plain, EXAMPLES, facts, False).after_verified("a-target", {}, [], None)
+    check("a target stating no step runs none, and says so",
+          none["steps"] == [] and none["clean"] is True and none["report"],
+          f"read {none}")
+
+
 def _a_figures_block(**overrides) -> dict:
     """One § 33 `figures` entry that loads, for the arms that plant one key wrong.
 
@@ -24551,6 +25048,30 @@ def _parse_readings(pairs: list[str]) -> dict[str, str]:
     return readings
 
 
+def _parse_steps(pairs: list[str]) -> dict[str, str]:
+    """`NAME=OUTCOME` pairs, as `--step` hands them, into one mapping.
+
+    ⛔ The same refusals as `_parse_readings`, said about a step: two outcomes for
+    one step leave where the sequence stopped undefined.
+    """
+    outcomes: dict[str, str] = {}
+    for pair in pairs:
+        name, sep, outcome = pair.rpartition("=")
+        name = name.strip()
+        if not sep or not name:
+            raise ConfigError(
+                f"deploy.{AFTER_VERIFIED}",
+                f"was handed {pair!r} as a step's outcome; the form is NAME=OUTCOME (§ 33).",
+            )
+        if name in outcomes:
+            raise ConfigError(
+                f"deploy.{AFTER_VERIFIED}",
+                f"was handed {name!r} twice; one step has one outcome (§ 33).",
+            )
+        outcomes[name] = outcome.strip()
+    return outcomes
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="Read a project's configuration, once, for every role.",
@@ -24723,6 +25244,29 @@ def main(argv: list[str]) -> int:
         f"{' | '.join(ADVANCE_OUTCOMES)}",
     )
     parser.add_argument(
+        "--after-verified-for",
+        metavar="TARGET",
+        help="one of § 33's deploy targets: the steps it runs once its "
+        "verification is clean, in order and resolved -- each command with the "
+        "commit and the choices placed, where it runs, and who performs it. "
+        "Clean is `--advance-for`'s verdict over the same `--reading` outcomes, "
+        "and a verification holding the advance runs no step. With `--step`, "
+        "where the sequence stopped and what the deploy left standing",
+    )
+    parser.add_argument(
+        "--deployed-commit",
+        metavar="SHA",
+        help="the commit the deploy serves, for `--after-verified-for`",
+    )
+    parser.add_argument(
+        "--step",
+        action="append",
+        default=[],
+        metavar="NAME=OUTCOME",
+        help="one performed step's outcome for `--after-verified-for`, repeated "
+        f"per step: one of {' | '.join(STEP_OUTCOMES)}",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="hold this reader to the surface and the examples",
@@ -24791,7 +25335,27 @@ def main(argv: list[str]) -> int:
                 "`--command` with it, or read the roots this project declares "
                 "out of the report this run prints without either.",
             )
-        if args.advance_for:
+        if args.after_verified_for:
+            if args.advance_for or args.deploy_target:
+                raise ConfigError(
+                    f"deploy.{AFTER_VERIFIED}",
+                    "is asked about on its own: `--after-verified-for` reads the "
+                    "advance verdict and resolves the target itself (§ 33).",
+                )
+            answer = config.after_verified(
+                args.after_verified_for,
+                _parse_readings(args.reading),
+                args.choose,
+                args.deployed_commit,
+                _parse_steps(args.step) if args.step else None,
+            )
+        elif args.step or args.deployed_commit:
+            raise ConfigError(
+                f"deploy.{AFTER_VERIFIED}",
+                "cannot be asked about with no target named: § 33 states the steps "
+                "after a verification per target. Pass `--after-verified-for`.",
+            )
+        elif args.advance_for:
             answer = config.advance(args.advance_for, _parse_readings(args.reading))
         elif args.reading:
             raise ConfigError(
@@ -24800,7 +25364,7 @@ def main(argv: list[str]) -> int:
                 "states which checks an advance rests on per target, so a reading "
                 "alone holds nothing. Pass `--advance-for` with it.",
             )
-        if args.deploy_target:
+        if args.deploy_target and not args.after_verified_for:
             # ⛔ The repository is the entry's own fact, so a root handed over
             # beside the target is a second answer to it.
             if args.root or args.root_for:
@@ -24816,7 +25380,7 @@ def main(argv: list[str]) -> int:
                     "command is not passed beside `--deploy-target`.",
                 )
             answer = config.deploy_target(args.deploy_target, args.choose)
-        elif args.choose:
+        elif args.choose and not args.after_verified_for:
             raise ConfigError(
                 "deploy.choices",
                 "cannot be chosen with no target named: § 33 states a choice per "
