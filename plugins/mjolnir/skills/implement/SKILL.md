@@ -133,7 +133,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/spec_corpus.py" --role implement \
   --version <the value the item carries for the corpus's grouping> [--keyword <a term from the item>]…
 ```
 
-⛔ **The version is read off the item and never worked out**; ⛔ **a contradiction met here or while
+⛔ **The version is read off the item and never worked out** — an item carrying none is run without
+`--version`, and only the carrier's refusal for it is a stop; ⛔ **a contradiction met here or while
 working is a bullet whose answer is a decision**, asked in step 7's form rather than settled by
 choosing one side; and ⛔ **the reply carries the report's first line as it came back** — which
 copy, the fallback, *no corpus is configured*, or *not asked* — never one of the last two as

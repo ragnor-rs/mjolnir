@@ -629,6 +629,15 @@ def self_test() -> int:
         check("⛔ and says neither that no corpus is configured nor that nothing contradicts",
               "No specification corpus is configured" not in said
               and "no contradiction" not in said.lower(), said)
+        # ⛔ An item carrying no version, in a project that has this role read
+        # nothing: answered as before, and never the missing-version stop --
+        # which would stop every start of a project that never opted in.
+        try:
+            answer = answered(read_corpus(root, _a_facet(), None, role="start"))
+        except CorpusError as error:
+            answer = {"outcome": f"stopped: {error}"}
+        check("a role the project does not name, asked with no version, is not asked "
+              "rather than stopped", answer["outcome"] == NOT_ASKED, f"{answer['outcome']}")
 
         named = _a_facet(readers=["file", "start", "implement"])
         answer = answered(read_corpus(root, named, "9.0", keywords=["passkey"],

@@ -192,8 +192,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/spec_corpus.py" --role start \
   --version <the value the item carries for the corpus's grouping> [--keyword <a term from the item>]…
 ```
 
-- ⛔ **The version is read off the item and never worked out**, and an item carrying none is a stop
-  reported as unanswered — never a run with no version.
+- ⛔ **The version is read off the item and never worked out.** An item carrying none is run
+  without `--version`: a project that has this role read nothing still answers as it did, and
+  ⛔ **only the carrier's refusal for the missing version is the stop**, reported as unanswered.
 - ⛔ **A contradiction between the item and what comes back stops the start before the claim**,
   reported with the ref it was read at. Whether there is one is this role's reading of the text and
   not the carrier's.
