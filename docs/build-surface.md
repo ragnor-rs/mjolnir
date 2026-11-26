@@ -1,28 +1,22 @@
 # Why the build half of the surface says so little
 
-The single statement of every rule and flow is
-[`../plugins/mjolnir/config/schema.md`](../plugins/mjolnir/config/schema.md); this document states
-none. It is the build-half counterpart of [`configuration-surface.md`](configuration-surface.md),
-which derived the process axes by reading every copy of every process role: this one was derived by
-reading what each of the six projects **builds, checks and deploys with** — every workflow file,
-every manifest and lockfile, every command definition, every deploy script, and the passages of the
-instructions files that state when a verdict counts. **Measured 2026-10-22**, and ⚠️ the date is
-load-bearing in a way the role survey's was not: these six trees move independently of this
-repository, so a figure here is true of the six as they stood and a count is re-taken rather than
-trusted. The findings below are measurements rather
-than preferences, and each one names the schema section or the work item it bears on. ⚠️ **Two
-other kinds of sentence appear and are told apart on sight**: a **conclusion a measurement forces**
-about a facet's shape, which is written as the measurement and then the shape it rules out; and a
-**preference**, where a measurement leaves two honest options — each of those is labelled where it
-stands.
+Every rule and flow is stated in
+[`../plugins/mjolnir/config/schema.md`](../plugins/mjolnir/config/schema.md). This document is the
+build-half counterpart of [`configuration-surface.md`](configuration-surface.md), which derived the
+process axes by reading every copy of every process role: this one was derived by reading what each
+of the six projects **builds, checks and deploys with** — every workflow file, every manifest and
+lockfile, every command definition, every deploy script, and the passages of the instructions files
+that state when a verdict counts. Measured 2026-10-22. These six trees move independently of this
+repository, so a figure here is true of the six as they stood, and a count is re-taken rather than
+trusted. Each finding names the schema section or the work item it bears on. A conclusion a
+measurement forces about a facet's shape is written as the measurement and then the shape it rules
+out; a preference, where a measurement leaves two honest options, is labelled where it stands.
 
-Projects are referred to as A–F, as they are there. Naming them is forbidden here, and the counts
-are what carry the argument anyway.
+Projects are referred to as A–F, as they are there. Naming them is forbidden here.
 
-**What this document is for.** Three facets that touch this axis were each written from one
-project: the local verdict and its conditions, the command root, and the tiers a host cannot run.
-A facet shape is cheap to write and expensive to migrate off, so the shapes are read here against
-six stacks before the migration meets them.
+Three facets that touch this axis were each written from one project: the local verdict and its
+conditions, the command root, and the tiers a host cannot run. They are read here against six
+stacks.
 
 ## A verdict is a command, a root, and a condition
 
@@ -39,32 +33,31 @@ The entry point whose exit status is a verdict, and the directory it runs in:
 
 **Three of six run a verdict command somewhere other than the code root — A, C and E — and one of
 the three has no command valid at the code root at all**: C, whose instructions file states that the
-root carries no manifest and that npm cannot run there. ⚠️ **A is the harder case and the one a
-reading of its instructions alone gets wrong**: its own front page is in a checkout that holds no
+root carries no manifest and that npm cannot run there. A is the harder case, and a reading of its
+instructions alone gets it wrong: its own front page is in a checkout that holds no
 code, the code is in two repositories nested under it and ignored by it, and each of those has its
 own host, its own checks and its own verdict set — so "the code root" is a question the repository
 collection answers before a command root can. That is the shape
 [`schema § 1 → A command root is not a code root`](../plugins/mjolnir/config/schema.md#a-command-root-is-not-a-code-root)
-was written from, and reading C again confirms every clause of it but one: two package roots, each
-with its own manifest; `lint` **present in both and meaning different things** — a fixer in one root
-and a pure check in the other; and the test runner in one root with the type checker and the style
-linter in the other. ⚠️ **The one clause that
-does not reproduce is a second colliding name**: `format` is in both roots too and means the same
-thing in each, differing only in its glob. E is a second instance of the shape in a different
+was written from, and C confirms every clause of it but one: two package roots, each with its own
+manifest; `lint` **present in both and meaning different things** — a fixer in one root and a pure
+check in the other; and the test runner in one root with the type checker and the style linter in
+the other. The clause that does not reproduce is a second colliding name: `format` is in both roots
+too and means the same thing in each, differing only in its glob. E is a second instance of the
+shape in a different
 language pair — a JVM build at the root and a Python package root whose suite the host workflow
 reaches by setting a working directory.
 
-**How many of the six carry more than one code repository: one.** Re-measured 2026-10-25, by
-walking each of the six trees five levels deep for a nested checkout with vendor directories
-excluded, which is a count the earlier pass had taken for A alone: A carries two, nested under a
-checkout that tracks no code of its own, and B, C, D, E and F carry one each. ⚠️ **The count does
-not weaken the shape it forces.** One project is enough, because it is the project where the whole
-loop has to run against two hosts, two disjoint check sets and two branch models, and the axis is
-cheap to state now and expensive to migrate onto later. What it decides is the **order**: the
-collection sits below the branch-model and `host.checks` axes rather than above them, and both of
-those have landed. ⚠️ A seventh project outside the six — not one of the migration targets, and so
-outside the survey — carries **four** nested repositories with no outer repository at all, which
-is the shape a single path cannot state even once. What answers all of it on the surface is
+**How many of the six carry more than one code repository: one.** Measured 2026-10-25, by walking
+each of the six trees five levels deep for a nested checkout with vendor directories excluded: A
+carries two, nested under a checkout that tracks no code of its own, and B, C, D, E and F carry one
+each. One project is enough to force the shape, because it is the project where the whole loop has
+to run against two hosts, two disjoint check sets and two branch models. What the count decides is
+the **order**: the collection sits below the branch-model and `host.checks` axes rather than above
+them, and both of those have landed. A seventh project outside the six — not one of the migration
+targets, and so outside the survey — carries **four** nested repositories with no outer repository
+at all, which is the shape a single path cannot state even once. What answers all of it on the
+surface is
 [`schema § 1 → A project's code is not always one repository`](../plugins/mjolnir/config/schema.md#a-projects-code-is-not-always-one-repository),
 whose named roots carry the path, the host with its checks, and the branch model per repository.
 
@@ -81,9 +74,9 @@ and `path` being absent where the form reaches the root.
 running the linter from the theme directory does not reproduce the pull request's finding, and that
 only the host's own invocation does — from the repository root, with the configuration passed
 explicitly and plugins resolved against the theme. A local pass obtained the other way is not the
-same claim, which is why the root an entry states is the one that produces the verdict anybody
-reads rather than merely a root the command will run in — a rule addressed to whoever writes the
-configuration, nothing here telling the two roots apart mechanically.
+same claim, so the root an entry states is the one that produces the verdict anybody reads, not
+merely a root the command will run in — a rule addressed to whoever writes the configuration,
+nothing here telling the two roots apart mechanically.
 
 **One command name is a verdict in one root and work in the other.** In C, `npm run lint` is
 `eslint --fix` in one package root and a pure check in the other. Its own guard against duplicating
@@ -103,14 +96,14 @@ Across six stacks the shapes are:
 
 | the shape | where | what defeats it |
 |---|---|---|
-| a **replay** — the build reports work it did not do | D and F both switch the build cache on in a properties file; D's stated gating command names nothing that defeats it, and the only such flag on F's host command is one whose subject is the build *daemon* rather than the cache or the incremental state. ⚠️ Read from the configuration: neither was executed twice to watch a second run skip the work | not a flag: the cache and the incremental state, each named |
+| a **replay** — the build reports work it did not do | D and F both switch the build cache on in a properties file; D's stated gating command names nothing that defeats it, and the only such flag on F's host command is one whose subject is the build *daemon* rather than the cache or the incremental state. Read from the configuration: neither was executed twice to watch a second run skip the work | not a flag: the cache and the incremental state, each named |
 | a **suite that never ran** — its dependency was absent and skipping is correct | B, four suites gated on one environment variable, [measured and priced in the sibling document](configuration-surface.md#a-tier-that-executed-nothing-and-the-build-that-said-so) rather than here | the executed count, which is [`schema § 16`](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) |
 | the **wrong root** | A, where only the host's invocation reproduces the finding | the root, as above |
 | the **wrong tree** | A, whose runner derives the container name per checkout, because a constant sends every exec to whichever stack holds the default name — the linters then report on another branch and exit zero | [`schema § 10 → Which tree a verdict belongs to`](../plugins/mjolnir/config/schema.md#which-tree-a-verdict-belongs-to) |
 | a command that **repairs what it judges** | C in both roots (`--fix`, `--write`), A in three targets, and C's host workflow runs the rewriting form and reports the diff | nothing in the facet today |
 | a **deploy** that replays | A: a named volume over the content directory is seeded from the image only while it is empty, so every staging deploy pulled a new image and served the old code until an entrypoint was made to copy it in on each start | emptying the volume — a state to destroy, not a form of a command |
 
-**The last row is why a form of the command cannot be what defeats staleness.** Two of the six
+A form of the command cannot be what defeats staleness. Two of the six
 measured staleness defeats are not forms of anything: a volume that has to be removed first, and a
 generated source tree that has to be rebuilt before the type checker is believable (C compiles its
 message catalogue in the workflow step before the check). A string naming a flag expresses neither,
@@ -118,7 +111,7 @@ and in both projects something already performs the defeat. What the facet says 
 [`schema § 17 → What a pass does not prove`](../plugins/mjolnir/config/schema.md#what-a-pass-does-not-prove-and-the-command-that-defeats-a-stale-one):
 `invalidate` is a **command**, absent where nothing can go stale.
 
-⛔ **None of that changes what the procedure may know**, by
+None of that changes what the procedure may know, by
 [`schema § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls):
 each of these is a command or a state the project names, and the procedure runs it and reads an exit
 status.
@@ -173,8 +166,7 @@ the answer.
 | C | exit 0 covers · 1 does not · 2 the pull request is conflicted · 3 undeterminable | the hook blocks only commands that produce a verdict and change nothing, with a named override |
 | F | a **reason** per unmet precondition, and only a blank reason means covered: the client is absent · this is not a git tree · there is no remote to ask about · the tree is dirty, so the host has never seen these edits · the head is unreadable · no run exists for this commit · the run's conclusion or status · how many steps its jobs executed | **stands aside** wherever a reason exists, and the local run proceeds |
 
-**What the four carry between them is six conditions, and ⚠️ only one is in all four** — which is
-the measurement, and it is weaker than *four projects agree*:
+The four carry six conditions between them, and only one is in all four:
 
 | the condition | which probes carry it |
 |---|---|
@@ -185,17 +177,16 @@ the measurement, and it is weaker than *four projects agree*:
 | the mapping is on the **workflow name** and never the job name | B alone, because two of its workflows call their job the same thing — which is § 2's rule, held in one project and missed by the other three |
 | a **path-filtered** workflow means "the pull request has some live check" says nothing about the command in hand | B and C |
 
-⛔ **So the facet is not a consensus to write down but a union to state once**, and the four-valued
-honesty [`schema § 2`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)
-already carries is what one of the four reached in full and three reached in part.
+So the facet is a union to state once, not a consensus, and the four-valued answer
+[`schema § 2`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)
+carries is what one of the four reached in full and three reached in part.
 
-F is the one that reaches all four of that section's preconditions — uncommitted work, a run for
-this commit, steps executed, concluded green — in its own words. ⚠️ **What none of
-the four states is the remedy on uncertainty**, and the four disagree about it: two run the checks
-anyway, one stands aside, one fails open. So the facet carries the conditions and the project
-carries what to do when one cannot be established.
+F reaches all four of that section's preconditions — uncommitted work, a run for this commit, steps
+executed, concluded green — in its own words. The four disagree about the remedy on uncertainty:
+two run the checks anyway, one stands aside, one fails open. So the facet carries the conditions and
+the project carries what to do when one cannot be established.
 
-**One condition no probe can be written against today.** Three of C's four code checks, and its
+One condition no probe can be written against today. Three of C's four code checks, and its
 type check among them, run only on a pull request whose base is a release branch — so for an
 ordinary change into the main line the host runs one path-filtered formatter and nothing else, and
 the local verdict is the only verdict there is. The condition is the **base branch**, which is a
@@ -205,60 +196,56 @@ carries the event, the types of it and the ref already; what reads it is
 [`schema § 17 → Whether the host's verdict covers this change`](../plugins/mjolnir/config/schema.md#whether-the-hosts-verdict-covers-this-change),
 whose `counts_when` is stated in that same form.
 
-**What acts on the answer is one guard, and the union above is what it reads.**
+One guard acts on the answer, reading the union above.
 [`schema § 18`](../plugins/mjolnir/config/schema.md#18-the-guard-on-a-command-the-host-has-already-run)
-is the one place that act is stated, and it takes B's four conditions as its own: a run exists for
-this commit, it mirrors *this command* by the workflow's name, it saw this code, and it is
-operational. ⛔ **What it does not take is the conclusion**, which F reads and
+states that act, and it takes B's four conditions as its own: a run exists for this commit, it
+mirrors *this command* by the workflow's name, it saw this code, and it is
+operational. It does not take the conclusion, which F reads and
 [`schema § 2`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)
-carries as its fourth precondition — and which B's first version reached for through the client's
-exit status, becoming a no-op while the host ran and a blocker once it had finished, that client
-exiting non-zero while runs are pending *and* when one has failed. A run that failed has spent the
-time and answered; what releases the call afterwards is the edit that follows, which leaves the tree
-carrying something the host has not seen. ⚠️ **B's own four conditions do not include one either**,
-which is the measurement rather than a design taken from it: the project that fails open is the
-project that stopped reading how the run went.
+carries as its fourth precondition. Read through the client's exit status, the conclusion makes the
+guard a no-op while the host runs and a blocker once it has finished, that client exiting non-zero
+while runs are pending *and* when one has failed. A run that failed has spent the time and answered;
+what releases the call afterwards is the edit that follows, which leaves the tree carrying something
+the host has not seen. B's own four conditions do not include the conclusion either.
 
-⚠️ **C's four exit codes are where the fourth answer comes from**, and it is the one none of the
-other three carries: its code 2 is *the pull request is conflicted*, which produces zero runs and
-reads exactly like *no run exists* while having the opposite remedy. The facet keeps the two apart
-rather than folding the conflict into the absence.
+C's four exit codes are where the fourth answer comes from, and none of the other three carries it:
+its code 2 is *the pull request is conflicted*, which produces zero runs and reads exactly like *no
+run exists* while having the opposite remedy. The facet keeps the two apart rather than folding the
+conflict into the absence.
 
 **Two of the four disagree about who answers the operational question, and the facet carries both.**
 A and C own a probe their own tooling already runs, and C's guard header states the rule outright —
 there is one implementation of *can the host run these jobs* and the hook is not a second one. B and
-F read the host. ⛔ **The split is not between two designs but between one condition and three**:
-whether a run exists, mirrors this command and saw this code are per-commit facts a project-level
+F read the host. The split is between one condition and three: whether a run exists, mirrors this
+command and saw this code are per-commit facts a project-level
 probe cannot answer, so those stay with the guard and only the operational one is delegated, which
 is what `operational_when` states.
 
 **What C deliberately leaves alone is the rule that populates the exemption list.** Only a command
 producing a verdict and changing nothing may be refused, and three kinds fail that test there: the
 fixing variants of its own checks, one command that is a fix in one package and a pure check in
-another, and the paid suites its host never runs at all. ⚠️ **The second of those is why the list is
-configuration rather than a heuristic** — telling the two apart needs a path heuristic more fragile
+another, and the paid suites its host never runs at all. The second of those is why the list is
+configuration rather than a heuristic — telling the two apart needs a path heuristic more fragile
 than the duplicate run it would prevent, which is
 [`schema § 18 → What may be guarded`](../plugins/mjolnir/config/schema.md#what-may-be-guarded-and-the-two-ways-a-refusal-stands-down)'s
-own argument and § 17's *a verdict changes nothing* read one facet over. ⚠️ **And C carries a named
-override with the user saying why**, which the same subsection states: a fail-open guard whose
-evidence is wrong once is a guard somebody deletes, and a deleted guard holds nothing afterwards.
+own argument. C also carries a named override with the user saying why, which the same subsection
+states: a fail-open guard whose evidence is wrong once is a guard somebody deletes, and a deleted
+guard holds nothing afterwards.
 
 ## The tiers, what each needs, and which are asked for
 
 [#60](https://github.com/ragnor-rs/mjolnir/issues/60)'s four bullets were written from F, and its
 five needs — host-runnable, a deploy, a credential, material, money — are offered as a vocabulary
-for all six. Measured against six, each need holds in at least two of them, which is the claim the
-table below has to carry: **host-runnable** in B and C, whose store arrives as a service the host
+for all six. Measured against six, each need holds in at least two of them: **host-runnable** in B
+and C, whose store arrives as a service the host
 supplies; **a deploy** in A, E and F; **a credential** in A, B and F; **material** in B and F, where
 a case whose subject is absent from the live catalogue answers indistinguishably from a broken path;
 **money** in B and F.
 
-**This reading is what
 [`schema § 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)
-was written from, and it differs from the item as filed on the retired need, on what an entry is,
-on where a verdict comes from, and on what is asked for.** Each of those has a heading below, and
-each is a thing the measurement forced rather than a preference — which is why they are recorded
-here and the rule is stated there.
+was written from this reading, which differs from the item as filed on the retired need, on what an
+entry is, on where a verdict comes from, and on what is asked for. Each has a heading below; the
+rules are stated in the schema.
 
 | | tiers present | what the unrunnable ones need | asked for rather than automatic | refused outright |
 |---|---|---|---|---|
@@ -271,37 +258,33 @@ here and the rule is stated there.
 
 ### The first difference: `host_runnable` was never a property of a tier
 
-⛔ **The first of the five needs is refused by name, and the measurement is why**
+The first of the five needs is refused by name
 ([`§ 31 → Why host_runnable is not one of the needs`](../plugins/mjolnir/config/schema.md#why-host_runnable-is-not-one-of-the-needs)).
 Read down the *what the unrunnable ones need* column: some rows name a store **the host supplies as
 a service** and others a container daemon so the **run** can stand its own up. That is one tier
 whose dependency arrives two ways, so *the host cannot run this tier* is false for the first group
 and conditional for the second — and a need spelled `host_runnable` encodes the binary the column
-disproves. ⚠️ **Which rows are in which group is stated once above**, in this section's own
-host-runnable sentence, and is not counted again here.
+disproves. Which rows are in which group is stated in this section's opening host-runnable sentence.
 
 So the facet carries `dependency` as the need and `stood_up_by` as who supplies it, and refuses the
-retired word by name:
-[`§ 31 → Why host_runnable is not one of the needs`](../plugins/mjolnir/config/schema.md#why-host_runnable-is-not-one-of-the-needs).
-⚠️ **The refusal is worth a marker rather than silence** because the retired spelling is the one an
-adopter reading #60 would write — the item offers it in its own list of five.
+retired word by name, because it is the spelling an adopter reading #60 would write — the item
+offers it in its own list of five.
 
 ### The second difference: the four names are a cross-product, not a taxonomy
 
 #60 refuses «a tier taxonomy imposed on adopters», and the four names everyone already uses survive
 that refusal only because they are **derivable**: this column pair is one axis and
 [`schema § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s
-`answered_by` is the other. A, B, C, D, E and F between them name all four and invent none, which is
-the evidence that nothing is being imposed —
+`answered_by` is the other. A, B, C, D, E and F between them name all four and invent none —
 [`§ 31 → The four values are derived`](../plugins/mjolnir/config/schema.md#the-four-values-are-derived-so-no-adopter-adopts-a-vocabulary)
 states the rule and holds each entry to its own name.
 
-⚠️ **The measurement also forced the entry to be a *suite* rather than a tier.** Row F's *tiers
+The measurement also forced the entry to be a *suite* rather than a tier. Row F's *tiers
 present* and *asked for* cells together name two suites of one tier that differ in both needs and
 starting; keyed on the tier, F would have had to state one of them. So the entry is a suite, its
 identity is its verdict source, and several entries may share a tier.
 
-⛔ **And the word trap is the reason the tier word is never the project's**
+The tier word is never the project's
 ([`§ 31 → The four values are derived`](../plugins/mjolnir/config/schema.md#the-four-values-are-derived-so-no-adopter-adopts-a-vocabulary)).
 A calls its browser-driven suite «the acceptance scenarios» with nobody judging them, which is this
 surface's `end_to_end`; taking A's word for it files two different tiers under the person-judged
@@ -313,54 +296,47 @@ name.
 tier carry a configured *name → (invocation, command root)* entry, or does the toolkit call an
 opaque project-supplied entry point and read its exit status?
 
-⛔ **Measured against the six, it is neither, and the reason is that both answers add a second
-spelling of a command this surface already states once.** Every one of the six states its
+Measured against the six, it is neither: both answers add a second spelling of a command this
+surface already states once. Every one of the six states its
 verdict-producing commands in the two places
 [`schema § 2`](../plugins/mjolnir/config/schema.md#2-code-host)'s `checks` and
 [`schema § 17`](../plugins/mjolnir/config/schema.md#17-the-local-verdict-and-the-conditions-under-which-it-counts)'s
 `checks_local` already model, and in no third. What the facet does with that is
 [`§ 31 → Where a tier's verdict comes from`](../plugins/mjolnir/config/schema.md#where-a-tiers-verdict-comes-from-and-the-tier-that-has-none)'s.
 
-⚠️ **Which is also what keeps the absence rule the item's comment says must not weaken** — the
-sourceless entry's reading is stated at
-[`§ 31 → Where a tier's verdict comes from`](../plugins/mjolnir/config/schema.md#where-a-tiers-verdict-comes-from-and-the-tier-that-has-none)
-rather than here. ⛔ **And one tier has no source by construction**, the person-judged one: a
-machine verdict read for it is the failure § 13 calls indistinguishable from success, which is a
-different mistake from that section's *check somebody turns off* and the one a reader of the
-*answered by* column meets. ⚠️ **A's manual checklist is the only row that names such a tier
-outright**, which is a limit of the reading rather than a count of the six: the column records what
-each project's files state, and a person-judged tier can be a practice no file mentions.
+The same subsection states the sourceless entry's reading, which keeps the absence rule the item's
+comment says must not weaken. One tier has no source by construction, the person-judged one: a
+machine verdict read for it is the failure § 13 calls indistinguishable from success, a different
+mistake from that section's *check somebody turns off*. A's manual checklist is the only row that
+names such a tier outright, which is a limit of the reading rather than a count of the six: the
+column records what each project's files state, and a person-judged tier can be a practice no file
+mentions.
 
 ### The fourth difference: what is asked for, and what is refused outright
 
-**The *asked for rather than automatic* column's own cells are the finding, and ⛔ the reasons they
-give are not one reason**: money in one row, an argument the run refuses to default in another, no
-workflow at all in two more, and a deliberate omission in a fifth. ⛔ So *opt-in* is a property a
-project states rather than one derivable from a cost, which is why the facet carries the key instead
-of reading a price. ⚠️ **The cells are not recopied here**, the figure and the environments being
-the column's — the discipline the first difference above states about its own group, kept on this
-page as well as asked of the surface.
+The *asked for rather than automatic* column gives different reasons: money in one row, an argument
+the run refuses to default in another, no workflow at all in two more, and a deliberate omission in
+a fifth. So *opt-in* is a property a project states rather than one derivable from a cost, which is
+why the facet carries the key instead of reading a price.
 
-⛔ **The rail that performs an asking already exists and reads commands**, which is
+The rail that performs an asking already exists and reads commands, which is
 [`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
 — so the facet states that a suite is opt-in and leaves the asking there:
 [`§ 31 → An opt-in tier is never started without being asked for`](../plugins/mjolnir/config/schema.md#an-opt-in-tier-is-never-started-without-being-asked-for).
-⚠️ **What it deliberately does not do is compare the two**, and the reason is the measurement rather
-than the rule: F's single runner invokes its cheap suites and its paid tier alike, which is what
-makes a § 19 entry match arguments as well as a command — so a tier's one command could not be held
-against that list without a second implementation of the matching.
+It does not compare the two: F's single runner invokes its cheap suites and its paid tier alike,
+which is what makes a § 19 entry match arguments as well as a command — so a tier's one command
+could not be held against that list without a second implementation of the matching.
 
-The *refused outright* column is populated for unrelated reasons, which is the finding: writing to a
-real third-party account in one row, and a quota that caps throughput in another.
-⛔ **The refusal is an act and the target vocabulary is somebody else's** —
+The *refused outright* column is populated for unrelated reasons: writing to a real third-party
+account in one row, and a quota that caps throughput in another. The refusal is an act and the
+target vocabulary is somebody else's —
 [`§ 31 → Which target a tier is refused against`](../plugins/mjolnir/config/schema.md#which-target-a-tier-is-refused-against)
 holds an entry to being a name and nothing more, because what a deploy target *is* on this surface
 is #63's and that item disagrees with itself.
 
-**What the reading adds to #60 is how a tier is *selected*, which the item did not state and
+The reading adds how a tier is *selected*, which
 [`§ 31 → What a tier states about its own cases`](../plugins/mjolnir/config/schema.md#what-a-tier-states-about-its-own-cases-and-what-it-costs-to-state-nothing)
-now does.** Three
-mechanisms, and the difference is load-bearing:
+states. Three mechanisms:
 
 - **by marker** — F's cases declare one of three markers for what they reach, and the host selects
   the complement; a case that grows a dependency on the world drops out by declaring a marker, and a
@@ -376,24 +352,20 @@ mechanisms, and the difference is load-bearing:
 So a partial run reports in two measured forms — skipped-and-listed, and dropped-by-criterion — and
 the floor that catches the third case is already surface at
 [`schema § 16`](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran).
-⚠️ **A preference, labelled:** of the three selection mechanisms, marker and named list are both
-honest and the choice between them is a project's, so nothing here recommends one. ⚠️ **What the
-measurement adds is which of the three can go stale without saying so** — B's named list, where a
-suite added and not named drops out — and that is the fact
-[`§ 31 → What a tier states about its own cases`](../plugins/mjolnir/config/schema.md#what-a-tier-states-about-its-own-cases-and-what-it-costs-to-state-nothing)
-is built on; the rule it draws from it is stated there.
+A preference, labelled: of the three selection mechanisms, marker and named list are both honest
+and the choice between them is a project's, so nothing here recommends one. Of the three, B's named
+list can go stale without saying so — a suite added and not named drops out — and that is the fact
+the same subsection is built on.
 
-**A's whole suite is the one the surface would otherwise read as absent, and ⚠️ the one its own
-prose reports wrongly.** Its instructions say it has no automated tests; what it has is eleven
-suites and
-no test of the product, each suite holding one of its own checkers to the violation it must redden
-on — which is why its release trigger is manual, stated there as the consequence of having no suite
-that could fail a bad release. ⛔ **The distinction is the measurement**: a project with checkers
-and no product tests is not a project with no tier, and reading the prose rather than the files gets
-it backwards. Its coverage rule is a check over the
-**diff** rather than over a run: a change in behaviour with no scenario and no register entry fails
-it. ⚠️ **It is a host check, and A's local runner mirrors it** like every other job — which is the
-direction that matters, because a check the host already runs is refused as a `done:` entry. That is
+A's whole suite is the one the surface would otherwise read as absent, and its own prose reports
+it wrongly. Its instructions say it has no automated tests; what it has is eleven suites and no test
+of the product, each suite holding one of its own checkers to the violation it must redden on —
+which is why its release trigger is manual, stated there as the consequence of having no suite that
+could fail a bad release. A project with checkers and no product tests is not a project with no
+tier. Its coverage rule is a check over the **diff** rather than over a run: a change in behaviour
+with no scenario and no register entry fails it. It is a host check, and A's local runner mirrors it
+like every other job, which matters because a check the host already runs is refused as a `done:`
+entry. That is
 [`schema § 15`](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded) in use, in the
 project whose host runs the fewest of its checks.
 
@@ -408,7 +380,7 @@ project whose host runs the fewest of its checks.
 | E | the wrapper | a toolchain declaration **per module** rather than once for the build, plus the host workflow and the images | one installed unpinned in the workflow | none at all |
 | F | the wrapper | a toolchain declaration in a convention plugin of its own | **pinned in the workflow, with the reason stated** | none at all |
 
-**Six facts, each measured rather than reasoned.** Across six projects there is exactly **one**
+Across six projects there is exactly **one**
 runtime-version file of the kind a version manager reads — B's, for its non-JVM module. Everywhere
 else a language runtime is an input to a host workflow's setup step, in five of the six, and in one
 of those five it is stated **twice with two different values**, by two workflows in one repository
@@ -416,14 +388,13 @@ that install different major versions of the same runtime. **Four of the six run
 none of them locks its dependencies**, so a build is reproducible to the versions its manifests
 name and no further. F is the only project that pins a linter's version **in the workflow that runs
 it**, and the only one stating why: an unpinned linter reddens the build on a day nobody changed any
-code, which teaches people that red means "try again". ⚠️ **A pins the same class of tool by a
-different mechanism and has its own argument for it** — the host installs from the two committed
-lockfiles, so the versions are the same locally and on the host — which is why the superlative above
-is about the mechanism and not about care. And A is the only one that pins the host's own actions by
+code, which teaches people that red means "try again". A pins the same class of tool by a different
+mechanism — the host installs from the two committed lockfiles, so the versions are the same locally
+and on the host. And A is the only one that pins the host's own actions by
 digest rather than by tag, in every step that uses one, because a tag is mutable and one of the
 actions it uses was compromised once — fourteen pinned references against none anywhere else.
 
-⚠️ **The two-values case is what the non-goal ruling below has to survive, and it does.** Nothing
+The two-values case does not defeat the non-goal ruling below. Nothing
 reads either value to decide what to do next, so the disagreement is invisible to every role and is
 the project's own to settle inside the commands it already runs; a key would record the
 disagreement without resolving it.
@@ -434,8 +405,7 @@ with one of the three marked optional — which is
 [#36](https://github.com/ragnor-rs/mjolnir/issues/36)'s subject stated as configuration by a project
 that has not adopted anything. A's answer is the opposite and equally explicit: the code is the
 artifact, an image is a build product, and a deployment is identified by the commit it was built
-from. The two are not in conflict — they are the two ends of #36's axis, and both were found rather
-than designed.
+from. The two are not in conflict — they are the two ends of #36's axis.
 
 ## Where a deploy lives
 
@@ -453,8 +423,8 @@ expected a script. Measured, the shapes are three:
 **What each resolves against is a second axis, and it is not the code root.** B's and F's scripts
 take the environment as a required argument and resolve the host from a library beside them, so the
 root they resolve against is a **target** rather than a directory; D's and E's resolve one target
-each; C's substitutions are supplied by whoever triggers the hosted build. ⚠️ **A's resolves against
-a ref, and the default is the wrong one**: the dispatch's `ref` input defaults to the branch
+each; C's substitutions are supplied by whoever triggers the hosted build. A's resolves against a
+ref, and the default is the wrong one: the dispatch's `ref` input defaults to the branch
 production serves, so publishing the staging branch has to name it explicitly, and the branch
 chooses which image tag is published — one tag per staging kind, because one tag for both delivered
 a build to a staging environment nobody had deployed to. So a deploy facet that assumed a directory
@@ -462,27 +432,26 @@ would be wrong in six cases out of six.
 
 **So "a project whose deploy is one script keeps that script" describes four of six.** C has no
 script to keep — its deploy is a configuration file a hosted service executes — and A's is a
-workflow dispatch, which is the host's. ⛔ **Neither is a gap**, by
+workflow dispatch, which is the host's. Neither is a gap, by
 [`schema § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls):
 a dispatch and a configured pipeline are both reached by a command, which is what the boundary
 already says configuration carries. What the measurement rules out is an assumption of a **file**,
 in two of six.
 
-✅ **The facet that reads this is now
+**The facet that reads this is
 [`schema § 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)**,
 and the reading above is one of the two it rests on — this page read what each project *builds and
 deploys with*, and the carrier side read what each project's deploy *role* says it does
 ([the second reading](configuration-surface.md#seven-deploying-carriers-read-in-full-and-the-provisional-ruling-they-revise)).
-⚠️ **The two agree on the shapes and count different things**: a project here and a carrier there,
-so the figures are not comparable and neither is restated in the other. ⛔ **What the carrier side
-added is a third shape this page could not see** — a target a project rules a *person* performs,
-which looks from the build side exactly like a tag push nobody automated.
+The two agree on the shapes and count different things — a project here and a carrier there — so
+the figures are not comparable. The carrier side added a third shape this page could not see: a
+target a project rules a *person* performs, which looks from the build side exactly like a tag push
+nobody automated.
 
 ## The toolchain version is a non-goal, and the boundary is where that is stated
 
-The question this item was opened to settle is whether a runtime or toolchain version belongs on the
-surface. Run the boundary's own test — does any role read it to decide what to do next — against
-everything the six projects pin:
+Does a runtime or toolchain version belong on the surface? Run the boundary's own test — does any
+role read it to decide what to do next — against everything the six projects pin:
 
 - a build-tool version is read by the wrapper the project ships;
 - a language runtime is read by the build's toolchain declaration, the host workflow's setup step,
@@ -492,19 +461,19 @@ everything the six projects pin:
 
 No role reads any of them, and the measured preconditions a command does not check for itself are
 presences, states and credentials rather than versions — so a version is not a `requires:` entry
-either. ⛔ **It is a non-goal, stated at**
+either. It is a non-goal, stated at
 [`schema § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
 with the other facts a project's own command reads, and no key is owed for it.
 
-**The strongest argument for the opposite answer is a triple, and it does not survive being
-counted.** Three parts of the surface separately know which tools a project builds and tests with —
+The argument for the opposite answer is a triple. Three parts of the surface separately know which
+tools a project builds and tests with —
 the capacity probe at
 [`schema § 10 → Exclusive resources`](../plugins/mjolnir/config/schema.md#exclusive-resources), the
 spend guard's argument shape at
 [`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
 and the deploy script (#13) — which reads like three copies of
-one fact and therefore like a reason to declare the toolchain once. ⛔ **None of the three is
-derivable from a toolchain name**, measured on one project:
+one fact and therefore like a reason to declare the toolchain once. None of the three is derivable
+from a toolchain name, measured on one project:
 
 - the capacity rule is not *the build tool* but **busy daemons plus leases too young to have
   registered one, capped at two** — a sum rather than a maximum, because a build started outside the
@@ -515,14 +484,12 @@ derivable from a toolchain name**, measured on one project:
 - the deploy script is hosts, services and secrets, none of which a toolchain states.
 
 A declared toolchain would therefore be a fourth statement beside three irreducible ones — a copy to
-keep in sync, which is the defect the toolkit exists to delete. ⛔ **So each of the three stays
-where it is**, and nothing in the toolkit branches on what a probe is probing:
+keep in sync. So each of the three stays where it is, and nothing in the toolkit branches on what a
+probe is probing:
 [`schema § 7 → A lease on an exclusive resource`](../plugins/mjolnir/config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
 is where that is stated for the one of the three this surface carries a key for.
 
 ## What the reading did not force
-
-Stated so that the absences are read as results rather than as work left undone:
 
 - **No new axis.** Every finding above lands on a facet that exists or on an open item for one.
 - **No facet per stack.** That a tool or manifest name may not appear in a carrier's text is
@@ -534,4 +501,4 @@ Stated so that the absences are read as results rather than as work left undone:
   not a predicate list beside
   [`schema § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list).
 - **The commands stay project-local.** Six stacks produced six command sets with nothing in common
-  but their shape, which is the measurement behind that boundary rather than a preference about it.
+  but their shape, which is the measurement behind that boundary.

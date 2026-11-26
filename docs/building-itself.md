@@ -4,14 +4,11 @@
 it ships, and requires every piece that could not be built that way to be named as hand-built. This
 is that record.
 
-It holds the part that stays true. **What the loop carries here today is derived rather than written
-down** — the command is in the last section. A list of carriers in prose would be a second statement
-of something the tree already answers, and it would be wrong the next time a role lands.
+What the loop carries here today is derived by the command in the last section, not listed here.
 
 ## The three pieces that could not use the loop
 
-Each is something every role runs *through*, so no role could run before it existed. That is the
-whole of the bootstrap — not three pieces picked for being difficult.
+Each is something every role runs *through*, so no role could run before it existed.
 
 | piece | landed | why nothing could have carried it |
 |---|---|---|
@@ -19,32 +16,26 @@ whole of the bootstrap — not three pieces picked for being difficult.
 | the `github-issues` adapter | `4cd0e39`, [#116](https://github.com/ragnor-rs/mjolnir/pull/116) | every tracker operation a role performs goes through the port, and this repository's own tracker had nothing registered behind it |
 | the first carrier of the issue loop, its starting half | `e9e8e0f`, [#107](https://github.com/ragnor-rs/mjolnir/pull/107) | the role that starts a work item cannot be started by the role that starts a work item |
 
-⚠️ **The third row names the *issue* loop, and the distinction is not cosmetic.** The day-log
-carrier shipped in this repository's first commit, `6410f34` — so the earliest carrier of any role
-of the loop was never hand-built in this sense at all; it predates the loop it belongs to. ⚠️ **It
-is also the one role whose measuring half is a script this repository ships rather than procedure
-alone**, which is why it is the role with the most evidence behind its surface and the least to
-say about how it was built.
+The third row names the *issue* loop. The day-log carrier shipped in this repository's first
+commit, `6410f34`, so the earliest carrier of any role of the loop was never hand-built in this
+sense; it predates the loop it belongs to. It is also the one role whose measuring half is a script
+this repository ships rather than procedure alone.
 
 The port those operations go through is
 [`schema.md § 3`](../plugins/mjolnir/config/schema.md#3-tracker-port); the carrier each role is
 addressed by is [`schema.md § 7`](../plugins/mjolnir/config/schema.md#7-carrier).
 
-⚠️ **The order is the part worth knowing, because it was not the predicted one.** #27 was written
-expecting the reader, then the adapter, then one loop skill, with everything after them going
-through the loop. What happened instead: the reader, then a long run of surface and gate work by
-hand, then the starting half as a project-local prototype, then the finishing and filing roles — and
-the adapter, named second, landed *after* all three carriers of the issue loop already existed. So
-the bootstrap is a
-phase rather than a sequence of three, and the adapter is hand-built in the sense that mattered:
-nothing could file, move or read an item through the port while the implementation behind it was
-being written.
+The order was: the reader, then a long run of surface and gate work by hand, then the starting half
+as a project-local prototype, then the finishing and filing roles — and the adapter landed *after*
+all three carriers of the issue loop already existed. So the bootstrap is a phase rather than a
+sequence of three, and the adapter is hand-built in the sense that mattered: nothing could file,
+move or read an item through the port while the implementation behind it was being written.
 
 ## A carrier that exists is not evidence that it ran
 
-⚠️ Two different facts, and only the second one says a loop is running. A carrier can sit in the
-tree while item after item is started by hand, and nothing in the tree would differ — the starting
-half landed with [#107](https://github.com/ragnor-rs/mjolnir/pull/107) well before any of this.
+A carrier can sit in the tree while item after item is started by hand, and nothing in the tree
+would differ — the starting half landed with [#107](https://github.com/ragnor-rs/mjolnir/pull/107)
+well before any of this.
 
 Nothing in the tree records that distinction and no check holds it: whether a role was invoked or
 performed by hand is a fact about a session's transcript rather than about the repository. So this
@@ -57,29 +48,24 @@ an unstated limit reads later as coverage.
 [#134](https://github.com/ragnor-rs/mjolnir/issues/134) (*"The loop has never run whole on a single
 item, and the record claims it for none"*) went through the shipped carriers and through nothing
 else, and it is closed by [#135](https://github.com/ragnor-rs/mjolnir/pull/135) (*"Record the one
-item the loop ran whole on, and what it did not touch"*), which is the change this paragraph landed
-in. It was filed for that purpose: [#27](https://github.com/ragnor-rs/mjolnir/issues/27) asks for
-one such instance, and the only shape that satisfies a condition about an item traversing the loop
-is an item that traverses it — which is why it is an item of its own rather than a line in #27.
+item the loop ran whole on, and what it did not touch"*). It was filed for that purpose:
+[#27](https://github.com/ragnor-rs/mjolnir/issues/27) asks for one such instance.
 
 **What ran.** Filing wrote the item, its label and its relation; starting ran the readiness gate
 whole and took the claim by publishing the ref; finishing took the branch to an open change; the
-reviewing role conducted the review and drove the gate; and a second finishing pass merged it.
-⚠️ **The interleave is not this record's invention and not this run's choice** — that finishing is
-entered twice with the review between its passes, and what the second pass owes beyond the merge, is
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)'s, stated there once.
+reviewing role conducted the review and drove the gate; and a second finishing pass merged it. That
+finishing is entered twice with the review between its passes, and what the second pass owes beyond
+the merge, is [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)'s.
 
-⛔ **These carriers are not the loop, and this document does not say which ones are missing.** Which
-roles this project carries is [`schema.md § 7`](../plugins/mjolnir/config/schema.md#7-carrier)'s
-facet, and the command in the last section derives the set from it; naming the remainder here would
-be a copy that goes stale the first time a carrier lands — the same prohibition that section already
-carries, and one the README records as having drifted once already.
+These carriers are not the whole loop. Which roles this project carries is
+[`schema.md § 7`](../plugins/mjolnir/config/schema.md#7-carrier)'s facet, and the command in the
+last section derives the set from it.
 
-**Two capabilities were absent as it ran, and each took the fallback
+Two capabilities were absent as it ran, and each took the fallback
 [`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)
-states rather than being worked around.**
+states.
 
-- `search_items` — ⚠️ absent from the plugin the session served rather than from this tracker. The
+- `search_items` — absent from the plugin the session served rather than from this tracker. The
   implementation landed on #27's branch, which had not merged, and a plugin registered from a
   directory serves that directory's checked-out branch; so the filing role queried the capability,
   found it absent and asked before writing, which is exactly its stated fallback. The duplicate
@@ -90,8 +76,8 @@ states rather than being worked around.**
   therefore has no answer about #27's checklist, and the parent relation that governed #134's
   filing was established from #27's acceptance conditions in its body instead.
 
-⚠️ **#27's own start was run through the starting role too**, on the same day and before #134
-existed. It is a weaker instance than the one above and is recorded as such: one role, not the loop.
+#27's own start was run through the starting role too, on the same day and before #134 existed: one
+role, not the loop.
 
 ### The duplicate check, run against the live host
 
@@ -100,7 +86,7 @@ ran. The implementation landed with [#136](https://github.com/ragnor-rs/mjolnir/
 check has since been run against the live host under
 [#7](https://github.com/ragnor-rs/mjolnir/issues/7), the item that owns the filing role.
 
-**It was run for a real request rather than as a rehearsal:** whether anything in this backlog
+It was run for a real request: whether anything in this backlog
 already owns *the reader does not hold `work_item.type.values`, `work_item.template.by_type` and
 `work_item.type_branch_prefix` to each other*. The layers are the filing role's; the operation they
 go through, in both the shapes this one needed, is
@@ -112,19 +98,18 @@ go through, in both the shapes this one needed, is
 | the keyword-independent sweep | 4 sweeps with no terms at all, each bounded at 100 and none at its bound | 87 distinct items |
 | the two together | — | 21 items the sweep reached that no keyword query did |
 
-**The outcome was no duplicate and nothing filed.** The governing candidate was
+The outcome was no duplicate and nothing filed. The governing candidate was
 [#99](https://github.com/ragnor-rs/mjolnir/issues/99) (*"A tracker block missing the keys its kind
 requires is accepted"*), tiered Medium: the same defect class — a configuration this reader accepts
 and should refuse — carried on a different key, so doing it leaves the request with everything still
 to do.
 
-⚠️ **What this instance does not show**
+**What this instance does not show**
 ([`schema.md § 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)).
 The sweep is not what caught #99 — an action-axis query reached it as well — so this measures the
 sweep *widening* coverage by 21 items, never the sweep being the only layer that could have found
 the candidate that mattered. And the layers were driven through the port by hand under this item
-rather than by the filing role being invoked — the distinction this section's opening draws, and the
-weaker side of it.
+rather than by the filing role being invoked.
 
 ### The cross-check that needed a configuration this repository does not have
 
@@ -134,54 +119,48 @@ path had no configuration here to run against, and
 [#114](https://github.com/ragnor-rs/mjolnir/pull/114) (*"File a work item from one copy, with the
 duplicate search the richest copy had"*) recorded it as stated-but-unexercised when the role landed.
 
-⚠️ **That turned out to be weaker than it read.** A probe skills root is enough: this project's own
-configuration with the two facets swapped in — a type over two values, and a `file` template with
-`by_type` and the `sections` map of
+A probe skills root is enough to exercise it: this project's own configuration with the two facets
+swapped in — a type over two values, and a `file` template with `by_type` and the `sections` map of
 [`schema.md § 4.4`](../plugins/mjolnir/config/schema.md#44-template) — resolves with both facets
-carried and neither in the reader's `unavailable` list. ⛔ **Nothing in this repository's own
-configuration was changed to get there**, which is the point: a facet this project does not carry is
-still exercisable, and the absent case stays the one that runs here.
+carried and neither in the reader's `unavailable` list. Nothing in this repository's own
+configuration was changed: a facet this project does not carry is still exercisable, and the absent
+case stays the one that runs here.
 
 One request body was typed twice, so a stop is attributable to the cross-check and to nothing else:
 typed as the feature, whose template declares no reproduction, the body's reproduction section
 put it against the defect template and the check **stopped**, naming both; typed as the defect, the
-same body agreed with the template its type selects and the check **passed**. The probe's own prefix
-map makes the consequence concrete rather than quoted — the two types take different prefixes, so
-the unstopped run would have branched a defect under the feature's.
+same body agreed with the template its type selects and the check **passed**. In the probe's prefix
+map the two types take different prefixes, so the unstopped run would have branched a defect under
+the feature's.
 
-⚠️ **What this instance does not show either**
+**What this instance does not show either**
 ([`schema.md § 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)).
 The write was never entered on the passing run — the probe's tracker block still addresses this
-backlog and a probe does not write to it, so the cross-check being upstream of the write is why
-nothing was lost, and this instance says nothing about filing. And it is the role's prose performed
-and reported rather than a test asserting it.
+backlog and a probe does not write to it — so this instance says nothing about filing. And it is the
+role's prose performed and reported rather than a test asserting it.
 
 ## The absent facets this repository depends on
-
-The surface's absent cases are argued for elsewhere; here they are load-bearing rather than
-theoretical, which is a different kind of evidence than an example configuration can give.
 
 - **`day_log.ritual_retired` is stated empty on purpose.** Every command name in this
   repository's own transcripts is either on the shared script's closed bookkeeping list or is
   work — the loop's roles, this project's `close-out`, and the adoption check — so nothing
-  bookkeeping has been retired here. ⚠️ **Measured rather than assumed**, by reading the
-  `<command-name>` tags out of the store, which is the only way that claim can be made. The
-  reader names the emptiness, because the failure it guards is a total that is quietly *high*:
+  bookkeeping has been retired here. Measured by reading the `<command-name>` tags out of the
+  store. The reader names the emptiness, because the failure it guards is a total that is quietly
+  *high*:
   a project whose history does carry a command it no longer has, and which says nothing, counts
   every one of those turns as work. The key is
   [`schema.md § 9`](../plugins/mjolnir/config/schema.md#9-day-log)'s.
 - **This project's tracker has no `in_flight` status at all**, because plain issues are open or
-  closed. So *an absent status role is legitimate* is not an assertion by the surface's author: it
-  is a property the toolkit's own repository runs on, and
+  closed. So *an absent status role is legitimate* is a property the toolkit's own repository runs
+  on, and
   [`schema.md § 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)
   is where the roles are stated.
 - **Nothing here groups work into anything**, so this repository is the project the grouping
-  facet's flat-backlog arm was written for rather than merely its author. What is takeable next is
-  the dependency graph and the tier above it, read one item at a time; and there is no release
-  either, what ships being the plugin in the tree, continuously. ⚠️ **Which is the evidence an
-  example cannot give**: every role in the loop runs here against a facet whose carrier is `none`,
-  so *a project that plans in no grouping* is a shape the toolkit is exercised on rather than one
-  it merely permits. The key is
+  facet's flat-backlog arm was written for. What is takeable next is the dependency graph and the
+  tier above it, read one item at a time; and there is no release either, what ships being the
+  plugin in the tree, continuously. Every role in the loop runs here against a facet whose carrier
+  is `none`, so *a project that plans in no grouping* is a shape the toolkit is exercised on. The
+  key is
   [`schema.md § 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s.
 
 ## What the loop carries here, derived
@@ -196,11 +175,9 @@ project carries locally, and which of those are still unshipped — the target i
 command above names this checkout rather than carrying a path, and so is the map saying what each
 carrier on that checkout's disk is.
 
-⚠️ **Which is this repository being its own adoption target**, and the one reading above that is
-not free: the map is a per-project fact, so running the command needs a file this repository does
-not hold. What *is* held here is the half that needs no target at all — the shipped carriers'
-own declarations and the loop's size — and the `Adoption check` run is what holds it.
+The map is a per-project fact, so running the command needs a file this repository does not hold.
+What is held here is the half that needs no target at all — the shipped carriers' own declarations
+and the loop's size — and the `Adoption check` run holds it.
 
-⛔ No figure it prints is copied into this document. The loop is stated once, in
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop), and a count beside it here
-would drift the moment a role lands.
+No figure it prints is copied into this document. The loop is stated once, in
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop).
