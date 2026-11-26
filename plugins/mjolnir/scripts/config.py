@@ -3031,7 +3031,7 @@ class Config:
             "graph": [dict(entry) for entry in self.get("documents.graph") or ()],
             "forbidden": [dict(entry) for entry in self.get("documents.forbidden") or ()],
             "quoted": [dict(entry) for entry in self.get("documents.quoted") or ()],
-            # ⛔ The one key of the facet that may be absent, and absence comes
+            # ⛔ The one key under `documents` that may be absent, and absence comes
             # back as `None` rather than as a block reading `held: false`: the
             # carrier reports *no diagram is held* either way, and a reader
             # handed a fabricated block could not say which the project wrote.
@@ -6347,7 +6347,7 @@ def _validate_documents(data: dict, facts: dict) -> None:
 
 
 def _validate_box_diagrams(data: dict, facts: dict, rows: dict) -> None:
-    """§ 38's `box_diagrams`, the one key of the facet a project may leave unstated.
+    """§ 38's `box_diagrams`, the one key under `documents` that may go unstated.
 
     ⛔ **Absent is admitted and every stated form is held**: the key arrived after
     every configuration had been written, so requiring it would refuse each of
@@ -17368,7 +17368,7 @@ def _planted_violations():
          "documents.quoted[0].document",
          at("documents", _a_documents_of(
              quoted=[{"sentence": "a claim", "document": "b-document.md"}]))),
-        # § 38's `box_diagrams`, the one key of the facet a project may leave
+        # § 38's `box_diagrams`, the one key under `documents` a project may leave
         # unstated. ⛔ Every arm below is a block somebody **did** state: a
         # diagram rule turned on and read by nothing is the failure, while the
         # block left out is admitted and asserted below the list.

@@ -9449,7 +9449,7 @@ was drawn to — and it is no name and no pattern, so no forbidding entry can ex
 |---|---|
 | every **junction** — a character carrying both a horizontal and a vertical arm: a corner, a tee, a cross — is red where an arm lands on a space, past the block's edge, on either column of a wide character, or on a line that does not reach back | a straight run (`─`, `│` and their dashed and heavy forms) and a half line, either of which may end where the drawing does; and an arm landing on text, which is a line drawn to a label — `tree`'s own output puts each nested `└` under the first letter of its parent's name |
 | inside a fenced block that carries a box-drawing character at all | a block drawn only in ASCII (`+`, `-`, `\|`), and a box character written in running prose |
-| columns measured by **display width**: a wide character counts two, a combining mark or a format character counts none, and a tab advances to the next multiple of eight | a character's code point count, which is what a misaligned box is usually drawn against |
+| columns measured by **display width**: a wide character counts two, a combining mark or a format character counts none, and a tab advances to the next multiple of eight | a character's code point count, which is what a misaligned box is usually drawn against; and an ambiguous-width character's East Asian rendering — `→`, `▶` and the box characters themselves count one, as a terminal outside an East Asian locale draws them |
 
 ⛔ **The red names the line and the column of the junction**, and what its arm met: that is the
 corner the eye has to go to, and the edge it was meant to join is one row or one column from it.
@@ -9464,11 +9464,11 @@ the box-drawing block names each character by its arms — `UP`, `DOWN`, `LEFT`,
 the same rule and no table of them can drift from the block.
 
 ⛔ **The check is the project's to turn on**, by `box_diagrams.held: true`, and a project that states
-no `box_diagrams` block holds no diagram — which is the one key of this facet that is not required,
-and the exception is stated rather than slipped in: the key arrived after every configuration in
-§ 1's sense had been written, and a required key would refuse each of them for a check none of them
-asked for. ⚠️ **`held: false` and the block absent are the same answer**, and the run says no
-diagram is held rather than reporting the diagrams as aligned.
+no `box_diagrams` block holds no diagram — which makes it the one key directly under `documents`
+that is not required, and the exception is stated rather than slipped in: the key arrived after
+every configuration in § 1's sense had been written, and a required key would refuse each of them
+for a check none of them asked for. ⚠️ **`held: false` and the block absent are the same answer**,
+and the run says no diagram is held rather than reporting the diagrams as aligned.
 
 ⛔ **A block is exempted by a row of `exempt`, and the row names the block by its own text** — an
 expression searched in the fenced block's content, inside the document the row names — ⚠️ **never

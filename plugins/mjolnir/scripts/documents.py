@@ -727,6 +727,9 @@ def width(char: str) -> int:
     that looks aligned in its author's editor is not: a wide character takes two
     columns, so a row carrying one is one column longer on screen per character
     than its code point count says.
+
+    ⚠️ An ambiguous-width character -- `→`, `▶`, the box characters themselves --
+    counts one, as a terminal outside an East Asian locale draws it.
     """
     if unicodedata.combining(char) or unicodedata.category(char) in ("Mn", "Me", "Cf"):
         return 0
@@ -762,23 +765,26 @@ def diagram_blocks(text: str) -> list:
     ⛔ **Fenced, and carrying one at all**: a block drawn in ASCII is not read,
     and neither is a box character in running prose -- each is outside what the
     rule is about rather than a diagram that passed.
+
+    ⛔ **The blocks are the runs of `fences`'s own lines**, never a second scan:
+    which delimiter closes which is that function's rule, and a copy of it here
+    would be free to disagree about a nested example. Two blocks are told apart
+    by the delimiter lines between them, which `fences` leaves out.
     """
-    blocks, current, opened = [], None, None
-    for number, line in enumerate(text.splitlines(), 1):
-        found = FENCE.match(line)
-        if opened is None:
-            if found:
-                opened, current = found.group("delim"), []
-            continue
-        if found:
-            delim = found.group("delim")
-            if delim[0] == opened[0] and len(delim) >= len(opened):
-                if any(arms(char) for _n, body in current for char in body):
-                    blocks.append(current)
-                opened, current = None, None
-                continue
-        current.append((number, line))
-    return blocks
+    inside, _open = fences(text)
+    lines = text.splitlines()
+    blocks, current = [], []
+    for number in sorted(inside):
+        if current and number != current[-1][0] + 1:
+            blocks.append(current)
+            current = []
+        current.append((number, lines[number - 1]))
+    if current:
+        blocks.append(current)
+    return [
+        block for block in blocks
+        if any(arms(char) for _n, line in block for char in line)
+    ]
 
 
 def misalignments(block: list) -> list:
@@ -806,9 +812,8 @@ def meets_nothing(met, arm: str) -> bool:
     output, which puts each nested `└` under the first letter of its parent's
     name and the first `├` under the root's: read strictly, every listing it
     prints is red. What is a misalignment is the arm landing on a space, past
-    the block's edge, on the second half of a wide character -- the column a box
-    drawn by code point count puts its corner in -- or on a line that does not
-    reach back.
+    the block's edge, on either column of a wide character -- where a box drawn
+    by code point count puts its corner -- or on a line that does not reach back.
     """
     if met is None or met == "" or met == " ":
         return True

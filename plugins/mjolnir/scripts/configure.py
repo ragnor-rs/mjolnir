@@ -1368,9 +1368,9 @@ ANSWERED_BY: dict[str, Answer] = {
     "documents.box_diagrams.held": ask(
         "Should diagrams drawn in box characters be held to their own alignment "
         "-- every corner, tee and cross meeting a line that reaches back, columns "
-        "counted by display width? ⚠️ The one key of this facet that may be left "
-        "out: leaving the block out and answering no are the same answer, and "
-        "either holds no diagram (§ 38).",
+        "counted by display width? ⚠️ The one key directly under `documents` "
+        "that may be left out: leaving the block out and answering no are the "
+        "same answer, and either holds no diagram (§ 38).",
     ),
     "documents.box_diagrams.exempt.document": ask(
         "Is any diagram drawn this way on purpose -- reproducing a terminal's own "
