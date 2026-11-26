@@ -113,6 +113,7 @@ _SCRIPTS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _SCRIPTS not in sys.path:
     sys.path.append(_SCRIPTS)
 
+import config  # noqa: E402
 import port  # noqa: E402
 from adapters._policy import forbidden  # noqa: E402
 from adapters import _search as coverage  # noqa: E402
@@ -263,7 +264,7 @@ TEXT, RICH, DATE, NUMBER, DURATION_FIELD, NAMED, OPTION, USER = (
 # `schema.type` as this tracker's own field catalogue reports it, mapped to the
 # shape a write takes. ⚠️ Read from the catalogue rather than from a list of
 # field names, because every custom field's id is site-specific -- which is the
-# whole reason a field is addressed by **name** here and resolved per site.
+# whole reason a field is resolved per site, by whichever name a project states.
 SHAPES = {
     "string": TEXT,
     "summary": TEXT,
@@ -587,8 +588,8 @@ def _site_payload(site: str) -> dict:
     """What a name is resolved against: the field catalogue, and who we are.
 
     ⛔ Two reads rather than a guess at either. Every custom field's id is
-    site-specific -- which is why § 4.3's estimate and § 4.5's date are addressed
-    by **name** here and resolved against this -- and the account this credential
+    site-specific -- which is why a field a project states is resolved against
+    this, by display name, id or clause name -- and the account this credential
     authenticates as is what `advance_on_merge` compares an author to.
 
     ⚠️ The field catalogue is site-wide and carries every field of every project,
@@ -598,12 +599,24 @@ def _site_payload(site: str) -> dict:
     """
     fields = _call("GET", "/field") or []
     by_name: dict[str, list[dict]] = {}
+    by_id: dict[str, dict] = {}
+    by_clause: dict[str, list[dict]] = {}
     for field in fields:
         name = field.get("name")
-        if name is None:
-            continue
-        by_name.setdefault(str(name), []).append(field)
-    return {"site": site, "fields": by_name, "me": _call("GET", "/myself") or {}}
+        if name is not None:
+            by_name.setdefault(str(name), []).append(field)
+        if field.get("id") is not None:
+            by_id[str(field["id"])] = field
+        for clause in field.get("clauseNames") or []:
+            if clause:
+                by_clause.setdefault(str(clause), []).append(field)
+    return {
+        "site": site,
+        "fields": by_name,
+        "ids": by_id,
+        "clauses": by_clause,
+        "me": _call("GET", "/myself") or {},
+    }
 
 
 def _site_facts(*, again: bool = False) -> dict:
@@ -616,12 +629,31 @@ def _site_facts(*, again: bool = False) -> dict:
 def _field_named(name: str, *, key: str, again: bool = False) -> dict:
     """The one field a name resolves to, or a refusal naming the key.
 
+    ⛔ **A display name or the field's own id**, whichever the configuration
+    states: § 3's one name that serves every operation. The two differ for most
+    fields -- `Fix versions` against `fixVersions` -- and a project may state
+    either, so both are resolved here and every operation reaches the field
+    through this one lookup. ⚠️ **A clause name only where neither answers**:
+    a query took the configured spelling as written before either was resolved,
+    so a clause spelling a project already states (`fixVersion`) keeps working,
+    and a name a display name or an id already resolves is never re-read as a
+    clause and made ambiguous by one.
+
     Three refusals, and ⛔ **the middle one is why this exists**: this tracker
     holds no uniqueness for a field's name, so two fields may carry one, and
-    writing to either would write a value a reader of the other never sees.
+    writing to either would write a value a reader of the other never sees. A
+    name that is one field's id and another field's display name is the same
+    case and refused the same way.
     """
     facts = _site_facts(again=again)
-    found = facts["fields"].get(str(name), [])
+    found = list(facts["fields"].get(str(name), []))
+    by_id = (facts.get("ids") or {}).get(str(name))
+    if by_id is not None and all(one.get("id") != by_id.get("id") for one in found):
+        found.append(by_id)
+    if not found:
+        for one in (facts.get("clauses") or {}).get(str(name), []):
+            if all(held.get("id") != one.get("id") for held in found):
+                found.append(one)
     if not found and not again:
         # A field created after this process started is absent from a catalogue
         # read before it existed, so the re-read happens before the refusal.
@@ -629,19 +661,18 @@ def _field_named(name: str, *, key: str, again: bool = False) -> dict:
     if not found:
         raise ConfigError(
             key,
-            f"names the field `{name}`, which this site has none of. A field is "
-            "addressed by name here and its id is read from the site's own "
-            "catalogue, because every custom field's id is site-specific -- so "
-            "this is a name the site does not answer to rather than an id gone "
-            "stale.",
+            f"names the field `{name}`, which this site has none of, by display "
+            "name, id or clause name. A field is resolved against the site's own "
+            "catalogue, so this is a name the site does not answer to, and nothing "
+            "was sent under it.",
         )
     if len(found) > 1:
         raise ConfigError(
             key,
-            f"names the field `{name}`, which this site has {len(found)} of. This "
-            "tracker holds no uniqueness for a field's name, so there is no "
-            "reading of which one was meant -- name one that is unambiguous, or "
-            "rename one on the site.",
+            f"names the field `{name}`, which {len(found)} fields on this site "
+            "answer to, by display name, id or clause name. This tracker holds no "
+            "uniqueness for a field's name, so there is no reading of which one "
+            "was meant -- name one that is unambiguous, or rename one on the site.",
         )
     return found[0]
 
@@ -1236,19 +1267,26 @@ def search_items(
     }, searched, missed)
 
 
-def _clause_for(name: str) -> str:
-    """The clause a listed field is queried by, from the site's catalogue.
+def _clause_for(name: str, *, key: str = coverage.FIELDS_KEY) -> str:
+    """The clause a configured field is queried by, from the site's catalogue.
 
-    ⛔ Refused naming `tracker.search.fields` where the site has no such field,
-    has two, marks it unsearchable or states no clause for it -- each a field
-    nothing could ask about, which an empty answer must not stand in for.
+    ⛔ Refused naming the key that stated the field -- `tracker.search.fields` for
+    a search, `work_item.grouping.field` for a grouping read -- where the site has
+    no such field, has two, marks it unsearchable or states no clause for it:
+    each a field nothing could ask about, which an empty answer must not stand in
+    for. ⚠️ The clause is the catalogue's and never the configured spelling: a
+    field's display name, its id and its clause name are three strings here
+    (`Fix versions`, `fixVersions`, `fixVersion`), and only the last is what a
+    query names it by.
     """
-    found = _field_named(name, key=coverage.FIELDS_KEY)
+    found = _field_named(name, key=key)
     if found.get("searchable") is False:
-        raise coverage.unqueryable(name, "this site marks it unsearchable.")
+        raise coverage.unqueryable(name, "this site marks it unsearchable.", key=key)
     clauses = [str(clause) for clause in found.get("clauseNames") or [] if clause]
     if not clauses:
-        raise coverage.unqueryable(name, "this site states no clause a query names it by.")
+        raise coverage.unqueryable(
+            name, "this site states no clause a query names it by.", key=key
+        )
     clause = clauses[0]
     return clause if BARE_CLAUSE.match(clause) else _quoted(clause, what="a field's clause")
 
@@ -1835,8 +1873,8 @@ def set_field(key: str, field: str, value) -> dict:
     """A value written onto the item, where a facet states the field.
 
     The operation § 4.3's estimate, § 4.5's date and § 4.6's priority reach this
-    tracker through -- each addressed by **name** and resolved to this site's own
-    id, because every custom field's id is site-specific.
+    tracker through -- each resolved to this site's own id from the name the
+    project states, because every custom field's id is site-specific.
 
     ⛔ The shape is decided by the field's own type and never by what the value
     is: a date handed to a text field is accepted by the host and read back by
@@ -2259,8 +2297,8 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
     """The items this project holds in one grouping, by one bounded query.
 
     ⛔ **One query rather than a read per item**, and the field is the
-    configuration's: § 4.8 says where a grouping is held here, so the clause is
-    built from that name and the host resolves it. ⚠️ The project bound is
+    configuration's: § 4.8 says where a grouping is held here, and the clause is
+    the one the site's catalogue states for that field. ⚠️ The project bound is
     `as_query`'s and not a narrowing of its own -- an unbounded query is refused
     by this host outright, which is the same restriction every search here
     carries.
@@ -2281,15 +2319,18 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
     the precondition above it cannot survive.
     """
     carrier = (grouping or {}).get("carrier")
+    at = config.grouping_at((grouping or {}).get("name"))
     if carrier == "field":
-        clause = {str((grouping or {}).get("field")): value}
+        # ⛔ Resolved, never put into the query as configured: § 3's one name may
+        # be a display name or an id, and the query takes the catalogue's clause.
+        clause = {_clause_for(str((grouping or {}).get("field")), key=f"{at}.field"): value}
         labels: list[str] = []
     elif carrier == "label":
         clause = {}
         labels = [f"{(grouping or {}).get('label_prefix') or ''}{value}"]
     else:
         raise ConfigError(
-            "work_item.grouping.carrier",
+            f"{at}.carrier",
             f"is {carrier!r}, and a grouping here is read by a query: a field this "
             "project names, or a label. A carrier with nothing for a clause to "
             "name is a configuration this implementation cannot address rather "
@@ -2364,10 +2405,11 @@ def read_current_grouping(*, grouping: dict) -> dict:
     name, which is what a person and a reply read.
     """
     name = (grouping or {}).get("name")
-    key = f"work_item.grouping.{name}.field"
+    at = config.grouping_at(name)
+    key = f"{at}.field"
     if (grouping or {}).get("carrier") != "field":
         raise ConfigError(
-            f"work_item.grouping.{name}.carrier",
+            f"{at}.carrier",
             f"is {(grouping or {}).get('carrier')!r}, and the open grouping is read "
             "here off the tracker's own sprint field. A grouping held anywhere "
             "else carries no mark this tracker sets.",

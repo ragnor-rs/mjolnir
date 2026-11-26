@@ -1840,6 +1840,27 @@ tracker:
 an area one of them records, and its report carries each answer's two lists. That is the coverage
 [`skills/file-work-item/`](../skills/file-work-item/) reports.
 
+### A field a configuration names, and the one name that serves every operation
+
+**A field named anywhere in a configuration is named once, and that one name serves writing it,
+reading it and querying by it.** That covers a grouping's `field`
+([§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)), a facet carried in a field, a field a
+filing or a move requires, and a field a search filters on. A tracker may give one field several
+names — a name it displays, an id, and a different name a query uses — and a configuration that
+had to pick the right one per operation would have no value that works for all of them.
+
+- **Where a tracker's own operations take different names for one field, the project may state
+  the displayed name, the id, or the name a query uses.** Each is resolved against the tracker's
+  own list of its fields. The query name is accepted only where no field is displayed or
+  identified by it. A tracker whose operations all take one name for a field accepts that name.
+- **A query names the field the way the tracker's list says a query names it**, never by the
+  configured spelling written into the query as given.
+- **A name that resolves to no field, or to two, is refused before anything is written or queried
+  under it,** naming the key that stated it — in a collection of groupings, the entry's own path.
+  A name that is one field's id and another field's displayed name resolves to two.
+- A project that already states a name that works keeps working: this widens what a name may be
+  and changes nothing about one that already resolved.
+
 ### An item's comments, and what an unread one is
 
 **A role that acts on an item reads its comments as well as its body, through `read_comments`.** A
