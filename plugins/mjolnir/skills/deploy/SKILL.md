@@ -325,17 +325,25 @@ rehearsal that is not there has to stop the deploy earlier than the go rather th
 already been taken.
 
 - ⛔ **Lettered rather than numbered because its position is the configuration's.** `order` states
-  which side of step 6 the whole of this step falls on — `before_invoke` runs it here, and
-  `after_invoke` runs it once step 6 has come back. ⛔ **Neither is this role's to choose**, and
-  ⚠️ **a role that read the pending writes to decide would be judging whether the new code requires
-  the schema**, which is that project's knowledge of its own code.
+  which side of step 6 a step falls on, and `sides` may place one phase of it on the other — the
+  plan from step 3 carries the side of every phase. Whatever falls `before_invoke` runs here, and
+  whatever falls `after_invoke` runs once step 6 has come back. ⛔ **Neither is this role's to
+  choose**, and ⚠️ **a role that read the pending writes to decide would be judging whether the new
+  code requires the schema**, which is that project's knowledge of its own code.
+- ⛔ **A target listing several steps is performed one step at a time**, in the order the plan lists
+  them, on each side in turn — every command below then carries `--step "<the step's name>"`, and
+  the carrier refuses one that names no step rather than taking the first. ⚠️ **A step whose
+  phases fall on both sides is prepared once per side**, with `--side` naming the side being
+  performed; the carrier refuses to run such a step without one, and answers a side no phase of it
+  falls on with nothing run and no stop.
 - ⛔ **The order taken is named in the go below**, so the person rules on it rather than discovering
   it. The configured value is what this role proposes.
 
 **The preparation, which stops on its own:**
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" prepare --target "<the entry's name>"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" prepare --target "<the entry's name>" \
+  [--step "<the step's name>"] [--side <the side being performed>]
 ```
 
 - ⛔ **A non-zero exit is a stop for the deploy and not for the step**, and the carrier names which
@@ -360,8 +368,13 @@ taken and that it is the configured one, and who the entry says performs the wri
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" apply --target "<the entry's name>" \
-  --given "<their answer, in their words>"
+  [--step "<the step's name>"] --given "<their answer, in their words>"
 ```
+
+⛔ **One go per write, asked once that step's own dump and rehearsal are on record** — never one go
+for every step of a target, and never before the rehearsal a later side still owes. ⚠️ **The
+carrier refuses the write while either is missing**, whichever order was asked for, and on a listed
+step it refuses a go that does not name that step.
 
 ⚠️ **The flag is `--given`, which is this toolkit's own word for an answer a gate reads back** —
 and not the shorter spelling, which the names check reads as the build tool of the same name and
@@ -378,6 +391,9 @@ refuses the whole command. A false refusal renamed around rather than argued wit
 - ⛔ **Where the write ran and failed, what the store is left holding is named rather than
   omitted**, along with the dump a recovery reads. ⚠️ A command that exited zero is still a fact
   about the invocation and not about the store.
+- ⛔ **Where the target lists several steps, any stop names every step by name as written, handed
+  over or not made** — the carrier's `writes`, read from this deploy — and above all a stop after
+  step 6, where the new code is already serving and the reader has to know which writes it has.
 
 ## 6. Invoke what the target states
 
@@ -603,7 +619,8 @@ the facts, with a table where the content enumerates.
   that § 33's default governed rather than that every check passed;
 - ⛔ **the live data step, where the target carries one** — that the dump was verified and by what,
   whether a rehearsal ran at all, what its output was read as, which order was taken and whether
-  the configured one was overruled, and whether the write ran or was handed over. ⚠️ **A target
+  the configured one was overruled, and whether the write ran or was handed over — per step, by
+  name, where the target lists several, with the writes made and not made. ⚠️ **A target
   stating no step says so**, by
   [`§ 35`](../../config/schema.md#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under),
   rather than being left out of a reply a reader then reads as a deploy that wrote nothing;

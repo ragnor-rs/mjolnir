@@ -1285,8 +1285,27 @@ ANSWERED_BY: dict[str, Answer] = {
         "own ruling about an act that cannot be undone, never inferred from the "
         "command's shape.",
     ),
+    "deploy.live_data_step.name": ask(
+        "Does this target perform more than one live data write? ⚠️ Where it "
+        "does, each is a step of its own with a name -- the go, the reading and "
+        "the report address one step by it -- and a target with one step names "
+        "none (§ 35).",
+    ),
     "deploy.live_data_step.order": ask(
         "Does the write happen before this target is invoked, or after it?",
+    ),
+    "deploy.live_data_step.sides.backup": ask(
+        "Does the dump fall on a different side of the invocation from the "
+        "write? ⛔ Never after it: a write is not reached before its own "
+        "verified backup, and a placement that would is refused (§ 35).",
+    ),
+    "deploy.live_data_step.sides.rehearse": ask(
+        "Does the rehearsal fall on a different side of the invocation from the "
+        "write? ⛔ Never after it, the go being given on its output (§ 35).",
+    ),
+    "deploy.live_data_step.sides.apply": ask(
+        "Does the write fall on a different side of the invocation from the "
+        "dump? ⚠️ Omitted, it falls where the order above says (§ 35).",
     ),
     "deploy.live_data_step.record": ask(
         "Which command prints what has already been applied to this store, one "
