@@ -3889,8 +3889,9 @@ The closing-change read is implemented on both GitHub kinds, where an item *is* 
 host that holds the change, and absent on the other two: a Trello card holds no reference to a
 change in either direction, and what a Jira item shows is written by a code-host integration
 somebody installed. The grouping create is implemented on plain issues alone, the milestone being
-an object; everywhere else the grouping is a field's value, which nothing creates — the same
-argument `mark_grouping_released` is absent on for those kinds.
+an object; everywhere else the grouping is a field's value, which nothing creates. The release mark
+is not absent on that argument everywhere: where a Jira grouping's field holds versions, the value
+names a version object, and `mark_grouping_released` writes its released mark and date.
 
 ### The prototype's own rule the promotion kept, and the one it had to make general
 

@@ -97,6 +97,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import datetime
 import json
 import os
 import re
@@ -143,6 +144,9 @@ SPRINT_TYPE = "com.pyxis.greenhopper.jira:gh-sprint"
 # The board kind that carries sprints. ⚠️ The other kind answers its sprint list
 # with a refusal rather than an empty one, so a board of it is not asked.
 SPRINTED_BOARD = "scrum"
+# The catalogue's type for a version object, as a field's own type or a list's
+# member type: the one grouping value here that carries a released mark.
+VERSION_TYPE = "version"
 
 # The two variables that address the site. ⛔ A pair rather than one token,
 # because this tracker authenticates as a **person**: the credential and the
@@ -2420,6 +2424,111 @@ def read_current_grouping(*, grouping: dict) -> dict:
     }
 
 
+def _released_on() -> str:
+    """The date a release mark carries: today, as this machine's clock reads it.
+
+    ⚠️ A seam of its own so the suite can hold the write to one date. The host
+    takes the date as a calendar day with no zone, so the day is the local one.
+    """
+    return datetime.date.today().isoformat()
+
+
+def _holds_versions(found: dict) -> bool:
+    """Whether a resolved field's values are this tracker's own version objects."""
+    schema = found.get("schema") or {}
+    if schema.get("type") == LIST:
+        return schema.get("items") == VERSION_TYPE
+    return schema.get("type") == VERSION_TYPE
+
+
+def mark_grouping_released(value: str, *, grouping: dict) -> dict:
+    """Mark released the version a grouping's value names, and nothing else about it.
+
+    ⛔ **Answered for a grouping held in a field whose values are versions, and
+    nothing else.** A version is an object of the project's that carries its own
+    released mark; a sprint, an option or a label is a value with no such mark,
+    so a grouping held in one is refused with its field named rather than marked
+    some other way.
+
+    ⛔ **Two fields are written: `released` and `releaseDate`.** The version's
+    name, description and start date are the project's, and the write leaves
+    them untouched. **Idempotent by reading before writing**, which is the
+    milestone close's rule on the other host: a version already released is
+    reported and left alone, so a retried deploy writes nothing a second time.
+
+    ⚠️ The version is matched on its exact name among the project's own. The
+    value is the word on the item, and an id this tracker assigns is not; a value
+    the project holds no version under is a defect in the text rather than an
+    absent capability. Who may close a grouping is § 4.8's `closed_by`, which
+    the port reads before this is reached.
+    """
+    name = (grouping or {}).get("name")
+    key = f"work_item.grouping.{name}.field"
+    if (grouping or {}).get("carrier") != "field":
+        raise ConfigError(
+            f"work_item.grouping.{name}.carrier",
+            f"is {(grouping or {}).get('carrier')!r}, and a release is marked here "
+            "on the version a field's value names. A grouping held anywhere else "
+            "has no version object to mark.",
+        )
+    field = str((grouping or {}).get("field"))
+    if not _holds_versions(_field_named(field, key=key)):
+        raise ConfigError(
+            key,
+            f"names `{field}`, whose values are not this tracker's versions. A "
+            "version is the one grouping value here that carries a released mark, "
+            "so a grouping held in another field has nothing to mark.",
+        )
+    project = _project_key()
+    listed = _call("GET", f"/project/{project}/versions")
+    if not isinstance(listed, list):
+        raise HostUnavailable(
+            f"`GET /project/{project}/versions` answered something that is not a "
+            "list, so which versions this project holds could not be read."
+        )
+    held = [one for one in listed if one.get("name") == value]
+    if not held:
+        raise ConfigError(
+            f"work_item.grouping.{name}",
+            f"names the grouping {value!r}, which is not a version project "
+            f"{project} holds. The value is the word on the item and the version is "
+            "matched on its name, so this is a defect in the text rather than a "
+            "capability that is absent.",
+        )
+    version = held[0]
+    answer = {
+        "grouping": name,
+        "field": field,
+        "value": version.get("name"),
+        "id": version.get("id"),
+    }
+    if version.get("released"):
+        return {
+            **answer,
+            "released": True,
+            "release_date": version.get("releaseDate"),
+            "marked": False,
+            "already": True,
+        }
+    marked = _call(
+        "PUT",
+        f"/version/{version.get('id')}",
+        body={"released": True, "releaseDate": _released_on()},
+    ) or {}
+    if marked.get("released") is not True:
+        raise HostUnavailable(
+            f"`PUT /version/{version.get('id')}` answered without the version "
+            "marked released, so the mark cannot be reported as made."
+        )
+    return {
+        **answer,
+        "released": True,
+        "release_date": marked.get("releaseDate"),
+        "marked": True,
+        "already": False,
+    }
+
+
 def read_vocabulary() -> dict:
     """What this project states its own words are, before a configuration exists.
 
@@ -2532,6 +2641,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
     "read_current_grouping": read_current_grouping,
+    "mark_grouping_released": mark_grouping_released,
     # ⛔ The operations this tracker has nothing to implement against are named
     # once, below, and read from there by the suite.
 })
@@ -2544,15 +2654,6 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # suite rather than restated in it: an absence added here would otherwise be an
 # operation nobody noticed going missing.
 #
-# `mark_grouping_released` is the measured one, and it is the absence § 33's
-# fallback was written against: the grouping here is a **field's value** -- the
-# shape the example beside this module carries -- and a field value is not an
-# object anything can mark released. The step is a link handed to a person, every
-# release, which is what the surveyed copy of this procedure already does.
-# ⚠️ **What would change it is a project holding its release scope in this
-# tracker's own version object instead**, which is a different carrier and a
-# different endpoint; until one does, an implementation here would be answering
-# for a shape nothing measured.
 # `read_closing_change` is `link_for_close`'s absence read from the other side and
 # is absent for the same measured reason: nothing on this tracker relates an item
 # to the change that closed it. What a surveyed installation shows under an item is
@@ -2564,19 +2665,17 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # `read_closing_list` is absent with them: no text in a change closes an item
 # here, so no merge has a list of what it will close.
 #
-# `create_grouping` is `mark_grouping_released`'s absence one act earlier, on the
-# same argument: the grouping here is a **field's value**, which is the shape the
-# example beside this module carries, and a field's value is not an object
-# anything creates. A project would add the value to the field's own allowed set,
-# which is a configuration of the tracker rather than a write about one grouping.
-# ⚠️ **What would change it is a project holding its order of work in this
-# tracker's own sprint or version object**, which is a different carrier and a
-# different endpoint -- the same condition the release mark already names.
+# `create_grouping` is absent because the grouping here is a **field's value**,
+# which is the shape the example beside this module carries. A version a field
+# names is an object, and `mark_grouping_released` above marks one; creating one
+# is a different write, and no filing or ordering this procedure runs has been
+# measured needing a version brought into existence. A project adds the value
+# where the field's allowed set or its versions live, which is a configuration of
+# the tracker rather than a write about one grouping.
 DELIBERATELY_ABSENT = (
     "link_for_close",
     "read_closing_change",
     "read_closing_list",
-    "mark_grouping_released",
     "create_grouping",
     "checklist_read",
     "checklist_write",
