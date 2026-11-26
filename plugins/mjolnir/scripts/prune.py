@@ -94,6 +94,9 @@ RESERVE_SECONDS = 15
 # The subsection the resource pass below performs, held to the surface the same way as `ANCHOR`.
 RESOURCE_ANCHOR = "a-resource-whose-tree-is-gone"
 
+# The subsection the stop after a merge performs, held to the surface the same way.
+STOP_ANCHOR = "the-resource-a-merged-changes-tree-holds"
+
 # How a stop command is told which resource it is for, beside the tree in `MJOLNIR_TREE` (§ 10).
 RESOURCE_VARIABLE = "MJOLNIR_RESOURCE"
 
@@ -1216,6 +1219,97 @@ def confirmed_merge(
     return branch, ""
 
 
+def stop_held(
+    root: str | Path,
+    branch: str,
+    tree_dir: str | Path | None,
+    resource_up: str,
+    resource_stop: str,
+    store: Path | None,
+    left,
+    *,
+    now: float | None = None,
+) -> list[str]:
+    """Stop what the merged branch's tree holds, keep the tree, and say what was done.
+
+    The rule is § 10's *The resource a merged change's tree holds* and is not restated here.
+    Returns the sentences the merge event carries, empty where no tree holds the branch.
+    `left` answers how many seconds this event still has.
+    """
+    try:
+        tree = claim.tree_for_branch(root, branch, tree_dir)
+    except claim.ClaimError as error:
+        return [f"which tree holds `{branch}` could not be read, so nothing was stopped: "
+                f"{' '.join(str(error).split())}"]
+    if tree is None:
+        return []
+    up, why = claim.resources_up(root, tree, resource_up, left())
+    if why is not None:
+        return [f"what {tree} holds went unanswered, so nothing was stopped: {why}"]
+    if not up:
+        return [f"{tree} holds nothing that is up, so nothing was stopped and the tree is kept"]
+    said: list[str] = []
+    for resource in up:
+        bound = min(claim.RESOURCE_UP_SECONDS, left())
+        if bound < claim.TEARDOWN_FLOOR_SECONDS:
+            said.append(
+                f"{resource} in {tree} was not stopped: {max(bound, 0):.0f}s were left of the "
+                f"time this event may take, and a stop is not started with less than "
+                f"{claim.TEARDOWN_FLOOR_SECONDS}s"
+            )
+            continue
+        printed, _, failed = claim.run_at_checkout(
+            root,
+            resource_stop,
+            bound,
+            {claim.TREE_VARIABLE: os.path.realpath(tree), RESOURCE_VARIABLE: resource},
+            stderr=subprocess.STDOUT,
+        )
+        if failed is not None:
+            said.append(
+                f"{resource} in {tree}: the stop command failed, so it is still up: {failed}"
+                + claim._ended(printed)  # noqa: SLF001 -- the sibling's own cut
+            )
+    # ⛔ Read back rather than believed, and the place released only on a tree read as holding
+    # nothing: a place given back while the resource runs lets a second holder past the cap.
+    after, why = claim.resources_up(root, tree, resource_up, left())
+    if why is not None:
+        return said + [
+            f"whether {tree} still holds {', '.join(up)} could not be read back, so no place was "
+            f"released: {why}"
+        ]
+    for resource in up:
+        if resource in after:
+            if not any(line.startswith(f"{resource} in {tree}:") for line in said):
+                said.append(f"{resource} in {tree}: the stop command exited zero and the check "
+                            "still prints it")
+        else:
+            said.append(f"stopped {resource} in {tree}")
+    if after:
+        return said + [f"{tree} still holds {', '.join(after)}, so no place was released and "
+                       "the tree is kept"]
+    if store is None:
+        # ⛔ Unread, never "held nothing": with no store named, whether a place is held is unknown.
+        return said + ["no lease store could be named, so whether it held a place is unknown "
+                       "and none was released; the tree is kept"]
+    given = enforce_release_tree(store, tree, now)
+    places = (
+        f"released {len(given)} place(s) it held on " + ", ".join(
+            sorted({str(lease.get("resource")) for lease in given})
+        )
+        if given else "it held no place on an exclusive resource"
+    )
+    return said + [f"{places}; the tree is kept"]
+
+
+def enforce_release_tree(store: Path | None, tree: str, now: float | None) -> list[dict]:
+    """The lease store's own release for one tree, or nothing where no store is stated."""
+    if store is None:
+        return []
+    import enforce  # noqa: PLC0415 -- the lease store's one implementation
+    return enforce.release_tree(store, tree, time.time() if now is None else now)
+
+
 def root_view(loaded, cwd: str, *, main=None):
     """`(the configuration of the code root this call ran in, "")`, or `(None, why)`.
 
@@ -1241,7 +1335,7 @@ def root_view(loaded, cwd: str, *, main=None):
     return None, f"`{cwd}` is in no code root this project states"
 
 
-def merged_answer(payload: dict, *, run=None, confirm=None, main=None) -> dict:
+def merged_answer(payload: dict, *, run=None, confirm=None, main=None, stopper=None) -> dict:
     """The answer to one finished call: silence unless it merged and the project turned this on.
 
     ⛔ **Which call is a merge is the merge guard's grammar, imported and not restated.** A second
@@ -1279,18 +1373,22 @@ def merged_answer(payload: dict, *, run=None, confirm=None, main=None) -> dict:
         return {}
     view, unplaced = root_view(loaded, cwd, main=main)
     if view is None:
-        # ⚠️ Said only where some root turned the carrier on: a project that never did gets the
+        # ⚠️ Said only where some root turned a carrier on: a project that never did gets the
         # silence it has today, wherever its merge ran.
         wanted = any(
-            v.get("branch_model.prune_on_merge") is True
+            v.get(key) is True
             for v in (getattr(loaded, "views", None) or {}).values()
+            for key in ("branch_model.prune_on_merge", "branch_model.stop_on_merge")
         )
         return {"systemMessage": f"Merged tree: no tree was examined — {unplaced}. ({ANCHOR})"} \
             if wanted else {}
     if view.get("branch_model.kind") != "worktree":
         return {}
-    if view.get("branch_model.prune_on_merge") is not True:
+    pruning = view.get("branch_model.prune_on_merge") is True
+    stopping = view.get("branch_model.stop_on_merge") is True
+    if not (pruning or stopping):
         return {}
+    skills_root = getattr(loaded, "skills_root", None)
     loaded = view
     # ⚠️ A merge naming no repository is asked about from the session's directory, where the
     # client resolves the repository itself -- no project-level `host.repo` is read for it.
@@ -1298,6 +1396,32 @@ def merged_answer(payload: dict, *, run=None, confirm=None, main=None) -> dict:
     branch, why = (confirm or confirmed_merge)(slug, number, cwd)
     if branch is None:
         return {"systemMessage": f"Merged tree: no tree was examined — {why}. ({ANCHOR})"}
+    # ⛔ One budget for both carriers, the confirmation having been taken off it already: the stop
+    # spends first and the sweep is given what is left.
+    total = BUDGET_SECONDS - CONFIRM_TIMEOUT_SECONDS
+    started = time.monotonic()
+
+    def left() -> float:
+        return total - (time.monotonic() - started)
+
+    stopped: list[str] = []
+    if stopping:
+        try:
+            stopped = (stopper if stopper is not None else stop_held)(
+                loaded.code_root,
+                branch,
+                loaded.get("branch_model.tree_dir"),
+                str(loaded.get("branch_model.resource_up")),
+                str(loaded.get("branch_model.resource_stop")),
+                _store(skills_root),
+                left,
+            )
+        except Exception as error:  # noqa: BLE001 -- nothing here may interrupt a session
+            stopped = [f"the stop for `{branch}` did not run ({type(error).__name__}), so nothing "
+                       "was stopped"]
+    told = f"Merged tree `{branch}`: {'; '.join(stopped)}. ({STOP_ANCHOR})" if stopped else ""
+    if not pruning:
+        return {"systemMessage": told} if told else {}
     try:
         report = (run if run is not None else sweep)(
             loaded.code_root,
@@ -1307,16 +1431,31 @@ def merged_answer(payload: dict, *, run=None, confirm=None, main=None) -> dict:
             teardown=loaded.get("branch_model.teardown"),
             resource_up=loaded.get("branch_model.resource_up"),
             here=cwd,
-            budget=BUDGET_SECONDS - CONFIRM_TIMEOUT_SECONDS,
+            # Exactly the remainder the stop left, and the whole share where nothing stopped.
+            budget=max(left(), 0) if stopping else total,
             only=branch,
         )
     except Exception as error:  # noqa: BLE001 -- nothing here may interrupt a session
-        return {"systemMessage": (
+        swept = (
             f"Merged tree: the sweep for `{branch}` did not run ({type(error).__name__}), so no "
             f"tree was examined and none was removed. ({ANCHOR})"
-        )}
+        )
+        return {"systemMessage": " ".join(part for part in (told, swept) if part)}
     said = report.told()
-    return {"systemMessage": f"Merged tree `{branch}`: {said} ({ANCHOR})"} if said else {}
+    swept = f"Merged tree `{branch}`: {said} ({ANCHOR})" if said else ""
+    joined = " ".join(part for part in (told, swept) if part)
+    return {"systemMessage": joined} if joined else {}
+
+
+def _store(skills_root) -> Path | None:
+    """The lease store for this project, or None where it cannot be named."""
+    if not skills_root:
+        return None
+    try:
+        import enforce  # noqa: PLC0415 -- the lease store's one implementation
+        return enforce.store_for(skills_root)
+    except Exception:  # noqa: BLE001 -- an unnamed store releases nothing
+        return None
 
 
 # --------------------------------------------------------------------------------------------
@@ -1338,7 +1477,7 @@ def check_the_surface_still_states_this(text: str) -> list[str]:
     return [
         f"this carrier cites `{cited}`, which is not a heading of the surface. Either the "
         "subsection was reworded or the rule it performs is gone."
-        for cited in (ANCHOR, RESOURCE_ANCHOR)
+        for cited in (ANCHOR, RESOURCE_ANCHOR, STOP_ANCHOR)
         if cited not in anchors
     ]
 
@@ -1363,7 +1502,8 @@ def check_the_carrier_still_calls_this(text: str) -> list[str]:
         (CARRIER_EVENT, "hook",
          "so every tree a merge outside this session left behind is reaped by nothing"),
         (MERGE_EVENT, MERGE_ARM,
-         "so a project that turned `prune_on_merge` on has it performed by nothing"),
+         "so a project that turned `prune_on_merge` or `stop_on_merge` on has it performed by "
+         "nothing"),
     ):
         timeouts = []
         for group in (carrier.get("hooks") or {}).get(event) or []:
@@ -3162,6 +3302,205 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             bool(refused) and "prune_on_merge" in refused,
             str(refused),
         )
+
+    print("\nthe resource a merged change's tree holds:")
+
+    import enforce  # noqa: PLC0415 -- the lease store this carrier releases into
+
+    def _plenty() -> float:
+        return 60.0
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root, branch, tree = _landed_world(tmp)
+        trees = _trees(tmp)
+        other = str(Path(trees) / "2-other")
+        claim.take(root, "feature/2-other", other)
+        state = Path(tmp) / "running"
+        state.mkdir()
+        # One resource per tree, kept outside every tree so a stop that reached the wrong tree
+        # would show: the check prints the tree's own file, and the stop removes it.
+        up = f'cat "{state}/$(basename "$MJOLNIR_TREE")" 2>/dev/null; true'
+        stop_cmd = f'rm "{state}/$(basename "$MJOLNIR_TREE")"'
+        stuck = "true"
+        failing = "echo it would not go; exit 4"
+
+        def _start() -> None:
+            for name in ("1-landed", "2-other"):
+                (state / name).write_text(f"dev app {name}\n", encoding="utf-8")
+
+        store = Path(tmp) / "leases"
+        entry = {"name": "dev app", "cap": 5, "subject": "tree", "ttl": 600}
+        call_entry = {"name": "build slot", "cap": 5, "subject": "call", "ttl": 600}
+
+        def _lease() -> None:
+            now = time.time()
+            enforce.take(entry, store, os.path.realpath(tree), "s1", "run app", True, 0, now)
+            enforce.take(entry, store, os.path.realpath(str(Path(tree) / "sub")), "s2", "app",
+                         False, 0, now)
+            enforce.take(entry, store, os.path.realpath(other), "s3", "run app", True, 0, now)
+            # A call place whose key happens to read as the tree's path still names no tree.
+            enforce.take(call_entry, store, os.path.realpath(tree), "s1", "build", False, 0, now)
+
+        def _held() -> list[tuple[str, str]]:
+            return sorted(
+                (str(lease.get("resource")), str(lease.get("key")))
+                for _p, lease in enforce.live_leases(store, time.time())
+            )
+
+        _start()
+        _lease()
+        said = stop_held(root, branch, trees, up, stop_cmd, store, _plenty)
+        suite.ok(
+            "⛔ the merged change's tree has its resource stopped, read back, and the tree kept",
+            not (state / "1-landed").exists() and Path(tree).exists()
+            and any(line.startswith("stopped dev app 1-landed in ") for line in said),
+            "; ".join(said),
+        )
+        suite.ok(
+            "⛔ another tree's instance is never touched",
+            (state / "2-other").exists(),
+        )
+        suite.ok(
+            "⛔ every tree place at or below that tree is released, backgrounded or not, and "
+            "only those",
+            _held() == sorted([
+                ("build slot", os.path.realpath(tree)), ("dev app", os.path.realpath(other)),
+            ]) and any("released 2 place(s)" in line for line in said),
+            f"{_held()} / {said}",
+        )
+
+        _start()
+        _lease()
+        said = stop_held(root, branch, trees, up, stuck, store, _plenty)
+        suite.ok(
+            "⛔ a stop that exits zero and leaves the resource up is reported, and releases "
+            "nothing",
+            (state / "1-landed").exists()
+            and any("still prints it" in line for line in said)
+            and any("no place was released" in line for line in said)
+            and ("dev app", os.path.realpath(tree)) in _held(),
+            "; ".join(said),
+        )
+        said = stop_held(root, branch, trees, up, failing, store, _plenty)
+        suite.ok(
+            "⛔ a stop that fails is reported with its exit and what it printed",
+            any("exited 4" in line and "it would not go" in line for line in said)
+            and ("dev app", os.path.realpath(tree)) in _held(),
+            "; ".join(said),
+        )
+        said = stop_held(root, branch, trees, "exit 3", stop_cmd, store, _plenty)
+        suite.ok(
+            "⛔ a check that goes unanswered stops nothing, and says so",
+            (state / "1-landed").exists() and len(said) == 1 and "unanswered" in said[0],
+            "; ".join(said),
+        )
+        said = stop_held(root, branch, trees, up, stop_cmd, store, lambda: 0.0)
+        suite.ok(
+            "a stop there is no time left for is not started, and is named",
+            (state / "1-landed").exists() and any("not asked" in line for line in said),
+            "; ".join(said),
+        )
+        _start()
+        said = stop_held(root, branch, trees, up, stop_cmd, None, _plenty)
+        suite.ok(
+            "⛔ a store that could not be named is said as unknown, never as no place held",
+            any("whether it held a place is unknown" in line for line in said)
+            and not any("held no place" in line for line in said),
+            "; ".join(said),
+        )
+        _start()
+        suite.ok(
+            "a merge whose branch no tree holds stops nothing and says nothing",
+            stop_held(root, "feature/9-elsewhere", trees, up, stop_cmd, store, _plenty) == []
+            and (state / "1-landed").exists(),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        where = Path(tmp) / "configured"
+        (where / ".claude").mkdir(parents=True)
+        stated = (shipped / "github-issues.yaml").read_text(encoding="utf-8")
+        commands = (
+            '  resource_up: "a-check"\n  resources_running: "a-listing"\n'
+            '  resource_stop: "a-stop"\n'
+        )
+
+        def _state(extra: str) -> None:
+            (where / ".claude" / "mjolnir.yaml").write_text(
+                stated.replace("  kind: worktree\n", "  kind: worktree\n" + extra, 1),
+                encoding="utf-8",
+            )
+
+        stops: list[tuple] = []
+        sweeps: list[dict] = []
+
+        def record_stop(*args):
+            stops.append(args)
+            return [f"stopped dev app in {args[0]}/tree"]
+
+        def record_sweep(*_args, **kwargs):
+            sweeps.append(kwargs)
+            return Report()
+
+        def merge_call(command: str) -> dict:
+            return {"tool_name": "Bash", "cwd": str(where), "tool_input": {"command": command}}
+
+        _state(commands)
+        said = merged_answer(merge_call("gh pr merge 9 --squash"), run=record_sweep,
+                             confirm=lambda *a: ("feature/9-x", ""), stopper=record_stop)
+        suite.ok(
+            "⛔ a project stating the commands and not the key stops nothing, as it does today",
+            said == {} and not stops and not sweeps,
+            str(said),
+        )
+        _state(commands + "  stop_on_merge: true\n")
+        said = merged_answer(merge_call("gh pr merge 9 --squash --auto"), run=record_sweep,
+                             confirm=lambda *a: (None, "the host reports o/r#9 as OPEN"),
+                             stopper=record_stop)
+        suite.ok(
+            "⛔ a merge still open on the host — `--auto` queued it — stops nothing",
+            not stops and "OPEN" in str(said.get("systemMessage", "")),
+            str(said),
+        )
+        said = merged_answer(merge_call("gh pr merge 9 --squash"), run=record_sweep,
+                             confirm=lambda *a: ("feature/9-x", ""), stopper=record_stop)
+        suite.ok(
+            "⛔ a confirmed merge stops the merged branch's tree's resource, and runs no sweep "
+            "where pruning is not stated",
+            len(stops) == 1 and stops[0][1] == "feature/9-x"
+            and stops[0][3:5] == ("a-check", "a-stop") and not sweeps
+            and "stopped dev app" in str(said.get("systemMessage", ""))
+            and STOP_ANCHOR in str(said.get("systemMessage", "")),
+            str(said),
+        )
+        stops.clear()
+        _state(commands + "  stop_on_merge: true\n  prune_on_merge: true\n")
+        said = merged_answer(merge_call("gh pr merge 9 --squash"), run=record_sweep,
+                             confirm=lambda *a: ("feature/9-x", ""), stopper=record_stop)
+        suite.ok(
+            "where both are stated the stop runs first and the sweep is given what is left",
+            len(stops) == 1 and len(sweeps) == 1
+            and 0 < sweeps[0].get("budget", 0) <= BUDGET_SECONDS - CONFIRM_TIMEOUT_SECONDS,
+            f"{stops} / {sweeps}",
+        )
+        refused = reader.why_refused(str(where)) if reader else "no reader"
+        suite.ok("the key is read clean beside both commands", not refused, str(refused))
+        for label, extra, wanted in (
+            ("a string that would read as true", commands + '  stop_on_merge: "no"\n',
+             "true` or `false"),
+            ("no stop command", '  resource_up: "a-check"\n  stop_on_merge: true\n',
+             "resource_stop"),
+            ("no resource check",
+             '  resources_running: "a-listing"\n  resource_stop: "a-stop"\n'
+             "  stop_on_merge: true\n",
+             "resource_up"),
+        ):
+            _state(extra)
+            refused = reader.why_refused(str(where)) if reader else ""
+            suite.ok(
+                f"⛔ and refused with the key named beside {label}",
+                bool(refused) and "stop_on_merge" in refused and wanted in refused,
+                str(refused),
+            )
 
     print("\nthe carrier and the surface:")
 
