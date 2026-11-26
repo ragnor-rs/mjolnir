@@ -52,6 +52,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import fnmatch
 import hashlib
 import io
 import itertools
@@ -297,6 +298,46 @@ PIPE_ESCAPED = "\\|"
 # merge.
 MERGE_API = re.compile(r"^/?repos/(?P<slug>[^/]+/[^/]+)/pulls/(?P<number>\d+)/merge$")
 WRITE_METHODS = {"PUT", "POST", "PATCH"}
+
+# ⛔ The same endpoint named by its address, which any client that speaks HTTP
+# can write to -- the host's own client among them. Searched for inside a word
+# rather than matched against one, so an address inside a program a call runs is
+# read as well as one standing alone. ⚠️ The address is the API's on either a
+# hosted or an enterprise host, which is the one shape `api/v3/` distinguishes.
+MERGE_URL = re.compile(
+    r"https?://[^/\s'\"]+/(?:api/v3/)?repos/(?P<slug>[^/\s'\"]+/[^/\s'\"]+)/pulls/"
+    r"(?P<number>\d+)/merge(?![\w/.-])"
+)
+# ⛔ The methods that leave the endpoint as it was. A request naming the address
+# and stating none of them is a write: what the guard holds is irreversible, so a
+# method it could not read is the merge rather than the read (§ 7's direction).
+READ_METHODS = {"GET", "HEAD"}
+REQUEST_METHOD_FLAGS = ("-X", "--request", "--method")
+REQUEST_READ_FLAGS = {"-I", "--head", "--spider"}
+
+# The administrator override, and the key a project allows it under.
+ADMIN_FLAG = "--admin"
+ADMIN_OVERRIDE = "host.landing.admin_override"
+OVERRIDE_ALLOWED = "allowed"
+
+# ⛔ A local merge into a held branch, which the client's merge subcommand never
+# sees. Held is the integration branch -- what a remote records as its default,
+# read and never named here -- and every branch `protected` names.
+PROTECTED = "host.landing.protected"
+LOCAL_MERGES = {"merge", "pull"}
+# ⚠️ These continue or abandon a merge already begun, which was held when it began.
+LOCAL_MERGE_RESUMES = {"--abort", "--quit", "--continue"}
+LOCAL_VALUE_FLAGS = {"-m", "-F", "--file", "-s", "--strategy", "-X", "--strategy-option",
+                     "--into-name", "--cleanup", "--depth", "--deepen", "--shallow-since",
+                     "--shallow-exclude", "--upload-pack", "-j", "--jobs", "--recurse-submodules"}
+GIT_VALUE_FLAGS = {"-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
+# The names a merge uses for a branch's own upstream, which brings the branch
+# level with itself rather than landing anything on it.
+OWN_UPSTREAM = {"@{u}", "@{upstream}", "@{push}"}
+# The subcommands that change which branch a later merge in the same call lands
+# on, and the flags whose value is the branch they create and check out.
+BRANCH_SWITCHES = {"checkout", "switch"}
+NEW_BRANCH_FLAGS = ("-b", "-B", "-c", "-C", "--orphan")
 
 # A change named as a web address, which is the other form the client accepts.
 PULL_URL = re.compile(r"/pull/(?P<number>\d+)")
@@ -1102,6 +1143,9 @@ def merge_target(
     words = _words(command)
     if not words:
         return None
+    # ⚠️ The words the client's own raw arm has already read, write or not: its
+    # method rule is its own, so the address arm below does not read them again.
+    read_by_client: set[str] = set()
     for index, word in enumerate(words):
         if os.path.basename(word) != "gh":
             continue
@@ -1124,9 +1168,141 @@ def merge_target(
                 else any(w.partition("=")[0] in FIELD_FLAGS for w in after)
             )
             for candidate in raw[1:]:
-                found = MERGE_API.match(candidate)
+                found = MERGE_API.match(candidate) or MERGE_URL.fullmatch(candidate)
+                if found:
+                    read_by_client.add(candidate)
                 if found and writes:
                     return found.group("slug"), found.group("number"), candidate
+    # ⛔ A read is read off the command naming the address and no other: a method
+    # word standing in a later command of the same call says nothing about this one.
+    for segment in position.segments(command) or [words]:
+        for word in segment:
+            if word in read_by_client:
+                continue
+            found = MERGE_URL.search(word)
+            if found and not _states_a_read(segment):
+                return found.group("slug"), found.group("number"), found.group(0)
+    return None
+
+
+def _states_a_read(words: list[str]) -> bool:
+    """Whether a request in these words states a method that leaves the endpoint alone.
+
+    ⛔ Only a stated read is read as one. The flag forms are the common clients'
+    own, and a bare method word standing alone is the form a client taking the
+    method positionally is given.
+    """
+    for index, word in enumerate(words):
+        flag, sign, inline = word.partition("=")
+        if word in REQUEST_READ_FLAGS or word.upper() in READ_METHODS:
+            return True
+        if flag in REQUEST_METHOD_FLAGS:
+            value = inline if sign else (words[index + 1] if index + 1 < len(words) else "")
+            if value.upper() in READ_METHODS:
+                return True
+        if word.startswith("-X") and word[2:].upper() in READ_METHODS:
+            return True
+    return False
+
+
+def _run_git(directory: str, args: list[str]) -> tuple[int, str]:
+    try:
+        proc = subprocess.run(["git", "-C", directory, *args], capture_output=True,
+                              text=True, timeout=HOST_TIMEOUT)
+    except (OSError, subprocess.SubprocessError):
+        return 1, ""
+    return proc.returncode, proc.stdout.strip()
+
+
+def _held_branches(directory: str, protected, git,
+                   switched: str | None = None) -> tuple[str | None, set[str], bool]:
+    """(the branch checked out, the remotes, whether that branch is held).
+
+    ⛔ The integration branch is read off what each remote records as its
+    default and never named here, which is § 10's derivation without its network
+    fallback: a guard on every call does not ask a remote anything. ⛔ A branch
+    the same call switched to before merging is the one merged into, and what is
+    checked out now is not.
+    """
+    code, branch = (0, switched) if switched else git(
+        directory, ["symbolic-ref", "--short", "-q", "HEAD"])
+    if code != 0 or not branch:
+        return None, set(), False
+    code, listed = git(directory, ["remote"])
+    remotes = set(listed.split()) if code == 0 else set()
+    defaults = set()
+    for remote in remotes:
+        code, name = git(directory, ["symbolic-ref", "--short", "-q",
+                                     f"refs/remotes/{remote}/HEAD"])
+        if code == 0 and name.startswith(remote + "/"):
+            defaults.add(name[len(remote) + 1:])
+    # ⚠️ A single name written without the list is that one name, never nothing:
+    # read as nothing, a misspelt list would hold less than the project stated.
+    globs = ([str(each) for each in protected] if isinstance(protected, list)
+             else [protected] if isinstance(protected, str) and protected else [])
+    held = branch in defaults or any(fnmatch.fnmatchcase(branch, glob) for glob in globs)
+    return branch, remotes, held
+
+
+def local_merge(command: str, cwd: str, protected, git=None) -> dict | None:
+    """The local merge this call makes into a held branch, else None.
+
+    What comes back names the branch merged into, the directory, and the refs it
+    merges that are **changes** -- a ref that is the held branch's own upstream
+    brings it level with itself and is not one. ⛔ Merging into any other branch,
+    the base into a work branch among them, is no merge this guard holds.
+    """
+    runner = git if git is not None else _run_git
+    directory = cwd or "."
+    switched: dict[str, str] = {}
+    for segment in position.segments(command):
+        for token, args in position.command_chain(segment):
+            if token == "cd" and args and not args[0].startswith("-"):
+                directory = os.path.join(directory, args[0])
+                break
+            if os.path.basename(token) != "git":
+                continue
+            here, index = directory, 0
+            while index < len(args) and args[index].startswith("-"):
+                flag = args[index]
+                if flag == "-C" and index + 1 < len(args):
+                    here = os.path.join(here, args[index + 1])
+                    index += 2
+                    continue
+                index += 2 if flag in GIT_VALUE_FLAGS else 1
+            if index < len(args) and args[index] in BRANCH_SWITCHES and "--" not in args:
+                rest = args[index + 1:]
+                name = (_flag_value(rest, *NEW_BRANCH_FLAGS)
+                        or next(iter(_positionals(rest, set(NEW_BRANCH_FLAGS))), None))
+                if name:
+                    switched[os.path.normpath(here)] = name
+                break
+            if index >= len(args) or args[index] not in LOCAL_MERGES:
+                break
+            verb, rest = args[index], args[index + 1:]
+            if any(flag in LOCAL_MERGE_RESUMES for flag in rest):
+                break
+            branch, remotes, held = _held_branches(here, protected, runner,
+                                                   switched.get(os.path.normpath(here)))
+            if not held:
+                break
+            # ⚠️ A lone dash is the branch checked out before this one, which no
+            # change is resolved from, so it stays a ref and is refused as one.
+            named = _positionals(rest, LOCAL_VALUE_FLAGS) + (["-"] if "-" in rest else [])
+            remote = None
+            if verb == "pull":
+                remote, named = (named[0], named[1:]) if named else (None, [])
+            changes = []
+            for ref in named:
+                plain = ref.removeprefix("refs/heads/").removeprefix("refs/remotes/")
+                head, _, tail = plain.partition("/")
+                if tail and head in remotes:
+                    plain = tail
+                plain = plain.partition(":")[0] if verb == "pull" else plain
+                if ref in OWN_UPSTREAM or plain == branch:
+                    continue
+                changes.append((ref if verb == "merge" else f"{remote}/{plain}", plain))
+            return {"into": branch, "dir": here, "changes": changes}
     return None
 
 
@@ -1162,12 +1338,14 @@ def _deny(reason: str) -> dict:
     }
 
 
-def merge_guard(config, command: str, *, host=None, mode: str = "",
-                asked: dict | None = None) -> dict:
+def merge_guard(config, command: str, *, host=None, cwd: str = ".", git=None,
+                mode: str = "", asked: dict | None = None) -> dict:
     """Refuse a merge unless the merge ask's last record approves this commit.
 
     ⛔ Refused rather than waved through where the record could not be read at
     all, which is the surface's fail direction for an act that cannot be undone.
+    ⛔ Every route to a merge comes here: the client's subcommand, the endpoint
+    written to by any client, and a local merge into a held branch.
     ⚠️ Where the record was read and approves nothing this commit carries, a
     project stating `prompt` has the call put to the person instead, in a mode a
     person answers: `asked` is then filled with the change and the commit the
@@ -1175,8 +1353,17 @@ def merge_guard(config, command: str, *, host=None, mode: str = "",
     """
     target = merge_target(command, config.get("host.repo"))
     if target is None:
-        return {}
+        return local_merge_guard(config, command, cwd, host=host, git=git, mode=mode,
+                                 asked=asked)
     slug, number, named = target
+    if ADMIN_FLAG in _words(command) and str(config.get(ADMIN_OVERRIDE) or "") != OVERRIDE_ALLOWED:
+        return _deny(
+            f"This command merges with `{ADMIN_FLAG}`, which overrides the protections the host "
+            f"holds the integration branch to, and this project does not state "
+            f"`{ADMIN_OVERRIDE}: {OVERRIDE_ALLOWED}` ({RECORD_CITATION}). ⛔ Refused whatever "
+            f"is recorded on the change. Merge without the override once what the host holds "
+            f"it to is met, or state the key where the project allows it."
+        )
     if number is None and named is not None:
         return _deny(
             f"This command merges a change named {named!r}, which is not a form this guard can "
@@ -1201,6 +1388,65 @@ def merge_guard(config, command: str, *, host=None, mode: str = "",
             f"refused rather than read as a pass ({RECORD_CITATION}). Name the change's own "
             "number on the command, or re-run once the host answers."
         )
+    return held_to_record(config, slug, number, host=host, mode=mode, asked=asked)
+
+
+def local_merge_guard(config, command: str, cwd: str, *, host=None, git=None,
+                      mode: str = "", asked: dict | None = None) -> dict:
+    """Hold a local merge into a held branch to the record of the change it lands.
+
+    ⛔ The change is the open one whose head branch is the ref merged, and the
+    commit merged has to be that change's head on the host: a local ref ahead of
+    or behind what was approved lands something nobody answered for.
+    """
+    merging = local_merge(command, cwd, config.get(PROTECTED), git=git)
+    if merging is None or not merging["changes"]:
+        return {}
+    into = merging["into"]
+    if len(merging["changes"]) > 1:
+        return _deny(
+            f"This command merges {len(merging['changes'])} refs into `{into}` at once, and "
+            f"each would land a change held to its own record ({RECORD_CITATION}). Merge one "
+            "change at a time."
+        )
+    ref, branch = merging["changes"][0]
+    slug = config.get("host.repo")
+    if not slug:
+        return _deny(
+            f"This command merges `{ref}` into `{into}`, and the configuration states no "
+            f"repository to resolve the change in ({RECORD_CITATION})."
+        )
+    runner = host if host is not None else _run_host
+    try:
+        code, out = runner(["pr", "list", "--repo", slug, "--head", branch, "--state", "open",
+                            "--json", "number"], HOST_TIMEOUT)
+        listed = json.loads(out or "[]") if code == 0 else None
+    except Exception:  # noqa: BLE001 -- any failure is a named absence
+        listed = None
+    numbers = [str(entry.get("number")) for entry in listed or [] if isinstance(entry, dict)]
+    if listed is None or len(numbers) != 1:
+        why = ("the host did not say which change has it as its head" if listed is None
+               else f"{len(numbers)} open changes have `{branch}` as their head")
+        return _deny(
+            f"This command merges `{ref}` into `{into}`, which is held, and the change it lands "
+            f"could not be established: {why}. ⛔ A local merge into a held branch is held to "
+            f"the record of the change it lands, as the host's merge is ({RECORD_CITATION}). "
+            "Land the change through its own merge, or open one for this branch first."
+        )
+    code, local = (git if git is not None else _run_git)(
+        merging["dir"], ["rev-parse", "--verify", "-q", f"{ref}^{{commit}}"])
+    return held_to_record(config, slug, numbers[0], host=host, mode=mode, asked=asked,
+                          landing=local if code == 0 and local else "no commit")
+
+
+def held_to_record(config, slug: str, number: str, *, host=None,
+                   landing: str | None = None, mode: str = "",
+                   asked: dict | None = None) -> dict:
+    """The refusal for {slug}#{number} unless its last merge record approves its head.
+
+    `landing` is the commit a local merge would land, where one is merging; it
+    has to be the change's head on the host before any record is read against it.
+    """
     comments, unread = host_comments(slug, number, run=host)
     if unread:
         return _deny(
@@ -1217,6 +1463,13 @@ def merge_guard(config, command: str, *, host=None, mode: str = "",
             f"established: {unread}. ⛔ Refused rather than allowed: an approval covers the "
             f"commit it was given for, and a merge is not undone ({RECORD_CITATION}). Re-run "
             "once the host answers."
+        )
+    if landing is not None and landing != head:
+        return _deny(
+            f"This command merges {slug}#{number} locally, landing {landing}, and the change's "
+            f"head on the host is {head} ({RECORD_CITATION}). ⛔ What a record approves is the "
+            "change's head, so a local ref that is not it lands a commit nobody answered for. "
+            "Bring the local ref level with the change, or land the change through its own merge."
         )
     known = verdicts()
     again = (
@@ -1307,15 +1560,17 @@ def _unapproved(config, slug: str, number: str, head: str, mode: str,
     }
 
 
-def unread_merge_guard(command: str, stop: str) -> dict:
+def unread_merge_guard(command: str, stop: str, cwd: str = ".", git=None) -> dict:
     """Refuse a merge where the project's configuration does not resolve.
 
-    ⛔ The grammar is `merge_target`'s and no second one, so what is a merge here
-    is what is a merge where the configuration resolves. The repository is not
-    supplied: nothing about the change is looked up, and only whether the call
-    merges is asked.
+    ⛔ The grammar is `merge_target`'s and `local_merge`'s and no third one, so
+    what is a merge here is what is a merge where the configuration resolves. The
+    repository is not supplied: nothing about the change is looked up, and only
+    whether the call merges is asked. ⚠️ With no `protected` to read, a local
+    merge is held only where it lands on the integration branch.
     """
-    if merge_target(command, None) is None:
+    local = local_merge(command, cwd, None, git=git)
+    if merge_target(command, None) is None and not (local and local["changes"]):
         return {}
     return _deny(
         "This command merges a change, and the project's configuration is there and does not "
@@ -1868,7 +2123,7 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
 
 def guard_answer(payload: dict, *, config=None, now: float | None = None,
                  store: Path | None = None, probe=None, host=None, runs=None,
-                 code=None) -> dict:
+                 code=None, git=None) -> dict:
     """The `PreToolUse` answer for one call."""
     if payload.get("tool_name") != GUARDED_TOOL:
         return {}
@@ -1886,7 +2141,7 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
     if loaded is None:
         # ⛔ A merge is recognised from the call alone, so it is refused here;
         # § 7 states why, and the arm below is every other call.
-        refused = unread_merge_guard(command, stop)
+        refused = unread_merge_guard(command, stop, str(payload.get("cwd") or "."), git=git)
         if refused:
             return refused
         # ⛔ Reported, and the call proceeds, by § 7's table: what a broken
@@ -1900,7 +2155,8 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
         return _inert(str(payload.get("session_id") or ""), stop)
     asked: dict = {}
     refused = merge_guard(loaded, command, host=host, asked=asked,
-                          mode=str(payload.get(live.PERMISSION_MODE) or ""))
+                          mode=str(payload.get(live.PERMISSION_MODE) or ""),
+                          cwd=str(payload.get("cwd") or "."), git=git)
     # ⛔ Settled on every call, and not only where it asks: the note is what the
     # exit event records an approval from, so a note a declined prompt left
     # behind is replaced or removed by the next answer to the same call rather
@@ -2778,7 +3034,7 @@ def _a_diff(added: str = "+a line", at: int = 1, blob: str = "1111111") -> str:
 
 
 def _a_host(comments: list[str] | None = None, number: int | None = 7, code: int = 0,
-            head: str | None = A_HEAD, diffs: dict | None = None):
+            head: str | None = A_HEAD, diffs: dict | None = None, listed=(7,)):
     """A stand-in for the host, answering the reads the merge guard makes."""
 
     def run(args, _timeout):
@@ -2794,6 +3050,34 @@ def _a_host(comments: list[str] | None = None, number: int | None = 7, code: int
             return 0, json.dumps([{"body": body} for body in (comments or [])])
         if args[:2] == ["pr", "view"]:
             return 0, json.dumps({"number": number} if number is not None else {})
+        if args[:2] == ["pr", "list"]:
+            return 0, json.dumps([{"number": each} for each in listed])
+        return 1, ""
+
+    return run
+
+
+def _a_git(branch: str | None = "a-base", remotes=("a-remote",), defaults=None,
+           commits=None):
+    """A stand-in for the local repository, answering the reads a local merge makes.
+
+    ⛔ Placeholder names: `a-base` is what the remote records as its default, and
+    nothing here names a branch any project has.
+    """
+    defaults = {"a-remote": "a-base"} if defaults is None else defaults
+    commits = {} if commits is None else commits
+
+    def run(_directory, args):
+        if args == ["symbolic-ref", "--short", "-q", "HEAD"]:
+            return (0, branch) if branch else (1, "")
+        if args == ["remote"]:
+            return 0, "\n".join(remotes)
+        if args[:3] == ["symbolic-ref", "--short", "-q"]:
+            remote = args[-1].split("/")[2]
+            return (0, f"{remote}/{defaults[remote]}") if remote in defaults else (1, "")
+        if args[:3] == ["rev-parse", "--verify", "-q"]:
+            ref = args[-1].removesuffix("^{commit}")
+            return (0, commits[ref]) if ref in commits else (1, "")
         return 1, ""
 
     return run
@@ -4071,6 +4355,154 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                                   now=1000.0, store=fresh("merge"),
                                   host=_a_host(comments=recorded))))
 
+        # --- every route to a merge -----------------------------------------
+        out.append("")
+        out.append("Every route by which a change lands reaches the same record:")
+        endpoint = "https://api.github.invalid/repos/an-owner/a-repository/pulls/7/merge"
+        for label, command in (
+            ("a request naming the endpoint's address with a write method",
+             f"curl -X PUT -H 'Accept: a-type' {endpoint}"),
+            ("the same with the method written inline", f"curl --request=PUT {endpoint}"),
+            ("the same with no method stated, which is read as the write",
+             f"curl {endpoint} -d '{{\"merge_method\": \"squash\"}}'"),
+            ("another client, its method a flag", f"wget --method=PUT {endpoint}"),
+            ("another client, its method a word", f"http PUT {endpoint}"),
+            ("the address inside a program the call runs",
+             f"python3 -c 'import urllib.request as u; "
+             f"u.urlopen(u.Request(\"{endpoint}\", method=\"PUT\"))'"),
+            ("the address of an enterprise host",
+             "curl -X PUT https://a-host.invalid/api/v3/repos/an-owner/a-repository/pulls/7/merge"),
+            ("the host's own client given the whole address",
+             f"gh api -X PUT {endpoint}"),
+        ):
+            answered = guard_answer(_call(command), config=config, now=1000.0,
+                                    store=fresh("route"), host=_a_host(comments=[]))
+            check(f"{label}: refused with no record",
+                  denied(answered) and "--question" in reason(answered), repr(answered)[:160])
+            check(f"{label}: and allowed on the change's own approval",
+                  guard_answer(_call(command), config=config, now=1000.0, store=fresh("route"),
+                               host=_a_host(comments=recorded)) == {})
+        for label, command in (
+            ("a request stating a read method", f"curl -X GET {endpoint}"),
+            ("a request for the headers alone", f"curl -I {endpoint}"),
+            ("a client given the read method as a word", f"http GET {endpoint}"),
+            ("the host's own client reading the whole address", f"gh api {endpoint}"),
+        ):
+            check(f"{label} proceeds, with nothing read off the host",
+                  guard_answer(_call(command), config=config, now=1000.0, store=fresh("route"),
+                               host=_a_host(code=1)) == {})
+
+        out.append("")
+        out.append("The administrator override is refused unless the project allows it:")
+        answered = guard_answer(_call("gh pr merge 7 --squash --admin"), config=config,
+                                now=1000.0, store=fresh("admin"),
+                                host=_a_host(comments=recorded))
+        check("an override is refused where nothing is stated, an approval recorded or not",
+              denied(answered) and ADMIN_OVERRIDE in reason(answered), repr(answered)[:200])
+        allowing = _a_config([])
+        allowing.data["host"]["landing"] = {"admin_override": OVERRIDE_ALLOWED}
+        check("and allowed where the project states it, on the change's own approval",
+              guard_answer(_call("gh pr merge 7 --squash --admin"), config=allowing,
+                           now=1000.0, store=fresh("admin"),
+                           host=_a_host(comments=recorded)) == {})
+        check("where it is allowed it is still held to the record",
+              denied(guard_answer(_call("gh pr merge 7 --admin"), config=allowing, now=1000.0,
+                                  store=fresh("admin"), host=_a_host(comments=[]))))
+        refusing = _a_config([])
+        refusing.data["host"]["landing"] = {"admin_override": "refused"}
+        check("and refused where the project states that it is",
+              denied(guard_answer(_call("gh pr merge 7 --admin"), config=refusing, now=1000.0,
+                                  store=fresh("admin"), host=_a_host(comments=recorded))))
+
+        out.append("")
+        out.append("A local merge into a held branch is held to the change it lands:")
+
+        def locally(command, project=config, comments=recorded, git=None, **host):
+            return guard_answer(_call(command), config=project, now=1000.0,
+                                store=fresh("local"), host=_a_host(comments=comments, **host),
+                                git=git if git is not None else _a_git(
+                                    commits={"a-work-branch": A_HEAD,
+                                             "a-remote/a-work-branch": A_HEAD}))
+
+        for command in ("git merge a-work-branch", "git merge --no-ff a-remote/a-work-branch",
+                        "git -C a-directory merge -m 'a message' a-work-branch",
+                        "cd a-directory && git merge a-work-branch",
+                        "git pull a-remote a-work-branch"):
+            answered = locally(command, comments=[])
+            check(f"`{command}` into the integration branch: refused with no record",
+                  denied(answered) and "--question" in reason(answered), repr(answered)[:160])
+            check(f"`{command}`: allowed on the change's own approval at its head",
+                  locally(command) == {})
+        answered = locally("git merge a-work-branch",
+                           git=_a_git(commits={"a-work-branch": A_LATER_HEAD}))
+        check("a local ref that is not the change's head is refused, naming both",
+              denied(answered) and A_HEAD in reason(answered)
+              and A_LATER_HEAD in reason(answered), reason(answered)[:200])
+        check("and a local ref that resolves to nothing is refused",
+              denied(locally("git merge a-work-branch", git=_a_git(commits={}))))
+        for label, listed in (("no open change", ()), ("two open changes", (7, 8))):
+            answered = locally("git merge a-work-branch", listed=listed)
+            check(f"a branch that is the head of {label} is refused, naming the branch",
+                  denied(answered) and "a-work-branch" in reason(answered),
+                  reason(answered)[:200])
+        check("two refs merged at once are refused",
+              denied(locally("git merge a-work-branch another-work-branch")))
+        released = _a_git(branch="release/one", commits={"a-work-branch": A_HEAD})
+        check("a branch nothing names as held is free",
+              locally("git merge a-work-branch", comments=[], git=released) == {})
+        guarded = _a_config([])
+        guarded.data["host"]["landing"] = {"protected": ["release/*"]}
+        check("and held once the project names it as protected",
+              denied(locally("git merge a-work-branch", project=guarded, comments=[],
+                             git=released)))
+        guarded.data["host"]["landing"] = {"protected": "release/*"}
+        check("and held where that one name is written without the list",
+              denied(locally("git merge a-work-branch", project=guarded, comments=[],
+                             git=released)))
+        for label, command, git in (
+            ("the base merged into a work branch", "git merge a-remote/a-base",
+             _a_git(branch="a-work-branch")),
+            ("the base pulled into a work branch", "git pull a-remote a-base",
+             _a_git(branch="a-work-branch")),
+            ("the integration branch brought level with its remote", "git merge --ff-only a-remote/a-base",
+             None),
+            ("the same by its upstream's name", "git merge @{u}", None),
+            ("the same by a pull naming nothing", "git pull", None),
+            ("the same by a pull naming the branch itself", "git pull a-remote a-base", None),
+            ("a merge already begun, abandoned", "git merge --abort", None),
+            ("a merge with no branch checked out", "git merge a-work-branch",
+             _a_git(branch=None)),
+        ):
+            check(f"{label} is free, with nothing read off the host",
+                  guard_answer(_call(command), config=config, now=1000.0, store=fresh("local"),
+                               host=_a_host(code=1),
+                               git=git if git is not None else _a_git()) == {})
+        work = _a_git(branch="a-work-branch", commits={"a-work-branch": A_HEAD})
+        for label, command, git in (
+            ("a write whose call goes on to read HEAD", f"curl -X PUT {endpoint} && "
+             "git rev-parse HEAD", None),
+            ("a write whose call carries the word GET in another command",
+             f"curl -X PUT {endpoint}; echo GET", None),
+            ("the base checked out and merged into in one call",
+             "git checkout a-base && git merge a-work-branch", work),
+            ("the same by switching", "git switch a-base; git merge a-work-branch", work),
+            ("the branch checked out before this one, merged by its dash", "git merge -", None),
+        ):
+            check(f"{label}: refused with no record",
+                  denied(guard_answer(_call(command), config=config, now=1000.0,
+                                      store=fresh("local"), host=_a_host(comments=[]),
+                                      git=git if git is not None else _a_git())))
+        check("and a work branch created in the same call and merged into is free",
+              guard_answer(_call("git checkout -b another-work-branch && git merge a-remote/a-base"),
+                           config=config, now=1000.0, store=fresh("local"),
+                           host=_a_host(code=1), git=_a_git()) == {})
+        check("a configuration that does not resolve refuses a local merge into the "
+              "integration branch",
+              denied(unread_merge_guard("git merge a-work-branch", "", git=_a_git())))
+        check("and leaves the base merged into a work branch alone",
+              unread_merge_guard("git merge a-remote/a-base", "",
+                                 git=_a_git(branch="a-work-branch")) == {})
+
         # --- a merge put to the person at the prompt ----------------------
         out.append("")
         out.append("A project may put a merge no approval covers to the person at the prompt:")
@@ -4196,6 +4628,17 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         finished(where)
         check("a merge a recorded approval allowed writes no second record",
               len(bodies) == before)
+        for label, command in (
+            ("a local merge into the integration branch", "git merge a-work-branch"),
+            ("a write to the endpoint by its address",
+             "curl -X PUT https://api.github.invalid/repos/an-owner/a-repository/pulls/7/merge"),
+        ):
+            check(f"{label} with no record is put to the person too, where the project asks",
+                  decision(guard_answer(_call(command, mode="default"), config=prompting,
+                                        now=1000.0, store=fresh("prompt-route"),
+                                        host=_a_host(comments=[]),
+                                        git=_a_git(commits={"a-work-branch": A_HEAD})))
+                  == "ask")
         allowed_after = next(
             hook_entry["timeout"]
             for group in json.loads(CARRIER.read_text(encoding="utf-8"))["hooks"][CALL_FINISHED]

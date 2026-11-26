@@ -288,6 +288,14 @@ ANSWERED_BY: dict[str, Answer] = {
         "Does a merge approval cover one commit only, or survive a push that leaves "
         "the change's content the same?",
     ),
+    "host.landing.admin_override": ask(
+        "May a merge here override what the host protects the integration branch "
+        "with, once the change's own approval is recorded?",
+    ),
+    "host.landing.protected": ask(
+        "Which branches besides the integration branch is a local merge into held "
+        "to a change's recorded approval?",
+    ),
     "host.landing.unrecorded_merge": ask(
         "Where no recorded approval covers a merge, is it refused, or put to the "
         "person at the harness's own prompt?",

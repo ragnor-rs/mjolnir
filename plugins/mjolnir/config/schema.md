@@ -1533,6 +1533,8 @@ host:
     method: squash | merge_commit | rebase     # how a pull request lands; required
     delete_branch: host | procedure | never    # which side deletes the remote ref afterwards; required
     approval_covers: commit | content          # what a merge approval covers; default: commit
+    admin_override: refused | allowed          # whether a merge may override the host's protections; default: refused
+    protected: ["release/*"]                   # branches a local merge into is held, beside the integration branch; default: []
     unrecorded_merge: deny | prompt            # what a merge no approval covers gets; default: deny
 ```
 
@@ -1590,6 +1592,14 @@ is compared is every line of the diff but the line numbers and blob names. ⛔ *
 not be read whole keeps nothing**: a binary file it does not show, a commit the host no longer
 answers for, or a size the host refuses. ⚠️ **What it does not see is position**: one hunk moved
 between two places whose surrounding lines are identical reads as the same diff.
+
+**`admin_override` and `protected` are read by the same guard and by nothing else**, and each
+widens or narrows one route [§ 7 → Every route to a merge](#every-route-to-a-merge-is-held-to-the-one-record)
+names. `refused` is the value a project stating nothing gets: an override of what the host holds the
+integration branch to is a merge the host's own protections did not admit, so it is one the project
+says it allows rather than one the guard assumes. `protected` adds branches to the integration
+branch, which is derived and never stated here, ⚠️ and a glob in it is matched against the whole
+branch name.
 
 **`unrecorded_merge` is read by the same guard and by nothing else**, and what each value does is
 [§ 7's](#a-merge-put-to-the-person-at-the-prompt-and-the-record-it-leaves) to state. ⚠️ **Per
@@ -3265,6 +3275,41 @@ that cannot exist: § The loop makes the ask procedure for the reason § 6 gives
 project that could turn the guard off is a project whose loop merges unasked. ⚠️ **What a project
 *does* decide is which checks a person answers at all** — [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s
 list — and that is a different question from whether the ask that reaches a person is made.
+
+### Every route to a merge is held to the one record
+
+⛔ **Every route by which a session lands a change is a merge, and each is held to the record
+above** — the host client's merge subcommand is one of them and not the definition. The others:
+
+| the route | what makes it one | which change's record holds it |
+|---|---|---|
+| the host's merge endpoint, written to by any client | its address or its API path in the call, a program the call runs included, with no read method stated | the change the address names |
+| a local merge into a held branch | a merge or a pull while the branch checked out where it runs is the integration branch or one [§ 2's `protected`](#how-a-pull-request-lands) names | the one open change whose head branch is the ref merged, and ⛔ **the commit merged has to be that change's head** on the host |
+
+⛔ **A request naming the endpoint and stating no read method is a write**, whichever client makes
+it and whatever that client's own default is. The guard cannot know every client's default, and the
+direction for an act that cannot be undone is the one [below](#which-direction-a-guard-fails-in)
+states.
+
+⛔ **A local merge is held where it lands and nowhere else.** Merging the base into a work branch is
+free, and so is bringing a held branch level with its own remote — its upstream, or the same name on
+a remote — since neither lands a change. A merge or pull already begun and then continued or
+abandoned is free too, having been held when it began. ⛔ **A ref that is the head of no open change,
+or of several, is refused rather than merged**, and so is a merge of more than one change at once:
+each would need its own record. The directory the branch is read in is where the call runs, moved by
+`-C` and by a `cd` before it in the same call, and a branch the call checks out before merging is
+the one merged into. A lone `-` names no change and is refused. ⚠️ **The integration branch is what
+a remote records as its default**, read locally; a clone recording none holds only what `protected`
+names.
+
+⛔ **The administrator override is refused unless the project states
+[`admin_override: allowed`](#how-a-pull-request-lands)**, whatever is recorded; where it is allowed
+the merge is still held to the record.
+
+⚠️ **What these routes do not reach**: a push of commits to a held branch that no merge made, a
+merge made by a program the call does not name, and an address assembled at run time from pieces.
+They are stated rather than claimed covered, for the reason the section above gives about what a
+guard establishes.
 
 ### A merge put to the person at the prompt, and the record it leaves
 
