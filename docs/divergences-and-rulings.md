@@ -180,7 +180,7 @@ Present in one or two copies each, and true for every project:
   item, though, and the case against it was the scope's readability. One adopter's items are
   accepted by a product owner before work starts, so a rewrite changes accepted text with only a
   comment to show for it. `rewrite` stays the default. A project choosing `append` pays the
-  readability cost, which is the one its own owner already pays.
+  readability cost: its items' scope is read across the body and every dated section in order.
 - **(5) overrides a copy that argues directly against rounding down** — "never round down to be
   safe: a deliberate under-statement is as wrong as an invented hour". It pairs with (4), since
   both cut one way.

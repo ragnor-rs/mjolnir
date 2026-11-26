@@ -2028,7 +2028,9 @@ here.
     --after <the body to write>
   ```
 
-  `appended` refuses a body whose text before the section is not the existing body exactly. It
+  `appended` runs twice: on the body about to be written, and on the body read back after the
+  write, since what the tracker holds is the claim. It refuses a body whose text before the
+  section is not the existing body exactly. It
   also refuses one carrying no dated section or more than one, a heading that is not the project's
   wording with a date in it, and a section with nothing under it. Each command exits 3 where the
   project states `rewrite`, since there is no section to compose.

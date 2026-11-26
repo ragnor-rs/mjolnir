@@ -539,6 +539,9 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("a date that is no calendar date exits 2 and composes nothing",
               main(["addendum", "--skills-root", root_a, "--before", before_file,
                     "--material", material_file, "--date", "2026-02-30"]) == 2)
+        check("a compact date some interpreters read as ISO exits 2 too",
+              main(["addendum", "--skills-root", root_a, "--before", before_file,
+                    "--material", material_file, "--date", "20261127"]) == 2)
         check("a rewriting project exits 3 for either command",
               main(["addendum", "--skills-root", bare, "--before", before_file,
                     "--material", material_file]) == NOTHING_DECLARED
@@ -599,7 +602,11 @@ def _append_command(configuration: config.Config, args) -> int:
         if material is None:
             return 2
         date = args.date or datetime.date.today().isoformat()
+        # ⛔ The shape first: from 3.11 `fromisoformat` also takes `20261127`,
+        # which would write a heading `appended` refuses.
         try:
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
+                raise ValueError(date)
             datetime.date.fromisoformat(date)
         except ValueError:
             print(f"--date {date!r} is not a YYYY-MM-DD calendar date", file=sys.stderr)

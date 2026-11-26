@@ -304,11 +304,13 @@ neither.
   - **`rewrite`**: the body is rewritten to what the work now is.
   - **`append`**: the body is kept byte for byte and gains one dated section. The section is
     composed and held by the carrier, never by hand. `addendum` prints the body to write, and
-    `appended` holds it against the body as read before the write:
+    `appended` holds it against the body as read before the write. `appended` runs again on the
+    body read back after the write, and a refusal there is reported, not retried:
 
     ```bash
     python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" addendum --before <the body as read> --material <the new material>
     python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" appended --before <the body as read> --after <the body to write>
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" appended --before <the body as read> --after <the body read back>
     ```
 
   Under either mode the source is cited in a comment, or in the run report where the tracker
