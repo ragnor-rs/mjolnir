@@ -370,7 +370,8 @@ content enumerates.
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish));
 - ⛔ **that the work itself is under way, and which carrier the leg was entered through** — the
   implementing role where the project maps one, the project's own carrier and the label or type
-  that routed the item to it, or that it maps none and this session is doing the work, by step 7. A reply that ends without it reads as a pass that stopped at the claim;
+  that routed the item to it, or that it maps none and this session is doing the work, by step 7.
+  A reply that ends without it reads as a pass that stopped at the claim;
 - **what happens when the work is done**: the item's stated acceptance condition answered in the
   tree is what the finishing role is entered on, and the session holding the item enters it —
   [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask).
