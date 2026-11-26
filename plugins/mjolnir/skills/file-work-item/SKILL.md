@@ -95,7 +95,18 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --grouping-default [--grouping
 - **`map`** ⇒ the item goes into that grouping, and **the report names the rule** the answer
   carries, so the reader of the item can see the value was the project's map and not a choice.
 - **`ask`** ⇒ the grouping is asked for, with the answer's reason, before anything is written.
-- **`discoverable`** ⇒ the tracker names the current grouping, and it is read there.
+- **`discoverable`** ⇒ the tracker names the current grouping, and it is read there, through
+  [`§ 3`](../../config/schema.md#the-operations-and-what-an-absent-capability-does)'s
+  `read_current_grouping`:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --current-of [<the grouping's name>]
+  ```
+
+  One open value ⇒ its `value` goes into the grouping's field in `create_item`'s own fields, and
+  the report names it by its `name`. None or several ⇒ the answer's `ask` says why, and the
+  grouping is **asked for** with every open value listed by name; ⛔ never the first one. A
+  capability that is absent takes its stated fallback, and the grouping is asked for the same way.
 - **A project carrying no grouping is a refusal naming the facet**, and the item is filed with
   none.
 

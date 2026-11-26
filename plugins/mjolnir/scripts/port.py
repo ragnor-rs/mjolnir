@@ -156,13 +156,15 @@ REVERSALS = "reversals"
 CLOSED_BY = "closed_by"
 
 # § 4.8's key saying how the current grouping is identified, named here because
-# the refusal below is keyed on it. ⛔ **Nothing in this module reads the
-# tracker's own mark**, so the grouping's value arrives on the invocation under
-# either of that key's values -- and a caller handing none over is refused
-# against *this* key rather than against the operation's argument list, which is
-# where an unkeyed refusal would have sent somebody.
+# the refusals below are keyed on it. ⛔ **The tracker's own mark is read by one
+# operation, `read_current_grouping`, and by no publishing ask**: a caller under
+# `discoverable` reads it first and hands the value over, so a publishing ask
+# given none is refused against *this* key rather than against the operation's
+# argument list, which is where an unkeyed refusal would have sent somebody.
 CURRENT = "current"
+DISCOVERABLE = "discoverable"
 GROUPING_ITEMS = "grouping_items"
+READ_CURRENT = "read_current_grouping"
 MARK_RELEASED = "mark_grouping_released"
 CREATE_GROUPING = "create_grouping"
 
@@ -1537,12 +1539,12 @@ class Port:
         a `discoverable` grouping, where both this surface and the deploying role
         say the value is read and nothing reads it.
 
-        ⛔ **And the refusal is the same under either value of that key**, which
-        is the honest statement rather than the convenient one: `stated` means
-        the value arrives on the invocation, and `discoverable` means a procedure
-        reads the tracker's own mark -- which **nothing here does**. So the
-        second arm is a stated limit and not a behaviour, and a caller under it
-        is told to supply the value rather than left to read an argument list.
+        ⛔ **And the refusal is the same under either value of that key**:
+        `stated` means the value arrives on the invocation, and `discoverable`
+        means the tracker's own mark is read -- by `read_current_grouping`, which
+        a caller asks first and whose value it hands over here. A publishing ask
+        never reads the mark itself, so a caller under either value is told to
+        supply the value rather than left to read an argument list.
         """
         if given:
             return
@@ -1555,8 +1557,9 @@ class Port:
             f"`{operation}` "
             "was asked for with no value for it. The grouping's own value -- which "
             "release, which time box -- arrives on the invocation of the role that "
-            "needs it, and ⛔ nothing here reads the tracker's own mark, so that "
-            "holds under either value of this key. Hand the value over.",
+            "needs it, and ⛔ no publishing ask reads the tracker's own mark, so "
+            "that holds under either value of this key: under `discoverable` the "
+            f"mark is `{READ_CURRENT}`'s to read first. Hand the value over.",
         )
 
     def mark_released(
@@ -1630,6 +1633,33 @@ class Port:
         block = self.config.grouping(grouping)
         self._valued(block, args, GROUPING_ITEMS)
         outcome = self.invoke(GROUPING_ITEMS, *args, grouping=block, **kwargs)
+        outcome.grouping = block.get("name")
+        return outcome
+
+    def current_in(self, grouping: str | None = None) -> Outcome:
+        """The value the tracker marks open for one of § 4.8's groupings.
+
+        ⛔ **A method rather than a bare `invoke`, for `items_in`'s reason**: the
+        implementation is handed the *block*, so it reads where the grouping is
+        held without re-reading § 4.8 for itself.
+
+        ⛔ **Asked only under `current: discoverable`.** Under `stated` the
+        tracker holds several open at once and marks none, so the ask is refused
+        against that key: an answer there would be the first of several, which
+        is the guess § 4.8 forbids. ⚠️ What comes back is never a choice between
+        several either -- an implementation lists them and the role asks.
+        """
+        self._stated(READ_CURRENT)
+        block = self.config.grouping(grouping)
+        if block.get(CURRENT) != DISCOVERABLE:
+            raise ConfigError(
+                f"{config.GROUPING_KEY}.{CURRENT}",
+                f"is {block.get(CURRENT)!r} for the `{block.get('name')}` grouping, "
+                f"so the tracker marks no value open and `{READ_CURRENT}` has "
+                "nothing to read. The value arrives on the invocation of the role "
+                "that needs it, or from the project's own default map.",
+            )
+        outcome = self.invoke(READ_CURRENT, grouping=block)
         outcome.grouping = block.get("name")
         return outcome
 
@@ -4464,6 +4494,16 @@ def main(argv: list[str]) -> int:
         "status move's is",
     )
     parser.add_argument(
+        "--current-of",
+        metavar="GROUPING",
+        nargs="?",
+        const="",
+        help="the value the tracker itself marks open for one of § 4.8's "
+        "groupings, by the name that facet keys it on -- omitted where the "
+        "project carries one. Asked only under `current: discoverable`; the "
+        "answer lists every open value, and none or several is the role's to ask",
+    )
+    parser.add_argument(
         "--in-grouping",
         metavar="GROUPING",
         nargs="?",
@@ -4608,6 +4648,48 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 2
+    if args.invoke == READ_CURRENT and args.current_of is None:
+        print(
+            f"Refused: `{READ_CURRENT}` is reached through `--current-of "
+            "[<grouping>]`, which hands the implementation § 4.8's block for that "
+            "grouping and refuses one whose `current` is `stated`.",
+            file=sys.stderr,
+        )
+        return 2
+    if args.current_of is not None:
+        if args.ports:
+            print(
+                "Refused: `--current-of` reads one grouping on one port, so it is "
+                "not asked of every port at once.",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            answering = load(
+                args.skills_root,
+                args.port,
+                root=args.root,
+                check_paths=not args.no_check_paths,
+            )
+            outcome = answering.current_in(args.current_of or None)
+        except ConfigError as error:
+            print(
+                json.dumps(
+                    refusal_report(args.port, READ_CURRENT, error),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            return 1
+        print(
+            json.dumps(
+                invocation_report(answering.name, READ_CURRENT, outcome),
+                indent=2,
+                ensure_ascii=False,
+                default=str,
+            )
+        )
+        return 0 if outcome.performed else 1
     if args.mark_released is not None:
         if args.ports:
             print(

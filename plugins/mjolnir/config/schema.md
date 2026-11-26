@@ -1747,6 +1747,13 @@ this kind's implementation alone, as `create_fields` is.
 does, and an empty list clears it. Each member takes the shape of the element type the site states,
 and an element type the implementation has no shape for is refused by name.
 
+**A tracker's own sprint field is the one exception, and it is written by the sprint's id.** On
+`jira` that field is a list of `json` members, recognised by the custom type the tracker gives it
+and never by its name, and a write to it takes one sprint's id. A name handed instead is refused
+rather than looked up, two sprints being free to carry one. Every other `json` member stays refused.
+Which sprint is § 4.8's question: `read_current_grouping` answers the open one with its id and its
+name, the id being what is written and the name what a person and a reply read.
+
 **The test a new kind's block is written against**: a key is required when the adapter cannot
 address the right tracker without it. An address this reader accepts and the tracker rejects is
 the one failure a configuration can be read for; everything past the address, the adapter learns
@@ -1786,6 +1793,7 @@ the operations the survey reached and says which it did not.
 | `create_grouping` | one of § 4.8's groupings brought into existence, by the value that facet keys it on — the one write about a grouping that is made before any item is in it | nothing is created, and the role **names the grouping it would have created** for whoever creates it by hand; ⛔ no file and no record of a grouping is written anywhere else instead, a grouping the tracker does not hold being a grouping no `grouping_items` can read |
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
+| `read_current_grouping` | the value the tracker itself marks open for one of § 4.8's groupings under `current: discoverable`, each open value by what a write takes and by the name a person reads — ⛔ never a choice between several, which the role asks, and never asked under `stated`, where the tracker marks none | the grouping is asked for, as under `stated`, and the report says the tracker's mark went **unread**; never the first value the tracker lists, by § 2's rule that absence of signal is not an answer |
 | `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. The address a person performs it at is the tracker's own and the procedure composes none — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `read_comments` | the item's comments, oldest first and every page of them, each with who wrote it, when, and when it was last edited | the role reports the comments **unread** and never as none, by § 2's rule that absence of signal is not an answer ([below](#an-items-comments-and-what-an-unread-one-is)) |
@@ -2707,16 +2715,17 @@ collection form that holds per entry — a named grouping carried by nothing sta
 and is reported as that absence.
 
 Which of these keys has no reader yet: **`has_own_acceptance` is required and held to its
-vocabulary and is read by nothing else yet**, and **`current` is read in one direction only** —
-every other key in the fence is read where the configuration is read.
-[§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target) reads `current` to
-say *what is unanswered* when a publishing ask arrives with no value for the grouping; **what no
-reader performs is the `discoverable` arm's own read**, so the value arrives on the invocation
-under either value and that section states the limit. Each key is the answer to a question a role
-has to ask before it files an item or publishes a grouping, and neither is derivable from the rest
-of the block. The trigger is the role — the filing role putting a new item somewhere, and whichever
-role comes to read a tracker's own mark — and a key still unread when those roles are written is
-§ 1's retirement argument with a project's own answer behind it.
+vocabulary and is read by nothing else yet** — every other key in the fence is read where the
+configuration is read. **`current` is read in two places.**
+[§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target) reads it to say
+*what is unanswered* when a publishing ask arrives with no value for the grouping, and **the
+`discoverable` arm's own read is [§ 3](#the-operations-and-what-an-absent-capability-does)'s
+`read_current_grouping`**, whose one caller is the filing role putting a new item into the open
+grouping. A publishing ask never reads the mark itself, so there the value arrives on the invocation
+under either value and that section states the limit. `has_own_acceptance` is the answer to a
+question a role has to ask before it publishes a grouping, not derivable from the rest of the block;
+a key still unread when that role is written is § 1's retirement argument with a project's own
+answer behind it.
 
 ## 5. Readiness gate — an ordered predicate list
 
@@ -3144,9 +3153,25 @@ event, breaks this rule.
 
 The configuration is resolved under the directory the event names — the one the hook is running
 in, where the event names none — and through the reader every role runs on, at
-[§ 1](#1-roots)'s skills root. ⚠️ No walk up the tree: a hook that searched upwards would act on
-another project's facts in a directory stating none of its own, which a checkout with trees beside
-it makes routine.
+[§ 1](#1-roots)'s skills root.
+
+⛔ **Where that directory states none, the session's project directory bounds a search for the
+one that does.** The event's directory is the shell's and follows every `cd` the session makes;
+the project directory is the one the harness says it opened the session on (`CLAUDE_PROJECT_DIR`),
+handed to every hook in its environment and fixed for the session — a fact the harness states, not
+one a hook infers. So a directory at or under it that states nothing resolves to the **nearest**
+directory between the two that states one: a package of the project to the project, and a
+subdirectory of a tree under the managed root to that tree, which states its own. Without the
+search, one `cd` into a package holds every guard to nothing, the merge guard included: a project
+read from a subdirectory reads as one that states none, and that silence is not a fail direction
+anybody chose. ⚠️ Within the project a tree that states none — a branch cut before its
+adoption — is held to the nearest directory above it that does, which holds more and never less.
+
+⚠️ No walk above it: a hook that searched past the project directory would act on another
+project's facts in a directory stating none of its own, which a checkout with trees beside it makes
+routine. A directory outside the project directory, and any event where the harness states none,
+is resolved under its own directory alone. A role never passes through this: its skills root is
+§ 1's, and a command a role runs is not handed the project directory.
 
 Absent and unreadable are different answers, and only the first is silent. A configuration that is
 there and does not resolve is the project's own statement, badly written, so a carrier that reads
@@ -3424,6 +3449,17 @@ is too young.
 
 `probe: null` is that key's stated absence, and then the leases are the whole of the count. A
 resource that cannot be asked how many are held is ordinary, not a resource whose count is zero.
+
+⛔ **The leases are counted per repository and never per tree**, so `subject: tree` queues two
+trees of one repository against each other from the moment one of them takes a place, rather than
+from the moment the probe sees it. The store is keyed by the repository's common git directory,
+which every work tree of it resolves to alike, and by the skills root's place inside its tree, so
+two projects living in one repository still count apart and two repositories on one machine never
+share a place. Read in the code: keyed by the skills root's own path, each tree counted alone, and
+what held the cap across trees was the probe, which counts nothing during a launch. Where git
+answers nothing about the skills root, the key is the skills root's own path, so a directory with
+no repository behind it has one place as before. Nothing about the key is configured: the store is
+the guard's own scratch, and no project states where it lives.
 
 ⛔ **Every exit path either releases the lease or is proved not to fire, and one path is closed by a
 reading rather than an event.** The proof is per path and is not a reading: a path a guard
@@ -8085,6 +8121,7 @@ they were handed over in, so one selection has one spelling.
 | `command` | in place of `{choose:<name>}`, everywhere the command carries it |
 | `dispatch` | as a typed input of that name, beside the ones `inputs` always sends |
 | `by_hand` | named with the workflow and the ref, as every input is |
+| any shape, for a choice a live data step's side places | as the side that step's phases fall on, [§ 35](#a-side-chosen-for-one-run-and-the-go-that-names-it)'s — and on a `dispatch` or `by_hand` target, as no input |
 
 ⛔ **On a `command` target a value is held to words a shell reads as themselves, and that is the
 quoting.** Every value and every `joined_by` is ASCII letters, digits and `_ . / : @ % + , = -`, and
@@ -8093,10 +8130,12 @@ not quoted at the substitution, because a command may already place the word ins
 [§ 1](#a-command-root-is-not-a-code-root)'s form may place the whole command inside another: quotes
 added here would close those. A value needing a space is a word the project's own command maps.
 
-The command and the declaration agree in both directions: a declared choice the command never places
-would be shown in a go and reach nothing, and a placed name no choice declares would reach the shell
-as written. Each is refused with the name. A choice reaches `command` and `batch` and no other
-command of the entry, so a placement written in any other key is refused too — and one `batch`
+The command and the declaration agree in both directions: a declared choice neither the command nor
+a live data step's side places would be shown in a go and reach nothing, and a placed name no choice
+declares would reach the shell as written. Each is refused with the name. A choice reaches
+`command`, `batch`, a step's `command` under `after_verified`, and a live data step's `order` and
+`sides`, and no other key of the entry: a placement written anywhere else, a live data step's own
+commands included, is refused too. One `batch`
 places is held to the plain words above whatever the target's shape, since
 [the batch](#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against) runs in a
 shell on every shape. `batch` need not place a choice, and a name it places that no choice declares
@@ -8539,9 +8578,10 @@ Which grouping's *value* this is about — which release, which time box — arr
 invocation, under either value of § 4.8's `current`. That key states what the value could be read
 from: `stated` means it arrives, and `discoverable` means the tracker itself marks one and a
 procedure reads it. The second read is not performed here: a publishing ask handed no value is
-refused against that key, naming it. No tracker's own grouping has been measured carrying an
-operation that reads the mark, so a target under `discoverable` is handed its value exactly as one
-under `stated` is.
+refused against that key, naming it. § 3's `read_current_grouping` reads the mark where a tracker
+implements it, and only `jira`'s sprint does; it answers the *open* grouping, which is the one
+being filled rather than the one being published. So a target under `discoverable` is handed its
+value exactly as one under `stated` is.
 
 A target naming a grouping under a project whose carrier is `none` is refused with both keys named,
 there being no set for the name to mean.
@@ -9044,7 +9084,9 @@ have turned off this section's rail.
 
 `order` is required and states which side of § 33's invocation the step runs on — the whole of it,
 unless `sides` places a phase of it elsewhere
-([below](#several-steps-on-one-target-and-the-side-each-phase-falls-on)).
+([below](#several-steps-on-one-target-and-the-side-each-phase-falls-on)). It, and any phase's side,
+is either one of the two sides or a choice the run makes
+([below](#a-side-chosen-for-one-run-and-the-go-that-names-it)).
 
 | `order` | when the step runs |
 |---|---|
@@ -9063,6 +9105,71 @@ schema is knowledge of that project's code, which is
 [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle column. The
 role states the order it is taking, and says that it took the configured one rather than a judgement
 of its own.
+
+### A side chosen for one run, and the go that names it
+
+A project whose releases want the write on either side states the side as a choice rather than as
+two targets differing only in `order`, which would duplicate every other key and let the batch be
+advanced under either name. The surveyed copy that decides it per release writes **before** the
+image whenever the new code hard-requires the schema, and **after** it only for writes purely
+additive to code already running — or where the running code still reads what the write drops.
+
+⛔ **The choice is § 33's, and this section adds no second vocabulary for it.** The target declares
+it under [`choices`](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target) — its allowed
+values, the default a run choosing nothing takes, and a warning per value — and the step places it
+as the **whole** value of `order`, or of one phase's side, with § 33's own placement — here with
+the dump held before the invocation and the rest of the step on the side the run takes:
+
+```yaml
+deploy:
+  - name: production
+    choices:
+      - name: side
+        values: [before_invoke, after_invoke]
+        default: before_invoke
+    live_data_step:
+      backup:
+        run: "<the command that dumps the live store>"
+        verify: "<the command that reads the dump back>"
+      apply: "<the command that writes to the live store>"
+      apply_by: procedure
+      order: "{choose:side}"
+      sides:
+        backup: before_invoke
+      record: "<a command printing one path per line>"
+```
+
+A `warnings` entry for `after_invoke` — that the new code serves before the write lands — is the
+one most projects stating this want, and it is § 33's key, written there as for any other value.
+
+| what a side states | what the loader does |
+|---|---|
+| one of the two sides | loads: the side is fixed, read exactly as the sections above describe |
+| `{choose:<name>}` alone, naming a choice whose every value is a side and which states no `joined_by` | loads: the side is the run's |
+| a placement naming a choice the target does not declare | refused, naming the choices it does declare |
+| a placement naming a choice with a value that is not a side, or a `joined_by` | refused — a phase falls on one side |
+| a placement beside a fixed side, or beside any other text | refused with both named — a side is fixed or chosen, never both |
+
+⛔ **The placement rule holds under every value the choice allows**, not under the default alone: a
+step whose write would fall ahead of its own dump or rehearsal under one allowed value is refused at
+the load with that value named, since a run may take it. So a dump fixed `before_invoke` beside a
+chosen `order` is the shape that moves the write and never the backup ahead of it.
+
+**The run's value is resolved by § 33's reader**, before the go and with § 33's refusals, from
+exactly the selection the deploy was handed. The sequence the step performs follows the side it
+resolves to, and the backup still opens it whichever side that is. A choice a step's side places is
+the step's: on a `dispatch` or `by_hand` target it is sent and named as no input, and on a `command`
+target the command need not place it, though it may.
+
+⛔ **The go names the side taken**, beside the preview's output and with the choice's warning for
+that side, and says whether the run chose it or took the default. A go on such a step that does not
+name the side is refused like any other go naming too little. ⛔ **A reading is for the side it was
+taken under**: a later side or a write handed a selection that places the phases otherwise reaches
+nothing, the dump and the rehearsal being taken again — § 33's *a different selection is a
+different deploy*, met at the write.
+
+A step stating fixed sides is untouched by any of this, and its go names no side beyond the order
+the plan already states.
 
 ### Several steps on one target, and the side each phase falls on
 
@@ -9149,7 +9256,8 @@ The report names what it could not establish, by
 [§ 11](#a-report-names-what-it-could-not-establish). This step adds its own list: whether the dump
 was verified and by what, or that the step takes none and why, whether a preview ran and where its
 output is, whether a rehearsal ran at all, what its output was read as, which order was taken and
-whether the configured one was overruled, whether the apply ran or was handed over, and — where it
+whether the configured one was overruled — or, where the side is a choice, the value taken and
+whether the run chose it — whether the apply ran or was handed over, and — where it
 ran and failed — what the store is left holding, and — where the target lists several steps — each
 of them by name as written, handed over or not made.
 
@@ -9849,9 +9957,9 @@ iteration is current is § 4.8's `current` question, so this key says *which gro
 in* and nothing about which one is open.
 
 ⛔ **Under this carrier the grouping's own value arrives on the role's invocation, and a pass given
-none stops.** § 4.8 states that nothing in the procedure performs the `discoverable` read, so that
-holds under either value of `current`: an order read off whichever grouping a tracker answered with
-is wrong while every figure in the report is correct about the wrong set.
+none stops.** § 4.8 states that the `discoverable` read is the filing role's alone, so that holds
+under either value of `current`: an order read off whichever grouping a tracker answered with is
+wrong while every figure in the report is correct about the wrong set.
 
 The reader refuses `carrier: none` beside a mapped closing-out role, which is
 [§ 25](#the-carrier-and-the-third-have-to-agree-in-both-directions)'s shape between a carrier and

@@ -536,7 +536,7 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
         an_item = _items_of(configuration)
         live = [an_item(FIRST), an_item(SECOND), an_item(THIRD)]
         # ⛔ A pass given no value for the grouping is a **stop naming what it needs**: § 4.8's
-        # `current` is read by nothing in the procedure, so a pass that went ahead would be
+        # `current` is read by no role here, so a pass that went ahead would be
         # reading the order off whichever grouping the tracker answered with.
         code, said = _ran(configuration, _Tracker(live), [])
         check(
