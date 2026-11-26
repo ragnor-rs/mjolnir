@@ -8660,7 +8660,8 @@ marker can reach:
 deploy:
     name:         "<the word a deploy of this target is asked for by>"
     not_live:     false
-    invoke:       command | dispatch | by_hand
+    invoke:       command | dispatch | by_hand | not_implemented
+    reason:       "<why nothing reaches this target yet, where the shape is `not_implemented`>"
     command:      "<the whole command, where the shape is `command`>"
     code_root:    "<a name § 1's `roots.code` carries — required where it carries several>"
     command_root: "<a name that root's own `command_roots` declares>"
@@ -8781,6 +8782,7 @@ table being the statement and the figures the measurement's.
 | `command` | runs it, in the root `command_root` names, with [each choice](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target) put in its place | `command`, and `command_root` where it is not the code root |
 | `dispatch` | asks [§ 29](#the-run-operations-and-what-each-absence-does) for one, against `ref`, sending `inputs` | `workflow`, `ref`, `inputs` |
 | `by_hand` | runs nothing, names the workflow, the ref and every input, and **reports no deploy made** | `workflow`, `ref`, `inputs` |
+| `not_implemented` | runs nothing, and **stops with the entry's `reason`** wherever the target is asked for | `reason`, and nothing beside its `name` |
 
 ⛔ **`by_hand` is a project's ruling about who may perform the act and never the port's absent
 case.** § 29 already states what a role does where `dispatch` is unavailable, and the words are the
@@ -8789,6 +8791,20 @@ a version for ever and so belongs to a person, and a role that dispatched it any
 overriding that project's own rule with a capability. ⚠️ **One target in the survey, and it is the
 most irreversible one in it**, which is the whole of the evidence and is stated rather than rounded
 up.
+
+⛔ **`not_implemented` is a target the project has named and nothing reaches yet**, and it is a
+shape rather than an omission because the two read differently to whoever asks: a target left out
+of the list answers a deploy of it as a name the project does not carry, and the person asking
+cannot tell a planned target from a misspelled one. ⛔ **The entry carries its `name`, `invoke` and
+a non-empty `reason`, and every other key is refused with its own name** — a command, a batch, an
+advance, a grouping and a liveness each describe how the target is reached, and a target nothing
+reaches has no answer to any of them, so a value written there would be a fact nothing reads.
+⚠️ **`not_live` included**, though every other shape requires it: whether a target is live is
+stated when it is implemented, which is the edit that replaces this shape with one of the other
+three. Asking for such a target — to deploy it, to read its batch, to advance its items — stops
+with the reason, and the reader lists every one among what is unavailable, so the target is named
+before anybody asks for it. ⚠️ **`reason` is read beside no other shape**, and is refused there by
+the rule below.
 
 ⛔ **`inputs` is the inputs this target *always* sends, and an input a run may choose is
 [`choices`](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target)' instead.** Measured on the one dispatching target, where the host's own default

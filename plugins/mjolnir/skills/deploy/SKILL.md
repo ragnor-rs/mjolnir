@@ -40,7 +40,10 @@ what this role does report is every value it could not establish, which is step 
 ## 2. Which target
 
 **Named on the invocation** — the argument is the target's `name`, and a name the facet does not
-carry is a stop listing the names it does.
+carry is a stop listing the names it does. ⛔ **A target the entry states as `not_implemented` is a
+stop too, with the entry's own reason**, which step 3's reader returns as its refusal — named and
+planned, by
+[`§ 33`](../../config/schema.md#the-three-shapes-a-target-is-reached-by), rather than misspelled.
 
 **Nothing named** — ⛔ **ask, with the targets as the options.** A project carrying one target still
 gets the question, because the ask in step 5 is about *this deploy* and a target chosen silently is
