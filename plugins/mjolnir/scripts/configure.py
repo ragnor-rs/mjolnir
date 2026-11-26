@@ -1920,9 +1920,10 @@ def _one_root(answers: dict, facts: dict) -> bool:
 def _decided(surface_text: str, facts: dict, answers: dict, path: str) -> str | None:
     """Why the answers already rule this key out, or `None` where it stands.
 
-    ⛔ Five readings, each about a block the answers **state**, and none about a
-    block they leave out: a key whose block nothing has addressed yet is still a
-    question, which is the line `questions` draws for an optional key too.
+    ⛔ Each reading is about what the answers **state**, or what the surface's own
+    default states for them -- never about a block they merely leave out: a key
+    whose block nothing has addressed yet is still a question, which is the line
+    `questions` draws for an optional key too.
 
     - **A key the surface shows relatively** (`role` under § 4.2's statuses,
       `on_fail` under § 5's predicates) is read at the path `ANCHORS` places it,
@@ -1936,7 +1937,8 @@ def _decided(surface_text: str, facts: dict, answers: dict, path: str) -> str | 
       per root, so the project-level question has nothing left to ask.
     - **A key every fence shows under one kind** stands only where the answers
       state that kind, and the answers state another -- or leave it to the
-      surface's own default, which is then the kind they state.
+      surface's own default, which is then the kind they state. A key marked
+      `# required` with no condition is never scoped this way.
 
     ⚠️ And a key `private.keys` names, whose value lives in § 28's source
     rather than here, plus the cross-facet cases `UNREACHABLE` carries.
@@ -1969,8 +1971,13 @@ def _decided(surface_text: str, facts: dict, answers: dict, path: str) -> str | 
     ):
         return f"every root in `roots.code` states its own `{head}` (§ 1)"
 
+    # ⛔ A key the surface marks `# required` with no condition is every kind's,
+    # whatever kind the fences happen to show it under: `host.repo` is shown only
+    # beside `kind: github`, and scoping it there would stop asking a project on
+    # another host for a key the write then refuses as missing.
     declared = scopes(surface_text).get(declared_at) or [None]
-    if None not in declared:
+    required = declared_at in {normalized(k) for k in facts["required"]}
+    if None not in declared and not required:
         stated = {
             on: _at(answers, on) if _at(answers, on) is not None
             else facts["defaults"].get(on)
@@ -3202,6 +3209,14 @@ def self_test() -> int:
     check("a kind left to the surface's default rules out another kind's keys",
           not under(defaulted, "day_log.destination.columns"),
           f"put {under(defaulted, 'day_log.destination')!r}")
+    # ⚠️ Every fence shows `host.repo` beside `kind: github`, and the surface
+    # marks it `# required` with no condition, so another host still owes it.
+    hosted = copy.deepcopy(adopter)
+    hosted["host"]["kind"] = "gitlab"
+    del hosted["host"]["repo"]
+    check("a key required of every kind is put whatever kind the fences show",
+          "host.repo" in standing(hosted),
+          f"put {under(standing(hosted), 'host')!r}")
     sheet = copy.deepcopy(adopter)
     sheet["day_log"]["destination"] = {"kind": "google-sheet"}
     check("and the kind that carries them still puts them",

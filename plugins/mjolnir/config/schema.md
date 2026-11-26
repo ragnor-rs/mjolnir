@@ -10546,11 +10546,13 @@ off the questions it is worst at answering, and the one asking would never know 
 | **A menu, never a free-text field, wherever this surface names a shared vocabulary** | The readiness predicates ([§ 5](#5-readiness-gate--an-ordered-predicate-list)), the `done:` checks ([§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)) and the day log's exclusions ([§ 9](#9-day-log)) are each a closed set this file states, so a value added there reaches the question without the step changing |
 
 ⛔ **A question the answers have already decided is not put again**, and the decision is read off
-a block they state, never off one they leave out. A key inside a list is answered by the list's
-entries, and by `[]` where there are none; a key under a facet answered `none` is unreachable; a key
-under a single value addresses a shape the project did not choose; a key only one kind's block
-carries stands only under that kind, the surface's default counting as the kind where the answers
-state none; a key every named root states for itself is not asked of the project; and a key
+what they state, or what this surface's own default states for them, never off a block they merely
+leave out. A key inside a list is answered by the list's entries, and by `[]` where there are none;
+a key under a facet answered `none` is unreachable; a key under a single value addresses a shape the
+project did not choose; a key only one kind's block carries stands only under that kind, the
+default counting as the kind where the answers state none, and a key marked `# required` with no
+condition being every kind's; a key every named root states for itself is not asked of the
+project; and a key
 [§ 28](#28-a-configured-value-a-repository-may-not-hold)'s list names has its value in the private
 layer. ⚠️ **What stands is narrowed and what is covered is not**: the step's own suite still holds
 every facet this surface states to a question, and a block nobody has addressed is still asked.
