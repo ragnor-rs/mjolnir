@@ -550,6 +550,11 @@ turn off are
   refusal already names what would unblock it. ⚠️ **That the guard reads the answer this pass writes
   is stated on the surface rather than hidden**: what it establishes is that an approval is
   recorded, which is the decidable end of it, and never that a person gave it.
+- ⚠️ **Where the project states `prompt`, that guard puts such a merge to the person at the
+  harness's own prompt instead of refusing it**
+  ([`§ 7`](../../config/schema.md#a-merge-put-to-the-person-at-the-prompt-and-the-record-it-leaves)),
+  and records the answer itself. ⛔ **Nothing this role does changes for it**: the ask above is still
+  made and recorded before the merge call, so the guard finds an approval and has nothing to put.
 
 ⛔ **The method is named in the merge call and read from the configuration, never inferred** —
 [`§ 2 → How a pull request lands`](../../config/schema.md#how-a-pull-request-lands), which states
