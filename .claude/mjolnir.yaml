@@ -154,6 +154,9 @@ host:
     - workflow: "Executed count"
       mirrors: "python3 plugins/mjolnir/scripts/executed.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Filing window"
+      mirrors: "python3 plugins/mjolnir/scripts/file_window.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ The one entry of this list whose own run reads the list. Its suite answers from planted
     # configurations rather than from this one, so the circularity is confined to a single
     # assertion — that every entry here states a trigger the consumer can parse, which is the
@@ -827,6 +830,11 @@ spend_guard:
   # No `resume_bar_usd`: a resume here pays to rewrite a prompt cache like any other, and there is
   # no spend beside it for the figure to be worth interrupting a person about. The key is
   # legitimately unset, and the arm that would read it says nothing.
+
+# No launcher is listed: the lists the guards read are empty here, so there is no command for one to
+# hide.
+command_position:
+  launchers: []
 
 live_guard:
   # ⛔ No command this repository runs opens a session anywhere else. Every check here is a suite

@@ -282,6 +282,10 @@ ANSWERED_BY: dict[str, Answer] = {
     "host.landing.delete_branch": ask(
         "Who deletes the branch once a change has landed?",
     ),
+    "host.landing.approval_covers": ask(
+        "Does a merge approval cover one commit only, or survive a push that leaves "
+        "the change's content the same?",
+    ),
     "host.checks.workflow": detect(
         HOST_CLIENT,
         "the name each of the host's own workflow definitions states, read out of "
@@ -382,6 +386,14 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "tracker.transitions.resolve": ask(
         "How is a transition resolved -- by the status it reaches, or by its own id?",
+    ),
+    "tracker.create_fields.field": ask(
+        "Which fields does this tracker refuse to create an item without, beyond "
+        "its project, type, title and body?",
+    ),
+    "tracker.create_fields.value": ask(
+        "What value does every filing send in that field, where one value suits "
+        "them all?",
     ),
     "tracker.policy.forbid_on_item": ask(
         "Which classes of content may not be written onto an item here?",
@@ -540,7 +552,9 @@ ANSWERED_BY: dict[str, Answer] = {
     "writer": ask(
         "Who is allowed to move an item into this status? ⛔ The writer question "
         "again, and the reason § 4.2 gives for it: nothing in any tracker records "
-        "who may set a status.",
+        "who may set a status. ⚠️ Where it is a different party for a different "
+        "class of item, the status states `writers` in place of this key: each "
+        "party with the paths of its class, and at most one taking the rest.",
     ),
     "readiness": ask(
         "Which of the shared predicates gate an item into committed work here? "
@@ -578,6 +592,12 @@ ANSWERED_BY: dict[str, Answer] = {
         "and no project states it: a role writes a record under one of those "
         "names, and a project that could add a name would be writing a record no "
         "guard resolves",
+    ),
+
+    "recorded_answer.verdict": skip(
+        "the verdicts a merge answer is recorded under are § 7's own closed list "
+        "and no project states them: the guard allows one of them, and a project "
+        "that could add a word would be adding one that holds every merge",
     ),
 
     # --- § 6. Commit behaviour ---------------------------------------------
@@ -732,6 +752,14 @@ ANSWERED_BY: dict[str, Answer] = {
         "What brings a new tree up and takes it down -- the project's own setup, "
         "named rather than described?",
     ),
+    "branch_model.teardown": ask(
+        "Which command stops what a tree started, before that tree is removed? "
+        "Unstated, nothing is run.",
+    ),
+    "branch_model.resource_up": ask(
+        "Which command prints what a tree started that is still up, and nothing where "
+        "nothing is? Unstated, no removal asks.",
+    ),
     "branch_model.regenerable": ask(
         "Which ignored paths does a rebuild write again? ⚠️ A new tree carries "
         "none of them, so they are read out before any removal.",
@@ -746,11 +774,37 @@ ANSWERED_BY: dict[str, Answer] = {
         "Is a place held by a tree, or by one call?",
     ),
     "branch_model.exclusive_resources.claimed_by": ask(
-        "Which calls claim a place on it?",
+        "Which commands claim a place on it -- each a command, and a pattern its "
+        "arguments carry where the command alone does not decide?",
+    ),
+    "branch_model.exclusive_resources.never_claims": ask(
+        "Which forms of those commands claim nothing? ⚠️ Unstated, every call one of "
+        "them names does.",
     ),
     "branch_model.exclusive_resources.probe": ask(
         "Can the resource be asked how many are held? ⚠️ A resource that cannot "
         "is not a resource whose count is zero.",
+    ),
+    "branch_model.exclusive_resources.grace": ask(
+        "How many seconds after a launch does the resource's own count include it? ⚠️ "
+        "Unstated, every live lease is added to that count.",
+    ),
+    "branch_model.exclusive_resources.wait_up_to": ask(
+        "How many seconds may a role wait for a place that is not free? ⚠️ Unstated, a "
+        "call over the cap is refused and nothing waits.",
+    ),
+    "branch_model.exclusive_resources.probe_timeout": ask(
+        "How many seconds may asking the resource take?",
+    ),
+    "branch_model.exclusive_resources.background_end": ask(
+        "What shows that work put in the background has ended -- its process, a command "
+        "of the project's own, or only its place expiring?",
+    ),
+    "branch_model.exclusive_resources.background_probe": ask(
+        "Which command prints `running` or `ended` for one backgrounded call's work?",
+    ),
+    "branch_model.exclusive_resources.background_grace": ask(
+        "How many seconds after a launch is that command's answer believed?",
     ),
     "branch_model.exclusive_resources.ttl": ask(
         "How long does a place live before it is handed back? ⚠️ A long value is "
@@ -779,7 +833,8 @@ ANSWERED_BY: dict[str, Answer] = {
     "ordering.record.dir": ask(
         "Which directory does the baseline a pass measures drift against sit in — "
         "and the document with it, where the record is one? ⚠️ Outside every "
-        "tree, or a teardown takes the plan for work nobody has started.",
+        "tree, or a teardown takes the plan for work nobody has started. ⛔ Not a "
+        "folder the agent harness derived from a checkout's path (§ 40).",
     ),
     "ordering.record.document": ask(
         "And which document inside it?",
@@ -890,6 +945,18 @@ ANSWERED_BY: dict[str, Answer] = {
     "spend_guard.resume_bar_usd": ask(
         "Above which figure does a resumed run stop to ask again?",
     ),
+    "command_position.launchers.command": ask(
+        "Which commands here run what they are handed as a command?",
+    ),
+    "command_position.launchers.string_flags": ask(
+        "Which flags of that command take a command text as their value?",
+    ),
+    "command_position.launchers.valued_flags": ask(
+        "Which flags of that command take some other separate word as their value?",
+    ),
+    "command_position.launchers.operands": ask(
+        "Are that command's plain words a command, a command text, or neither?",
+    ),
 
     # --- § 20. The sections a body must carry ------------------------------
     "body_sections.heading": ask(
@@ -966,7 +1033,8 @@ ANSWERED_BY: dict[str, Answer] = {
         "states, the harness's own, or nowhere?",
     ),
     "memory.store": ask(
-        "Which directory holds it?",
+        "Which directory holds it? ⛔ Not a folder the agent harness derived from "
+        "a checkout's path (§ 40).",
     ),
     "memory.index": ask(
         "And which file indexes it?",
@@ -1106,6 +1174,22 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "deploy.inputs": ask(
         "Which inputs?",
+    ),
+    "deploy.choices.name": ask(
+        "Which inputs may a run of this target choose for itself? ⚠️ None is an "
+        "answer: the key is then omitted (§ 33).",
+    ),
+    "deploy.choices.values": ask(
+        "Which values may that input take?",
+    ),
+    "deploy.choices.default": ask(
+        "Which of them does a run take when it chooses nothing?",
+    ),
+    "deploy.choices.joined_by": ask(
+        "May a run choose several of them at once, and what joins them?",
+    ),
+    "deploy.choices.warnings": ask(
+        "Is there a value a person should be warned about before they approve it?",
     ),
     "deploy.requires": ask(
         "Which preconditions does it need that it does not check itself?",
@@ -1287,6 +1371,28 @@ ANSWERED_BY: dict[str, Answer] = {
         "other relative link is held to a file the index carries and a heading "
         "that file has. Omit the key where there is none: omitted, nothing is "
         "exempt (§ 38).",
+    ),
+    "documents.box_diagrams.held": ask(
+        "Should diagrams drawn in box characters be held to their own alignment "
+        "-- every corner, tee and cross meeting a line that reaches back, columns "
+        "counted by display width? ⚠️ This block may be left out: leaving it out "
+        "and answering no are the same answer, and either holds no diagram "
+        "(§ 38).",
+    ),
+    "documents.box_diagrams.exempt.document": ask(
+        "Is any diagram drawn this way on purpose -- reproducing a terminal's own "
+        "output, say? Which document is it in? ⛔ One the graph declares (§ 38).",
+    ),
+    "documents.box_diagrams.exempt.block": ask(
+        "Which block is it, as an expression its own text matches? ⛔ Never a line "
+        "number, which every edit above the block moves; and an expression that "
+        "matches no block is a red, since an exemption outliving its diagram "
+        "covers whatever is drawn there next (§ 38).",
+    ),
+    "documents.box_diagrams.exempt.reason": ask(
+        "And why is it exempt? ⛔ Stated, because an exemption whose reason nobody "
+        "wrote down cannot be told from a misaligned diagram somebody silenced "
+        "(§ 38).",
     ),
 
     # --- § 39. The specification corpus, and which copy of it governs -------
@@ -1625,6 +1731,12 @@ def questions(
             ),
             "default": facts["defaults"].get(path, None),
             "has_default": path in facts["defaults"],
+            # § 40's directories: an offer and not a default, so silence does not take it.
+            "offered": (
+                config.offered_directory(
+                    path, detected.get("host.repo") or _at(answers or {}, "host.repo"))
+                if path in config.OFFERED_LEAF else None
+            ),
             "required": path in {normalized(k) for k in facts["required"]},
             "required_when": condition,
             "private": path in {normalized(k) for k in facts["private"]},
@@ -2742,6 +2854,17 @@ def self_test() -> int:
           asked["context_guard.reread"]["has_default"]
           and asked["context_guard.reread"]["default"] == "refuse",
           f"carried {asked['context_guard.reread']!r}")
+    offered = {one["key"]: one["offered"] for one in questions(
+        surface_text, detected={"host.repo": "an-owner/a-name"})}
+    check("each directory that outlives a checkout is offered one naming no account (§ 40)",
+          all(str(offered[key]).startswith("~/") and "an-owner/a-name" in offered[key]
+              and not config.derived_by_the_harness(offered[key])
+              for key, _on, _words in config.OUTLIVING_DIRECTORIES)
+          and len({offered[key] for key in config.OFFERED_LEAF}) == len(config.OFFERED_LEAF),
+          f"offered {offered!r}")
+    check("and no other key is offered one",
+          {key for key, value in offered.items() if value} == set(config.OFFERED_LEAF),
+          f"offered {offered!r}")
     check("the first questions are about where the code is",
           questions(surface_text)[0]["key"].startswith("roots."),
           f"opened with {questions(surface_text)[0]['key']!r}")

@@ -48,6 +48,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import unicodedata
 from urllib.parse import unquote
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -349,8 +350,21 @@ class Subject:
         # ⛔ Absent is `[]`: omitting the key exempts nothing, which is the
         # strict direction and the only one a default may take here (§ 38).
         self.exempt = list(facet.get("exempt_targets") or ())
+        # ⛔ `None` where the project states no block, kept apart from a block
+        # reading `held: false` only so a run can say which; both hold nothing.
+        self.box_diagrams = (
+            None if facet.get("box_diagrams") is None
+            else {
+                "held": bool(facet["box_diagrams"].get("held")),
+                "exempt": [dict(e) for e in facet["box_diagrams"].get("exempt") or ()],
+            }
+        )
         self.tracked = sorted(tracked)
         self.text = dict(text)
+
+    @property
+    def diagrams_held(self) -> bool:
+        return bool(self.box_diagrams and self.box_diagrams["held"])
 
     @property
     def set_now(self) -> list:
@@ -438,6 +452,13 @@ class Subject:
         clone.forbidden = [dict(entry) for entry in self.forbidden]
         clone.quoted = [dict(entry) for entry in self.quoted]
         clone.exempt = list(self.exempt)
+        clone.box_diagrams = (
+            None if self.box_diagrams is None
+            else {
+                "held": self.box_diagrams["held"],
+                "exempt": [dict(e) for e in self.box_diagrams["exempt"]],
+            }
+        )
         clone.tracked, clone.text = list(self.tracked), dict(self.text)
         return clone
 
@@ -869,6 +890,216 @@ def check_a_quoted_sentence_is_still_in_its_document(subject: Subject) -> list:
     return problems
 
 
+# --- box diagrams ------------------------------------------------------------
+#
+# ⛔ The arms of a box-drawing character are read off its **Unicode name** and
+# never tabulated: the block names every character by the directions it reaches
+# -- `BOX DRAWINGS LIGHT DOWN AND RIGHT`, `... VERTICAL AND HORIZONTAL`,
+# `... DOWN SINGLE AND RIGHT DOUBLE` -- so the light, heavy, double, arc and
+# mixed forms are one rule, and a table here would be a second statement of the
+# block free to disagree with it.
+
+ARM_WORDS = {
+    "UP": {"up"}, "DOWN": {"down"}, "LEFT": {"left"}, "RIGHT": {"right"},
+    "VERTICAL": {"up", "down"}, "HORIZONTAL": {"left", "right"},
+}
+OPPOSITE = {"up": "down", "down": "up", "left": "right", "right": "left"}
+STEP = {"up": (-1, 0), "down": (1, 0), "left": (0, -1), "right": (0, 1)}
+
+
+def arms(char: str) -> frozenset:
+    """The directions a character reaches, empty for anything that is not a line.
+
+    ⚠️ An arrowhead is outside the block and carries no arm, so it reads as text:
+    a tip touching a junction and a tail leaving one are each drawn correctly,
+    and no direction an arrowhead could be given would tell them apart.
+    """
+    if not "\u2500" <= char <= "\u257f":
+        return frozenset()
+    found = set()
+    for word in unicodedata.name(char, "").split():
+        found |= ARM_WORDS.get(word, set())
+    return frozenset(found)
+
+
+def is_junction(char: str) -> bool:
+    """A corner, a tee or a cross: a box character reaching both ways at once.
+
+    ⛔ **Only these are held.** A straight run and a half line may end where the
+    drawing does -- a tree listing's `├── name` ends every horizontal run in a
+    space -- while a corner's arm meeting nothing is the misalignment itself.
+    """
+    found = arms(char)
+    return bool(found & {"up", "down"}) and bool(found & {"left", "right"})
+
+
+def width(char: str) -> int:
+    """A character's display width: two where East Asian wide, none where it marks.
+
+    ⛔ **Display width and not code points**, which is the whole of why a box
+    that looks aligned in its author's editor is not: a wide character takes two
+    columns, so a row carrying one is one column longer on screen per character
+    than its code point count says.
+
+    ⚠️ An ambiguous-width character -- `→`, `▶`, the box characters themselves --
+    counts one, as a terminal outside an East Asian locale draws it.
+    """
+    if unicodedata.combining(char) or unicodedata.category(char) in ("Mn", "Me", "Cf"):
+        return 0
+    if unicodedata.east_asian_width(char) in ("W", "F"):
+        return 2
+    return 1
+
+
+def grid(line: str) -> dict:
+    """Each display column of a line, to the character drawn there.
+
+    The second column of a wide character maps to `""`, which carries no arm: a
+    junction whose arm lands on half of a wide character meets nothing.
+    """
+    cells, column = {}, 0
+    for char in line:
+        if char == "\t":
+            column += 8 - column % 8
+            continue
+        size = width(char)
+        if size == 0:
+            continue
+        cells[column] = char
+        for extra in range(1, size):
+            cells[column + extra] = ""
+        column += size
+    return cells
+
+
+def diagram_blocks(text: str) -> list:
+    """Every fenced block carrying a box-drawing character, as [(number, line)].
+
+    ⛔ **Fenced, and carrying one at all**: a block drawn in ASCII is not read,
+    and neither is a box character in running prose -- each is outside what the
+    rule is about rather than a diagram that passed.
+
+    ⛔ **The blocks are the runs of `fences`'s own lines**, never a second scan:
+    which delimiter closes which is that function's rule, and a copy of it here
+    would be free to disagree about a nested example. Two blocks are told apart
+    by the delimiter lines between them, which `fences` leaves out.
+    """
+    inside, _open = fences(text)
+    lines = text.splitlines()
+    blocks, current = [], []
+    for number in sorted(inside):
+        if current and number != current[-1][0] + 1:
+            blocks.append(current)
+            current = []
+        current.append((number, lines[number - 1]))
+    if current:
+        blocks.append(current)
+    return [
+        block for block in blocks
+        if any(arms(char) for _n, line in block for char in line)
+    ]
+
+
+def misalignments(block: list) -> list:
+    """Each junction arm in one block that meets no opposite arm, as (line, column, arm, met)."""
+    rows = [grid(line) for _n, line in block]
+    found = []
+    for index, cells in enumerate(rows):
+        for column, char in sorted(cells.items()):
+            if not char or not is_junction(char):
+                continue
+            for arm in sorted(arms(char)):
+                d_row, d_col = STEP[arm]
+                at = index + d_row
+                met = rows[at].get(column + d_col, " ") if 0 <= at < len(rows) else None
+                if not meets_nothing(met, arm):
+                    continue
+                found.append((block[index][0], column + 1, char, arm, met))
+    return found
+
+
+def meets_nothing(met, arm: str) -> bool:
+    """Whether what a junction's arm lands on leaves that arm drawn to nothing.
+
+    ⛔ **Text is a label and not a defect.** ⚠️ The measured case is `tree`'s own
+    output, which puts each nested `└` under the first letter of its parent's
+    name and the first `├` under the root's: read strictly, every listing it
+    prints is red. What is a misalignment is the arm landing on a space, past
+    the block's edge, on either column of a wide character -- where a box drawn
+    by code point count puts its corner -- or on a line that does not reach back.
+    """
+    if met is None or met == "" or met == " ":
+        return True
+    # ⛔ **Either column of a wide character, and not only its second.** ⚠️
+    # Measured on this check's own plant: a box drawn by code point count around
+    # two wide characters puts its corner over the *first* column of the second
+    # one, which the text arm below then read as a label -- so the one defect
+    # display width exists to find went green. A listing that names a file in
+    # wide characters and draws a line to it is the cost, and `exempt` is where
+    # such a block is named.
+    if width(met) == 2:
+        return True
+    reached = arms(met)
+    if reached:
+        return OPPOSITE[arm] not in reached
+    return False
+
+
+def check_a_box_diagram_keeps_its_edges(subject: Subject) -> list:
+    """Every junction of a box diagram meeting what it was drawn to, where held.
+
+    ⛔ Computed: the defect is an arm meeting nothing, which has no name to
+    forbid. Columns are display columns, and a red names the junction's line.
+    """
+    if not subject.diagrams_held:
+        return []
+    problems = []
+    exemptions = []
+    for index, entry in enumerate(subject.box_diagrams["exempt"]):
+        try:
+            exemptions.append((index, entry, re.compile(entry.get("block") or "")))
+        except re.error as exc:
+            problems.append(
+                f"documents.box_diagrams.exempt[{index}]: {entry.get('block')!r} is not "
+                f"a usable expression ({exc}), so this exemption could not be evaluated. "
+                "An exemption that does not compile is never *matches nothing*."
+            )
+    used = set()
+    for path in subject.set_now:
+        text = subject.read(path)
+        if isinstance(text, Exception):
+            continue
+        for block in diagram_blocks(text):
+            body = "\n".join(line for _n, line in block)
+            exempted = [
+                index for index, entry, compiled in exemptions
+                if entry.get("document") == path and compiled.search(body)
+            ]
+            if exempted:
+                used.update(exempted)
+                continue
+            for number, column, char, arm, met in misalignments(block):
+                what = (
+                    "the edge of the block" if met is None
+                    else "half of a wide character" if met == ""
+                    else f"{met!r}"
+                )
+                problems.append(
+                    f"{path}:{number}: the {char!r} at display column {column} reaches "
+                    f"{arm} and meets {what}, which carries no arm back -- an edge or "
+                    "corner of this diagram does not line up."
+                )
+    for index, entry, _compiled in exemptions:
+        if index not in used:
+            problems.append(
+                f"documents.box_diagrams.exempt[{index}]: matches no diagram in "
+                f"{entry.get('document')!r}. An exemption that outlived its diagram "
+                "silently covers whatever is drawn there next -- remove it, or correct "
+                "the expression."
+            )
+    return problems
+
+
 CHECKS = [
     ("every governed document has a row", COMPUTED,
      check_every_governed_document_has_a_row),
@@ -883,6 +1114,7 @@ CHECKS = [
     ("a table keeps its shape", COMPUTED, check_a_table_keeps_its_shape),
     ("a table row keeps its table", COMPUTED, check_a_table_row_keeps_its_table),
     ("no document leaves a fence open", COMPUTED, check_no_document_leaves_a_fence_open),
+    ("a box diagram keeps its edges", COMPUTED, check_a_box_diagram_keeps_its_edges),
     ("a quoted sentence is still in its document", QUOTING,
      check_a_quoted_sentence_is_still_in_its_document),
 ]
@@ -1170,6 +1402,86 @@ def _plant_a_quoted_document_that_cannot_be_read(subject: Subject) -> Subject:
     return subject
 
 
+def _diagram(subject: Subject, body: str, held=True, exempt=None) -> Subject:
+    """The fixture with one fenced diagram appended and the check stated as asked.
+
+    ⛔ `held=None` leaves the block unstated, which is the configuration every
+    project written before this key is in.
+    """
+    subject.box_diagrams = (
+        None if held is None else {"held": held, "exempt": list(exempt or ())}
+    )
+    subject.text["docs/a-document.md"] += "\n```text\n" + body + "\n```\n"
+    return subject
+
+
+A_BOX_ONE_COLUMN_OFF = "┌────┐\n│ ab  │\n└────┘"
+
+
+def _plant_a_box_edge_one_column_off(subject: Subject) -> Subject:
+    """The defect itself: a right edge one column past the corners above and below."""
+    return _diagram(subject, A_BOX_ONE_COLUMN_OFF)
+
+
+def _plant_a_run_that_stops_short_of_its_corner(subject: Subject) -> Subject:
+    """The horizontal arm: a run ending a column before the corner it was drawn to."""
+    return _diagram(subject, "┌─── ┐\n│    │\n└────┘")
+
+
+def _plant_a_box_drawn_by_code_point_count(subject: Subject) -> Subject:
+    """A box whose rows agree by code points and not on screen.
+
+    ⛔ **Reddens only by display width**: every row is six code points, so a
+    count by code point puts the right edge under the corner and reports green.
+    On screen the two wide characters push it two columns out.
+    """
+    return _diagram(subject, "┌────┐\n│漢字  │\n└────┘")
+
+
+def _plant_a_corner_on_half_a_wide_character(subject: Subject) -> Subject:
+    """A corner's arm landing on the second column of a wide character.
+
+    ⛔ Apart from the space case: the narrower box drawn by code points puts its
+    corner over half of `字`, which is not text a line was drawn to.
+    """
+    return _diagram(subject, "┌──┐\n│漢字│\n└──┘")
+
+
+def _plant_a_double_box_one_column_short(subject: Subject) -> Subject:
+    """A double-line box, read by the same name rule as a light one."""
+    return _diagram(subject, "╔═══╗\n║   ║\n╚══╝")
+
+
+def _plant_a_tee_whose_arm_runs_off_the_block(subject: Subject) -> Subject:
+    """A tee on a block's last line, its arm reaching past the fence."""
+    return _diagram(subject, "──┬──")
+
+
+def _plant_a_junction_meeting_a_line_that_does_not_reach_back(subject: Subject) -> Subject:
+    """A corner over a horizontal run, which carries no arm up to it."""
+    return _diagram(subject, "┌──\n───")
+
+
+def _plant_an_exemption_matching_no_block(subject: Subject) -> Subject:
+    return _diagram(subject, "┌──┐\n│  │\n└──┘", exempt=[
+        {"document": "docs/a-document.md", "block": "a block nobody drew",
+         "reason": "it was drawn once"},
+    ])
+
+
+def _plant_an_exemption_that_cannot_compile(subject: Subject) -> Subject:
+    return _diagram(subject, "┌──┐\n│  │\n└──┘", exempt=[
+        {"document": "docs/a-document.md", "block": "(ab", "reason": "a typo"},
+    ])
+
+
+def _plant_an_exemption_naming_another_document(subject: Subject) -> Subject:
+    """An exemption whose expression matches, written against the wrong document."""
+    return _diagram(subject, A_BOX_ONE_COLUMN_OFF, exempt=[
+        {"document": "README.md", "block": "ab", "reason": "drawn this way on purpose"},
+    ])
+
+
 VIOLATIONS = [
     ("every governed document has a row", "a governed document no row declares",
      _plant_a_governed_document_with_no_row),
@@ -1224,6 +1536,26 @@ VIOLATIONS = [
      _plant_a_quoted_sentence_reworded_away),
     ("every governed document has a row",
      "one document's row gone while its siblings keep theirs", _drop_a_row),
+    ("a box diagram keeps its edges", "a box edge one column off its corners",
+     _plant_a_box_edge_one_column_off),
+    ("a box diagram keeps its edges", "a run stopping short of its corner",
+     _plant_a_run_that_stops_short_of_its_corner),
+    ("a box diagram keeps its edges", "a box aligned by code points and not on screen",
+     _plant_a_box_drawn_by_code_point_count),
+    ("a box diagram keeps its edges", "a corner over half of a wide character",
+     _plant_a_corner_on_half_a_wide_character),
+    ("a box diagram keeps its edges", "a double-line box one column short",
+     _plant_a_double_box_one_column_short),
+    ("a box diagram keeps its edges", "a tee whose arm runs off the block",
+     _plant_a_tee_whose_arm_runs_off_the_block),
+    ("a box diagram keeps its edges", "a corner over a line that does not reach back",
+     _plant_a_junction_meeting_a_line_that_does_not_reach_back),
+    ("a box diagram keeps its edges", "an exemption matching no block",
+     _plant_an_exemption_matching_no_block),
+    ("a box diagram keeps its edges", "an exemption that cannot be evaluated",
+     _plant_an_exemption_that_cannot_compile),
+    ("a box diagram keeps its edges", "an exemption written against another document",
+     _plant_an_exemption_naming_another_document),
 ]
 
 
@@ -1501,6 +1833,49 @@ def _plant_links_that_are_shown_rather_than_followed(subject: Subject) -> Subjec
     return subject
 
 
+def _plant_a_box_aligned_by_display_width(subject: Subject) -> Subject:
+    """Two wide characters in a box four columns wide, which is aligned on screen."""
+    return _diagram(subject, "┌────┐\n│漢字│\n└────┘")
+
+
+def _plant_a_box_carrying_a_combining_mark(subject: Subject) -> Subject:
+    """A combining mark takes no column, so the edge after it is where it looks."""
+    return _diagram(subject, "┌──┐\n│e\u0301 │\n└──┘")
+
+
+def _plant_a_box_carrying_a_tab(subject: Subject) -> Subject:
+    """A tab advances to the next multiple of eight, as a terminal draws it."""
+    return _diagram(subject, "┌───────┐\n│\t│\n└───────┘")
+
+
+def _plant_a_tree_listing(subject: Subject) -> Subject:
+    """`tree`'s own shape: a nested `└` under its parent's first letter, runs ending in space."""
+    return _diagram(subject, ".\n├── a\n│   └── b\n└── c")
+
+
+def _plant_a_box_character_in_running_prose(subject: Subject) -> Subject:
+    """A corner written in a sentence is not a diagram."""
+    subject.box_diagrams = {"held": True, "exempt": []}
+    subject.text["docs/a-document.md"] += "\nA corner ┌ written in a sentence.\n"
+    return subject
+
+
+def _plant_an_exempted_misaligned_block(subject: Subject) -> Subject:
+    return _diagram(subject, A_BOX_ONE_COLUMN_OFF, exempt=[
+        {"document": "docs/a-document.md", "block": "│ ab",
+         "reason": "drawn this way on purpose"},
+    ])
+
+
+def _plant_a_misaligned_box_where_the_check_is_off(subject: Subject) -> Subject:
+    return _diagram(subject, A_BOX_ONE_COLUMN_OFF, held=False)
+
+
+def _plant_a_misaligned_box_where_nothing_is_stated(subject: Subject) -> Subject:
+    """A project written before this key, which behaves as it did."""
+    return _diagram(subject, A_BOX_ONE_COLUMN_OFF, held=None)
+
+
 EXEMPTIONS = [
     ("a path that is not a governed document", _plant_an_ungoverned_path_named),
     ("a fragment the target carries, in another document and in this one",
@@ -1547,6 +1922,18 @@ EXEMPTIONS = [
     ("a cell carrying an escaped pipe", _plant_a_cell_carrying_an_escaped_pipe),
     ("a cell whose delimiter follows a literal backslash",
      _plant_a_cell_after_a_literal_backslash),
+    ("a box aligned by display width around wide characters",
+     _plant_a_box_aligned_by_display_width),
+    ("a box carrying a combining mark", _plant_a_box_carrying_a_combining_mark),
+    ("a box carrying a tab", _plant_a_box_carrying_a_tab),
+    ("a tree listing, its arms meeting labels and its runs ending in space",
+     _plant_a_tree_listing),
+    ("a box character in running prose", _plant_a_box_character_in_running_prose),
+    ("a misaligned block a row of `exempt` names", _plant_an_exempted_misaligned_block),
+    ("a misaligned box where `held` is false",
+     _plant_a_misaligned_box_where_the_check_is_off),
+    ("a misaligned box where no `box_diagrams` block is stated",
+     _plant_a_misaligned_box_where_nothing_is_stated),
 ]
 
 
@@ -1881,7 +2268,12 @@ def main(argv: list) -> int:
         "every relative link reaches a file and a heading the index holds"
         + (f" or {len(subject.exempt)} exempt glob(s) cover" if subject.exempt else ""),
         "no forbidden name appears",
-        "and every one keeps its own blocks",
+        "and every one keeps its own blocks"
+        + (
+            ", its box diagrams' edges included" if subject.diagrams_held
+            else " -- no box diagram is held, `documents.box_diagrams` "
+            + ("stating `held: false`" if subject.box_diagrams else "being unstated")
+        ),
     ]
     if subject.enforced:
         held.insert(1, (

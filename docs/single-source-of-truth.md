@@ -1120,7 +1120,11 @@ none of it. For the board behind `kind: github-projects` that is every list read
 rather than returned short — the measured ceiling being a first page that reads as a complete
 answer — every id resolved from the board by the name a configuration gives, every value shaped by
 its own column's type, and every operation that writes reading the item first, so that a number
-naming a pull request is refused *before* the write rather than after it.
+naming a pull request is refused *before* the write rather than after it. Where a milestone is the
+grouping it is also that every item in it is read, that one off the board stays in the set and is
+named, and that what the milestone cannot hold is reported — the omissions being
+[schema § 4.8's](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)
+to list. The matching of a value to a milestone is one module, read by both kinds on that host.
 
 For the cards behind `kind: trello` it is a different list, because the tracker is: a state resolved
 to **one** list by name, with an ambiguous name and a name the board does not have both refused
@@ -1154,7 +1158,9 @@ document shape this tracker takes and read back from it, with the shapes that do
 in the module and asserted to come back as the text they were written as; a search bounded by the
 project, which is the host's own requirement rather than a convenience, and every term quoted into
 its operand so that no caller can narrow the states a duplicate check covers; and a field addressed
-by **name** and resolved against the site's own catalogue, every custom id being site-specific.
+by **name** and resolved against the site's own catalogue, every custom id being site-specific;
+a list written by the element type the catalogue states, replacing what was there and read back;
+and the fields a filing owes sent in the create itself, one nobody supplied refused before it.
 
 ⛔ **Two of this one's properties are about where a guard sits rather than what it says**, and both
 came out of the suite rather than out of review — which is
@@ -1271,7 +1277,8 @@ The rule is
 and ⛔ this document states none of it. What the suite holds: that a second session starting an
 item already claimed is refused; that the refusal names who holds it and since when, or names
 whichever half it could not establish; that a refused start leaves no ref, no branch and no tree;
-that a released claim is takeable again and a release is re-runnable; that a claim with no work
+that a released claim is takeable again and a release is re-runnable; that a removal git refuses
+is reported as not removed, beside what became of the ref; that a claim with no work
 and no occupied tree reads as an *orphaned candidate* carrying both readings rather than being
 broken; that a ref younger than the window a start takes between publishing its ref and cutting its
 tree reads *provisional* instead, with re-reading rather than asking as its remedy; and that a root
@@ -1297,6 +1304,7 @@ with no remote claims locally and says so.
 | 15 | A merged pull request that **predates the ref** does not land it, and either instant unreadable makes the arm decline | the comparison, with the measured timestamps | computed |
 | 16 | A ref **gone between the listing and the read** holds the item against nobody, and the report says it is gone rather than printing `free` under a `taken` verdict | one reading, constructed | computed |
 | 17 | The **window in front of the orphaned reading**, held on both sides of its bound and on the half it declines on — planted by setting the bound to zero, which is the carrier as the defect was measured on it | two clones, with both instants stated | computed |
+| 18 | A **resource check** that names something, fails, does not finish in time or is left no time keeps the tree and the claim whole, `--force` included; one naming nothing lets the removal through; it is asked after a teardown and read by the release itself | two clones, the check answered each way | computed |
 
 ⚠️ **Check 0 is run once per arm, and that is the finding this suite was written by rather than
 for.** The surface states two arms because the first draft of the script shipped only the second —
@@ -1518,6 +1526,8 @@ it on the event that opens a session.
 | 26 | An entry naming nothing exempts nothing; an entry anchored at the root matches there and nowhere else | the matching rule alone | computed |
 | 27 | A tree whose contents could not be read is unestablished, never empty; an unreadable directory is not all-symlinks | a directory with its mode taken away | computed |
 | 28 | A worktree registered **inside** a work tree is outside the scope, being a level deeper than the leaf, while the work tree itself stays this project's — and that work tree is then kept, with the nested path named as a reader would want it | a real worktree cut inside a work tree, in a project whose tree directory is inside its checkout | computed |
+| 29 | A stated teardown runs before the removal and is told the tree; one that failed, outlasted what is left of the bound or had too little left to start keeps the tree and reaches the person; a kept tree is never torn down | one landed tree, the clock stated | computed |
+| 30 | A landed tree whose resource check names something is kept and the name reported; one whose check failed, or that the bound left no time for, is kept and reported unanswered; one whose check names nothing is removed; the event hands the sweep the configured check | one landed tree, its check answered each way, and the arguments captured at the boundary | computed |
 
 ⚠️ **Check 16 is the one that looks like bookkeeping and is not**, for the reason § 10 gives about
 a carrier the harness kills: what the check holds is that the timeout covers the budget **plus**
@@ -2000,10 +2010,10 @@ words: the arms surface, and nothing here clears.
 redden — one per hidden form, one per imperative pattern, one per position an address can open at,
 one per credential shape, one per hook decision — and an exemption plant per excluded case, each of
 which must stay green: an emoji's variation selector, a collapsed block a person can open, a commit
-hash, a branch name, a variable reference, a placeholder, a redaction, each of the environment names
-whose anchors were added after a false report, and one sentence quoted out of every document whose
-ordinary prose a false report claimed. The run prints what it planted; no count of either is written
-down here.
+hash, a branch name, a variable reference, a field path, a placeholder, a redaction, each of the
+environment names whose anchors were added after a false report, and one sentence quoted out of
+every document whose ordinary prose a false report claimed. The run prints what it planted; no
+count of either is written down here.
 
 ⚠️ **Every plant is assembled from pieces at run time**, and that is not stylistic. A literal of a
 credential shape written into the file would be a secret committed to a repository by the check that
@@ -2085,6 +2095,11 @@ What the corpus is scoped to, and what that scope costs, is the next subsection'
 - **A payload that is prose.** Reworded, translated, split across comments, or phrased as a
   question, an imperative passes the quoting half. This is the limit the rule anticipates by putting
   the obligation on *never obeying* rather than on detecting, and a green run licenses nothing.
+- **A comment the tracker withholds from the account reading it.** The read is held to what the host
+  says it has, so a comment restricted to other people is in neither number and nothing reports it.
+- **What a deploy's go showed, and whether the command it printed is the one that ran.** The reader
+  resolves a target's choices and prints the command, the values and the warnings. Showing them and
+  running that command are the deploying role's, and no check reads either.
 - **Prose outside the plugin, this repository's own included.** The corpus pass reads the markdown
   that ships beside the script — the surface and the skills — and nothing else. ⛔ An adopter's
   documents are deliberately out of scope: a shipped check whose green depends on the repository it
@@ -2105,6 +2120,14 @@ What the corpus is scoped to, and what that scope costs, is the next subsection'
   The `write` arm reads the text a role is about to write and the hook reads a `Bash` command. A
   file written into a directory something else synchronises, a credential passed to a tool that is
   not `Bash`, or a value already in the clipboard are all outside what either can see.
+- **A credential shaped exactly like a field path.** A leading dot and segments of letters and
+  underscores only is what a query's filter writes, so a passphrase of dotted words with a dot in
+  front passes under any key. A digit, a hyphen, an absent leading dot or punctuation a filter does
+  not put after a path is enough to be refused. A path reaching a field whose name carries a digit
+  is therefore still read as a value.
+- **Which way every call goes.** The direction a refusal names is read from the host client's own
+  verbs and methods and from `curl`'s flags. Another tool, an unlisted verb, a query held in a file
+  and a call inside an expansion are reported with no direction rather than a guessed one.
 - **A body this procedure assembles in flight.** The hook reads the command and the files it names
   by a body-file flag, bounded at a size so a hook cannot be stalled. A body piped in from another
   process, or assembled by a shell expansion the hook would have to execute to see, is not read —
@@ -2525,9 +2548,9 @@ which of the three designs was the one that worked.
 
 | arm | what it reads | kind | what it does |
 |---|---|---|---|
-| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's presence | denies the call, or takes a place |
-| `release` (`PostToolUse`, `Stop`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted |
-| `release` again, at two of those four (`Stop`, and a `PostToolUse` whose call merged) | the tree the event names, the head the remote reports for the base, and the base's commits against this branch by patch | **computed** | reports `level`, `behind` with its figure, or `unestablished` — and ⛔ **refuses nothing, there being no call in hand at either point** |
+| `guard` (`PreToolUse`) | whether the project states a configuration at all; then a `Bash` command, the record on the change it would merge and that change's head commit, the runs the host made for this commit, and the count a project's probe prints | **computed** for the count and the runs, **forbidding** for the record's verdict and commit | denies the call, or takes a place |
+| `release` (`PostToolUse`, `PostToolUseFailure`, `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop`) | the leases this session holds | **computed** | gives each place back, backgrounded ones excepted; a background launch's process is recorded on its lease |
+| `release` again, at two of those (`Stop`, and a `PostToolUse` whose call merged) | the tree the event names, the head the remote reports for the base, and the base's commits against this branch by patch | **computed** | reports `level`, `behind` with its figure, or `unestablished` — and ⛔ **refuses nothing, there being no call in hand at either point** |
 | `record` | nothing | — | writes the answer a guard reads onto the change |
 | `held` | the leases and the probe | **computed** | reports what is held, and what it could not establish |
 
@@ -2650,7 +2673,7 @@ forbids each by name.
 ⛔ **Eleven breaks were applied and each reddened the assertions written for it** — the patch
 reading reduced to a line count, the base read from the tracking ref, a head this tree does not
 hold read as level, an unreachable remote read as level, a project with no remote reported as
-unestablished every turn, the arm widened to all four release events, a finished call no longer
+unestablished every turn, the arm widened to every release event, a finished call no longer
 narrowed to one that merged, the sweep's answer replacing this one instead of joining it, the tree
 left out of the words, a read that cannot run left to escape the arm, and a read that could not run
 conflated with an object that is absent — which is the discipline
@@ -2685,8 +2708,11 @@ sat red on that one forever, or been *fixed* by deleting the sweep that is doing
 is where the path's status is stated rather than here.
 
 ⚠️ **A backgrounded call is the path no event can close**, and the suite asserts the full sequence:
-the place is taken, every one of the four release events leaves it alone, and it is gone once its
-lifetime is up. A sweep that released it would hand the place back while the work ran.
+the place is taken, every one of the release events leaves it alone, and it is gone once its work is
+read as ended or its lifetime is up. ⚠️ The process half is run against a process the suite starts;
+which process the harness starts for a call is read off its own arguments, and a harness that stops
+putting the command there leaves every such place to its `ttl`, reported. A sweep that released it
+would hand the place back while the work ran.
 
 ⚠️ **The arithmetic is a sum and the suite plants the maximum that let a third holder through.**
 With a cap of two, a probe reporting one, and one lease too young for that probe to see, the sum is
@@ -2695,7 +2721,8 @@ measured letting a third build through. The assertion computes both, so a carrie
 reverted to the maximum fails on the figure rather than on a wording.
 
 ⚠️ **It plants both sides, as the boundary and prose-width checks do.** On the red side: a cap
-reached, a merge with no record, a record that could not be read, a change nothing could resolve, a
+reached, a merge with no record, a merge under a configuration that does not resolve,
+a record that could not be read, a change nothing could resolve, a
 merge naming no repository, a mirrored command run while a run of it exists for this commit — in
 command position, after a separator and after a leading assignment — a run still queued, one still
 in progress, one whose job is still in progress, one that concluded red, one cancelled after
@@ -2758,10 +2785,12 @@ of the two by the margin this whole document is about.
   itself reaches no event here. ⚠️ That is the same reach the boundary hook has, and the reason the
   record is written on the change rather than into a session: a record on the change is still there
   for whoever reads the history of one that was merged another way.
-- **A `claimed_by` that matches the wrong calls, or none.** The reader refuses a pattern that does
-  not compile — a pattern matching nothing is a resource that reads as guarded and holds nothing —
-  but a pattern that compiles and matches the wrong commands is a project's own statement about its
-  own commands, and nothing here can tell a narrow one from a mistaken one.
+- **A `claimed_by` that matches the wrong calls, or none.** One pattern is searched for in the text
+  of a call, so it takes a place for a call that prints it; a list is read at command positions, and
+  a command written after a separator inside a comment still reads as one. The reader refuses a
+  pattern that does not compile — a pattern matching nothing is a resource that reads as guarded and
+  holds nothing — but a pattern that compiles and matches the wrong commands is a project's own
+  statement about its own commands, and nothing here can tell a narrow one from a mistaken one.
 - **What a probe's count means.** The procedure runs the command and reads one number. A probe that
   counts the wrong thing, counts it twice, or reports a stale figure answers this check exactly as a
   correct one does. ⛔ That is the boundary at
@@ -3127,11 +3156,11 @@ that direction directly.
 
 ### What this check deliberately does not hold
 
-- **A spend reached through an interpreter, or through any flag whose value is a whole command
-  string.** A paid script handed to an interpreter stands in no command position of its own; the
-  interpreter does. The same is true of `-c`-style flags whose value is a multi-word string the
-  shell splits later: only its first word stands in a position here. A project invoking one that way
-  states that spelling itself, and
+- **A spend reached through a launcher the project does not list.** A paid script handed to an
+  interpreter, or a multi-word string handed to a shell's flag, stands in no command position of its
+  own. A project invoking one that way lists the launcher
+  ([schema § 19 → The launchers a project lists](../plugins/mjolnir/config/schema.md#the-launchers-a-project-lists-and-what-each-one-runs))
+  or states that spelling itself, and
   [schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
   says why no list of interpreters may live here.
 - **A spend that runs on another machine.** A call that reaches a remote shell is a command whose
@@ -3225,10 +3254,9 @@ than a silent pass.
   added, is not the name in the file. ⚠️ That is the inversion working in the safe direction for a
   live machine and in the annoying one for an allowlisted one — the unnamed alias of a *cleared*
   machine gets a prompt.
-- **A session opened through an interpreter, a wrapper script of the project's own, or a flag whose
-  value is a whole command string.** The same residue the spend half has, one guard over, and for
-  the same reason: the thing in the command position is the interpreter, and no list of
-  interpreters may live here.
+- **A session opened through a launcher the project does not list, or a wrapper script of its
+  own.** The same residue the spend half has, one guard over, and for the same reason: the thing in
+  the command position is the launcher, and no list of interpreters may live here.
 - **Whether the machine behind an allowlisted name is still not live.** The file is a statement
   somebody wrote on a machine. A name left in it after that machine became live answers this check
   exactly as a correct one does, and nothing here can read what a name points at.
@@ -4433,8 +4461,8 @@ project's configuration, and `plugins/mjolnir/scripts/documents.py` is the one i
 reads them. Two independent implementations in two other projects were what argued for it, and the
 counts behind that are in [`configuration-surface.md`](configuration-surface.md#the-document-checks-two-implementations-and-the-claim-measured-rather-than-taken).
 
-Ten checks, each declaring which of the three kinds it is, and the run prints the kind beside the
-verdict so that a reader can tell what a green is worth:
+Each check declares which of the three kinds it is, and the run prints the kind beside the verdict
+so that a reader can tell what a green is worth:
 
 | Name | Check | Kind |
 |---|---|---|
@@ -4447,6 +4475,7 @@ verdict so that a reader can tell what a green is worth:
 | a table keeps its shape | every row of a table carrying the same number of cell delimiters, an escaped pipe counted as a cell's own character | computed |
 | a table row keeps its table | a run of pipe lines with no delimiter row, which renders as a paragraph | computed |
 | no document leaves a fence open | an opening delimiter with no matching close | computed |
+| a box diagram keeps its edges | where a project turns it on, every corner, tee and cross in a fenced box-character diagram meeting a line that reaches back, columns counted by display width | computed |
 | a quoted sentence is still in its document | the kind that does not work, performed as configured and warned about on every run | quoting |
 
 ⛔ **The quoting kind is admitted and not refused**, which that section rules: refusing it would
@@ -4504,6 +4533,12 @@ only through its carrier's suite is a facet nothing has ever run over real text 
   every such row, and where every row carries one it says which three checks hold nothing
   ([`schema.md § 38 → The two
   edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)).
+- **A box diagram's straight runs, an ASCII diagram, or a diagram this project has not turned the
+  check on for.** Only a junction is held, so a run that ends early with no corner at its end is
+  not reported; a block drawn in `+`, `-` and `|` is not read; and an arm landing on text is read
+  as a line drawn to a label, so a box whose corner lands on a letter of its own content passes
+  ([`schema.md § 38 → A box
+  diagram's edges`](../plugins/mjolnir/config/schema.md#a-box-diagrams-edges-held-where-a-project-turns-the-check-on)).
 - **Whether the graph is the right graph.** The rows for this repository were read off the text
   rather than composed, so they assert nothing about the commit that landed them. ⛔ **What they
   assert is every commit after it** — an edge added with no row, and a row whose edge the text
@@ -4560,6 +4595,25 @@ case`](../plugins/mjolnir/config/schema.md#carrier-none-and-the-two-answers-it-m
   every arm above runs against a fixture and none of them has ever run over a real project's
   specification. ⚠️ **That is the gap the documents pair above does not have**, and it is stated
   rather than left for a green to imply.
+
+## The filing role's two readings, and the reply held to carry both
+
+`plugins/mjolnir/scripts/file_window.py --self-test` runs in the `Filing window` workflow, with no
+credential and no network. ⛔ The rule is the filing role's own, in its duplicate check, and this
+document states none of it.
+
+What the suite holds: a reading's count and highest over every identifier shape a tracker answers
+with; a failed search kept apart from an absent one; a move seen where the count and the highest
+both stand still; a reply refused where either reading is missing, the two are reversed, one is
+written twice, or a second item has only its first; and that the role names each of the three
+commands, so the carrier cannot go uncalled.
+
+### What it deliberately does not hold
+
+- **That a role ran the check on its reply.** The role is told to and nothing fires it.
+- **That a line was printed by a comparison rather than typed.** The check reads the reply's own
+  text.
+- **That the create followed the second reading immediately.** Nothing sees the gap between them.
 
 ## What a deployed item is judged against, and the verdict the carrier is barred from
 

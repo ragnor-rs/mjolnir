@@ -456,10 +456,10 @@ own list, and this file does not carry a second copy of it.
 
 ## 8. The merge, and reading it back
 
-⛔ **Four things are established before the merge, because each of them is cheap now and expensive
-after.** Every one was in a single copy of a role and in none of the rest, and ⛔ **this step is
-ordered so that nothing irreversible happens before the thing that would have stopped it** —
-which the last of the four is the measured violation of.
+⛔ **These are established before the merge, because each of them is cheap now and expensive
+after.** Each of the first four was in a single copy of a role and in none of the rest, and ⛔
+**this step is ordered so that nothing irreversible happens before the thing that would have
+stopped it** — which the tracker's answering is the measured violation of.
 
 1. ⛔ **Whether anything is based on this branch.** Retarget-on-merge does **not** fire reliably:
    deleting the head branch **closes** every change based on it instead of moving it to this one's
@@ -477,19 +477,32 @@ which the last of the four is the measured violation of.
    and step 9 is where that is discovered — after the irreversible act. So the port is reached for
    a read **before** the merge, and an unreachable tracker holds it; `§ 3`'s fallback covers a
    capability that is *absent*, which is a different thing from a host that is not answering.
+5. ⛔ **That what the merge closes is what was meant**, by
+   [`§ 3 → What a merge closes`](../../config/schema.md#what-a-merge-closes-and-the-comparison-that-holds-it),
+   which states which items are meant, what each answer does, and why a commit message is read too:
 
-⛔ **Then the merge is asked for, with those four established and before the merge call.** The
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --closing-of <the change> \
+     --intend <each item meant> --landing-text <the squash subject, where one is passed>
+   ```
+
+   ⛔ **A difference withdraws the merge ask**, and the reply names each item with the text the
+   command printed. ⚠️ **Exit 3 is *unread* and never *the same***: `failed` is
+   false where the capability is absent and true where the host did not answer.
+
+⛔ **Then the merge is asked for, with those established and before the merge call.** The
 question, that *later* is an answer rather than a failure, and that it is procedure no project can
 turn off are
 [`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s
 — ⛔ **not restated here**, and the asking form is the same section's citation of
 [`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred).
 
-- ⛔ **After the four and not before them.** Two of them can turn the merge into a mistake rather
-  than an act — a dependent change the deletion would close, a base that is not the change's own —
-  and a person asked before they are established is being asked to license exactly the damage those
-  two exist to catch. ⚠️ **None of the four is irreversible**, so nothing is spent by establishing
-  them first; a failure among them withdraws the question instead of answering it.
+- ⛔ **After them and not before.** Several of them can turn the merge into a mistake rather than
+  an act — a dependent change the deletion would close, a base that is not the change's own, an
+  item nobody meant to close — and a person asked before they are established is being asked to
+  license exactly the damage those exist to catch. ⚠️ **None of them is irreversible**, so nothing
+  is spent by establishing them first; a failure among them withdraws the question instead of
+  answering it.
 - ⛔ **This is the only question the route puts to a person about its own verification**, so nothing
   of that kind is asked beside it. The reviewing leg answers its own — the depth it read at, and the
   plan it ran — and records both rather than stopping for anybody; § The loop states why. ⚠️ **A
@@ -521,18 +534,22 @@ turn off are
   same rule the reviewing role's record is held to, and the reason a *later* answered in one window
   is not re-asked from scratch in the next. The form and the one command that writes it are
   [`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)'s, which the
-  reviewing role's step 9 names; this role writes `merge_now` under the same keying.
+  reviewing role's step 9 names; this role writes `merge_now` under the same keying, with `--head`
+  naming the whole head commit it read before asking and `--verdict` from § 7's list. ⛔ **The
+  verdict is this role's reading of the words and the words go in as given**, so an answer the list
+  does not settle is asked again rather than rounded to `approved`. ⛔ **A push after the answer is a
+  question asked again**, by the same section's rule on what an approval covers.
 - ⛔ **The answer is recorded as it came back, and `--by` names whoever actually gave it.** ⚠️ **A
   person's name written against an answer they did not give is a fabricated attestation**, and
   [`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads) states that no guard
   can catch one — the column being written by this very pass. ⛔ **So an answer that has not been
   given is not paraphrased out of anything the person said earlier**: it is asked for.
 - ⛔ **A guard may refuse the merge call itself, and it is not argued with or edited to get past.**
-  Where one is installed it reads this very question's record and refuses a merge that has none
-  ([`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)), and its refusal
-  already names what would unblock it. ⚠️ **That the guard reads the answer this pass writes is
-  stated on the surface rather than hidden**: what it establishes is that the ask was put, which is
-  the decidable end of it, and never that a person answered.
+  Where one is installed it reads this very question's record and refuses a merge it does not
+  approve ([`§ 7`](../../config/schema.md#what-a-hook-refuses-and-the-record-it-reads)), and its
+  refusal already names what would unblock it. ⚠️ **That the guard reads the answer this pass writes
+  is stated on the surface rather than hidden**: what it establishes is that an approval is
+  recorded, which is the decidable end of it, and never that a person gave it.
 
 ⛔ **The method is named in the merge call and read from the configuration, never inferred** —
 [`§ 2 → How a pull request lands`](../../config/schema.md#how-a-pull-request-lands), which states
@@ -620,6 +637,12 @@ and the item moves separately; where the advance is unavailable the role asks fo
 unavailable too, the move is **reported for whoever does make it**. Say which fallback was taken,
 rather than reporting the item as moved.
 
+⛔ **An advance this role asks for is asked by role, with `--advance-to`**, and where that status
+states several writers
+([`§ 4.2`](../../config/schema.md#a-status-several-writers-reach-a-class-of-item-each)) it carries
+`--path <path>` once per path the item's changes touched. A refusal there is reported with the writer
+it names, or with the reason it names none.
+
 ⛔ **An item carrying more than one change does not advance until all of them have landed.** One
 copy carried this and the rest moved the item on the first merge, which says the item's work is in
 when a sibling change is still open. ⚠️ **The count is taken after this merge rather than before
@@ -633,7 +656,13 @@ contains those digits answers a search for a different item entirely. Where a si
 
 What is released once the work has landed is [`§ 10`](../../config/schema.md#10-branch-model)'s,
 and a project's own setup and teardown are its `mechanics` pointer — ⛔ **named here, never
-absorbed.** Where it is null there is nothing to run, and that is an answer.
+absorbed.** Where it is null there is nothing to run, and that is an answer. ⛔ **Where the project
+states a `teardown`, the release below runs it and this role does not**
+([`§ 10`](../../config/schema.md#the-teardown-a-removal-runs-first)): one that failed fails the
+command with the claim whole, and the reply carries its reason.
+⛔ **So does a tree whose resource is still up, or whose check went unanswered**
+([`§ 10`](../../config/schema.md#the-resource-a-tree-started-and-the-removal-it-holds)): the reply
+names the resource or the reason, and the command is run again once that is cleared.
 
 ⛔ **Confirm the landing from the host before removing anything**, per step 8 above — the tree and
 the branch are the only copies of the work until the merge is read back. ⚠️ **What this step
@@ -671,6 +700,10 @@ says which tree to remove, and the guard asks a different question.
 ⛔ **One command gives the claim up, and this role no more assembles it out of git calls than the
 starting role assembles the taking** — the order is the rule, and the command is re-runnable
 because a half-released claim is exactly what a failed release leaves.
+
+⛔ **A tree git refuses to remove fails the command**, which names the tree, git's reason and what
+became of the ref — the reply carries all three, by
+[`§ 10`](../../config/schema.md#pruning-a-tree-whose-branch-has-landed).
 
 ⛔ **The command reaches the published ref too, and which of step 8's three arms applied decides
 whether it may.** Under `procedure` **this is where the ref goes**, step 8 having left it standing;
@@ -717,8 +750,8 @@ sentence, then the facts, with a table where the content enumerates.
 - **every check the project's done list carries**, by name, with its verdict, who answered it and
   — for one carrying a command — the command and the tree it ran in; ⛔ every check that could not
   be answered said as unanswered, and an empty list said as empty rather than passed over;
-- which of step 8's four pre-merge establishments held, and what each found — the dependents, the
-  base, the tree, and whether the tracker answered;
+- which of step 8's pre-merge establishments held, and what each found — the dependents, the base,
+  the tree, whether the tracker answered, and what the merge closes against what was meant;
 - **how the merge ask was answered**, where that answer was recorded, and ⛔ **what the reviewing
   role's record said was read and not read** — the depth quoted rather than summarised, a reading
   nothing could take named with what stopped it, and the fact that this pass wrote that record

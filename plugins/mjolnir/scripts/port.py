@@ -80,6 +80,8 @@ from __future__ import annotations
 
 import argparse
 import inspect
+import contextlib
+import io
 import json
 import os
 import re
@@ -163,6 +165,9 @@ CURRENT = "current"
 GROUPING_ITEMS = "grouping_items"
 MARK_RELEASED = "mark_grouping_released"
 CREATE_GROUPING = "create_grouping"
+
+# § 3's read of what a merge will close, which the comparison below is made over.
+CLOSING_LIST = "read_closing_list"
 
 # The operation a writer refusal is reported against where the caller named none.
 # ⛔ § 4.2's guard is shared by three directions now -- the advance, § 32's step
@@ -730,6 +735,54 @@ def load_adapters(spec: PortSpec | None = None) -> dict[str, Adapter]:
     return dict(registry)
 
 
+# Why an item in a set carries no status word, where an implementation knows it.
+UNPLACED = "unplaced"
+
+# What a set's own reading says about its edges, by the keys an implementation
+# answers with: items it holds that the board does not, and what it cannot hold.
+EDGES = ("off_board", "outside")
+
+
+def _edges(outcome: "Outcome") -> dict:
+    """What a read set says lies on its edge, and nothing where it says nothing.
+
+    ⛔ Carried into the report beside the set: the report drops the rest of the
+    result, and an omission an implementation named would be dropped with it.
+    """
+    result = outcome.result if outcome.performed else None
+    if not isinstance(result, dict):
+        return {}
+    return {key: result[key] for key in EDGES if key in result}
+
+
+def set_report(name: str, read_grouping, held: list, answer) -> dict:
+    """What a publishing ask prints: the set, its edges, and the bar's answer.
+
+    ⛔ The set is reported by **identity** and never whole, for `_item_name`'s
+    reason: a release's own batch read through here would otherwise put every
+    item's body into the window the reply is written in. ⚠️ What a role needs
+    off this is which items the grouping holds and where each one stands, both of
+    which the compact form carries.
+    """
+    return {
+        "port": name,
+        "grouping": (
+            {
+                key: value
+                for key, value in invocation_report(
+                    name, GROUPING_ITEMS, read_grouping
+                ).items()
+                if key != "result"
+            }
+            if read_grouping is not None
+            else None
+        ),
+        "set": [_item_name(item) for item in held],
+        **(_edges(read_grouping) if read_grouping is not None else {}),
+        "short_of": answer,
+    }
+
+
 def _set_from(outcome: "Outcome") -> list:
     """The items an answered `grouping_items` carried, or an empty set.
 
@@ -781,6 +834,8 @@ def _item_name(item: object) -> dict:
     for key in ("title", "name", "url"):
         if isinstance(item.get(key), str) and item[key].strip():
             named[key] = item[key]
+    if item.get(UNPLACED):
+        named[UNPLACED] = item[UNPLACED]
     return named
 
 
@@ -800,6 +855,11 @@ def _item_word(item: object) -> str | None:
     """
     if not isinstance(item, dict):
         return item if isinstance(item, str) and item.strip() else None
+    # ⛔ An implementation that says an item has no status word to read is believed
+    # before the coarse state is: a column named as that state is would otherwise
+    # place an item no column holds.
+    if item.get(UNPLACED):
+        return None
     for key in ("status", "state"):
         word = item.get(key)
         if isinstance(word, str) and word.strip():
@@ -1159,7 +1219,49 @@ class Port:
             )
         return None
 
-    def advance_to(self, role: str, *args, as_writer: str = ASKED_AS, **kwargs) -> Outcome:
+    def _writer_for(
+        self, status: dict, paths, as_writer: str, role: str
+    ) -> tuple[str | None, Outcome | None]:
+        """The one writer this item's move belongs to, or why there is not one (§ 4.2).
+
+        ⛔ **The askable set is read first here as in the guard below**, so an ask
+        made as a party this procedure is not is refused as a claim and never
+        answered with which class the item is in.
+
+        ⛔ **The writer is selected by the item's class and then held to the ask**,
+        and never the other way round: matching the asker against the list would
+        let any writer of the status move an item in another writer's class.
+        """
+        if config.STATUS_WRITERS not in status or as_writer not in ASKABLE_AS:
+            return status.get("writer"), None
+        stated = config.writers_of(status)
+        found = config.classed_writers(status, paths)
+        if len(found) == 1:
+            return found[0], None
+        named = ", ".join(f"`{writer}`" for writer in stated)
+        if not paths:
+            why = "no changed path was handed over, so its class is unread"
+        elif found:
+            why = "its changed paths are in the class of each of " + ", ".join(
+                f"`{writer}`" for writer in found
+            )
+        else:
+            why = "no class covers every one of its changed paths: " + ", ".join(
+                repr(path) for path in paths
+            )
+        return None, Outcome(
+            "set_state",
+            performed=False,
+            refused=True,
+            to_role=role,
+            detail=f"Refused: the `{role}` status (`{status.get('name')}`) is written "
+            f"by {named}, a class of item each (§ 4.2), and for this item {why}. "
+            "The move is reported for a person rather than made.",
+        )
+
+    def advance_to(
+        self, role: str, *args, as_writer: str = ASKED_AS, paths=(), **kwargs
+    ) -> Outcome:
         """Ask for an advance to a status **role**, never to a status word.
 
         `as_writer` is the writer the caller is asking as (§ 4.2), defaulting to
@@ -1177,6 +1279,10 @@ class Port:
         raise is one layer down**, in `_mapped_status`, for a role two status
         words answer. ⚠️ **No count of either list is written here**, a figure
         over them being a copy of what the code does.
+
+        `paths` is what the item's change touched, read only where the status
+        states several writers with a class each (§ 4.2); an item in no class or
+        in two is a refusal naming neither as the one to move it.
 
         ⛔ **It asks for an advance and never discovers a reversal.** A step
         backwards is `revert_to` below, asked for as one, by § 32 -- so what this
@@ -1204,8 +1310,11 @@ class Port:
                 "nothing to advance to. A project maps a subset and an absent "
                 "role is a legitimate configuration.",
             )
+        writer, unclassed = self._writer_for(status, paths, as_writer, role)
+        if unclassed is not None:
+            return unclassed
         refusal = self._refused_by_writer(
-            status.get("writer"),
+            writer,
             f"the `{role}` status (`{status.get('name')}`)",
             asked_as=as_writer,
             to_role=role,
@@ -1549,6 +1658,72 @@ class Port:
             "detail": f"{len(short)} of {len(items)} in the set are short of the "
             f"`{role}` role (`{status.get('name')}`), and {len(unanswered)} could "
             "not be placed at all.",
+        }
+
+    def closing_against(self, change, intended: list, landing: tuple = ()) -> dict:
+        """Whether what a merge closes is what was meant (§ 3 -> What a merge closes).
+
+        ⛔ **Three answers**: `matches` is true, false, or `None` for a list that
+        could not be read -- which is never a match, and carries the fallback or
+        the host's own words in `detail`.
+
+        ⛔ **An extra is judged on everything that could close it and a missing
+        one on what certainly does.** Under a squash the branch's own messages may
+        or may not reach the base, so a commit naming an item is enough to stop
+        for it and not enough to rely on.
+        """
+        outcome = self.invoke(CLOSING_LIST, change, *landing)
+        if not outcome.performed:
+            return {
+                "change": change, "matches": None, "failed": outcome.failed,
+                "extra": [], "missing": [], "detail": outcome.detail,
+            }
+        read = outcome.result
+        meant = {str(one).strip().lstrip("#").casefold() for one in intended}
+        listed, said = read["listed"], read["mentions"]
+        kept = (
+            ("landing",)
+            if self.config.get("host.landing.method") == "squash"
+            else ("landing", "commit")
+        )
+        certain, possible = [], []
+        if read["closes_on_merge"]:
+            certain = listed + [m["item"] for m in said if m["where"] in kept]
+            possible = listed + [m["item"] for m in said if m["where"] != "body"]
+
+        def responsible(item: str) -> list[dict]:
+            return [m for m in said if m["item"].casefold() == item.casefold()]
+
+        firm = {one.casefold() for one in certain}
+        extra = []
+        for item in dict.fromkeys(possible):
+            if item.casefold() not in meant:
+                extra.append({
+                    "item": item,
+                    "text": responsible(item),
+                    "why": "a closing phrase names it"
+                    if responsible(item)
+                    else "the host lists it and no text here names it, so it is "
+                    "linked on the change itself",
+                })
+        missing = []
+        for item in sorted(meant - firm):
+            if not read["closes_on_merge"]:
+                why = (f"the base is {read['base']!r} and a reference closes nothing "
+                       f"before {read['default_branch']!r}")
+            elif responsible(item):
+                why = "a closing phrase names it and the host does not list it"
+            else:
+                why = "no closing phrase in anything read names it"
+            missing.append({"item": item, "text": responsible(item), "why": why})
+        return {
+            "change": change,
+            "matches": not (extra or missing),
+            "failed": False,
+            "extra": extra,
+            "missing": missing,
+            "detail": f"{len(extra)} item(s) the merge may close and nobody meant, "
+            f"{len(missing)} meant and not certain to close.",
         }
 
     # -- what this configuration cannot do, as a report and never as a fault
@@ -2388,6 +2563,98 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
             wrong.refused and wrong.writer == writer and writer in wrong.detail,
             f"got {str(wrong)!r}",
         )
+    # § 4.2's classed form. ⛔ Both writers are askable, so what separates the arms
+    # is the item's class alone.
+    def _classed_ask(paths, as_writer, *writers) -> Outcome:
+        return Port(
+            _with_statuses(
+                [{"name": "a status", "role": a_role, "writers": list(writers)}]
+            ),
+            spec,
+            adapter=Adapter(
+                {"set_state": lambda *a, **k: k.get("status", "<no status>")}
+            ),
+            stated=stated,
+        ).advance_to(a_role, as_writer=as_writer, paths=paths)
+
+    built = {"writer": PROCEDURE, "paths": ["ci/*"]}
+    shipped = {"writer": DEPLOY, "paths": ["app/*"]}
+    the_rest = {"writer": DEPLOY, "rest": True}
+    for label, paths, writers, belongs_to in (
+        ("in one class", ["ci/a"], (built, shipped), PROCEDURE),
+        ("in the other class", ["app/a"], (built, shipped), DEPLOY),
+        ("in the remainder", ["app/a"], (built, the_rest), DEPLOY),
+        ("split between a class and the rest", ["ci/a", "app/a"],
+         (built, the_rest), DEPLOY),
+        ("wholly in a class stated beside the rest", ["ci/a", "ci/a"],
+         (built, the_rest), PROCEDURE),
+    ):
+        for asker in ASKABLE_AS:
+            answer = _classed_ask(paths, asker, *writers)
+            check(
+                f"an item {label}, asked for as `{asker}`, is moved by `{belongs_to}` alone",
+                answer.performed and answer.result == "a status"
+                if asker == belongs_to
+                else answer.refused and answer.writer == belongs_to,
+                f"got {str(answer)!r}",
+            )
+    for label, paths, writers, says in (
+        ("in no class", ["other/a"], (built, shipped), "'other/a'"),
+        ("split between two classes", ["ci/a", "app/a"], (built, shipped), "no class"),
+        ("in two classes", ["ci/app"],
+         (built, {"writer": DEPLOY, "paths": ["*/app"]}), "each of"),
+        ("whose paths were not handed over", [], (built, the_rest), "unread"),
+    ):
+        for asker in ASKABLE_AS:
+            answer = _classed_ask(paths, asker, *writers)
+            check(
+                f"an item {label} is refused an ask made as `{asker}`, and the reason named",
+                answer.refused
+                and not answer.performed
+                and answer.writer is None
+                and answer.to_role == a_role
+                and says in answer.detail,
+                f"got {str(answer)!r}",
+            )
+    for asker in [w for w in config.facts_for("writer") if w not in ASKABLE_AS]:
+        answer = _classed_ask(
+            ["ci/a"], asker, {"writer": asker, "paths": ["ci/*"]}, the_rest
+        )
+        check(
+            f"a classed status refuses an ask made as `{asker}`, as a claim to be it",
+            answer.refused and "claiming to be somebody" in answer.detail,
+            f"got {str(answer)!r}",
+        )
+        # ⛔ And on an item in no class, where a class read first would answer the
+        # claim with which paths it lacks.
+        answer = _classed_ask(
+            [], asker, {"writer": asker, "paths": ["ci/*"]}, the_rest
+        )
+        check(
+            f"and refuses the ask made as `{asker}` as a claim before any class is read",
+            answer.refused and "claiming to be somebody" in answer.detail,
+            f"got {str(answer)!r}",
+        )
+    for bad in ("../ci/a", "/ci/a", "  ", "ci/../app/a", "./ci/a"):
+        try:
+            answer = _classed_ask([bad], PROCEDURE, built, the_rest)
+        except ConfigError as error:
+            answer = error.key
+        check(
+            f"a changed path written {bad!r} is refused rather than classed",
+            answer == f"statuses.{config.STATUS_WRITERS}",
+            f"got {str(answer)!r}",
+        )
+    unread = _with_statuses([{"name": "a status", "role": a_role, "writer": PROCEDURE}])
+    same = Port(
+        unread, spec, adapter=Adapter({"set_state": lambda *a, **k: sorted(k)}),
+        stated=stated,
+    ).advance_to(a_role, paths=["anything"])
+    check(
+        "a status with one writer reads no path and hands none on",
+        same.performed and same.result == ["status"],
+        f"got {str(same)!r}",
+    )
     # ⛔ And `never` is refused whatever a caller claims to be, which is the arm
     # a parameter like this invites getting wrong: it is the writer that is not a
     # party, so there is nobody for a caller to claim to be.
@@ -2973,6 +3240,39 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         f"unread {str(unreadable)!r}, empty {str(readable)!r}",
     )
 
+    edged = Port(
+        _with_grouping(
+            [{"name": "a status", "role": a_role, "writer": DEPLOY}],
+            {a_grouping: {CLOSED_BY: DEPLOY}},
+        ),
+        spec,
+        adapter=Adapter({GROUPING_ITEMS: lambda *a, **k: {
+            "items": [],
+            "off_board": [{"number": 9}],
+            "outside": {"drafts": ["a draft"]},
+        }}),
+        stated=stated,
+    ).items_in(a_grouping, "a value")
+    check(
+        "what a set says lies on its edge reaches the report, and a set saying "
+        "nothing adds nothing",
+        set_report("a port", edged, [], None).get("off_board") == [{"number": 9}]
+        and set_report("a port", edged, [], None).get("outside")
+        == {"drafts": ["a draft"]}
+        and all(
+            set(set_report("a port", one, [], None))
+            == {"port", "grouping", "set", "short_of"}
+            for one in (readable, unreadable, None)
+        ),
+        f"reported {set_report('a port', edged, [], None)!r}",
+    )
+    check(
+        "an item reported as unplaced says why in the report",
+        _item_name({"number": 7, "unplaced": "off the board"})
+        == {"item": 7, "unplaced": "off the board"},
+        f"named {_item_name({'number': 7, 'unplaced': 'off the board'})!r}",
+    )
+
     # ⛔ The reported set is identities and never whole items, which is what keeps
     # a release's own batch out of the window the reply is written in.
     check(
@@ -2996,6 +3296,7 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
             {"number": 3, "status": "FIRST"},
             {"number": 4, "status": "a word nothing maps"},
             {"number": 5},
+            {"number": 6, "status": None, "state": "second", "unplaced": "why"},
         ],
     )
     # ⛔ **Every** item short, and not the first: § 33 states the refusal names
@@ -3016,7 +3317,8 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
     # held by nothing.
     check(
         "an item whose word no status maps is unanswered, never short and never clear",
-        sorted(str(entry.get("item")) for entry in verdict["unanswered"]) == ["4", "5"],
+        sorted(str(entry.get("item")) for entry in verdict["unanswered"])
+        == ["4", "5", "6"],
         f"named {verdict['unanswered']!r}",
     )
     check(
@@ -3039,6 +3341,98 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         and not barless["placed"]
         and len(barless["unanswered"]) == 1,
         f"answered {barless!r}",
+    )
+
+    # § 3's comparison before a merge. Every reading is derived from the item's
+    # own acceptance statement: an extra, a missing one, a commit, no answer.
+    def comparing(method: str, intended: list, *, closes=True, listed=(), said=()):
+        configuration = _set(_any_example(), "host.landing.method", method)
+        answer = {
+            "change": 9, "base": "a-base", "default_branch": "a-default",
+            "closes_on_merge": closes, "listed": list(listed),
+            "mentions": [
+                {"item": item, "where": where, "source": None, "text": text}
+                for item, where, text in said
+            ],
+        }
+        return Port(
+            configuration, spec, stated=stated,
+            adapter=Adapter({CLOSING_LIST: lambda change, *landing: answer}),
+        ).closing_against(9, intended)
+
+    negated = ("34", "body", "does not close #34")
+    wanted = ("21", "body", "Closes #21")
+    stray = ("35", "commit", "fixes #35")
+    stopped = comparing("squash", ["21"], listed=["21", "34"], said=[wanted, negated])
+    check(
+        "an item the host will close and nobody meant stops, with the negated text",
+        stopped["matches"] is False
+        and [one["item"] for one in stopped["extra"]] == ["34"]
+        and stopped["extra"][0]["text"][0]["text"] == "does not close #34"
+        and not stopped["missing"],
+        f"answered {stopped!r}",
+    )
+    agreed = comparing("squash", ["#21"], listed=["21"], said=[wanted, negated])
+    check(
+        "a body phrase the host does not list is no extra, the list being the authority",
+        agreed["matches"] is True,
+        f"answered {agreed!r}",
+    )
+    lacking = comparing("squash", ["21", "22"], listed=["21"], said=[wanted])
+    check(
+        "an intended item the host will not close stops, and says what is absent",
+        lacking["matches"] is False
+        and [one["item"] for one in lacking["missing"]] == ["22"]
+        and "no closing phrase" in lacking["missing"][0]["why"],
+        f"answered {lacking!r}",
+    )
+    check(
+        "a commit message that closes an item is an extra under every method",
+        all(
+            [one["item"] for one in
+             comparing(method, ["21"], listed=["21"], said=[wanted, stray])["extra"]]
+            == ["35"]
+            for method in ("squash", "merge_commit", "rebase")
+        ),
+    )
+    check(
+        "a commit carries an intended item where it lands whole, and not under a squash",
+        comparing("rebase", ["35"], said=[stray])["matches"] is True
+        and comparing("squash", ["35"], said=[stray])["matches"] is False,
+    )
+    titled = [("35", "title", "Fix #35")]
+    check(
+        "a title that closes an item is an extra, and is never relied on for one",
+        comparing("squash", [], said=titled)["matches"] is False
+        and comparing("rebase", ["35"], said=titled)["matches"] is False,
+    )
+    unnamed = comparing("squash", [], listed=["34"])
+    check(
+        "an extra no text names is reported as linked on the change",
+        unnamed["extra"] and "linked on the change" in unnamed["extra"][0]["why"],
+        f"answered {unnamed!r}",
+    )
+    elsewhere = comparing("squash", ["21"], closes=False, said=[wanted, stray])
+    check(
+        "a base that closes nothing has no extra, and says why an item is missing",
+        not elsewhere["extra"]
+        and ["a-base" in one["why"] for one in elsewhere["missing"]] == [True],
+        f"answered {elsewhere!r}",
+    )
+
+    def _silent(*_args):
+        raise HostUnavailable("a reason the host gave")
+
+    unreadable_list = [
+        Port(_any_example(), spec, stated=stated, adapter=adapter).closing_against(9, [])
+        for adapter in (Adapter(), Adapter({CLOSING_LIST: _silent}))
+    ]
+    check(
+        "a list nothing could read is no match, and an absence is not a failure",
+        [one["matches"] for one in unreadable_list] == [None, None]
+        and [one["failed"] for one in unreadable_list] == [False, True]
+        and all(one["detail"] for one in unreadable_list),
+        f"answered {unreadable_list!r}",
     )
 
 
@@ -3647,6 +4041,38 @@ def self_test() -> int:
         try:
             named = _ran("--invoke", "set_state", "--argument", "1")
             by_role = _ran("--advance-to", "initial", "--argument", "1")
+            # § 4.2's class is read off `--path`, on this route and no other.
+            misplaced = _ran(
+                "--revert-on", "acceptance_rejected", "--argument", "1",
+                "--path", "ci/a",
+            )
+            check(
+                "a path handed to any route but the advance is refused, named",
+                misplaced.returncode == 2 and "--path" in misplaced.stderr,
+                f"exited {misplaced.returncode} saying {misplaced.stderr.strip()[:160]!r}",
+            )
+            handed: list = []
+
+            class _Records:
+                name = "tracker.kind"
+
+                def advance_to(self, role, *args, **kwargs):
+                    handed.append(kwargs.get("paths"))
+                    return Outcome("set_state", performed=False, detail="recorded")
+
+            kept_load = globals()["load"]
+            globals()["load"] = lambda *a, **k: _Records()
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    main(["--advance-to", "initial", "--argument", "1",
+                          "--path", "ci/a", "--path", "app/b"])
+            finally:
+                globals()["load"] = kept_load
+            check(
+                "and the advance is handed every path the invocation carried",
+                handed == [["ci/a", "app/b"]],
+                f"handed {handed!r}",
+            )
             # ⛔ The reverse direction's own route, which had no invocation at
             # all until § 39's role came to ask for one. ⚠️ This project rules
             # `reversals: []`, so what is asserted is that the ask **reaches the
@@ -3667,6 +4093,9 @@ def self_test() -> int:
             # named, so the arm survives a renamed capability: what is wanted is
             # any available operation taking more than one argument.
             short = _ran("--invoke", _needing_two_arguments(), "--argument", "1")
+            # ⛔ A read, so a type dropped on the way leaves nothing on a tracker.
+            typed = _ran("--invoke", "read_item", "--argument", "1", "--type", "a type")
+            typed_alone = _ran("--type", "a type")
         except subprocess.TimeoutExpired:
             check(
                 "the status-move route answered at all, rather than hanging",
@@ -3725,6 +4154,17 @@ def self_test() -> int:
                 and "--revert-on" in both_ways.stderr,
                 f"exited {both_ways.returncode} saying "
                 f"{both_ways.stderr.strip()[:160]!r}",
+            )
+            check(
+                "a type reaches the operation, and one taking none refuses it",
+                typed.returncode == 1 and "arguments it does not take" in typed.stdout
+                and "'type'" in typed.stdout,
+                f"exited {typed.returncode} saying {typed.stdout.strip()[:160]!r}",
+            )
+            check(
+                "and a type with no operation to carry it is refused",
+                typed_alone.returncode == 2 and "--type" in typed_alone.stderr,
+                f"exited {typed_alone.returncode}",
             )
             check(
                 "an operation asked for with too few arguments is a refusal, not a "
@@ -3787,6 +4227,13 @@ def main(argv: list[str]) -> int:
         "takes them. Always passed as text",
     )
     parser.add_argument(
+        "--type",
+        metavar="NAME",
+        help="the native type a `create_item` filing states (§ 4.1), in the "
+        "tracker's own word. Omitted, the filing states none; an operation taking "
+        "no type refuses it",
+    )
+    parser.add_argument(
         "--advance-to",
         metavar="ROLE",
         help="ask for an advance to one of § 4.2's status **roles**, never to a "
@@ -3838,11 +4285,43 @@ def main(argv: list[str]) -> int:
         "carries no verdict about whether the target may be invoked",
     )
     parser.add_argument(
+        "--closing-of",
+        metavar="CHANGE",
+        help="whether what merging one change closes is what was meant, which is "
+        "§ 3's comparison before a merge. Exits 0 where the two are the same, 1 "
+        "where they differ, and 3 where the list could not be read",
+    )
+    parser.add_argument(
+        "--intend",
+        metavar="ITEM",
+        action="append",
+        default=[],
+        help="one item the change is meant to close, for `--closing-of`; repeated, "
+        "and left off where it is meant to close none",
+    )
+    parser.add_argument(
+        "--landing-text",
+        metavar="TEXT",
+        action="append",
+        default=[],
+        help="text the merge call itself will supply, for `--closing-of`: a "
+        "squash subject is the case",
+    )
+    parser.add_argument(
         "--as-writer",
         metavar="WRITER",
         default=ASKED_AS,
         help="which of § 4.2's writers the ask is made as. Defaults to the "
         "procedure, which is what every role but § 33's deploying one asks as",
+    )
+    parser.add_argument(
+        "--path",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="one repository-relative path the item's change touched, for "
+        "`--advance-to`; repeated. Read only where § 4.2's status states several "
+        "writers with a class each",
     )
     parser.add_argument(
         "--no-check-paths",
@@ -3860,6 +4339,13 @@ def main(argv: list[str]) -> int:
         print("Holding the port contract to the surface and the examples:")
         return self_test()
 
+    if args.type is not None and not args.invoke:
+        print(
+            "Refused: `--type` is what a filing states, so it is asked for with "
+            "`--invoke create_item` and nothing else reads it.",
+            file=sys.stderr,
+        )
+        return 2
     # ⛔ Performing an operation is a separate request from reporting one, and the
     # two are not combined. ⚠️ This exists because a port whose operations no role
     # can reach is a contract nobody can keep: the tracker port's roles have a
@@ -3896,6 +4382,15 @@ def main(argv: list[str]) -> int:
         print(
             "Refused: `--advance-to` and `--revert-on` are two moves on one item "
             "and the order between them is stated nowhere. Ask for one.",
+            file=sys.stderr,
+        )
+        return 2
+    # ⛔ A path on any other route is a class nothing would read: § 32's reverse
+    # edge carries a writer of its own and no class.
+    if args.path and not args.advance_to:
+        print(
+            "Refused: `--path` says which of § 4.2's classes an item is in, which "
+            "only `--advance-to` reads.",
             file=sys.stderr,
         )
         return 2
@@ -3954,6 +4449,45 @@ def main(argv: list[str]) -> int:
         )
         return 0 if outcome.performed else 1
 
+    if (args.intend or args.landing_text) and args.closing_of is None:
+        print(
+            "Refused: `--intend` and `--landing-text` say what one change is "
+            "compared with, and `--closing-of` names no change.",
+            file=sys.stderr,
+        )
+        return 2
+    if args.closing_of is not None:
+        if args.ports:
+            print(
+                "Refused: what a merge closes is one port's answer, so it is not "
+                "asked of every port at once.",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            answering = load(
+                args.skills_root,
+                args.port,
+                root=args.root,
+                check_paths=not args.no_check_paths,
+            )
+            verdict = answering.closing_against(
+                args.closing_of, args.intend, tuple(args.landing_text)
+            )
+        except ConfigError as error:
+            print(
+                json.dumps(
+                    refusal_report(args.port, CLOSING_LIST, error),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            # ⛔ 2 and never 1: a question that could not be put is not a merge
+            # that closes the wrong items.
+            return 2
+        print(json.dumps(verdict, indent=2, ensure_ascii=False))
+        return {True: 0, False: 1, None: 3}[verdict["matches"]]
+
     if args.in_grouping is not None or args.short_of:
         if args.ports:
             print(
@@ -4005,27 +4539,7 @@ def main(argv: list[str]) -> int:
                 )
             )
             return 1
-        # ⛔ The set is reported by **identity** and never whole, for `_item_name`'s
-        # reason: a release's own batch read through here would otherwise put every
-        # item's body into the window the reply is written in. ⚠️ What a role needs
-        # off this is which items the grouping holds and where each one stands,
-        # both of which the compact form carries.
-        reported = {
-            "port": answering.name,
-            "grouping": (
-                {
-                    key: value
-                    for key, value in invocation_report(
-                        answering.name, GROUPING_ITEMS, read_grouping
-                    ).items()
-                    if key != "result"
-                }
-                if read_grouping is not None
-                else None
-            ),
-            "set": [_item_name(item) for item in held],
-            "short_of": answer,
-        }
+        reported = set_report(answering.name, read_grouping, held, answer)
         print(json.dumps(reported, indent=2, ensure_ascii=False, default=str))
         # ⛔ Nonzero where the grouping could not be read, or where anything is
         # short **or unanswered**: each of the three is a precondition a target
@@ -4060,7 +4574,10 @@ def main(argv: list[str]) -> int:
                 )
                 if args.revert_on
                 else answering.advance_to(
-                    args.advance_to, *args.argument, as_writer=args.as_writer
+                    args.advance_to,
+                    *args.argument,
+                    as_writer=args.as_writer,
+                    paths=args.path,
                 )
             )
         except ConfigError as error:
@@ -4097,7 +4614,8 @@ def main(argv: list[str]) -> int:
                 root=args.root,
                 check_paths=not args.no_check_paths,
             )
-            outcome = answering.invoke(args.invoke, *args.argument)
+            stated = {} if args.type is None else {"type": args.type}
+            outcome = answering.invoke(args.invoke, *args.argument, **stated)
         except ConfigError as error:
             # ⛔ Reported as a refusal and never as a traceback. A value the
             # configuration states badly, or an operation this port does not
