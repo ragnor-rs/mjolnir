@@ -112,11 +112,14 @@ FIELDS = [
     # this implementation has no shape for its type.
     {"id": "customfield_10020", "name": "Sprint", "schema": {"type": "array", "items": "json"}},
     # One list field per element type a write is shaped for.
-    {"id": "components", "name": "Parts", "schema": {"type": "array", "items": "component"}},
+    {"id": "components", "name": "Parts", "schema": {"type": "array", "items": "component"},
+     "searchable": True, "clauseNames": ["component"]},
     {"id": "fixVersions", "name": "Ships in", "schema": {"type": "array", "items": "version"}},
-    {"id": "customfield_10050", "name": "Areas", "schema": {"type": "array", "items": "option"}},
+    {"id": "customfield_10050", "name": "Areas", "schema": {"type": "array", "items": "option"},
+     "searchable": True, "clauseNames": ["cf[10050]", "Areas"]},
     {"id": "customfield_10051", "name": "Readers", "schema": {"type": "array", "items": "user"}},
-    {"id": "customfield_10052", "name": "Words", "schema": {"type": "array", "items": "string"}},
+    {"id": "customfield_10052", "name": "Words", "schema": {"type": "array", "items": "string"},
+     "searchable": False, "clauseNames": ["cf[10052]"]},
     # A number field, which is shaped, so the refusal above is about the type
     # and not about the field being custom.
     {"id": "customfield_10030", "name": "Story points", "schema": {"type": "number"}},
@@ -1887,6 +1890,57 @@ def self_test() -> int:
         ),
         f"states {QUERYABLE!r}",
     )
+
+    # --- what a search covers (§ 3) -------------------------------------------
+    #
+    # ⛔ The texts a term is matched in, and the fields beyond the three above, are
+    # the project's; every answer names what it searched.
+    answered = with_host(host(), lambda: search_items("dup"))
+    check(
+        "a project stating no texts matches the summary alone, as before, and says so",
+        'summary ~ "dup"' in str(got(answered, "jql"))
+        and "description" not in str(got(answered, "jql"))
+        and got(answered, "texts_searched") == ["title"]
+        and got(answered, "texts_not_searched") == [],
+        f"answered {answered!r}",
+    )
+    covering = _example_configuration()
+    covering.data["tracker"]["search"] = {
+        "texts": ["title", "body"], "fields": ["Parts", "Areas", "Sprint", "Words"],
+    }
+    bind(covering)
+    answered = with_host(host(), lambda: search_items("dup word"))
+    check(
+        "stated texts match each term in either, natively, and the answer says which",
+        '(summary ~ "dup" OR description ~ "dup")' in str(got(answered, "jql"))
+        and '(summary ~ "word" OR description ~ "word")' in str(got(answered, "jql"))
+        and got(answered, "texts_searched") == ["title", "body"],
+        f"answered {answered!r}",
+    )
+    for name, clause in (("Parts", 'component = "core"'), ("Areas", 'cf[10050] = "core"')):
+        answered = with_host(host(), lambda name=name: search_items(fields={name: "core"}))
+        check(
+            f"a listed list-valued field `{name}` filters by the clause the catalogue states",
+            clause in str(got(answered, "jql")),
+            f"sent {got(answered, 'jql')!r}",
+        )
+    for name, refused_on, why in (
+        ("Sprint", "tracker.search.fields", "states no clause"),
+        ("Words", "tracker.search.fields", "is marked unsearchable"),
+        ("Absent", "tracker.search.fields", "the site does not have"),
+        ("Story points", "tracker.operations.search_items.Story points", "is not listed"),
+    ):
+        if name == "Absent":
+            covering.data["tracker"]["search"]["fields"].append("Absent")
+        asked = host()
+        reported = with_host(
+            asked, lambda name=name: refused(lambda: search_items(fields={name: "x"})))
+        check(
+            f"a field that {why} is refused naming `{refused_on}`, never answered as no match",
+            reported == refused_on and not any("search" in call for call in asked.calls),
+            f"reported {reported!r} after {asked.calls}",
+        )
+    bind(configuration)
 
     # --- § 33's publishing set, by one bounded query --------------------------
     #

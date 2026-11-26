@@ -207,7 +207,11 @@ nobody writes on items finds nothing.
 
 **2b. The keyword-independent sweep.** Pull items with **no keyword at all** and read every title
 against the request: filtered by the request's own area where the tracker can filter by a field,
-and otherwise the most recently updated, bounded and with the bound reported. ⛔ **This layer is
+and otherwise the most recently updated, bounded and with the bound reported. ⛔ **Which fields
+record an area, and which texts a term is matched in, are the project's**
+([`§ 3`](../../config/schema.md#what-a-search-covers-and-what-it-says-it-did-not)). This role reads
+them and does not choose them. A field the search refuses is reported as refused, never as a filter
+that found nothing. ⛔ **This layer is
 not optional and it is the one that gets dropped** — it is the only layer that can catch a
 duplicate whose wording shares nothing with the request, which is what a reworded duplicate is.
 
@@ -433,7 +437,8 @@ Then report, in the register
 
 - what was resolved — the root, the configuration file, the repository and the tracker;
 - every item filed or rewritten, with its identifier and title;
-- **the duplicate-search coverage**: every query with its hit count, the sweep in 2b and its bound,
+- **the duplicate-search coverage**: every query with its hit count and the texts its answer says
+  it searched and did not, the sweep in 2b and its bound,
   and every candidate above Low with its tier and its relationship. Where a candidate was found and
   an item was filed anyway, name it, the relationship, and the grounds — that is the decision this
   report exists to record;

@@ -84,6 +84,7 @@ COVERED = {
     "read_closing_change",
     "read_closing_list",
     "read_vocabulary",
+    "search_items",
 }
 
 # The item under test and the two it is related to. ⛔ Distinct integers, and the
@@ -1350,6 +1351,89 @@ def self_test() -> int:
             reading.get("answer") == word and reading.get("values") == values,
             f"answered {reading!r}",
         )
+
+    # --- what a search covers (§ 3) -------------------------------------------
+    #
+    # ⛔ The texts a term is matched in are the project's, sent as the host's own
+    # qualifier, and every answer names what it searched and what it did not.
+    def searching(configuration: dict, call):
+        bind({"host.repo": A_REPO, **configuration})
+        listing = _Host({"issue list": [_issue(BLOCKED)]})
+        try:
+            return listing, with_host(listing, call)
+        finally:
+            bind({"host.repo": A_REPO})
+
+    def sent_search(listing) -> str:
+        asked = [args for args in listing.sent if args[:2] == ["issue", "list"]]
+        return asked[0][asked[0].index("--search") + 1] if asked else ""
+
+    listing, answered = searching({}, lambda: under_test.search_items("a dup"))
+    check(
+        "a project stating no texts searches as before, and the answer says what that covered",
+        sent_search(listing) == "a dup"
+        and answered.get("texts_searched") == ["title", "body", "comments"]
+        and answered.get("texts_not_searched") == [],
+        f"sent {sent_search(listing)!r}, answered {answered!r}",
+    )
+    for texts, qualifier in ((["title", "body"], "in:title,body"), (["title"], "in:title")):
+        listing, answered = searching(
+            {"tracker.search.texts": texts}, lambda: under_test.search_items("a dup"))
+        check(
+            f"stated texts {texts} are sent as the host's own qualifier and reported",
+            sent_search(listing) == f"a dup {qualifier}"
+            and answered.get("texts_searched") == texts
+            and answered.get("terms") == f"a dup {qualifier}",
+            f"sent {sent_search(listing)!r}, answered {answered!r}",
+        )
+    listing, answered = searching(
+        {"tracker.search.texts": ["body"]}, lambda: under_test.search_items())
+    check(
+        "a search with no terms keeps its recency order, the texts matching nothing",
+        sent_search(listing) == under_test.RECENT_FIRST,
+        f"sent {sent_search(listing)!r}",
+    )
+    _, where = searching({}, lambda: refused(
+        lambda: under_test.search_items("a dup in:comments")))
+    check(
+        "an `in:` qualifier riding in with the terms is refused, the texts being configuration",
+        where == "tracker.operations.search_items",
+        f"reported {where!r}",
+    )
+    # ⛔ A field is refused every way it can be asked, since a plain issue has none.
+    for listed, key in ((["Area"], "tracker.search.fields"),
+                        ([], "tracker.operations.search_items.Area")):
+        listing, where = searching({"tracker.search.fields": listed}, lambda: refused(
+            lambda: under_test.search_items(fields={"Area": "core"})))
+        check(
+            f"a field {'listed' if listed else 'not listed'} for search is refused naming "
+            f"`{key}`, before any call, never answered as no match",
+            where == key and listing.sent == [],
+            f"reported {where!r} after {listing.sent!r}",
+        )
+    # ⛔ A tracker that cannot reach a stated text names it rather than dropping it,
+    # measured by narrowing what this module reaches to the title alone.
+    was = under_test.SEARCHABLE
+    under_test.SEARCHABLE = {"title": "title"}
+    try:
+        listing, answered = searching({"tracker.search.texts": ["title", "body"]},
+                                      lambda: under_test.search_items("a dup"))
+        check(
+            "a stated text the tracker cannot search is named in the answer, not dropped",
+            sent_search(listing) == "a dup in:title"
+            and answered.get("texts_searched") == ["title"]
+            and answered.get("texts_not_searched") == ["body"],
+            f"sent {sent_search(listing)!r}, answered {answered!r}",
+        )
+        listing, where = searching({"tracker.search.texts": ["body"]}, lambda: refused(
+            lambda: under_test.search_items("a dup")))
+        check(
+            "and where none of them can be searched, a query with terms is refused",
+            where == "tracker.search.texts" and listing.sent == [],
+            f"reported {where!r} after {listing.sent!r}",
+        )
+    finally:
+        under_test.SEARCHABLE = was
 
     # --- the operation set, against what the surface states -------------------
     #
