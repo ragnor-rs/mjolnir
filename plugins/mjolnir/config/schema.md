@@ -3829,6 +3829,7 @@ language:
     session_summary: { language: ru, register: business,  audience: "…" }
     billing_report:  { language: ru, register: technical, audience: "…" }
     hours_breakdown: { language: ru, register: business,  audience: "…", duration: { resolution: minute, hours: "ч", minutes: "мин" } }
+    work_item:       { language: ru, register: business,  audience: "…", exempt: [plan] }
 ```
 
 One project writes its cards in one language and its repository in another, split by audience; its
@@ -3853,6 +3854,54 @@ hundredth of an hour is written as decimal hours, which is the default, and a mi
 finite decimal fraction of an hour — as hours and minutes in the triple's own unit words, a zero
 component dropped (`120ч 29мин`, `45мин`, `3ч`). Unit words stated under the hundredth resolution
 are a stop rather than ignored, and so is a resolution outside the two.
+
+### Who a work item is written for
+
+**`language.work_item` states the language an item is written in and nothing about its reader.**
+Without a reader, the filing role writes in the register the request arrived in, and a request
+typed by a developer arrives in a technical one. An adopter's own filing command, since retired in
+favour of the filing role, required an item's main sections to be validated by a product owner,
+with no code, file path, API name or implementation detail in them. Its technical content went in
+one trailing plan written from a scan of the code. § 4.4's `declared` can state that plan, but
+nothing could state who the other sections are for, so `language.artifacts.work_item` is the
+item's own triple.
+
+- **Its `language` is `language.work_item`'s value, and the reader refuses any other.** The
+  language sits in two places only because every triple carries one. Stated differently in the two
+  places, it would leave a filing role choosing which of them to write in.
+- **`register` and `audience` are written on the triple**, as on every other.
+- **`exempt` lists the sections the triple does not govern**, each by its semantic name: one of
+  the procedure's three that `work_item.template.sections` maps to a heading, or the `name` of a
+  `declared` entry. The plan with `source: code` is the measured case. **The reader refuses a name
+  that resolves to no heading, and a name listed twice**, since an exemption naming no heading
+  governs nothing and says nothing. `[]` is the default.
+- **Every other section a body carries is governed**, its subsections included. Text before the
+  first heading is governed too. A section that is exempt takes its subsections with it.
+
+**The filing role writes the governed sections for the stated audience, and one consumer reads
+them back for code, a file path or an identifier.** The filing role runs it on the body before
+writing the item, and again on the text it reads back:
+
+```bash
+python3 plugins/mjolnir/scripts/item_sections.py register --body-file <the body>
+```
+
+What it reports, per governed section:
+
+- **a fenced block** and **a span in backticks**: code, whatever is inside them.
+- **a path**: a token carrying a separator and ending in an extension, a URL excepted.
+- **an identifier**: a name joined by underscores, a name with a capital inside a lowercase word,
+  or a name followed by `()`.
+
+⚠️ **What it reports is a finding for the filing role to judge, not a refusal.** § 8 keeps product
+names as they are, and a product written with a capital inside a lowercase word reads as an
+identifier here. A path named in plain words, such as "the configuration reader", passes, and so
+does an implementation detail written with no identifier in it. The consumer sees forms, not
+register.
+
+**Absent, filing is exactly as before the key existed.** The consumer exits `3`, and the filing
+role's reply says that no item audience is configured. It never says that the body was found in
+register.
 
 ### The reply to the person running a role
 

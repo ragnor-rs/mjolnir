@@ -452,6 +452,23 @@ item is written in `language.work_item` — headings included — whatever langu
 in. Only what is not prose stays as it is: product and technology names, URLs, file and branch
 names, and identifiers cited from elsewhere.
 
+**Who the item's sections are written for is the project's own triple**, where it states one —
+[`§ 8 → Who a work item is written for`](../../config/schema.md#who-a-work-item-is-written-for)
+states which sections it governs and which it exempts. Write every governed section in the triple's
+register for its audience, whatever register the request arrived in, and keep code, paths and
+identifiers for the sections it exempts. Then read the body for what slipped through:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" register --body-file <the body>
+```
+
+- **Exit 0** ⇒ no governed section carries code, a path or an identifier.
+- **Exit 1** ⇒ each finding is named with its section, line and text. **Rewrite the section for
+  its audience**, or keep a finding the reading misjudged — a product name — and say which in the
+  reply.
+- **Exit 3** ⇒ no item audience is configured, and the body is written as before; the reply says so.
+- **Exit 2** ⇒ the configuration or the body could not be read, which is not a pass.
+
 **A citation of another document owes two parts** — the source, named or linked, and the cited
 item's own title verbatim. A bare locator names no item and an unattributed quote names no source.
 An identifier is owed only where the source has one.
@@ -563,6 +580,10 @@ fix the labels and read the item back again.
 another language, one heading or one acceptance condition slips through in it, and nobody catches it
 later because the item looks finished.
 
+**Read the register the same way, on the fetched text**: step 4's `item_sections.py register`, run
+on the body as the tracker returns it. Each finding is reported with its section, and one that
+stands is fixed on the item before the pass ends.
+
 Then report, in the register
 [`§ 8`](../../config/schema.md#the-reply-to-the-person-running-a-role) states:
 
@@ -596,6 +617,9 @@ Then report, in the register
 - **every item filed with its questions open**: the mark it carries, where its questions were
   written, and each question — or, run on answers, each one answered and whether the mark came off;
 - the type and the template used, or that the project carries neither;
+- **the item's audience and its register reading**: the register and audience the triple states,
+  the sections it exempts, and every finding with what became of it — or that **no item audience is
+  configured**, never that the body was found in register;
 - **the grouping each item went into, and where it came from**: given on the request, the
   project's map with the rule it named, or asked for and answered;
 - **which code repository each item was written against**, where the project carries several — and
