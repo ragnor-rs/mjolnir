@@ -38,6 +38,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -58,6 +59,9 @@ CARRIER_CLASS = "guard"
 SURFACE = Path(__file__).resolve().parent.parent / "config" / "schema.md"
 CARRIER = Path(__file__).resolve().parent.parent / "hooks" / "hooks.json"
 CARRIER_EVENT = "SessionStart"
+# The event after a call, where the carrier on a merge the session made itself is registered.
+MERGE_EVENT = "PostToolUse"
+MERGE_ARM = "merged"
 
 # The subsection this script is the carrier for, by the anchor the code host would give its
 # heading -- the same bargain every citation of the surface makes: a reword that keeps the anchor
@@ -84,6 +88,10 @@ BUDGET_SECONDS = 40
 # own, so a tree whose lookups hang still outruns the event's limit. The reserve makes that the
 # rare case instead of the ordinary one, and nothing outside those calls can close it.
 RESERVE_SECONDS = 15
+
+# ⛔ What the host's confirmation of a merge may cost, taken off the sweep's budget on that event
+# rather than added past it: the two run under one registered timeout.
+CONFIRM_TIMEOUT_SECONDS = 10
 
 # Where `delete_branch` puts the published ref's deletion. ⛔ Read from § 2 and never defaulted:
 # the other two values are a project saying the ref is somebody else's, and asking for a deletion
@@ -195,6 +203,24 @@ class Report:
         if not said:
             return ""
         return "Landed trees: " + "; ".join(said) + f". ({ANCHOR})"
+
+    def told(self) -> str:
+        """Every tree this sweep examined, removed or kept, for the event after a merge.
+
+        ⛔ **No attention filter.** That event answers an act the person has just taken, so a tree
+        kept because the session stands in it is exactly what they need to hear -- the opening
+        event's table keeps it quiet only because it would be said on every session open.
+        """
+        said = [f"removed {v.path} ({v.reason})" for v in self.removed]
+        said += [
+            f"kept {v.path} — {v.reason}"
+            + (f" ({', '.join(v.paths)})" if v.paths else "")
+            + (f" [not established: {'; '.join(v.unestablished)}]" if v.unestablished else "")
+            for v in self.kept
+        ]
+        said += [f"not looked at: {', '.join(self.unreached)}"] if self.unreached else []
+        said += [f"not established: {i}" for i in self.unestablished]
+        return "; ".join(said) + "." if said else ""
 
 
 # --------------------------------------------------------------------------------------------
@@ -504,8 +530,14 @@ def sweep(
     occupants=None,
     remove=None,
     standing=None,
+    only: str | None = None,
 ) -> Report:
     """Remove every tree whose branch has landed, and report what was kept and why.
+
+    `only` narrows the sweep to the tree holding that one branch, which is what the carrier on a
+    merge the session made asks for. ⛔ Every other tree is passed over without a verdict: it is the
+    sweep on the event that opens a session that owes a reader those, and a merge carrier that
+    named them would narrate every tree on the machine after each merge.
 
     The injected callables are how the suite plants an arm away and how it asserts the arms are
     reached in the order the rule states; each defaults to the thing it stands in for. ⛔ **`read`
@@ -531,6 +563,8 @@ def sweep(
             f"which trees this repository has: {' '.join(str(error).split())}"
         )
         return report
+    if only is not None:
+        trees = [tree for tree in trees if tree.main or tree.branch == only]
     for index, tree in enumerate(trees):
         if tree.main:
             continue
@@ -857,17 +891,123 @@ def answer(payload: dict, *, run=None) -> dict:
     return {"systemMessage": said} if said else {}
 
 
-def hook(stream, out=None) -> int:
+def hook(stream, out=None, answering=None) -> int:
     """Answer one payload. ⛔ Interrupts nothing, whatever happens here."""
     out = out if out is not None else sys.stdout
+    answering = answering if answering is not None else answer
     try:
         payload = json.load(stream)
-        answered = answer(payload if isinstance(payload, dict) else {})
+        answered = answering(payload if isinstance(payload, dict) else {})
     except Exception:  # noqa: BLE001 -- a session must not be interrupted by this
         return 0
     if answered:
         print(json.dumps(answered), file=out)
     return 0
+
+
+# --------------------------------------------------------------------------------------------
+# The event after a merge the session made itself
+# --------------------------------------------------------------------------------------------
+
+
+def confirmed_merge(
+    slug: str | None, number: str | None, cwd: str, *, run=None
+) -> tuple[str | None, str]:
+    """`(the branch the host reports merged, "")`, or `(None, why nothing is examined)`.
+
+    ⛔ **The host's record and never the call's exit.** A merge queued behind the host's automatic
+    merge exits zero having merged nothing, so the change's own state is what licenses the sweep.
+    ⚠️ A change the command named by no number is the one open on the branch the call was made
+    from, which is why the client is run in the session's directory.
+    """
+    args = ["pr", "view", *([number] if number else []), "--json", "state,headRefName"]
+    if slug:
+        args += ["--repo", slug]
+    named = f"{slug or 'this repository'}#{number}" if number else "the change on this branch"
+    try:
+        if run is not None:
+            code, out = run(args, cwd)
+        else:
+            proc = subprocess.run(
+                ["gh", *args], cwd=cwd, capture_output=True, text=True,
+                timeout=CONFIRM_TIMEOUT_SECONDS,
+            )
+            code, out = proc.returncode, proc.stdout
+    except Exception as error:  # noqa: BLE001 -- an unread record examines nothing
+        return None, f"the host's record of {named} could not be read ({type(error).__name__})"
+    if code != 0:
+        return None, f"the host's record of {named} could not be read"
+    try:
+        record = json.loads(out or "{}")
+    except json.JSONDecodeError:
+        return None, f"the host's record of {named} did not parse"
+    state = str((record or {}).get("state") or "")
+    branch = str((record or {}).get("headRefName") or "")
+    if state != "MERGED":
+        return None, f"the host reports {named} as {state or 'nothing'}, not merged"
+    if not branch:
+        return None, f"the host reports {named} merged and names no branch"
+    return branch, ""
+
+
+def merged_answer(payload: dict, *, run=None, confirm=None) -> dict:
+    """The answer to one finished call: silence unless it merged and the project turned this on.
+
+    ⛔ **Which call is a merge is the merge guard's grammar, imported and not restated.** A second
+    grammar here would see a merge that guard does not, or miss one it holds.
+
+    ⛔ **The cheap reading comes first**: this fires after every shell call, so a call that is not a
+    merge costs a parse and nothing else -- no configuration, no host.
+    """
+    if payload.get("tool_name") != "Bash":
+        return {}
+    command = str((payload.get("tool_input") or {}).get("command") or "")
+    if not command.strip():
+        return {}
+    try:
+        import enforce  # noqa: PLC0415 -- only a call worth asking about pays for it
+    except Exception:  # noqa: BLE001 -- a session must not be interrupted by this
+        return {}
+    target = enforce.merge_target(command, None)
+    if target is None:
+        return {}
+    reader = shared_reader()
+    if reader is None:
+        return {}
+    cwd = str(payload.get("cwd") or ".")
+    try:
+        loaded, stop = reader.read_or_why(cwd)
+    except Exception:  # noqa: BLE001 -- an unreachable reader says nothing
+        return {}
+    # ⛔ A configuration that does not resolve is the opening event's to report, every session: a
+    # carrier the project may never have turned on says nothing about a file it cannot read.
+    if stop or loaded is None or loaded.get("branch_model.kind") != "worktree":
+        return {}
+    if loaded.get("branch_model.prune_on_merge") is not True:
+        return {}
+    slug, number, _named = target
+    branch, why = (confirm or confirmed_merge)(slug or loaded.get("host.repo"), number, cwd)
+    if branch is None:
+        return {"systemMessage": f"Merged tree: no tree was examined — {why}. ({ANCHOR})"}
+    try:
+        report = (run if run is not None else sweep)(
+            loaded.code_root,
+            list(loaded.get("branch_model.regenerable") or []),
+            str(loaded.get("host.landing.delete_branch") or ""),
+            tree_dir=loaded.get("branch_model.tree_dir"),
+            teardown=loaded.get("branch_model.teardown"),
+            resource_up=loaded.get("branch_model.resource_up"),
+            here=cwd,
+            budget=BUDGET_SECONDS - CONFIRM_TIMEOUT_SECONDS,
+            only=branch,
+        )
+    except Exception as error:  # noqa: BLE001 -- nothing here may interrupt a session
+        return {"systemMessage": (
+            f"Merged tree: the sweep for `{branch}` did not run ({type(error).__name__}), so no "
+            f"tree was examined and none was removed. ({ANCHOR})"
+        )}
+    said = report.told()
+    return {"systemMessage": f"Merged tree `{branch}`: {said} ({ANCHOR})"} if said else {}
 
 
 # --------------------------------------------------------------------------------------------
@@ -895,12 +1035,14 @@ def check_the_surface_still_states_this(text: str) -> list[str]:
 
 
 def check_the_carrier_still_calls_this(text: str) -> list[str]:
-    """`hooks.json` still registers this file on the event that opens a session.
+    """`hooks.json` still registers this file on both events it answers.
 
-    ⛔ **And the timeout it registers is still longer than the budget this module stops on.** The
-    two are one mechanism: a budget at or above the timeout means the harness kills the run first,
-    and a killed run emits nothing -- so the half-finished sweep reads as a finished one, which is
-    the failure the budget exists to convert into a sentence.
+    The event that opens a session runs the `hook` arm, and the event after a call runs the
+    `merged` arm. ⛔ **And the timeout each registers is still longer than the budget this module
+    stops on.** The two are one mechanism: a budget at or above the timeout means the harness kills
+    the run first, and a killed run emits nothing -- so the half-finished sweep reads as a finished
+    one, which is the failure the budget exists to convert into a sentence. ⚠️ The merge arm's
+    budget is the same total, its host confirmation being taken off the sweep's share.
     """
     try:
         carrier = json.loads(text)
@@ -908,36 +1050,41 @@ def check_the_carrier_still_calls_this(text: str) -> list[str]:
         return [f"{CARRIER.name} is not readable as JSON ({error}), so nothing calls this."]
     mine = Path(__file__).name
     problems = []
-    timeouts = []
-    for group in (carrier.get("hooks") or {}).get(CARRIER_EVENT) or []:
-        for item in group.get("hooks") or []:
-            named = " ".join(
-                [str(item.get("command") or "")] + [str(a) for a in (item.get("args") or [])]
-            )
-            if mine in named:
+    for event, arm, missing in (
+        (CARRIER_EVENT, "hook",
+         "so every tree a merge outside this session left behind is reaped by nothing"),
+        (MERGE_EVENT, MERGE_ARM,
+         "so a project that turned `prune_on_merge` on has it performed by nothing"),
+    ):
+        timeouts = []
+        for group in (carrier.get("hooks") or {}).get(event) or []:
+            for item in group.get("hooks") or []:
+                args = [str(a) for a in (item.get("args") or [])]
+                named = " ".join([str(item.get("command") or "")] + args)
+                if mine not in named or arm not in args:
+                    continue
                 timeouts.append(item.get("timeout"))
                 if "${CLAUDE_PLUGIN_ROOT}" not in named:
                     problems.append(
-                        f"a `{CARRIER_EVENT}` handler names {mine} by a path the plugin root does "
+                        f"a `{event}` handler names {mine} by a path the plugin root does "
                         "not expand — it must be addressed through `${CLAUDE_PLUGIN_ROOT}`"
                     )
-    if not timeouts:
-        problems.append(
-            f"{CARRIER.name} registers no {CARRIER_EVENT} hook calling {mine}, so every tree a "
-            "merge outside this session left behind is reaped by nothing."
-        )
-    for timeout in timeouts:
-        # ⛔ **A margin and not an inequality.** `timeout > budget` is satisfied by one second,
-        # which leaves the last tree's own work -- two host lookups, a fetch and a read of the
-        # machine -- outside the limit, and a run killed there emits nothing. What has to fit
-        # inside the timeout is the budget *plus* what one tree is allowed to cost.
-        if not isinstance(timeout, int) or timeout < BUDGET_SECONDS + RESERVE_SECONDS:
+        if not timeouts:
             problems.append(
-                f"a `{CARRIER_EVENT}` handler calling {mine} states a timeout of {timeout!r}, "
-                f"which does not cover this module's budget of {BUDGET_SECONDS}s plus the "
-                f"{RESERVE_SECONDS}s it holds back for one tree. The harness would kill the run "
-                "before it could say what it did not reach."
+                f"{CARRIER.name} registers no {event} hook calling {mine} {arm}, {missing}."
             )
+        for timeout in timeouts:
+            # ⛔ **A margin and not an inequality.** `timeout > budget` is satisfied by one second,
+            # which leaves the last tree's own work -- two host lookups, a fetch and a read of the
+            # machine -- outside the limit, and a run killed there emits nothing. What has to fit
+            # inside the timeout is the budget *plus* what one tree is allowed to cost.
+            if not isinstance(timeout, int) or timeout < BUDGET_SECONDS + RESERVE_SECONDS:
+                problems.append(
+                    f"a `{event}` handler calling {mine} {arm} states a timeout of {timeout!r}, "
+                    f"which does not cover this module's budget of {BUDGET_SECONDS}s plus the "
+                    f"{RESERVE_SECONDS}s it holds back for one tree. The harness would kill the "
+                    "run before it could say what it did not reach."
+                )
     return problems
 
 
@@ -2221,6 +2368,175 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         quiet_arms.message() or str(quiet_arms.lines()),
     )
 
+    print("\nthe event after a merge the session made itself:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        work, branch, tree = _landed_world(tmp)
+        other, other_tree = "feature/2-other", str(Path(_trees(tmp)) / "2-other")
+        claim.take(work, other, other_tree)
+        for key, value in (("user.email", "a-worker"), ("user.name", "A Worker")):
+            claim.git(other_tree, "config", key, value)
+        (Path(other_tree) / "other.txt").write_text("more work\n")
+        claim.git(other_tree, "add", "other.txt")
+        claim.git(other_tree, "commit", "--quiet", "-m", "more work")
+        claim.git(other_tree, "push", "--quiet", "--force", "origin",
+                  f"HEAD:{claim.REFS_PREFIX}{other}")
+        (Path(work) / "other.txt").write_text("more work\n")
+        claim.git(work, "add", "other.txt")
+        claim.git(work, "commit", "--quiet", "-m", "more work, squashed")
+        claim.git(work, "push", "--quiet", "origin", "main")
+        report = sweep(work, [], "never", tree_dir=_trees(tmp), occupants=lambda _p: [],
+                       only=other)
+        suite.ok(
+            "⛔ a sweep narrowed to one branch removes that branch's landed tree",
+            not Path(other_tree).exists() and len(report.removed) == 1,
+            report.report(),
+        )
+        suite.ok(
+            "⛔ and passes over another landed tree without a verdict, leaving it standing",
+            Path(tree).exists() and len(report.verdicts) == 1,
+            report.report(),
+        )
+        report = sweep(work, [], "never", tree_dir=_trees(tmp), occupants=lambda _p: [],
+                       only=branch, here=tree)
+        suite.ok(
+            "⛔ the tree the session stands in is kept, and what is told names it and why",
+            Path(tree).exists() and not report.removed
+            and tree in report.told() and "standing in it" in report.told(),
+            report.told(),
+        )
+
+    quiet_kept = Report(verdicts=[
+        Verdict("/t1", "b1", False, "another session is working at or below it: x (1)"),
+    ])
+    suite.ok(
+        "⛔ what the merge event tells carries a kept tree the opening event keeps quiet",
+        quiet_kept.message() == "" and "/t1" in quiet_kept.told(),
+        quiet_kept.told(),
+    )
+
+    def _host(state: str, branch: str = "feature/9-x", code: int = 0):
+        asked: list[list[str]] = []
+
+        def run(args, _cwd):
+            asked.append(args)
+            return code, json.dumps({"state": state, "headRefName": branch})
+
+        run.asked = asked  # type: ignore[attr-defined]
+        return run
+
+    merged = _host("MERGED")
+    suite.ok(
+        "a change the host reports merged is confirmed, with its branch",
+        confirmed_merge("o/r", "9", ".", run=merged) == ("feature/9-x", "")
+        and merged.asked[0][:3] == ["pr", "view", "9"],
+        str(merged.asked),
+    )
+    suite.ok(
+        "⛔ a change the host reports open is not, whatever the call exited with",
+        confirmed_merge("o/r", "9", ".", run=_host("OPEN"))[0] is None
+        and "OPEN" in confirmed_merge("o/r", "9", ".", run=_host("OPEN"))[1],
+    )
+    suite.ok(
+        "⛔ an unreadable record is not a merge either",
+        confirmed_merge("o/r", "9", ".", run=_host("MERGED", code=1))[0] is None,
+    )
+    suite.ok(
+        "⛔ nor is a merge that names no branch",
+        confirmed_merge("o/r", "9", ".", run=_host("MERGED", branch=""))[0] is None,
+    )
+    bare_merge = _host("MERGED")
+    confirmed_merge(None, None, ".", run=bare_merge)
+    suite.ok(
+        "a merge naming no change asks about the change on the session's own branch",
+        bare_merge.asked[0] == ["pr", "view", "--json", "state,headRefName"],
+        str(bare_merge.asked),
+    )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        where = Path(tmp) / "configured"
+        (where / ".claude").mkdir(parents=True)
+        stated = (shipped / "github-issues.yaml").read_text(encoding="utf-8")
+        (where / ".claude" / "mjolnir.yaml").write_text(stated, encoding="utf-8")
+        ran: list[dict] = []
+        confirmed: list[tuple] = []
+
+        def record_run(*args, **kwargs):
+            ran.append(kwargs)
+            return Report(verdicts=[Verdict("/a/tree", "feature/9-x", True, "its branch landed")])
+
+        def confirm_merged(*args):
+            confirmed.append(args)
+            return "feature/9-x", ""
+
+        def merge_call(command: str) -> dict:
+            return {"tool_name": "Bash", "cwd": str(where), "tool_input": {"command": command}}
+
+        said = merged_answer(merge_call("gh pr merge 9 --squash"), run=record_run,
+                             confirm=confirm_merged)
+        suite.ok(
+            "⛔ a project that states nothing new is answered with silence, as it is today",
+            said == {} and not ran and not confirmed,
+            str(said),
+        )
+        (where / ".claude" / "mjolnir.yaml").write_text(
+            stated.replace("  kind: worktree\n", "  kind: worktree\n  prune_on_merge: true\n", 1),
+            encoding="utf-8",
+        )
+        said = merged_answer(merge_call("gh pr view 9"), run=record_run, confirm=confirm_merged)
+        suite.ok(
+            "⛔ a call that is not a merge asks the host nothing and says nothing",
+            said == {} and not ran and not confirmed,
+            str(said),
+        )
+        said = merged_answer(merge_call("gh pr merge 9 --squash"), run=record_run,
+                             confirm=lambda *a: (None, "the host reports o/r#9 as OPEN"))
+        suite.ok(
+            "⛔ a merge the host has not confirmed examines no tree, and says so",
+            not ran and "no tree was examined" in str(said.get("systemMessage", ""))
+            and "OPEN" in str(said.get("systemMessage", "")),
+            str(said),
+        )
+        said = merged_answer(merge_call("gh pr merge 9 --squash"), run=record_run,
+                             confirm=confirm_merged)
+        suite.ok(
+            "⛔ a confirmed merge sweeps the one branch it landed, from the session's directory",
+            len(ran) == 1 and ran[0].get("only") == "feature/9-x"
+            and ran[0].get("here") == str(where)
+            and confirmed and confirmed[0][1] == "9",
+            str(ran),
+        )
+        suite.ok(
+            "and what it removed reaches the person, not the session's context",
+            "/a/tree" in str(said.get("systemMessage", ""))
+            and "additionalContext" not in json.dumps(said),
+            str(said),
+        )
+        suite.ok(
+            "⛔ and the sweep's budget leaves room for the confirmation under one timeout",
+            ran[0].get("budget") == BUDGET_SECONDS - CONFIRM_TIMEOUT_SECONDS,
+            str(ran[0].get("budget")),
+        )
+        failed = merged_answer(merge_call("gh pr merge 9"), run=_raises, confirm=confirm_merged)
+        suite.ok(
+            "a sweep that could not run says it removed nothing, and interrupts nothing",
+            "did not run" in str(failed.get("systemMessage", ""))
+            and "hookSpecificOutput" not in json.dumps(failed),
+            str(failed),
+        )
+        refused = reader.why_refused(str(where)) if reader else "no reader"
+        suite.ok("the key is read clean when it is a boolean", not refused, str(refused))
+        (where / ".claude" / "mjolnir.yaml").write_text(
+            stated.replace("  kind: worktree\n", '  kind: worktree\n  prune_on_merge: "no"\n', 1),
+            encoding="utf-8",
+        )
+        refused = reader.why_refused(str(where)) if reader else ""
+        suite.ok(
+            "⛔ and refused with the key named when it is a string that would read as true",
+            bool(refused) and "prune_on_merge" in refused,
+            str(refused),
+        )
+
     print("\nthe carrier and the surface:")
 
     surface = SURFACE.read_text(encoding="utf-8")
@@ -2246,6 +2562,10 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         bool(check_the_carrier_still_calls_this(
             carrier.replace(Path(__file__).name, "something-else.py")
         )),
+    )
+    suite.ok(
+        "⛔ and it reddens when the merge event's registration is gone",
+        bool(check_the_carrier_still_calls_this(carrier.replace('"merged"', '"something"'))),
     )
     suite.ok(
         "⛔ and it reddens when the timeout stops covering this module's own budget",
@@ -2286,6 +2606,7 @@ def main(argv: list[str]) -> int:
     )
     sub = parser.add_subparsers(dest="arm")
     sub.add_parser("hook", help=f"answer a {CARRIER_EVENT} payload on stdin")
+    sub.add_parser(MERGE_ARM, help=f"answer a {MERGE_EVENT} payload on stdin")
     sweeping = sub.add_parser("sweep", help="sweep this project's trees and report")
     sweeping.add_argument(
         "--skills-root", default=".", help="the root the configuration is resolved relative to"
@@ -2296,6 +2617,8 @@ def main(argv: list[str]) -> int:
         return self_test()
     if args.arm == "hook":
         return hook(sys.stdin)
+    if args.arm == MERGE_ARM:
+        return hook(sys.stdin, answering=merged_answer)
     if args.arm == "sweep":
         reader = shared_reader()
         if reader is None:

@@ -9498,6 +9498,23 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 "is stated where no tree is ever cut, so no removal asks it (§ 10).",
             )
 
+    # § 10. Whether the sweep also runs after a merge the session makes with a
+    # bare command. ⛔ Absent is `false` and is never refused; what is refused is
+    # a value that is not a boolean, since a string like "no" would read as true.
+    prune_on_merge = _get(data, "branch_model.prune_on_merge")
+    if prune_on_merge is not None:
+        if not isinstance(prune_on_merge, bool):
+            raise ConfigError(
+                "branch_model.prune_on_merge",
+                f"is {prune_on_merge!r}; it is `true` or `false` (§ 10), and a string "
+                "would read as `true` to anything that tested it.",
+            )
+        if prune_on_merge and _get(data, "branch_model.kind") != "worktree":
+            raise ConfigError(
+                "branch_model.prune_on_merge",
+                "is `true` where no tree is ever cut, so no merge has a tree to prune (§ 10).",
+            )
+
     # § 10. What a rebuild writes again, which is the only half of the pruning
     # oracle a project states. ⛔ Whether the key is *written* is the surface's
     # `# required_when` marker and not a rule here; what is held here is its
