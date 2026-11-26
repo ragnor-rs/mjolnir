@@ -787,6 +787,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "bare command, once the host confirms it? Unstated, the next session's sweep "
         "does it.",
     ),
+    "branch_model.prune_on_open": ask(
+        "Should the sweep as a session opens remove landed trees, or only say which it "
+        "would remove? Unstated, it removes them.",
+    ),
     "branch_model.regenerable": ask(
         "Which ignored paths does a rebuild write again? ⚠️ A new tree carries "
         "none of them, so they are read out before any removal.",

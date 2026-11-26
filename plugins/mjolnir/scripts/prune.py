@@ -25,7 +25,9 @@ be named as unestablished rather than guessed.
 
 Usage:
     prune.py hook                      answer a SessionStart payload on stdin
+    prune.py merged                    answer a PostToolUse payload on stdin
     prune.py sweep --skills-root .     sweep this project's trees and report
+    prune.py sweep --list              say what a sweep would remove, and remove nothing
     prune.py --self-test               plant a violation per rule, then hold the rule
 """
 
@@ -98,6 +100,10 @@ CONFIRM_TIMEOUT_SECONDS = 10
 # under either is the refused second deletion § 2 measured.
 PROCEDURE_DELETES = "procedure"
 
+# ⛔ The value of `branch_model.prune_on_open` that makes the opening event's sweep list-only. The
+# reader holds the key to `remove` or this; the default is removal.
+OPEN_LISTS = "list"
+
 
 @dataclass
 class Registered:
@@ -131,6 +137,10 @@ class Verdict:
     # question nothing could answer, and a removal that was refused -- and a carrier that found
     # those by matching its own prose would stop finding one the first time it was reworded.
     attention: bool = False
+    # ⛔ A tree a list-only run reached the removal for and did not remove. It is the verdict a
+    # sweep would have acted on, so it is neither `removed` nor kept by anything, and a report that
+    # filed it under either would misstate what a removing run does with the same tree.
+    listed: bool = False
 
 
 @dataclass
@@ -150,13 +160,19 @@ class Report:
         return [v for v in self.verdicts if v.removed]
 
     @property
+    def listed(self) -> list[Verdict]:
+        return [v for v in self.verdicts if v.listed]
+
+    @property
     def kept(self) -> list[Verdict]:
-        return [v for v in self.verdicts if not v.removed]
+        return [v for v in self.verdicts if not v.removed and not v.listed]
 
     def lines(self) -> list[str]:
         out = []
         for verdict in self.removed:
             out.append(f"removed {verdict.path} — {verdict.reason}")
+        for verdict in self.listed:
+            out.append(f"would remove {verdict.path} — {verdict.reason}")
         for verdict in self.kept:
             named = f" ({', '.join(verdict.paths)})" if verdict.paths else ""
             out.append(f"kept {verdict.path} — {verdict.reason}{named}")
@@ -188,6 +204,9 @@ class Report:
         branch has not landed is the ordinary state of a tree being worked in.
         """
         said = [f"removed {v.path} ({v.reason})" for v in self.removed]
+        # ⛔ A tree a list-only sweep would remove is said on every open: nothing else will remove
+        # it, so it is a person's to act on, and silence would be the accumulation the sweep ends.
+        said += [f"would remove {v.path} ({v.reason})" for v in self.listed]
         # ⛔ The paths **and** what could not be established, because § 11's rule has no quiet
         # form: an unestablished half that reached only the full report is one a person never saw,
         # and the full report is reachable from the person-run arm alone.
@@ -212,6 +231,7 @@ class Report:
         event's table keeps it quiet only because it would be said on every session open.
         """
         said = [f"removed {v.path} ({v.reason})" for v in self.removed]
+        said += [f"would remove {v.path} ({v.reason})" for v in self.listed]
         said += [
             f"kept {v.path} — {v.reason}"
             + (f" ({', '.join(v.paths)})" if v.paths else "")
@@ -531,8 +551,13 @@ def sweep(
     remove=None,
     standing=None,
     only: str | None = None,
+    listing: bool = False,
 ) -> Report:
     """Remove every tree whose branch has landed, and report what was kept and why.
+
+    `listing` takes every reading a removing run takes and stops at the removal: the tree it would
+    have removed is a `listed` verdict, and no tree, branch, ref or registration is touched. ⛔ The
+    decision is `_decide`'s in both runs, so the two cannot disagree about which tree goes.
 
     `only` narrows the sweep to the tree holding that one branch, which is what the carrier on a
     merge the session made asks for. ⛔ Every other tree is passed over without a verdict: it is the
@@ -586,6 +611,7 @@ def sweep(
                     occupants=occupants,
                     standing=standing,
                     remove=remove,
+                    listing=listing,
                 )
             )
         except Exception as error:  # noqa: BLE001 -- one tree's failure is not the sweep's
@@ -609,7 +635,8 @@ def sweep(
     # ⚠️ Registrations whose directories are gone are cleared here rather than reported forever.
     # Nothing is at stake in one — the tree it named does not exist — and a sweep that left them
     # standing would say the same sentence about the same absence at every session open.
-    if any(tree.prunable for tree in trees):
+    # ⛔ Not on a list-only run, which writes nothing to the repository at all.
+    if not listing and any(tree.prunable for tree in trees):
         claim.git(root, "worktree", "prune", check=False)
     return report
 
@@ -622,6 +649,7 @@ def _decide(
     occupants,
     standing,
     remove,
+    listing: bool = False,
 ) -> Verdict:
     """One tree, in the order § 10 states -- and the order is part of the rule.
 
@@ -727,6 +755,16 @@ def _decide(
         who = ", ".join(f"{command} ({pid})" for pid, command in there)
         return kept(f"another session is working at or below it: {who}")
 
+    if listing:
+        # ⛔ Every reading above was taken, so this is the verdict a removing run acts on; the
+        # removal, the teardown it runs and the ref it may delete are what a list-only run skips.
+        return Verdict(
+            tree.path,
+            tree.branch,
+            False,
+            "its branch has landed and nothing keeps it; a removing sweep removes it",
+            listed=True,
+        )
     done, failed = remove(tree.branch, tree.path)
     if failed:
         # ⛔ Said on the event that opens a session rather than only to a run nobody reads: a
@@ -881,6 +919,9 @@ def answer(payload: dict, *, run=None) -> dict:
             # from the payload, and reading `getcwd()` here made that stop depend on an unstated
             # guarantee about where hooks are run.
             here=cwd,
+            # ⚠️ Only `list` is read as list-only: the key unwritten, or `remove`, is the removing
+            # sweep, and any other value is the reader's to refuse before this is reached.
+            listing=loaded.get("branch_model.prune_on_open") == OPEN_LISTS,
         )
     except Exception as error:  # noqa: BLE001 -- nothing here may interrupt a session
         return {"systemMessage": (
@@ -1256,6 +1297,60 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         suite.ok(
             "and the local branch goes with it, so the claim is not left held",
             not claim._local_branch(work, branch),  # noqa: SLF001 -- the sibling's own reading
+        )
+
+    print("\na list-only sweep says what a sweep would remove, and removes nothing:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        work, branch, tree = _landed_world(tmp)
+        # Beside the landed tree, one whose branch has not landed and one whose directory is gone,
+        # so the list is held against a kept verdict and a registration as well as a removal.
+        open_tree = str(Path(_trees(tmp)) / "2-open")
+        claim.take(work, "feature/2-open", open_tree)
+        gone_tree = str(Path(_trees(tmp)) / "3-gone")
+        claim.take(work, "feature/3-gone", gone_tree)
+        shutil.rmtree(gone_tree)
+
+        def published() -> str:
+            return claim.git(work, "ls-remote", "origin", f"refs/heads/{branch}").stdout.strip()
+
+        def verdicts(report: Report) -> dict:
+            return {
+                os.path.realpath(v.path): ("goes" if v.removed or v.listed else v.reason)
+                for v in report.verdicts
+            }
+
+        before = published()
+        listed = sweep(work, [], PROCEDURE_DELETES, tree_dir=_trees(tmp),
+                       occupants=lambda _p: [], listing=True)
+        suite.ok(
+            "⛔ a list-only run names the landed tree as one a sweep would remove",
+            [os.path.realpath(v.path) for v in listed.listed] == [os.path.realpath(tree)]
+            and not listed.removed and "would remove" in listed.report(),
+            listed.report(),
+        )
+        suite.ok(
+            "⛔ and removes no tree, no local branch and no published ref",
+            Path(tree).exists()
+            and claim._local_branch(work, branch)  # noqa: SLF001 -- the sibling's own reading
+            and before and published() == before,
+            listed.report(),
+        )
+        suite.ok(
+            "⛔ and leaves even a registration whose directory is gone",
+            gone_tree in claim.git(work, "worktree", "list", "--porcelain").stdout,
+        )
+        suite.ok(
+            "a tree it would remove reaches the person as a session opens",
+            "would remove" in listed.message() and os.path.basename(tree) in listed.message(),
+            listed.message(),
+        )
+        removing = sweep(work, [], PROCEDURE_DELETES, tree_dir=_trees(tmp),
+                         occupants=lambda _p: [])
+        suite.ok(
+            "⛔ and every tree gets the verdict the removing run then acts on",
+            verdicts(listed) == verdicts(removing) and not Path(tree).exists(),
+            f"{verdicts(listed)} vs {verdicts(removing)}",
         )
 
     print("\na tree whose resource is up is kept:")
@@ -2362,6 +2457,50 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             handed["kwargs"]["here"] == str(where),
             str(handed.get("kwargs")),
         )
+        suite.ok(
+            "⛔ a project that states nothing new has the opening event remove, as it does today",
+            handed["kwargs"]["listing"] is False,
+            str(handed.get("kwargs")),
+        )
+        for value, lists in (("list", True), ("remove", False)):
+            configured.write_text(
+                as_shipped.replace("branch_model:\n", f"branch_model:\n  prune_on_open: {value}\n", 1)
+            )
+            handed.clear()
+            answer({"cwd": str(where)}, run=record)
+            suite.ok(
+                f"⛔ `prune_on_open: {value}` has the opening event "
+                f"{'list rather than remove' if lists else 'remove'}",
+                handed.get("kwargs", {}).get("listing") is lists,
+                str(handed.get("kwargs")),
+            )
+        configured.write_text(
+            as_shipped.replace("branch_model:\n", "branch_model:\n  prune_on_open: lists\n", 1)
+        )
+        refused = reader.why_refused(str(where))
+        suite.ok(
+            "⛔ and any other value is refused with the key named, never read as either",
+            bool(refused) and "prune_on_open" in refused,
+            str(refused),
+        )
+        in_place = (
+            as_shipped.replace("  kind: worktree\n  work_in_shared_checkout: never\n",
+                               "  kind: in_place\n  work_in_shared_checkout: null\n", 1)
+            .replace('  tree_dir: ".claude/worktrees/items"\n', "  tree_dir: null\n", 1)
+            .replace("  regenerable: []\n", "", 1)
+        )
+        readings = []
+        for value in ("remove", "list"):
+            configured.write_text(
+                in_place.replace("branch_model:\n", f"branch_model:\n  prune_on_open: {value}\n", 1)
+            )
+            readings.append(reader.why_refused(str(where)))
+        suite.ok(
+            "⛔ and `list` is refused where no tree is ever cut, while `remove` is read clean",
+            not readings[0] and "prune_on_open" in str(readings[1]),
+            str(readings),
+        )
+        configured.write_text(as_shipped)
         out = io.StringIO()
         code = hook(
             io.StringIO(json.dumps({"hook_event_name": CARRIER_EVENT, "cwd": str(where)})), out=out
@@ -2685,6 +2824,12 @@ def main(argv: list[str]) -> int:
     sweeping.add_argument(
         "--skills-root", default=".", help="the root the configuration is resolved relative to"
     )
+    sweeping.add_argument(
+        "--list",
+        action="store_true",
+        dest="listing",
+        help="say what a sweep would remove, and remove no tree, branch or ref",
+    )
 
     args = parser.parse_args(argv)
     if args.self_test:
@@ -2732,6 +2877,7 @@ def main(argv: list[str]) -> int:
                 tree_dir=stated,
                 teardown=loaded.get("branch_model.teardown"),
                 resource_up=loaded.get("branch_model.resource_up"),
+                listing=args.listing,
             )
         except claim.ClaimError as error:
             print(f"⛔ the trees of this project could not be listed, so none was examined: {error}")
