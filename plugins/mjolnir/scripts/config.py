@@ -136,6 +136,12 @@ PLUGIN_IN_REPO = os.path.relpath(PLUGIN_ROOT, REPO_ROOT)
 # does not get to move it, or a role would have to be told where to look.
 CONFIG_PATH = os.path.join(".claude", "mjolnir.yaml")
 
+# § 10's least `wait_holds_for`: the longest a waiter goes between two of its own
+# readings -- the wait's rest plus the longest probe the reader admits -- so a
+# place in line is never given up while its waiter is still waiting.
+# `enforce.py --self-test` holds this to its own figures.
+WAIT_HOLDS_LEAST = 10
+
 # The markers that make the surface machine-readable. These are read as one
 # semicolon-separated clause of a key's trailing comment; every clause of a
 # comment is scanned, not just the last one, so a key that states prose and a
@@ -1616,6 +1622,19 @@ def _mappable_facets(facts: dict) -> list[str]:
 def _grouping_default(data: dict, facts: dict, entry: dict, at: str) -> None:
     """§ 4.8's stated default: `default_from` and `default_map`, held together."""
     source, mapping = entry.get(DEFAULT_FROM_KEY), entry.get(DEFAULT_MAP_KEY)
+    by = entry.get(DEFAULT_BY_KEY)
+    if by is not None and by not in DEFAULTS_BY:
+        raise ConfigError(
+            f"{at}.{DEFAULT_BY_KEY}",
+            f"is {by!r}; it says what each `{DEFAULT_MAP_KEY}` value names, which "
+            f"is {' | '.join(DEFAULTS_BY)} (§ 4.8).",
+        )
+    if by is not None and mapping is None:
+        raise ConfigError(
+            f"{at}.{DEFAULT_BY_KEY}",
+            f"is stated with no `{DEFAULT_MAP_KEY}`: it says what that map's values "
+            "name, so with no map it describes nothing (§ 4.8).",
+        )
     if source is None and mapping is None:
         return
     if source is None or mapping is None:
@@ -1669,6 +1688,13 @@ def _grouping_default(data: dict, facts: dict, entry: dict, at: str) -> None:
                 f"{at}.{DEFAULT_MAP_KEY}",
                 f"maps {key!r} to {value!r}; each entry names the grouping an item "
                 "with that value goes into, as a non-empty string (§ 4.8).",
+            )
+        if by == BY_POSITION and value not in (*POSITIONS, LAST_POSITION):
+            raise ConfigError(
+                f"{at}.{DEFAULT_MAP_KEY}",
+                f"maps {key!r} to {value!r} under `{DEFAULT_BY_KEY}: {BY_POSITION}`, "
+                "where each entry is a position among the open groupings: "
+                f"{', '.join(POSITIONS)} or {LAST_POSITION} (§ 4.8).",
             )
 
 
@@ -2262,7 +2288,7 @@ class Config:
         and never the first grouping, the map's commonest value, or a blank.
         """
         block = self.grouping(name)
-        at = GROUPING_KEY if block["name"] == ONE_GROUPING else f"{GROUPING_KEY}.{block['name']}"
+        at = grouping_at(block["name"])
         answer = {"grouping": block["name"], "value": None}
         if given is not None and str(given).strip():
             return {**answer, "value": given, "source": "given",
@@ -2284,6 +2310,17 @@ class Config:
                     "report": f"`{at}.{DEFAULT_MAP_KEY}` carries no entry for `{source}` "
                     f"{from_value!r}, so the grouping is asked for (§ 4.8)"}
         value = mapping[from_value]
+        if block.get(DEFAULT_BY_KEY) == BY_POSITION:
+            # ⛔ The reader holds no tracker, so the position is handed on rather
+            # than counted here: a value worked out from a list this module never
+            # read would be the guess § 4.8 forbids.
+            return {**answer, "source": BY_POSITION, "position": value,
+                    "rule": {"from": source, "value": from_value,
+                             "entry": f"{at}.{DEFAULT_MAP_KEY}"},
+                    "report": f"mapped from `{source}` {from_value!r} to the {value} "
+                    f"open grouping by `{at}.{DEFAULT_MAP_KEY}`; the position is "
+                    "counted over the tracker's open groupings by `port.py "
+                    "--default-of` (§ 4.8)"}
         return {**answer, "value": value, "source": "map",
                 "rule": {"from": source, "value": from_value, "entry": f"{at}.{DEFAULT_MAP_KEY}"},
                 "report": f"mapped from `{source}` {from_value!r} to {value!r} by "
@@ -2587,14 +2624,14 @@ class Config:
             )
         key = self.get(f"{PEOPLE_KEY}.key")
         source = self.get(f"{PEOPLE_KEY}.source")
-        path = os.path.normpath(os.path.join(self.skills_root, str(source)))
+        path, tried = _untracked_source(self.skills_root, source)
         try:
             with open(path, encoding="utf-8") as handle:
                 mapping = _load_yaml(handle.read(), f"{PEOPLE_KEY}.source")
         except OSError as error:
             raise ConfigError(
                 f"{PEOPLE_KEY}.source",
-                f"names {source!r}, which did not open at {path!r} "
+                f"names {source!r}, which did not open {_tried(tried)} "
                 f"({error.__class__.__name__}). The pointer is the whole of what this "
                 "facet carries (§ 27), so one that does not resolve is reported -- the "
                 "map is not guessed at and the running user is not read instead.",
@@ -3507,12 +3544,20 @@ class Config:
             "narrowed_to": list(working["files"]) if "files" in working else None,
         }
 
-    def deploy_target(self, target: str, chosen: list[str] | None = None) -> dict:
+    def deploy_target(
+        self, target: str, chosen: list[str] | None = None, grouping: str | None = None
+    ) -> dict:
         """One § 33 target as a run would invoke it, its choices resolved.
 
         `chosen` is `name=value` strings, a name repeated where its choice may
         take several. ⛔ Every refusal is made here, ahead of any go: what comes
         back is the whole of what the go shows and the whole of what is run.
+
+        `grouping` is the grouping's own value the go names, placed where the
+        command states `{deploy:grouping}`. ⚠️ A command placing it with no value
+        handed comes back unfilled and with `grouping_unhanded` set, so a reader
+        after the tree or the choices alone is answered; ⛔ whatever runs the
+        command refuses that answer (§ 33).
         """
         entries = [one for one in self.get("deploy") or () if isinstance(one, dict)]
         entry = next((one for one in entries if one.get("name") == target), None)
@@ -3525,6 +3570,7 @@ class Config:
         refusal = _not_implemented_refusal(entry)
         if refusal is not None:
             raise refusal
+        grouping = _grouping_word(target, entry, grouping)
         choices = {choice["name"]: choice for choice in entry.get("choices") or ()}
         asked: dict[str, list[str]] = {}
         for stated in chosen or ():
@@ -3582,6 +3628,8 @@ class Config:
             "reached_by": entry["invoke"],
             DEPLOY_CODE_ROOT: entry.get(DEPLOY_CODE_ROOT),
             "choices": shown,
+            "grouping": grouping,
+            "grouping_unhanded": False,
             # ⚠️ Empty where the entry states none, which is a stated absence the
             # carrier reading it reports rather than a list of conditions all met.
             "tree": [dict(one) for one in entry.get("tree") or ()],
@@ -3603,6 +3651,10 @@ class Config:
         command = entry["command"]
         if choices:
             command = _CHOICE_PLACED.sub(lambda found: sent[found.group(1)], command)
+        if grouping is not None:
+            command = _place_grouping(command, grouping, f"deploy[{target}].command")
+        elif f"{{deploy:{BATCH_GROUPING}}}" in command:
+            answer["grouping_unhanded"] = True
         root = entry.get(DEPLOY_CODE_ROOT)
         view = self.root(root) if root is not None else self.only_root
         # ⚠️ `None` where the entry states no background run, which is the
@@ -3615,7 +3667,11 @@ class Config:
         }
 
     def deploy_batch(
-        self, target: str, chosen: list[str] | None = None, commit: str | None = None
+        self,
+        target: str,
+        chosen: list[str] | None = None,
+        commit: str | None = None,
+        grouping: str | None = None,
     ) -> dict:
         """One § 33 target's `batch` command, as each of its purposes runs it.
 
@@ -3624,13 +3680,14 @@ class Config:
         command is handed on its input is the caller's -- the tracker's answer,
         which no reader of this file holds.
         """
-        shown = self.deploy_target(target, chosen)
+        shown = self.deploy_target(target, chosen, grouping)
         entry = next(one for one in self.get("deploy") if one.get("name") == target)
         answer = {
             "target": target,
             "advances": entry.get("advances"),
             "requires_role": entry.get("requires_role"),
             "grouping": entry.get("grouping"),
+            "excludes": dict(entry.get(EXCLUDES) or {}),
             "choices": shown["choices"],
             "commit": commit,
         }
@@ -3654,6 +3711,7 @@ class Config:
         if entry.get("choices"):
             values = {one["name"]: one["value"] for one in shown["choices"]}
             batch = _CHOICE_PLACED.sub(lambda found: values[found.group(1)], batch)
+        batch = _place_grouping(batch, shown["grouping"], "deploy.batch")
         root = entry.get(DEPLOY_CODE_ROOT)
         view = self.root(root) if root is not None else self.only_root
         # ⚠️ The command root is `command`'s, which a `command` target alone may
@@ -3666,7 +3724,9 @@ class Config:
             purposes.append({"purpose": purpose, **view.command(text, where)})
         return {**answer, "batch": entry["batch"], "purposes": purposes}
 
-    def live_data_step(self, target: str, chosen: list[str] | None = None) -> dict:
+    def live_data_step(
+        self, target: str, chosen: list[str] | None = None, grouping: str | None = None
+    ) -> dict:
         """§ 35's block on one § 33 target, with which answer it is said out loud.
 
         ⛔ **Three answers and not two**, because the two absences are not the
@@ -3689,6 +3749,11 @@ class Config:
         and with `side_chosen` naming each such choice, its value, whether the run
         chose it and its warnings, for the go to show (§ 35). A step stating fixed
         sides is handed back exactly as stated, and `side_chosen` is empty.
+
+        `grouping` is the grouping value the go names, placed in each command
+        `LIVE_DATA_GROUPED` lists. ⚠️ A step placing it with no value handed comes
+        back unfilled, its paths under `grouping_unhanded`, so a check reading
+        `record` alone is answered; ⛔ the carrier refuses to plan or run that step.
         """
         stated = [
             entry
@@ -3732,16 +3797,13 @@ class Config:
         # order stated -- each with the side every phase falls on, derived once
         # (§ 35).
         listed = block if isinstance(block, list) else [block]
+        resolved = self.deploy_target(target, chosen, grouping)
         shown = (
-            {one["name"]: one for one in self.deploy_target(target, chosen)["choices"]}
+            {one["name"]: one for one in resolved["choices"]}
             if entry.get("choices")
             else {}
         )
-        if chosen and not shown:
-            # ⚠️ The refusal `deploy_target` makes for a choice the target does
-            # not declare, made by it rather than restated.
-            self.deploy_target(target, chosen)
-        steps = live_data_steps(listed, shown)
+        steps = live_data_steps(listed, shown, resolved["grouping"])
         return {
             "target": dict(entry),
             "found": block,
@@ -3869,6 +3931,7 @@ class Config:
         chosen: list[str] | None = None,
         commit: str | None = None,
         outcomes: dict[str, str] | None = None,
+        grouping: str | None = None,
     ) -> dict:
         """§ 33's steps run once a deploy's verification is clean, in order.
 
@@ -3886,7 +3949,7 @@ class Config:
         the commit.
         """
         verdict = self.advance(target, readings)
-        shown = self.deploy_target(target, chosen)
+        shown = self.deploy_target(target, chosen, grouping)
         entry = next(one for one in self.get("deploy") if one.get("name") == target)
         steps = entry.get(AFTER_VERIFIED) or []
         if commit is not None and not _OBJECT_NAME.fullmatch(commit):
@@ -3929,7 +3992,15 @@ class Config:
                     "deploy serves, as the run established it.",
                 )
             text = _CHOICE_PLACED.sub(lambda found: values[found.group(1)], text)
-            words = {BATCH_TARGET: target, BATCH_COMMIT: commit or ""}
+            # ⚠️ Refused only where the step would run, which is the commit's rule:
+            # a verification holding the advance runs none and needs no value.
+            if clean:
+                text = _place_grouping(
+                    text, shown["grouping"],
+                    f"deploy[{target}].{AFTER_VERIFIED}.{step['name']}",
+                )
+            words = {BATCH_TARGET: target, BATCH_COMMIT: commit or "",
+                     BATCH_GROUPING: shown["grouping"] or ""}
             text = _BATCH_PLACED.sub(lambda found: words[found.group(1)], text)
             one = {
                 "name": step["name"],
@@ -4945,12 +5016,36 @@ ASSIGNEE_CHECK = "assignee_matches_role"
 # be free to disagree with the path a refusal names.
 GROUPING_KEY = "work_item.grouping"
 ONE_GROUPING = GROUPING_KEY.rpartition(".")[2]
+
+
+def grouping_at(name) -> str:
+    """The path one grouping's block is stated at, which a refusal about it names.
+
+    ⛔ One derivation for every reader: the single form is the facet's own path
+    and a collection entry sits one segment below it, so a key composed by hand
+    names a path the file does not hold in one of the two forms.
+    """
+    return GROUPING_KEY if name in (None, ONE_GROUPING) else f"{GROUPING_KEY}.{name}"
+
+
 IN_GROUPING_CHECK = "in_grouping"
 GROUPING_REF_CHECK = "grouping_ref_exists"
 # § 4.8's stated default: the facet it is read from, and the map from that
 # facet's values to the grouping's.
 DEFAULT_FROM_KEY = "default_from"
 DEFAULT_MAP_KEY = "default_map"
+# What each value of that map names: a grouping by its own value, or a position
+# among the groupings the tracker holds open, counted in the tracker's order.
+# ⛔ `value` is the reading where the key is absent, so a project stating nothing
+# new reads its map exactly as before.
+DEFAULT_BY_KEY = "default_by"
+BY_VALUE, BY_POSITION = "value", "position"
+DEFAULTS_BY = (BY_VALUE, BY_POSITION)
+LAST_POSITION = "last"
+POSITIONS = (
+    "first", "second", "third", "fourth", "fifth",
+    "sixth", "seventh", "eighth", "ninth", "tenth",
+)
 
 # The key an entry of either gate check names a grouping by, and the key a
 # `field_present` entry names its field by. ⛔ Spelled here rather than at each
@@ -6129,9 +6224,64 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # one § 33 has with § 16 over `requires` -- the shape is held where the
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
+        _validate_excludes(where, entry, data)
         _validate_advance_requires(where, entry, data, facts)
         _validate_after_verified(where, entry, facts)
         _validate_figures(where, entry, facts)
+        _validate_grouping_placed(where, entry)
+
+
+def _validate_excludes(where: str, entry: dict, data: dict) -> None:
+    """§ 33's `excludes` on one target: the stated labels and types it leaves out.
+
+    ⚠️ Optional: a target that omits it leaves nothing out, which is every
+    target before the key existed. ⛔ What a stated block has to *be* is held
+    here, every arm refusing rather than skipping -- an exclusion a reader could
+    not make sense of is one whose skip would hold a release, or advance an item,
+    nobody meant to.
+    """
+    if EXCLUDES not in entry:
+        return
+    at = f"{where}.{EXCLUDES}"
+    block = entry[EXCLUDES]
+    if not isinstance(block, dict) or not block:
+        raise ConfigError(
+            at,
+            f"is {block!r}; it must be a block naming "
+            f"{' and/or '.join(f'`{key}`' for key in EXCLUDES_KEYS)}, each a list of "
+            "the words that leave an item out (§ 33). Omit the key where this "
+            "target leaves nothing out.",
+        )
+    for key, words in block.items():
+        if key not in EXCLUDES_KEYS:
+            raise ConfigError(
+                f"{at}.{key}",
+                f"is not one of {', '.join(f'`{one}`' for one in EXCLUDES_KEYS)} "
+                "(§ 33). An item is left out by a label or a type it states, and "
+                "never by its title, which is prose and changes.",
+            )
+        if (
+            not isinstance(words, list)
+            or not words
+            or not all(isinstance(word, str) and word.strip() for word in words)
+        ):
+            raise ConfigError(
+                f"{at}.{key}",
+                f"is {words!r}; it must be a non-empty list of non-empty words "
+                "(§ 33), each matched whole against what an item carries.",
+            )
+    if entry.get("requires_role") == "none" and entry.get("advances") == "none":
+        raise ConfigError(
+            at,
+            "is stated beside `requires_role: none` and `advances: none`, which "
+            "read no set for it to leave anything out of (§ 33).",
+        )
+    if "types" in block and _get(data, "work_item.type.carrier") == "none":
+        raise ConfigError(
+            f"{at}.types",
+            "is stated while `work_item.type.carrier` is `none`, so no item "
+            "carries a type for it to match (§ 33, § 4.1).",
+        )
 
 
 def _validate_not_implemented(where: str, entry: dict) -> None:
@@ -6541,10 +6691,20 @@ _PLAIN_JOIN = re.compile(r"[A-Za-z0-9_./:@%+,=-]+")
 # placement is, and each word here is one row of that subsection's table.
 _BATCH_PLACED = re.compile(r"\{deploy:([^}]*)\}")
 BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE = "target", "commit", "purpose"
-BATCH_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE)
+# The grouping's own value the go named -- `5.7`, not the name the target keys
+# its grouping on -- which § 33 lets every command a target states place.
+BATCH_GROUPING = "grouping"
+BATCH_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE, BATCH_GROUPING)
 # What a step run after a clean verification may place: the purpose is a batch's
 # own and names nothing a step is run for.
-AFTER_VERIFIED_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT)
+AFTER_VERIFIED_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT, BATCH_GROUPING)
+# What the target's own `command` and a live data step's commands may place: the
+# grouping value alone, every other fact of the run reaching them already (§ 33).
+COMMAND_PLACEMENTS = (BATCH_GROUPING,)
+# ⛔ The live data step's commands a run hands the grouping value to. `record` is
+# not one: it is read by a check on the change, where no deploy and no go exist to
+# name a value (§ 35).
+LIVE_DATA_GROUPED = ("backup.run", "backup.verify", "preview.run", "rehearse", "apply")
 # § 33's three purposes a batch command is run for, one run each.
 ADVANCE, PRECONDITION, REPORT = "advance", "precondition", "report"
 # ⛔ An object name and nothing else: hexadecimal is a word every shell reads as
@@ -6601,6 +6761,117 @@ def _validate_batch_placements(where: str, entry: dict) -> None:
                 path,
                 f"places the choice {name!r}, and this target declares no choice (§ 33).",
             )
+
+
+def _deploy_placed_in(entry: dict, where: str):
+    """Every (path, word) a `{deploy:<word>}` is placed at in a command the target states.
+
+    ⚠️ The command-bearing keys alone -- `command`, `batch`, `after_verified`,
+    `figures` and `live_data_step` -- and never `inputs`, which a dispatch sends
+    as written.
+    """
+    for key in ("command", "batch", AFTER_VERIFIED, FIGURES, "live_data_step"):
+        if key in entry:
+            yield from _deploy_placed_below(entry[key], f"{where}.{key}")
+
+
+def _deploy_placed_below(value, at: str):
+    if isinstance(value, str):
+        for name in _BATCH_PLACED.findall(value):
+            yield at, name
+    elif isinstance(value, dict):
+        for key, inner in value.items():
+            yield from _deploy_placed_below(inner, f"{at}.{key}")
+    elif isinstance(value, list):
+        for index, inner in enumerate(value):
+            yield from _deploy_placed_below(inner, f"{at}[{index}]")
+
+
+_LIVE_DATA_AT = re.compile(r"\.live_data_step(?:\[\d+\])?\.(.+)$")
+_FIGURES_AT = re.compile(r"\.figures\[\d+\]\.(.+)$")
+
+
+def _validate_grouping_placed(where: str, entry: dict) -> None:
+    """§ 33's `{deploy:grouping}`, held wherever a command the target states places it.
+
+    ⛔ **Refused at the load on a target naming no grouping**: there is no value
+    for the run to hand, and a command placing one would be run with the
+    placement unfilled. ⚠️ A target placing nothing is held to nothing new.
+    """
+    for path, name in _deploy_placed_in(entry, where):
+        if f"{where}.command" == path and name not in COMMAND_PLACEMENTS:
+            raise ConfigError(
+                path,
+                f"places {{deploy:{name}}}; a target's command may place "
+                + ", ".join(f"{{deploy:{one}}}" for one in COMMAND_PLACEMENTS)
+                + " and a choice the target declares (§ 33).",
+            )
+        inside = _LIVE_DATA_AT.search(path)
+        if inside is not None and not (
+            name == BATCH_GROUPING and inside.group(1) in LIVE_DATA_GROUPED
+        ):
+            raise ConfigError(
+                path,
+                f"places {{deploy:{name}}}; a live data step's "
+                + ", ".join(f"`{one}`" for one in LIVE_DATA_GROUPED)
+                + f" may place {{deploy:{BATCH_GROUPING}}} and nothing else (§ 35). "
+                "⚠️ `record` places none: a check on the change reads it, where no "
+                "deploy names a grouping value.",
+            )
+        figure = _FIGURES_AT.search(path)
+        if figure is not None and not (
+            name == BATCH_GROUPING and figure.group(1) == "reads"
+        ):
+            raise ConfigError(
+                path,
+                f"places {{deploy:{name}}}; a figure's `reads` may place "
+                f"{{deploy:{BATCH_GROUPING}}} and nothing else (§ 33).",
+            )
+        if name == BATCH_GROUPING and entry.get("grouping", "none") == "none":
+            raise ConfigError(
+                path,
+                f"places {{deploy:{BATCH_GROUPING}}} while the target's `grouping` "
+                "is `none`, so no run has a grouping value to hand it (§ 33). Name "
+                "the grouping the target is scoped to, or take the placement out.",
+            )
+
+
+def _grouping_word(target: str, entry: dict, grouping: str | None) -> str | None:
+    """The grouping value a run handed over, refused before anything is resolved.
+
+    ⛔ A word a shell reads as itself, for the reason a choice's value is: it is
+    substituted unquoted. ⛔ And handed only to a target scoped to a grouping -- a
+    value for one that names none is a deploy confused about what it carries.
+    """
+    if grouping is None:
+        return None
+    if entry.get("grouping", "none") == "none":
+        raise ConfigError(
+            f"deploy[{target}].grouping",
+            f"is `none`, and the run handed the grouping value {grouping!r} (§ 33). "
+            "A target scoped to no grouping is handed no grouping value.",
+        )
+    if not _PLAIN_VALUE.fullmatch(grouping):
+        raise ConfigError(
+            f"deploy[{target}].grouping",
+            f"was handed the grouping value {grouping!r}, which is not one plain "
+            "word a shell reads as itself (§ 33), so it is placed in no command.",
+        )
+    return grouping
+
+
+def _place_grouping(text: str, value: str | None, at: str) -> str:
+    """`text` with its grouping placement filled, or refused where no value was handed."""
+    if f"{{deploy:{BATCH_GROUPING}}}" not in text:
+        return text
+    if value is None:
+        raise ConfigError(
+            at,
+            f"places {{deploy:{BATCH_GROUPING}}} and no grouping value was handed "
+            "over (§ 33). The value is the one the go names, as the invocation "
+            "carried it.",
+        )
+    return text.replace(f"{{deploy:{BATCH_GROUPING}}}", value)
 
 
 def _one_line(value) -> bool:
@@ -7159,22 +7430,29 @@ def live_data_side_choices(block: dict) -> dict:
     return out
 
 
-def live_data_steps(listed: list, shown: dict) -> list:
+def live_data_steps(listed: list, shown: dict, grouping: str | None = None) -> list:
     """Every step of one target as a run performs it, its chosen sides resolved.
 
     `shown` is `deploy_target`'s choices keyed by name. ⛔ The one construction
     of a step as the carrier reads it -- the side each phase falls on, and which
     choice placed it, with its value and warnings for the go (§ 35).
+
+    `grouping` is the run's grouping value, filled into every command
+    `LIVE_DATA_GROUPED` lists that places it; `grouping_places` names those, and
+    `grouping_unhanded` the ones left unfilled because no value was handed.
     """
     values = {name: one["value"] for name, one in shown.items()}
     steps = []
     for step in listed:
         placed = live_data_side_choices(step)
-        resolved = live_data_resolved(step, values)
+        resolved, grouped = live_data_grouped(live_data_resolved(step, values), grouping)
         steps.append(
             dict(
                 resolved,
                 name=step.get("name"),
+                grouping=grouping if grouped else None,
+                grouping_places=grouped,
+                grouping_unhanded=grouped if grouping is None else [],
                 sides=live_data_sides(resolved),
                 side_chosen=[
                     {
@@ -7191,6 +7469,31 @@ def live_data_steps(listed: list, shown: dict) -> list:
             )
         )
     return steps
+
+
+def live_data_grouped(block: dict, grouping: str | None) -> tuple[dict, list]:
+    """One step with the grouping value filled in, and where it was placed.
+
+    ⚠️ With no value, the step comes back as stated and the places are still
+    named, which is what lets the carrier refuse it by name (§ 33).
+    """
+    placement = f"{{deploy:{BATCH_GROUPING}}}"
+    out = dict(block)
+    places = []
+    for path in LIVE_DATA_GROUPED:
+        head, _, tail = path.partition(".")
+        holder = out.get(head) if tail else out
+        key = tail or head
+        if not isinstance(holder, dict) or not isinstance(holder.get(key), str):
+            continue
+        if placement not in holder[key]:
+            continue
+        places.append(path)
+        if grouping is not None:
+            if tail:
+                holder = out[head] = dict(holder)
+            holder[key] = holder[key].replace(placement, grouping)
+    return out, places
 
 
 def live_data_resolved(block: dict, values: dict) -> dict:
@@ -9532,6 +9835,9 @@ def _not_implemented_refusal(entry: dict) -> "ConfigError | None":
 # disagree. ⛔ `passed` is the one outcome that releases an advance, and
 # `failed` the one the stated default holds on where a target names no check.
 ADVANCE_REQUIRES = "advance_requires"
+# § 33's leaving out of a target's set: the key, and the two things it names.
+EXCLUDES = "excludes"
+EXCLUDES_KEYS = ("labels", "types")
 ADVANCE_OUTCOMES = ("passed", "failed", "skipped", "deselected", "unread", "running")
 ADVANCE_RELEASES = "passed"
 ADVANCE_DEFAULT_HOLDS = "failed"
@@ -10674,20 +10980,80 @@ def _private_blocks(data: dict, facts: dict) -> list[str]:
     return named
 
 
+def _main_checkout_path(skills_root: str, path: str) -> str | None:
+    """Where `path`, inside the tree `skills_root` is in, sits in the main checkout.
+
+    `None` where there is no other place to look: `skills_root` is not in a git
+    tree, the tree is the main checkout itself, the repository is bare, or `path`
+    lies outside the tree. The main checkout is the parent of the repository's
+    common directory, which every tree of one repository shares (§ 28).
+    """
+    import subprocess  # noqa: PLC0415 -- read only where a tree lacks the file
+
+    try:
+        read = subprocess.run(
+            ["git", "-C", skills_root, "rev-parse", "--path-format=absolute",
+             "--show-toplevel", "--git-common-dir"],
+            capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return None
+    lines = read.stdout.splitlines()
+    if read.returncode != 0 or len(lines) != 2:
+        return None
+    top, common = (os.path.realpath(line) for line in lines)
+    if os.path.basename(common) != ".git":
+        return None
+    main = os.path.dirname(common)
+    held = os.path.realpath(path)
+    if main == top or os.path.commonpath([held, top]) != top:
+        return None
+    return os.path.join(main, os.path.relpath(held, top))
+
+
+def _untracked_source(skills_root: str, source) -> tuple[str, list[str]]:
+    """The path an untracked file the configuration points at is read from, and
+    every path tried for it.
+
+    ⛔ **A tree's own copy first, then the main checkout's** (§ 28): the file is
+    git-ignored by design, so a tree the procedure cuts is a fresh checkout that
+    carries none, and the same relative path resolved against the main checkout
+    is the one copy the machine holds. Where neither holds it, the first path is
+    the one to open and both are the ones a refusal names. The main checkout
+    reads exactly the one path it always read.
+    """
+    own = os.path.normpath(os.path.join(skills_root, str(source)))
+    if os.path.isfile(own):
+        return own, [own]
+    other = _main_checkout_path(skills_root, own)
+    if other is None:
+        return own, [own]
+    if os.path.isfile(other):
+        return other, [own, other]
+    return own, [own, other]
+
+
+def _tried(paths: list[str]) -> str:
+    """The paths an untracked file was looked for at, as a refusal names them."""
+    if len(paths) == 1:
+        return f"at {paths[0]!r}"
+    return f"at {paths[0]!r}, nor in the main checkout at {paths[1]!r}"
+
+
 def _read_private_file(skills_root: str, source, supplies: list[str]) -> dict:
     """§ 28's private file as a mapping of dotted path to value. Every failure stops.
 
     One reader for both halves of the facet, so the listed keys and the named
     blocks are held to one statement of what the file is.
     """
-    path = os.path.normpath(os.path.join(skills_root, str(source)))
+    path, tried = _untracked_source(skills_root, source)
     try:
         with open(path, encoding="utf-8") as handle:
             values = _load_yaml(handle.read(), PRIVATE_SOURCE_PATH)
     except OSError as error:
         raise ConfigError(
             PRIVATE_SOURCE_PATH,
-            f"names {source!r}, which did not open at {path!r} "
+            f"names {source!r}, which did not open {_tried(tried)} "
             f"({error.__class__.__name__}). It was to supply "
             f"{', '.join(supplies)} (§ 28), and a layer that is not there is "
             "reported by name rather than resolved to nothing -- a value "
@@ -11810,6 +12176,23 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                     f"is {wait!r}; it is a whole number of seconds of at least one, or `null` "
                     "where a call over the cap is refused and nothing waits (§ 10).",
                 )
+            holds = entry.get("wait_holds_for")
+            if holds is not None:
+                if not wait:
+                    raise ConfigError(
+                        f"{at}.wait_holds_for",
+                        "is stated and `wait_up_to` is not, so nothing waits and no line is "
+                        "kept for it to hold a place in (§ 10).",
+                    )
+                if (isinstance(holds, bool) or not isinstance(holds, int)
+                        or not WAIT_HOLDS_LEAST <= holds <= entry["ttl"]):
+                    raise ConfigError(
+                        f"{at}.wait_holds_for",
+                        f"is {holds!r}; it is a whole number of seconds from "
+                        f"{WAIT_HOLDS_LEAST} to {entry['ttl']} (§ 10). Below that a waiter "
+                        "loses its place between two of its own readings, and past the "
+                        "lease's lifetime a place handed over outlives the place it stands for.",
+                    )
             for key, most in (("grace", entry["ttl"]), ("probe_timeout", 8)):
                 value = entry.get(key)
                 if value is None:
@@ -18048,6 +18431,28 @@ def self_test() -> int:
         from_value="High")
     check("a stated grouping with no default is asked for, as before",
           (plain["source"], plain["value"]) == ("ask", None), f"answered {plain!r}")
+    # § 4.8's positional map: the reader hands the position on with no value,
+    # since it holds no tracker to count in; a given value still wins.
+    positional = _resolve(
+        _a_stated_default(_a_valid_example(), default_by=BY_POSITION,
+                          default_map={"Highest": "first", "High": LAST_POSITION}),
+        EXAMPLES, default_facts, False,
+    )
+    counted = positional.grouping_default(from_value="High")
+    check("a positional map answers its position and no value",
+          (counted["source"], counted["value"], counted.get("position"))
+          == (BY_POSITION, None, LAST_POSITION)
+          and counted.get("rule", {}).get("value") == "High",
+          f"answered {counted!r}")
+    given = positional.grouping_default(from_value="High", given="a-scope")
+    check("a grouping given wins over a positional map too",
+          (given["source"], given["value"]) == ("given", "a-scope"), f"answered {given!r}")
+    named = _resolve(
+        _a_stated_default(_a_valid_example(), default_by=BY_VALUE), EXAMPLES,
+        default_facts, False,
+    ).grouping_default(from_value="High")
+    check("a map stated as names reads as one with no `default_by`",
+          (named["source"], named["value"]) == ("map", "a-scope"), f"answered {named!r}")
 
     # § 4.2 → A commitment written apart from the move, read through the one
     # answer the gating role acts on.
@@ -18906,6 +19311,12 @@ def self_test() -> int:
           "publishes": True,
           "advances": _a_role_some_status_maps(),
           "batch": "a-batch-command"}),
+        # ⛔ § 33's `excludes`, the shape the item names: a bar over a grouping
+        # leaving the release's own tracking items out by label and by type.
+        ("a precondition leaving the release's own items out by label and type loads",
+         {"grouping": _a_grouping_the_example_plans_in(),
+          "requires_role": _a_role_some_status_maps(),
+          EXCLUDES: {"labels": ["release"], "types": ["Chore"]}}),
     ):
         loaded = _a_valid_example()
         loaded["deploy"] = [_a_deploy_target(**overrides)]
@@ -18914,9 +19325,11 @@ def self_test() -> int:
 
     _advance_requires_suite(check, surface)
     _after_verified_suite(check, surface)
+    _grouping_value_suite(check, surface)
     _not_implemented_suite(check, surface)
 
     _undeclared_suite(check)
+    _untracked_in_tree_suite(check)
 
     print("\n§ 33's choices, resolved for one run:")
 
@@ -20525,6 +20938,16 @@ def _planted_violations():
          lambda data: _a_stated_default(data, default_map={"High": "  "})),
         ("a grouping map with no entries", f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
          lambda data: _a_stated_default(data, default_map={})),
+        ("a grouping map read as neither names nor positions",
+         f"{GROUPING_KEY}.{DEFAULT_BY_KEY}",
+         lambda data: _a_stated_default(data, default_by="ordinal")),
+        ("a grouping map's reading stated with no map", f"{GROUPING_KEY}.{DEFAULT_BY_KEY}",
+         lambda data: _a_stated_default(data, default_from=_ABSENT, default_map=_ABSENT,
+                                        default_by=BY_POSITION)),
+        ("a positional grouping map naming a grouping rather than a position",
+         f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
+         lambda data: _a_stated_default(data, default_by=BY_POSITION,
+                                        default_map={"High": "a-scope"})),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
@@ -21077,6 +21500,26 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(publishes="yes")])),
         ("a target that publishes while naming no grouping", "deploy[0].publishes",
          at("deploy", [_a_deploy_target(publishes=True)])),
+        # ⛔ § 33's `excludes`, every arm the reader refuses.
+        ("an exclusion that is not a block", f"deploy[0].{EXCLUDES}",
+         at("deploy", [_a_deploy_target(
+             requires_role=_a_role_some_status_maps(), batch="a-command",
+             **{EXCLUDES: ["release"]})])),
+        ("an exclusion by title, which is prose", f"deploy[0].{EXCLUDES}.titles",
+         at("deploy", [_a_deploy_target(
+             requires_role=_a_role_some_status_maps(), batch="a-command",
+             **{EXCLUDES: {"titles": ["Release"]}})])),
+        ("an exclusion naming an empty list", f"deploy[0].{EXCLUDES}.labels",
+         at("deploy", [_a_deploy_target(
+             requires_role=_a_role_some_status_maps(), batch="a-command",
+             **{EXCLUDES: {"labels": []}})])),
+        ("an exclusion on a target reading no set", f"deploy[0].{EXCLUDES}",
+         at("deploy", [_a_deploy_target(**{EXCLUDES: {"labels": ["release"]}})])),
+        ("an exclusion by type where no item carries one", f"deploy[0].{EXCLUDES}.types",
+         lambda data: at("work_item.type", {"carrier": "none", "absent_reason": "planted"})(
+             at("deploy", [_a_deploy_target(
+                 requires_role=_a_role_some_status_maps(), batch="a-command",
+                 **{EXCLUDES: {"types": ["Chore"]}})])(data))),
         # ⛔ § 33's `advance_requires`, every arm. ⚠️ The base example states no
         # tier, so the tier plant is the `carrier: none` arm: a project with no
         # tier has none for a check to name.
@@ -22152,6 +22595,18 @@ def _planted_violations():
          "branch_model.exclusive_resources[0].wait_up_to", _a_resource_of(wait_up_to=True)),
         ("a wait with no bound", "branch_model.exclusive_resources[0].wait_up_to",
          _a_resource_of(wait_up_to="wait")),
+        ("a line kept for a resource nothing waits on",
+         "branch_model.exclusive_resources[0].wait_holds_for",
+         _a_resource_of(wait_holds_for=30)),
+        ("a place in line given up between two of its waiter's readings",
+         "branch_model.exclusive_resources[0].wait_holds_for",
+         _a_resource_of(wait_up_to=60, wait_holds_for=WAIT_HOLDS_LEAST - 1)),
+        ("a place in line outliving the lease it stands for",
+         "branch_model.exclusive_resources[0].wait_holds_for",
+         _a_resource_of(wait_up_to=60, wait_holds_for=100000)),
+        ("a place in line held for a flag's worth of seconds",
+         "branch_model.exclusive_resources[0].wait_holds_for",
+         _a_resource_of(wait_up_to=60, wait_holds_for=True)),
         ("an end of background work outside its alternation",
          "branch_model.exclusive_resources[0].background_end",
          _a_resource_of(background_end="whenever")),
@@ -25162,6 +25617,181 @@ def _after_verified_suite(check, facts: dict) -> None:
           f"read {none}")
 
 
+def _grouping_value_suite(check, facts: dict) -> None:
+    """§ 33's `{deploy:grouping}`: the load, and the value reaching every command.
+
+    ⛔ The planted violations are a placement on a target scoped to no grouping, a
+    placement in the one live data command a check reads with no deploy behind
+    it, and a placement no value was handed for; each must come out refused.
+    """
+    print("\n§ 33's grouping value, placed in every command a target states:")
+    grouping = _a_grouping_the_example_plans_in()
+    placed = "{deploy:grouping}"
+    commit = "0123456789abcdef0123456789abcdef01234567"
+
+    def target(**overrides):
+        stated = {
+            "advances": _a_role_some_status_maps(),
+            "grouping": grouping,
+            "command": f"ship {placed}",
+            "batch": f"carried {placed}",
+            "advance_requires": [{"reading": "the served commit"}],
+            "after_verified": [
+                _a_step_after(command=f"git tag v{placed} {{deploy:commit}}")
+            ],
+            FIGURES: [_a_figures_block(reads=f"read-figures {placed}")],
+            "live_data_step": _a_live_data_step(
+                backup={"run": f"a-dump {placed}", "verify": f"a-read-back {placed}"},
+                preview={"run": f"a-preview {placed}"},
+                rehearse=f"a-write --dry {placed}",
+                apply=f"a-write {placed}",
+            ),
+        }
+        stated.update(overrides)
+        return _a_deploy_target(**stated)
+
+    def loaded_with(**overrides):
+        loaded = _a_valid_example()
+        loaded["deploy"] = [target(**overrides)]
+        return loaded
+
+    refusal = _refused(loaded_with())
+    check(
+        "a target scoped to a grouping places its value in its command, batch, "
+        "steps, figure commands and live data commands, and loads",
+        refusal is None, f"refused on {refusal!r}",
+    )
+    if refusal is not None:
+        return
+    for label, overrides, key in (
+        ("a command placing it on a target scoped to no grouping",
+         {"grouping": "none", "batch": "carried", "after_verified": _ABSENT,
+          "advance_requires": _ABSENT, "live_data_step": _ABSENT, FIGURES: _ABSENT},
+         "deploy[0].command"),
+        ("a batch placing it on a target scoped to no grouping",
+         {"grouping": "none", "command": "ship", "after_verified": _ABSENT,
+          "advance_requires": _ABSENT, "live_data_step": _ABSENT, FIGURES: _ABSENT},
+         "deploy[0].batch"),
+        ("a step after the verification placing it on a target scoped to no grouping",
+         {"grouping": "none", "command": "ship", "batch": "carried",
+          "live_data_step": _ABSENT, FIGURES: _ABSENT},
+         "deploy[0].after_verified[0].command"),
+        ("a live data write placing it on a target scoped to no grouping",
+         {"grouping": "none", "command": "ship", "batch": "carried",
+          "after_verified": _ABSENT, "advance_requires": _ABSENT, FIGURES: _ABSENT,
+          "live_data_step": _a_live_data_step(apply=f"a-write {placed}")},
+         "deploy[0].live_data_step.apply"),
+        ("a figure command placing it on a target scoped to no grouping",
+         {"grouping": "none", "command": "ship", "batch": "carried",
+          "after_verified": _ABSENT, "live_data_step": _ABSENT},
+         f"deploy[0].{FIGURES}[0].reads"),
+        ("a figure command placing a run fact other than the grouping value",
+         {FIGURES: [_a_figures_block(reads="read-figures {deploy:commit}")]},
+         f"deploy[0].{FIGURES}[0].reads"),
+        ("a live data `record` placing it",
+         {"live_data_step": _a_live_data_step(record=f"a-listing {placed}")},
+         "deploy[0].live_data_step.record"),
+        ("a command placing a run fact other than the grouping value",
+         {"command": "ship {deploy:commit}"}, "deploy[0].command"),
+        ("a live data write placing a run fact other than the grouping value",
+         {"live_data_step": _a_live_data_step(apply="a-write {deploy:target}")},
+         "deploy[0].live_data_step.apply"),
+    ):
+        got = _refused(loaded_with(**overrides))
+        check(f"{label} is refused at the load, with the path named",
+              got == key, f"refused on {got!r}")
+
+    reader = _resolve(loaded_with(), EXAMPLES, facts, False)
+    got = reader.deploy_target("a-target", None, "5.7")
+    check(
+        "the target's command is handed the value the go named",
+        got["command"].startswith("ship 5.7") and got["grouping"] == "5.7"
+        and got["grouping_unhanded"] is False,
+        f"answered {got!r}",
+    )
+    got = reader.deploy_target("a-target")
+    check(
+        "a command placing it with no value handed comes back marked unhanded, unfilled",
+        got["grouping_unhanded"] is True and placed in got["command"],
+        f"answered {got!r}",
+    )
+    for label, value, key in (
+        ("a value a shell would split", "5.7; rm", "deploy[a-target].grouping"),
+        ("a value opening with an option's dash", "-rf", "deploy[a-target].grouping"),
+    ):
+        try:
+            reader.deploy_target("a-target", None, value)
+            said = None
+        except ConfigError as error:
+            said = error.key
+        check(f"{label} is refused before anything is resolved", said == key,
+              f"refused on {said!r}")
+    plain = _a_valid_example()
+    plain["deploy"] = [_a_deploy_target()]
+    plain_reader = _resolve(plain, EXAMPLES, facts, False)
+    try:
+        plain_reader.deploy_target("a-target", None, "5.7")
+        said = None
+    except ConfigError as error:
+        said = error.key
+    check("a value handed to a target scoped to no grouping is refused",
+          said == "deploy[a-target].grouping", f"refused on {said!r}")
+    got = plain_reader.deploy_target("a-target")
+    check(
+        "a target placing nothing answers as before, with no grouping value",
+        got["command"].startswith("a-command") and got["grouping"] is None
+        and got["grouping_unhanded"] is False,
+        f"answered {got!r}",
+    )
+
+    got = reader.deploy_batch("a-target", None, commit, "5.7")
+    check("the batch is handed the value",
+          got["purposes"][0]["command"].startswith("carried 5.7"), f"answered {got!r}")
+    try:
+        reader.deploy_batch("a-target", None, commit)
+        said = None
+    except ConfigError as error:
+        said = error.key
+    check("a batch placing it with no value handed is a stop",
+          said == "deploy.batch", f"refused on {said!r}")
+
+    clean = {"the served commit": "passed"}
+    got = reader.after_verified("a-target", clean, [], commit, None, "5.7")
+    check("a step after a clean verification is handed the value beside the commit",
+          got["steps"][0]["command"] == f"git tag v5.7 {commit}", f"read {got['steps']}")
+    try:
+        reader.after_verified("a-target", clean, [], commit)
+        said = None
+    except ConfigError as error:
+        said = error.key
+    check("a step placing it with no value handed is a stop where it would run",
+          said == "deploy[a-target].after_verified.a-tag", f"refused on {said!r}")
+    held = reader.after_verified("a-target", {"the served commit": "failed"}, [], commit)
+    check("and is no stop where a held verification runs no step",
+          not any(step["runs"] for step in held["steps"]), f"read {held['steps']}")
+
+    step = reader.live_data_step("a-target", None, "5.7")["steps"][0]
+    check(
+        "every live data command placing it is handed the value, and the places named",
+        step["apply"] == "a-write 5.7" and step["rehearse"] == "a-write --dry 5.7"
+        and step["backup"] == {"run": "a-dump 5.7", "verify": "a-read-back 5.7"}
+        and step["preview"]["run"] == "a-preview 5.7"
+        and step["grouping"] == "5.7" and step["grouping_unhanded"] == []
+        and step["grouping_places"] == list(LIVE_DATA_GROUPED),
+        f"answered {step!r}",
+    )
+    step = reader.live_data_step("a-target")["steps"][0]
+    check(
+        "with no value handed the live data commands come back unfilled, each named",
+        step["apply"] == f"a-write {placed}" and step["grouping"] is None
+        and step["grouping_unhanded"] == list(LIVE_DATA_GROUPED),
+        f"answered {step!r}",
+    )
+    step = plain_reader.live_data_step("a-target")
+    check("a target stating no step is untouched by the grouping value",
+          step["found"] is None, f"answered {step!r}")
+
+
 def _a_figures_block(**overrides) -> dict:
     """One § 33 `figures` entry that loads, for the arms that plant one key wrong.
 
@@ -25753,6 +26383,118 @@ def _example_without(path: str, _loaded) -> str | None:
 PLANTED_ROLE = "the role the work is for"
 PLANTED_IDENTITY = "an-identity-no-tracker-resolves"
 PLANTED_MAP_FILE = "a-role-to-person-map.yaml"
+
+
+def _untracked_in_tree_suite(check) -> None:
+    """§ 28's private file and § 27's map, read from a tree that carries neither.
+
+    ⛔ A real repository with a real second tree, because what is under test is
+    where git says the main checkout is: a fake of that answer would test the
+    fake. The files are git-ignored in it, as a project's are.
+    """
+    import subprocess  # noqa: PLC0415 -- the arms need a repository and a tree
+    import tempfile  # noqa: PLC0415
+
+    print("\n§ 28's untracked files, read from a tree that carries none of them:")
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+
+    def git(where: str, *args: str) -> None:
+        subprocess.run(
+            ["git", "-c", "user.name=suite", "-c", "user.email=suite@invalid",
+             "-c", "commit.gpgsign=false", "-C", where, *args],
+            capture_output=True, text=True, check=True, env=env,
+        )
+
+    def write(path: str, payload) -> None:
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(_yaml().safe_dump(payload, allow_unicode=True))
+
+    def refusal(read) -> str:
+        try:
+            read()
+        except ConfigError as error:
+            return f"{error.key}: {error}"
+        return ""
+
+    private_file, people_file = "private.yaml", "people.yaml"
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    with tempfile.TemporaryDirectory() as scratch:
+        main = os.path.join(scratch, "main")
+        tree = os.path.join(scratch, "tree")
+        os.makedirs(main)
+        git(main, "init", "-q")
+        with open(os.path.join(main, ".gitignore"), "w", encoding="utf-8") as handle:
+            handle.write(f"{private_file}\n{people_file}\n")
+        git(main, "add", ".gitignore")
+        git(main, "commit", "-q", "-m", "ignore the untracked files")
+        git(main, "worktree", "add", "-q", "-b", "an-item", tree)
+        write(os.path.join(main, private_file), {"a.key": "the main checkout's"})
+        write(os.path.join(main, people_file), {PLANTED_ROLE: PLANTED_IDENTITY})
+
+        def people_in(root: str):
+            data = _a_valid_example()
+            data[PEOPLE_KEY] = {"carrier": "file", "source": people_file, "key": "handle"}
+            return _resolve(data, root, facts, False).person_for(PLANTED_ROLE)
+
+        read = refusal(lambda: check(
+            "a tree lacking the private file reads the main checkout's",
+            _read_private_file(tree, private_file, ["a.key"])
+            == {"a.key": "the main checkout's"}, "read"))
+        if read:
+            check("a tree lacking the private file reads the main checkout's", False, read)
+        read = refusal(lambda: check(
+            "a tree lacking the people map reads the main checkout's",
+            people_in(tree)["identity"] == PLANTED_IDENTITY, "read"))
+        if read:
+            check("a tree lacking the people map reads the main checkout's", False, read)
+
+        block = sorted(facts.get("private_blocks") or {})[0]
+        write(os.path.join(main, private_file), {
+            "a.key": "the main checkout's", block: {"a": "block the file supplies"}})
+        named = {PRIVATE_KEY: {"carrier": PRIVATE_FILE, "source": private_file,
+                               "keys": [], "blocks": [{"block": block, "reason": "r"}]}}
+        read = refusal(lambda: check(
+            "a tree lacking the private file loads a named block from the main checkout's",
+            _get(_with_private_blocks(named, tree, facts)[0], block)
+            == {"a": "block the file supplies"}, "read"))
+        if read:
+            check("a tree lacking the private file loads a named block from the main "
+                  "checkout's", False, read)
+
+        write(os.path.join(tree, private_file), {"a.key": "the tree's own"})
+        check("a tree's own copy is read before the main checkout's",
+              _read_private_file(tree, private_file, ["a.key"])
+              == {"a.key": "the tree's own"}, "read the main checkout's")
+        os.remove(os.path.join(tree, private_file))
+
+        os.remove(os.path.join(main, private_file))
+        os.remove(os.path.join(main, people_file))
+        mains = os.path.join(os.path.realpath(main), private_file)
+        said = refusal(lambda: _read_private_file(tree, private_file, ["a.key"]))
+        check("held by neither, the private file is refused naming both paths",
+              said.startswith(PRIVATE_SOURCE_PATH)
+              and os.path.join(tree, private_file) in said and mains in said, said)
+        said = refusal(lambda: people_in(tree))
+        check("held by neither, the people map is refused naming both paths",
+              said.startswith(f"{PEOPLE_KEY}.source")
+              and os.path.join(tree, people_file) in said
+              and os.path.join(os.path.realpath(main), people_file) in said, said)
+
+        said = refusal(lambda: _read_private_file(main, private_file, ["a.key"]))
+        check("the main checkout reads and names only its own path",
+              os.path.join(main, private_file) in said
+              and "main checkout" not in said, said)
+        check("the main checkout is asked about no second path",
+              _untracked_source(main, private_file)[1]
+              == [os.path.join(main, private_file)],
+              f"{_untracked_source(main, private_file)}")
+        loose = os.path.join(scratch, "no-repository")
+        os.makedirs(loose)
+        check("a skills root in no repository is asked about no second path",
+              _untracked_source(loose, private_file)[1]
+              == [os.path.join(loose, private_file)],
+              f"{_untracked_source(loose, private_file)}")
 
 
 def _looked_up(role: str, mapping, *, key: str = "handle", written: bool = True,
@@ -26539,6 +27281,14 @@ def main(argv: list[str]) -> int:
         "stop. A choice left out takes its default",
     )
     parser.add_argument(
+        "--grouping-value",
+        metavar="VALUE",
+        help="the grouping's own value the go names, for `--deploy-target` and "
+        "`--after-verified-for`: placed wherever a command of the target states "
+        "{deploy:grouping}. A target scoped to no grouping, or a value that is not "
+        "one plain word, is a stop",
+    )
+    parser.add_argument(
         "--tier",
         metavar="TIER",
         help="the § 31 tier to report: every suite classified under it, what each "
@@ -26684,6 +27434,7 @@ def main(argv: list[str]) -> int:
                 args.choose,
                 args.deployed_commit,
                 _parse_steps(args.step) if args.step else None,
+                args.grouping_value,
             )
         elif args.step or args.deployed_commit:
             raise ConfigError(
@@ -26715,12 +27466,29 @@ def main(argv: list[str]) -> int:
                     "is the target's own statement of what it runs (§ 33), so a "
                     "command is not passed beside `--deploy-target`.",
                 )
-            answer = config.deploy_target(args.deploy_target, args.choose)
+            answer = config.deploy_target(
+                args.deploy_target, args.choose, args.grouping_value
+            )
+            # ⛔ This answer is what the go shows and what is run, so a command
+            # left unfilled is a stop here rather than a command handed on (§ 33).
+            if answer["grouping_unhanded"]:
+                raise ConfigError(
+                    f"deploy[{args.deploy_target}].command",
+                    f"places {{deploy:{BATCH_GROUPING}}} and no grouping value was "
+                    "handed over (§ 33). Pass `--grouping-value` with the value the go "
+                    "names.",
+                )
         elif args.choose and not args.after_verified_for:
             raise ConfigError(
                 "deploy.choices",
                 "cannot be chosen with no target named: § 33 states a choice per "
                 "target. Pass `--deploy-target` with it.",
+            )
+        elif args.grouping_value is not None and not args.after_verified_for:
+            raise ConfigError(
+                "deploy.grouping",
+                "was handed a value with no target named: § 33 places a grouping "
+                "value per target. Pass `--deploy-target` with it.",
             )
         if args.commit_rule_for:
             if args.on_branch is None:

@@ -67,11 +67,11 @@ def stated_fields(configuration) -> list[str]:
     return [str(name) for name in (_stated(configuration, FIELDS_KEY) or [])]
 
 
-def unqueryable(name: str, why: str) -> ConfigError:
-    """The one refusal for a field a query cannot ask about, keyed on the list."""
+def unqueryable(name: str, why: str, *, key: str = FIELDS_KEY) -> ConfigError:
+    """The one refusal for a field a query cannot ask about, keyed on what named it."""
     return ConfigError(
-        FIELDS_KEY,
-        f"covers the field `{name}`, and {why} An empty answer is what a field "
+        key,
+        f"names the field `{name}`, and {why} An empty answer is what a field "
         "nothing carries looks like, so a field nothing could ask about is refused "
         "rather than answered with no items.",
     )

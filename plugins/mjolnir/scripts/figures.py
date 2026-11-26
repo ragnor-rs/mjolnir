@@ -195,8 +195,14 @@ def judge(entry: dict, readings: dict[str, str], printed: dict) -> dict:
     }
 
 
-def read(config, target: str, readings: dict[str, str]) -> dict:
-    """Run the target's figure commands at its code root and judge them."""
+def read(
+    config, target: str, readings: dict[str, str], grouping: str | None = None
+) -> dict:
+    """Run the target's figure commands at its code root and judge them.
+
+    `grouping` is the grouping value the go named, placed where a `reads` states
+    `{deploy:grouping}` and refused by the reader's own rule (§ 33).
+    """
     stated = [
         e for e in config.get("deploy") or ()
         if isinstance(e, dict) and e.get("name") == target
@@ -217,10 +223,14 @@ def read(config, target: str, readings: dict[str, str]) -> dict:
         config.root(entry["code_root"]).code_root
         if entry.get("code_root") else config.code_root
     )
+    value = reader._grouping_word(target, entry, grouping)
     printed = {}
     for block in entry.get(reader.FIGURES) or ():
+        command = reader._place_grouping(
+            block["reads"], value, f"deploy[{target}].{reader.FIGURES}.{block['check']}"
+        )
         try:
-            printed[block["check"]] = parse(run_command(block["reads"], root))
+            printed[block["check"]] = parse(run_command(command, root))
         except Unreadable as exc:
             printed[block["check"]] = exc
     return judge(entry, readings, printed)
@@ -368,6 +378,30 @@ def _self_test() -> int:
         else:
             check("an outcome outside § 33's table is refused rather than read", False, "read")
 
+        # ⛔ The grouping value the go named reaches a figure command as it reaches
+        # every other command the target states (§ 33).
+        with open(os.path.join(root, "report-5.7.txt"), "w", encoding="utf-8") as handle:
+            handle.write("cases 7\n")
+
+        class _Grouped(_Loaded):
+            def get(self, path):
+                return [{"name": "staging", "grouping": "a-release", reader.FIGURES: [{
+                    "check": "smoke", "reads": "cat report-{deploy:grouping}.txt",
+                    "names": ["cases"],
+                }]}] if path == "deploy" else None
+
+        grouped = read(_Grouped(), "staging", {"smoke": "passed"}, "5.7")
+        check("a figure command is handed the grouping value the go named",
+              [f["value"] for f in grouped["figures"]] == [7], f"{grouped}")
+        try:
+            read(_Grouped(), "staging", {"smoke": "passed"})
+        except reader.ConfigError as exc:
+            check("one placing it with no value handed is refused rather than run",
+                  "deploy:grouping" in str(exc), str(exc))
+        else:
+            check("one placing it with no value handed is refused rather than run",
+                  False, "read")
+
     print()
     if failures:
         print(f"{len(failures)} failure(s):")
@@ -385,6 +419,11 @@ def main(argv: list[str]) -> int:
         "--reading", action="append", default=[], metavar="CHECK=OUTCOME",
         help="one check's outcome as the verification reported it, repeated per check",
     )
+    parser.add_argument(
+        "--grouping-value", default=None, metavar="VALUE",
+        help="the grouping's own value the go names, for a `reads` placing "
+        "{deploy:grouping} (§ 33)",
+    )
     parser.add_argument("--skills-root", default=".")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args(argv)
@@ -395,7 +434,7 @@ def main(argv: list[str]) -> int:
     try:
         config = reader.load(args.skills_root)
         readings = reader._parse_readings(args.reading)
-        answer = read(config, args.target, readings)
+        answer = read(config, args.target, readings, args.grouping_value)
     except reader.ConfigError as exc:
         print(f"refused: {exc}", file=sys.stderr)
         return 2

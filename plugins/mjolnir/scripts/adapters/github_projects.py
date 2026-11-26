@@ -1678,7 +1678,7 @@ query Milestones($owner:String!, $name:String!, $after:String) {
   repository(owner:$owner, name:$name) {
     milestones(first:100, after:$after, states:[OPEN, CLOSED]) {
       pageInfo { hasNextPage endCursor }
-      nodes { number title state }
+      nodes { number title state dueOn }
     }
   }
 }
@@ -1773,6 +1773,44 @@ def _milestone_entry(issue: dict, board_id: str, status_field: str | None) -> di
     return entry
 
 
+def _repository_milestones() -> list:
+    """Every milestone of the board's repository, in both states, every page."""
+    repo = _repo()
+    owner, name = repo.split("/")
+    return _paged(
+        lambda cursor: _repository(
+            _graphql(MILESTONES_QUERY, owner=owner, name=name, after=cursor),
+            "its milestones",
+        ).get("milestones"),
+        what=f"the milestones of {repo}",
+    )
+
+
+def open_groupings(*, grouping: dict) -> dict:
+    """The open milestones of the board's repository, by due date (§ 3).
+
+    ⛔ **Only for a grouping held in the milestone**, whose order is the host's
+    due date and is `_code_host_milestone`'s, shared with plain issues. A field's
+    option or a label on a card carries no order this board states, so either is
+    refused with the key named rather than answered in the order the options
+    happen to be listed.
+    """
+    carrier = (grouping or {}).get("carrier")
+    if carrier != "native_milestone":
+        raise ConfigError(
+            "work_item.grouping.carrier",
+            f"is {carrier!r}, and the open groupings are read here in the order "
+            "of a milestone's due date. A field's option or a label carries no "
+            "order this board states, so a position among them has nothing to be "
+            "counted in.",
+        )
+    return {
+        "grouping": (grouping or {}).get("name"),
+        "at_limit": False,
+        **milestone.open_in_order(_repository_milestones()),
+    }
+
+
 def _milestone_items(value: str, grouping: dict) -> dict:
     """The issues one milestone holds, and what a board holds that it cannot.
 
@@ -1788,17 +1826,7 @@ def _milestone_items(value: str, grouping: dict) -> dict:
     """
     repo = _repo()
     owner, name = repo.split("/")
-    held = milestone.named(
-        _paged(
-            lambda cursor: _repository(
-                _graphql(MILESTONES_QUERY, owner=owner, name=name, after=cursor),
-                "its milestones",
-            ).get("milestones"),
-            what=f"the milestones of {repo}",
-        ),
-        value,
-        repo,
-    )
+    held = milestone.named(_repository_milestones(), value, repo)
     pull_requests = None
 
     def page(cursor):
@@ -1906,7 +1934,7 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
         # ⛔ Resolved against the board, which is what `search_items` does with a
         # field a caller names: a field this board does not carry is refused
         # rather than answered with the cards that do not match it.
-        _field(str(held), key="work_item.grouping.field")
+        _field(str(held), key=f"{config.grouping_at((grouping or {}).get('name'))}.field")
     label = None
     if carrier == "label":
         label = f"{(grouping or {}).get('label_prefix') or ''}{value}"
@@ -2019,6 +2047,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "read_closing_list": read_closing_list,
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
+    "open_groupings": open_groupings,
     # ⛔ The operations this tracker has nothing to implement against are named
     # once, below, and read from there by the suite.
 })

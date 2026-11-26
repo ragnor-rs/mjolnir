@@ -61,6 +61,14 @@ what the invocation names is handed to the reader in step 3 as it was named, and
 does not name takes the declared default, never a value this role picked. No question of its own
 is put for it: step 5's ask shows the values.
 
+**The grouping value, where the entry names a grouping**
+([`§ 33`](../../config/schema.md#the-grouping-value-a-targets-commands-are-handed)): the value
+the invocation carries — the one step 4a reads the publishing set by — is handed as
+`--grouping-value` to every carrier below, exactly as `--choose` is, so the version the go names is
+the one the commands build, migrate and tag. It is omitted on a target naming no grouping, which
+refuses one. A command placing `{deploy:grouping}` with no value handed is a **stop before the
+go**, asking for the value — never one read off the branch.
+
 The item side comes from the port:
 
 ```bash
@@ -83,7 +91,7 @@ this step runs it.
 
   ```bash
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --deploy-target "<the entry's name>" \
-    --choose "<a choice's name>=<a value>"
+    --choose "<a choice's name>=<a value>" [--grouping-value "<the grouping's own value>"]
   ```
 
   `--choose` is repeated per choice, and per value of a choice that takes several; it is omitted
@@ -140,7 +148,7 @@ this step runs it.
 
   ```bash
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" plan --target "<the entry's name>" \
-    --choose "<a choice's name>=<a value>"
+    --choose "<a choice's name>=<a value>" [--grouping-value "<the grouping's own value>"]
   ```
 
   `--choose` is exactly what this step was handed above, and every call to the carrier below takes
@@ -166,7 +174,8 @@ tracker at the point it is advanced** in step 8 — never from a value read here
 
   ```bash
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/batch.py" run --target "<the entry's name>" \
-    --commit "<the commit this deploy serves>" --choose "<a choice's name>=<a value>"
+    --commit "<the commit this deploy serves>" --choose "<a choice's name>=<a value>" \
+    [--grouping-value "<the grouping's own value>"]
   ```
 
   `--choose` is exactly what step 3 was handed, so the batch is asked about the values the go
@@ -216,9 +225,15 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
-  --short-of "<the entry's requires_role>" --in-grouping "<the entry's grouping>"
+  --short-of "<the entry's requires_role>" --in-grouping "<the entry's grouping>" \
+  --excluding-for "<the entry's name>"
 ```
 
+- **What the target's `excludes` leaves out comes back under `excluded`, each item with the label
+  or type that left it out**, and the bar read none of them — the rule is
+  [`§ 33`](../../config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s.
+  `batch.py run` leaves the same items out of every set it hands, so none of them is advanced
+  either; the reply names every one as left out.
 - **Where the entry names no grouping the same question is asked over what the batch's
   `precondition` run carried** — `--short-of <role> --argument <each identifier>`, which is § 33's
   other arm. ⚠️ **Never over the `advance` run's**: that run is handed items the bar may already
@@ -335,7 +350,7 @@ stops the deploy before the go, not after a dump has been taken.
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" prepare --target "<the entry's name>" \
   [--step "<the step's name>"] [--side <the side being performed>] \
-  [--choose "<a choice's name>=<a value>"]
+  [--choose "<a choice's name>=<a value>"] [--grouping-value "<the grouping's own value>"]
 ```
 
 - ⛔ **A non-zero exit is a stop for the deploy and not for the step**, and the carrier names which
@@ -366,7 +381,7 @@ against the store, so a step stating one and no `rehearse` is still asked with *
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" apply --target "<the entry's name>" \
   [--step "<the step's name>"] --given "<their answer, in their words>" \
-  [--choose "<a choice's name>=<a value>"]
+  [--choose "<a choice's name>=<a value>"] [--grouping-value "<the grouping's own value>"]
 ```
 
 ⛔ **One go per write, asked once that step's own dump, preview and rehearsal are on record** — never
@@ -410,7 +425,7 @@ order performed rather than followed by eye:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/deploy_run.py" start --target "<the entry's name>" \
-  --choose "<a choice's name>=<a value>"
+  --choose "<a choice's name>=<a value>" [--grouping-value "<the grouping's own value>"]
 ```
 
 - ⛔ **The log and the follow command it prints go to the person before anything waits**, as a
@@ -471,7 +486,8 @@ What a run delivered is read from its **log**, through the port's own operation,
 
   ```bash
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/figures.py" \
-    --target "<the target>" --reading "<check>=<outcome>" --reading "<check>=<outcome>"
+    --target "<the target>" --reading "<check>=<outcome>" --reading "<check>=<outcome>" \
+    [--grouping-value "<the grouping's own value>"]
   ```
 
   Where the target states none, the carrier says so and hands every outcome back unchanged.
@@ -511,7 +527,8 @@ What a run delivered is read from its **log**, through the port's own operation,
 
   ```bash
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --after-verified-for "<the target>" \
-    --reading "<check>=<outcome>" --choose "<name>=<value>" --deployed-commit "<the commit>"
+    --reading "<check>=<outcome>" --choose "<name>=<value>" --deployed-commit "<the commit>" \
+    [--grouping-value "<the grouping's own value>"]
   ```
 
   Where it reports the verification not clean, no step runs, and the reply names the checks
@@ -648,6 +665,9 @@ content enumerates.
 - **the precondition, where the entry states one** — the role required, and **every item short of
   it with the role it stands in**, plus every item the answer could not place. Where the entry
   states `requires_role: none`, that there was none, not that one passed;
+- **every item the target's `excludes` left out**, with the label or type that left it out, as
+  neither held against the bar nor advanced — or, where the backlog went unread, that nothing it
+  would leave out could be found;
 - **every step collected out of a change** — the section it came from and which change, where its
   entry placed it, who its entry says answers it, and whether it ran, is still running with its
   readings, was answered, or is **unperformed**. Unanswered is reported as unanswered, and
