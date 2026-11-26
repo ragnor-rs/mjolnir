@@ -409,6 +409,16 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.transitions.resolve": ask(
         "How is a transition resolved -- by the status it reaches, or by its own id?",
     ),
+    "tracker.transitions.fields.status": ask(
+        "Which statuses does this tracker refuse to move an item into without a "
+        "field set as part of the move -- a resolution, for instance?",
+    ),
+    "tracker.transitions.fields.field": ask(
+        "Which field does a move to that status need, by the name the site gives it?",
+    ),
+    "tracker.transitions.fields.value": ask(
+        "What value does every move to that status send in that field?",
+    ),
     "tracker.create_fields.field": ask(
         "Which fields does this tracker refuse to create an item without, beyond "
         "its project, type, title and body?",

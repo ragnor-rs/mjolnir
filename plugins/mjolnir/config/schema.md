@@ -1872,6 +1872,10 @@ tracker:
   project_key: "KEY"            # required_when: tracker.kind = jira
   transitions:
     resolve: by_name
+    fields:                     # what a move to one status carries
+      - status: "<a status word>"
+        field: "<the field's name>"
+        value: "<the value>"
   create_fields:                # the fields the site requires before it will create an item
     - field: "<the field's name>"
       value: []                 # absent: the filing states it
@@ -1913,6 +1917,18 @@ is refused before it is sent, naming the field. ⚠️ The filing may state fiel
 A project writing no such list sends what a filing already sends. ⚠️ **Read by this kind's
 implementation alone**, which is why it is in this block: no other tracker here refuses a create
 for a field.
+
+⛔ **A field a move needs goes with the move, and `transitions.fields` states which.** Each entry
+names a status word from [§ 4.2](#42-status--an-ordered-set-of-name-role-writer), a field the way
+the site names it, and the value a move to that status sends in it — a resolution on a move to a
+finished status is the measured case. ⛔ **The move sends the fields stated for its status and no
+other**, and none is chosen for it: a transition whose screen requires a field nobody stated fails
+naming the transition. A field the transition does not offer, or a value outside the ones it lists,
+is refused before the move. The item is then read back with its status and every stated field, and
+a field that did not land is reported rather than the move retried. ⛔ **The reader refuses an entry
+missing any of the three, a status no entry of `statuses` names, and one field stated twice for one
+status.** A project writing no such list moves an item as it did before the key existed. ⚠️ Read by
+this kind's implementation alone, for the reason `create_fields` is.
 
 ⛔ **A field holding several values is written whole: the write replaces the list**, as `set_labels`
 does, and an empty list clears it. Each member takes the shape of the element type the site states,
