@@ -9524,26 +9524,29 @@ reports as unavailable; it is not a statement about whether anybody invoices by 
 ### An invoice priced per deliverable, and why neither role carries it
 
 ⛔ **An invoice that spreads a period's hours over the work it shipped and prices each line is a
-project's own carrier, and no role or key on this surface carries any part of it.** It is the
-composition of the two roles [§ The loop](#the-loop) keeps apart — a distribution the
-hours-breakdown role makes and a price only this role may put on hours — and each half it needs is
-something one of those roles is forbidden to do. So it stays where
-[§ 36](#where-a-duplicated-utility-goes-instead) leaves a utility: in the project that wants it,
-calling the hours-breakdown role for the distribution and doing the rest itself.
+project's own carrier, and no role or key on this surface carries any part of it.** It joins the two
+roles [§ The loop](#the-loop) keeps apart: the distribution over shipped work is the hours-breakdown
+role's, and of the roles on that list only this one converts hours to money. Each role is forbidden
+the half the other does, so neither can carry the whole. It stays where
+[§ 36](#where-a-duplicated-utility-goes-instead) leaves a utility — in the project that wants it, or
+in the harness's user-wide root where several projects do — calling the hours-breakdown role for
+the distribution and doing the rest itself. A carrier that is no role of the loop is outside this
+surface, so what it does with a figure is bound by nothing here except that it never writes one
+back as a figure either role produced.
 
 | what such an invoice needs | why no role or key here takes it |
 |---|---|
 | hours rescaled from the rate they were worked at to the rate they are billed at | the hours on a line item are the hours the store holds, so this role may not write a rescaled figure, and the hours-breakdown role reads no rate. The rescaling replaces a figure [§ 9](#9-day-log) produced, which neither role may do |
-| a price on each deliverable rather than on each day | this role's grain is § 26's entry, one per day per project, and it may not read the commits a deliverable is made of — that is the measuring this section forbids it. The distribution over shipped work is the hours-breakdown role's, which prices nothing |
-| one fixed line format for a spreadsheet the client keeps | a format no role reads is a template, which [§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here) refuses as a facet and [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property) declares no content shape for |
-| a period that recurs on a fixed calendar | the period is an argument of the pass for both roles: a role is told it and decides nothing from it, so a calendar rule computing it is the calling carrier's and not a key |
+| a price on each deliverable rather than on each day | this role's grain is [§ 26](#26-the-day-logs-destination-port)'s entry, and it may not read the commits a deliverable is made of — that is the measuring this section forbids it. The distribution over shipped work is the hours-breakdown role's, which prices nothing |
+| one fixed line format for a spreadsheet the client keeps | a format no role reads is a template with a configuration wrapper, which § 36's condition on data-shaped values keeps from being a facet. [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property) governs a project's own documents and holds none of their content either |
+| a period that recurs on a fixed calendar | the period is an argument of the pass for both roles, told on the invocation and never configured, so a calendar rule computing it is the calling carrier's and not a key |
 | only items in given states counted | the hours-breakdown role's subject is what landed on the integration branch, which is already what the period shipped. A filter on item states would be a second answer to that question, free to disagree with the repository |
 
-The hours-breakdown role is handed the hours actually worked as its total, and its artifact states
-them as worked hours: a rescaled total handed over would be reported as given and read as worked.
-Its weights and its `--per-item` lines are the shares and the deliverables such an invoice spreads
-over. What is applied to those parts afterwards — a rate, a rescaling, a line format — is the
-calling carrier's own and is never written back as a figure either role produced.
+The hours-breakdown role reports the total it is handed as given, with nothing on its artifact
+saying where the figure came from: a total rescaled before it is handed over reaches the artifact
+looking like any other. So the rescaling, the rate and the line format are applied by the calling
+carrier to the parts the role returns — its weights and its `--per-item` lines being the shares and
+the deliverables such an invoice spreads over.
 
 ## 38. The documents a project holds to a checkable property
 
