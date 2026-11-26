@@ -39,7 +39,10 @@ Three things it deliberately does not do:
     there -- which is neither an absence nor the toolkit's mistake: it comes
     back as an `Outcome` too, with `failed` set so a role cannot read a broken
     call as a missing feature. An implementation reports it by raising
-    `HostUnavailable`, which is declared here rather than per tracker.
+    `HostUnavailable`, which is declared here rather than per tracker. An
+    implementation whose tracker can perform an operation on one shape of a
+    facet and not on the shape it was handed raises `AbsentForShape`, and that
+    comes back as the absence it is -- the stated fallback, with the reason.
 
     What raises -- always with the key named, the way `config.py` refuses a
     configuration the surface does not allow -- is a statement that is
@@ -231,6 +234,23 @@ class HostUnavailable(Exception):
     nobody could ask. The message names the command, so the failure is
     reproducible by hand.
     """
+
+class AbsentForShape(Exception):
+    """The operation is absent for the shape of facet this configuration hands it.
+
+    ⛔ **Declared by the contract, not by an implementation**, for
+    `HostUnavailable`'s reason: a role must be able to tell this from a broken
+    call without knowing which tracker answered. An implementation raises it
+    where the tracker performs the operation on one shape of a facet and has
+    nothing to perform it on in the shape this configuration states -- and
+    `Port.invoke` answers with the stated fallback, exactly as for an operation
+    not implemented at all, with the implementation's reason beside it.
+
+    ⚠️ It is **not** a refusal. A configuration the surface rules out is still a
+    `ConfigError` raised where it is read; this is a configuration the surface
+    allows, on a tracker that cannot do this one thing with it.
+    """
+
 
 # A table row's cells, split on its **unescaped** pipes -- the grammar
 # `tools/check_single_source.py` already reads markdown tables with. A pipe
@@ -1233,6 +1253,13 @@ class Port:
         adapter.bind(self.config)
         try:
             result = adapter.operations[operation](*args, **kwargs)
+        except AbsentForShape as error:
+            return Outcome(
+                operation,
+                performed=False,
+                detail=f"{fallback} The `{self.kind}` implementation has nothing "
+                f"to perform `{operation}` on in this configuration: {error}",
+            )
         except HostUnavailable as error:
             return Outcome(
                 operation,
@@ -2691,6 +2718,31 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
     check(
         "while a genuine absence is not marked failed",
         not nothing.invoke(one).failed,
+    )
+
+    # An operation the tracker performs on one shape of a facet and not on the
+    # one this configuration states. ⛔ The fallback, as for an absence, and
+    # never `failed`: the call did not break, there was nothing to do it to.
+    def _not_this_shape(*_args, **_kwargs):
+        raise AbsentForShape("the grouping is held in a field with no such object")
+
+    shaped = Port(
+        _any_example(), spec, adapter=Adapter({one: _not_this_shape}), stated=stated
+    )
+    # Caught here so a port that let it through prints a verdict, not a traceback.
+    try:
+        absent_here = shaped.invoke(one)
+    except Exception as error:
+        absent_here = None
+        escaped = f"{type(error).__name__}: {error}"
+    check(
+        "an operation absent for this configuration's shape takes the stated "
+        "fallback, with the implementation's reason",
+        absent_here is not None
+        and not absent_here.performed and not absent_here.failed
+        and absent_here.detail.startswith(stated[one])
+        and "no such object" in absent_here.detail,
+        f"got {str(absent_here)!r}" if absent_here is not None else f"raised {escaped}",
     )
 
     # ⛔ A list-valued argument: decoded from a JSON array on the command line,
