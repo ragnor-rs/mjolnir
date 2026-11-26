@@ -1,25 +1,21 @@
 # Why the configuration surface has this shape
 
-The single statement of every rule and flow is
-[`../plugins/mjolnir/config/schema.md`](../plugins/mjolnir/config/schema.md); this document
-states none. It carries the *why*: it was derived by reading every copy of every process role
-across the six projects that run this pattern — thirty-two of about forty role files in full —
-and the findings below are measurements rather than preferences. Each one names the schema
-section it forced. Where a sentence here reads as a rule, the binding form is the section it
-cites.
+Every rule and flow is stated in
+[`../plugins/mjolnir/config/schema.md`](../plugins/mjolnir/config/schema.md); this document states
+none. It carries the *why*, derived by reading every copy of every process role across the six
+projects that run this pattern — thirty-two of about forty role files in full. Each finding names
+the schema section it forced; where a sentence here reads as a rule, the binding form is the
+section it cites.
 
-Projects are referred to as A–F throughout. Naming them is forbidden here, and the counts are
-what carry the argument anyway.
+Projects are referred to as A–F throughout. Naming them is forbidden here.
 
 ## The survey found nine roles, not eight
 
 The loop's statement is
 [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop), and among the roles it
 carries is one this survey could not read as a role at all: the subsection below,
-which the survey found in every project's tooling and in no project's implementation. ⛔ **No count
-of the loop's own roles is written here**: the loop grows, and a figure beside this citation would
-state a number the surface already disagrees with. What the survey established about the nine it
-*could* read is the count: gating is a genuine ninth role rather than a variant.
+which the survey found in every project's tooling and in no project's implementation. Of the nine
+it *could* read, gating is a genuine ninth role rather than a variant.
 One project splits intake into *write the item* and *gate it into committed work*, and its gate
 copy owns the due date and the estimate; the projects without the role fold a little into filing
 and a little into starting, and neither place sets a date. The same project refuses to let
@@ -34,10 +30,9 @@ the date had none, so the role that owns both could state where one of them goes
 deliberately narrower than the copy it was taken from. It says where a date is written and not what
 the date is: the one derivation measured runs from the item's priority through a four-row table that
 no second project was found to have, so a facet absorbing the arithmetic would have generalised one
-project's habit. ⚠️ **Priority has since acquired a carrier of its own**
-([`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority), below) **and the division is unchanged**
-— the table is still one project's, which is the measurement that decided it rather than the absence
-of anywhere to read a tier from.
+project's habit. Priority has a carrier of its own
+([`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority), below), and the division holds: the
+table is one project's.
 
 **Why the gate's own checks are not a third ordered list.** The readiness gate and what counts as
 done are configured lists because the copies of *those* roles diverge: the five starting copies
@@ -51,7 +46,7 @@ acceptance condition is answerable without asking anyone, and whether the body l
 open where a decision belongs. The one genuinely per-project input, what bar a dependency has to
 have reached, is already
 [`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)'s
-rule and is read there rather than restated.
+rule.
 
 ### The tenth role every copy named and none of them wrote
 
@@ -61,19 +56,17 @@ that has any of this tooling, and implemented by none of them. The phrase a sess
 sits in the excluded-turn list of **each day-log script the survey read** — the five of the six
 projects that carry one — classified there as the tooling's own upkeep, exactly as the save it
 mirrors is, so those scripts already deducted the minutes of a role no project had written down.
-⚠️ **Which is also what settles whether it is work**: the classification is those
-scripts', it predates the role being written, and
+That settles whether it is work: the classification is those scripts', it predates the role, and
 [`schema.md § 24`](../plugins/mjolnir/config/schema.md#24-session-restore--the-readings-a-pass-is-resumed-from)
 changes nothing about it.
 
-That is the strongest case for extracting a role there is, and it is also the weakest evidence base
-of any role here, both of which are worth saying plainly:
+It is the strongest case for extracting a role, and the weakest evidence base of any role here:
 
 | | |
 |---|---|
 | **Why it is a role** | Tooling in several projects names it, people invoke it, and it is performed from memory and differently every time. Its failure mode is quiet — a sweep that misses the unpushed commits, reports a cold environment as warm, or restates a stale recollection as current produces a confident and wrong picture of where the work is, which the next hour is then spent acting on |
 | **Why its readings are procedure rather than configuration** | The thirds of the role it mirrors are configuration because the copies **diverged** — counted in [the section on that role](#the-bookkeeping-role-three-copies-that-are-a-third-of-it-and-two-keys-that-came-out-of-it) and nowhere else. Here there is nothing to diverge from, so a key stating which readings run would be a project's licence to switch one off — and a reading switched off reads exactly like a reading that found nothing, which is this role's whole failure mode |
-| **What that leaves weaker than the nine** | Every other role here was reconciled from copies that could be read against each other. This one was derived from performing it, so the list of readings is one performer's habit written down and held by a carrier rather than a merge of five. The honest consequence is that it is likelier than its siblings to be missing a reading, and the place that shows up is a report that was confidently complete |
+| **What that leaves weaker than the nine** | Every other role here was reconciled from copies that could be read against each other. This one was derived from performing it, so the list of readings is one performer's habit written down and held by a carrier rather than a merge of five. It is likelier than its siblings to be missing a reading, and the place that shows up is a report that was confidently complete |
 
 ### The loop does not continue itself
 
@@ -84,9 +77,9 @@ six times, and the reviewing role three.** Eight sessions invoked the starting r
 those went on to invoke the finishing one. One session is the clean instance — it implemented item
 [#8](https://github.com/ragnor-rs/mjolnir/issues/8), landed it as `b9e8fd7` through pull request
 [#147](https://github.com/ragnor-rs/mjolnir/pull/147), wrote its bookkeeping and asked what was
-next, with the finishing role neither invoked nor its procedure read. ⚠️ **What that session had of
-that role is worth being exact about**, since the weaker claim is the one that survives: its
-frontmatter, read eight lines at a time while the session was authoring another role's frontmatter,
+next, with the finishing role neither invoked nor its procedure read. What that session had of that
+role: its frontmatter, read eight lines at a time while the session was authoring another role's
+frontmatter,
 and eight scattered body lines returned by a `grep` across every skill. No read ever named the file,
 and no invocation preamble for it was ever injected.
 
@@ -97,8 +90,8 @@ the pattern above, implementing being absent from the list this section's own op
 session that had just finished the work therefore had nothing instructing it to continue, and every
 role it skipped was skipped silently.
 
-⚠️ **A count of invocations is a floor, and the direction it errs in is against this argument rather
-than for it.** It reads the harness's record of a *carrier* being invoked, so a session that opened
+A count of invocations is a floor, and it errs against this argument. It reads the harness's record
+of a *carrier* being invoked, so a session that opened
 a role's file and followed it by hand counts here as a skip, and a session's record can be pruned
 with the tree it worked in — observed within this same day. Both inflate how often the route looks
 uncarried. What neither touches is the landings, which are the integration branch's own history, nor
@@ -151,22 +144,19 @@ The reverse also happens, and a name-keyed merge produces nonsense on it:
   non-technical reader in one project, a tab-separated invoice line-item file with an hourly rate
   conversion in two others, and in a fourth a monthly report that distributes a total of hours it
   is *given* across the changes shipped that month. Same directory name, different output,
-  different trigger, different reader, no shared procedure. ⚠️ **The third was found later and in
-  two carriers**, a command in one project and a skill in another — so the copies of these three
-  run to at least five, and whichever way a survey keyed them, reconciling the third against the
-  command alone leaves the skill copy local in a project declared migrated. ⛔ **No count of the
-  copies is written here**: the number rose once already, and the statement is that a name-keyed
-  merge of this entry is wrong however many there turn out to be. The roles are named apart in
+  different trigger, different reader, no shared procedure. The third is in two carriers, a
+  command in one project and a skill in another, so reconciling it against the command alone leaves
+  the skill copy local in a project declared migrated. A name-keyed merge of this entry is wrong
+  however many copies there are. The roles are named apart in
   [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop), and what the one basename
   does to the readiness check — which cannot answer for it and says so — is the
   `ambiguous:` entry in that check's own vocabulary.
 - **One name, a subset role.** A bookkeeping carrier can be the *commit third* of the role with
   the board and memory halves absent. Counting such a copy as a full one overstates adoption;
-  counting it as unrelated loses that project's commit behaviour. ⚠️ **How many copies are whole
-  and how many are a third is counted once**, in
+  counting it as unrelated loses that project's commit behaviour. How many copies are whole and how
+  many are a third is counted once, in
   [the section on that role](#the-bookkeeping-role-three-copies-that-are-a-third-of-it-and-two-keys-that-came-out-of-it),
-  and this passage carries no number of its own — the first version of it said *one project's* and
-  the survey the role was extracted from found more.
+  not here.
 
 So the inventory key is *(role, carrier)*, established by reading the body, and a merge must be
 able to say "this copy implements a third of that role".
@@ -195,17 +185,15 @@ completion that some reason about explicitly and others do not have.
 ## The axes, and why each is independent
 
 The axes are stated in
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop) — which carries the list, and
-no count, so this document does not hold a copy of one. There are more than the three that are
-obvious. The measurements that forced each to be independent:
+[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop). The measurements that forced
+each to be independent:
 
 1. **Work-item tracker.** Four models were in play — GitHub Projects in three projects, Jira in
    one, Trello in one, and **none** in one, whose work items were entries in a specification tree
    on disk. The port's implementations are one module per kind, built as their items land; the
    trackerless project moves onto a real tracker rather than the toolkit growing a filesystem
-   adapter — and the trackerless case was
-   proved against a deliberately trackerless scratch config anyway, because the next project to
-   adopt this may have no tracker on its first day.
+   adapter — and the trackerless case was proved against a deliberately trackerless scratch config,
+   because the next project to adopt this may have no tracker on its first day.
 2. **Code host.** The same host in all six, including both projects whose cards are elsewhere —
    which is precisely why it is a separate axis. The host's own runs later forced a facet inside
    the axis, [`schema.md § 2`](../plugins/mjolnir/config/schema.md#2-code-host): one project's
@@ -215,50 +203,33 @@ obvious. The measurements that forced each to be independent:
    an empty check list as a pass. Hence `checks` keyed by workflow name, with
    absence-of-signal-is-not-an-answer stated beside it.
 
-   **A second facet landed inside the same axis later, and it was measured here rather than in the
-   survey.** How a pull request lands — squash, a merge commit, or rebase — was read in three
-   places in this backlog and decided in none of them: the role that performs the merge, the
-   commit-message hook that has to survive a concatenated message, and the role that prunes a
-   landed tree and deletes its branch.
+   **A second facet inside the same axis was measured on this repository.** How a pull request
+   lands — squash, a merge commit, or rebase — is read in three places in this backlog: the role
+   that performs the merge, the commit-message hook that has to survive a concatenated message, and
+   the role that prunes a landed tree and deletes its branch. Two of them *tolerated* both shapes;
+   the merging role silently **assumed** squash, the half of the gap a tolerant reading hides. At
+   `756ab7a`, `squash` matched six lines across the surface, this repository's configuration, every
+   document under `docs/` and every file under `config/examples/`, and not one of the six stated
+   the fact: every one is the landed reading explaining why a rewritten hash defeats ancestry — the
+   one reader this facet does not simplify — and no key, and no sentence anywhere, said which method
+   a project lands by.
 
-   ⚠️ **The item's own zero-hits measurement was true when it was taken and false by the time it
-   was acted on**, which is recorded rather than restated, being an instance of the thing this
-   document keeps catching. On 2026-10-17, at `f40785e`, `squash`, `merge_method` and `linear`
-   returned **zero** hits across the surface, this repository's configuration, every document under
-   `docs/` and every file under `config/examples/`. Two days later, at `756ab7a`, `squash` matched
-   six lines in those same files. ⛔ **Not one of the six states the fact**, which is why the gap
-   survived its own measurement going stale: every one is the landed reading explaining why a
-   rewritten hash defeats ancestry — the one reader this facet does not simplify — and no key, and
-   no sentence anywhere, said which method a project lands by.
-
-   ⚠️ **Three rather than the four the item claimed, and the direction of the defect was not
-   uniform either** — recorded because the correction is the kind of thing this document exists to
-   keep honest. Re-read against the bodies themselves, two of the item's four quotations were
-   attributed to the wrong items, and the fourth item reads the method nowhere: its single mention
-   is the cost of a full loop for a one-line fix, which reads no input. Of the three that do read
-   it, only two *tolerated* both shapes; the merging role silently **assumed** squash, which is the
-   worse half of the same gap and the one a tolerant reading hides.
-
-   Two measurements on this repository, 2026-10-17 and re-read 2026-10-19, are why the key exists
-   rather than the argument above:
+   Two measurements on this repository are why the key exists:
 
    - **A landing picked a method with nothing to read.** `main` was linear and the previous change
      had landed as a single commit, so squash was inferred. A linear history is equally consistent
-     with rebase, so the inference was a coin toss that read as a reading. ⚠️ **It happened to be
-     right, and what establishes that is not the shape it was read off**: a branch of six commits
-     and one of three each added **exactly one** commit to a `main` that carries no merge commit
-     at all, which a rebase merge cannot do and a merge commit cannot do either. So the convention
-     was in the history to be read correctly, and nothing said it.
+     with rebase, so the inference was a coin toss that read as a reading. What establishes the
+     method is that a branch of six commits and one of three each added **exactly one** commit to
+     a `main` that carries no merge commit at all, which a rebase merge cannot do and a merge
+     commit cannot do either. So the convention was in the history to be read, and nothing said
+     it.
 
-     ⚠️ **The first attempt at that evidence was wrong, and wrong in the direction this whole
-     document is about.** It read the `(#N)` suffix on 26 of the 33 commits as the host's own
-     squash marker. It is nothing of the kind: this project's finishing role **passes** that
-     subject itself, precisely because a host appends the reference only to a subject it generates
-     — so the suffix is evidence of the convention and not of the merge method. The seven commits
-     without it are not the exceptions it implied either: six predate the loop running on itself,
-     and one is a merged pull request whose subject was passed without its reference, which is the
-     defect the finishing role's squash-subject rule exists for, sitting unnoticed in the history
-     of the repository that states the rule.
+     The `(#N)` suffix on 26 of the 33 commits is not the host's squash marker: this project's
+     finishing role **passes** that subject itself, because a host appends the reference only to a
+     subject it generates — so the suffix is evidence of the convention and not of the merge
+     method. Of the seven commits without it, six predate the loop running on itself, and one is a
+     merged pull request whose subject was passed without its reference, which is the defect the
+     finishing role's squash-subject rule exists for.
    - **The host constrains nothing.** `allow_squash_merge`, `allow_merge_commit` and
      `allow_rebase_merge` are all true, and `delete_branch_on_merge` is false — so every method is
      available, nothing on the host enforces the convention the history implies, and the branch
@@ -266,23 +237,19 @@ obvious. The measurements that forced each to be independent:
 
    Hence [`schema.md § 2 → How a pull request lands`](../plugins/mjolnir/config/schema.md#how-a-pull-request-lands),
    which also rules what the host's own setting is for: read from the host as a constraint on the
-   stated method, never restated as a second copy of it. ⚠️ **What the same measurement does not
-   support is the facet making the landed reading cheaper**, which was the obvious reason to want
-   it: that reading keeps both of its tests, for the reason the section gives.
+   stated method, never restated as a second copy of it. The facet does not make the landed reading
+   cheaper: that reading keeps both of its tests, for the reason the section gives.
 
-   **A third facet landed inside the axis once the toolkit started generating workflow files, and
-   it came from one project's runner account rather than from the survey.** One project in the
+   **A third facet inside the axis comes from one project's runner account.** One project in the
    migration set declares a non-default runner label on every job, because its host account
    carries its own runners — and a job asking for the host kind's default label on that account
-   **never starts at all**. The consequence is the one that makes the fact load-bearing rather
-   than cosmetic: a generated gate carrying the default is a check that never reports, replacing
-   one that did, and a run that never reports is the absence-of-signal case this same section
-   already refuses to read as green. So where the jobs run is stated, an installer writes it, and
-   the statement is held to the workflow files —
+   **never starts at all**. A generated gate carrying the default is a check that never reports,
+   replacing one that did, and a run that never reports is the absence-of-signal case this same
+   section already refuses to read as green. So where the jobs run is stated, an installer writes
+   it, and the statement is held to the workflow files —
    [`schema.md § 2 → Where the host's jobs run`](../plugins/mjolnir/config/schema.md#where-the-hosts-jobs-run).
 
-   Two further measurements on the same account, both of which the obvious shape of the facet
-   would have left out:
+   Two further measurements on the same account:
 
    - **Its runners take one job at a time, so a job's budget is spent queued.** A short check at
      the back of the line is cancelled having never started — no runner recorded, no step run —
@@ -293,15 +260,13 @@ obvious. The measurements that forced each to be independent:
    - **The number of jobs a workflow splits into is what decides how long the queue is.** Which
      prices, rather than overturns, this section's own ruling that each mirrored command takes a
      workflow of its own: the cost there was stated as a checkout per command, and on a
-     single-runner account it is also a place in the line. ⚠️ The ruling stands — the alternative
-     is still a configuration `checks` cannot state — and the price is now written down once
-     instead of being rediscovered per project.
+     single-runner account it is also a place in the line. The ruling stands — the alternative is
+     still a configuration `checks` cannot state.
 
-   ⚠️ **What the surface deliberately does not carry is the default itself.** A per-kind table of
-   runner labels here would be a second statement of the host's own naming, wrong the next time
-   the host changed one and wrong silently — the same argument that keeps the event vocabulary off
-   this surface. The consequence is a stated limit rather than a hidden one: a project that writes
-   no `host.runner` has nothing for the drift check to hold its files to, and that check says so
+   The surface does not carry the default itself. A per-kind table of runner labels here would be a
+   second statement of the host's own naming, wrong silently the next time the host changed one —
+   the same argument that keeps the event vocabulary off this surface. A project that writes no
+   `host.runner` has nothing for the drift check to hold its files to, and that check says so
    rather than guessing.
 3. **Code root.** One project's code is a git-ignored subdirectory that is its own repository
    under a different owner, not a submodule. Its skills write the root explicitly into every git
@@ -312,17 +277,16 @@ obvious. The measurements that forced each to be independent:
    notes and never touches the code; a host CLI call inheriting the working directory addresses
    the wrong repository. Both fail quietly, having done something plausible first.
 
-   ⚠️ **This survey read that root as one subdirectory, and the build survey counted two.** The
-   same project carries two such repositories, each with its own host, its own checks and its own
-   verdict set, which makes the grain of this axis per repository rather than per project —
+   The same project carries two such repositories, each with its own host, its own checks and its
+   own verdict set, which makes the grain of this axis per repository rather than per project —
    [`build-surface.md § A verdict is a command, a root, and a condition`](build-surface.md#a-verdict-is-a-command-a-root-and-a-condition)
    has the measurement and
    [`schema.md § 1 → A project's code is not always one repository`](../plugins/mjolnir/config/schema.md#a-projects-code-is-not-always-one-repository)
-   is the shape it forced. Nothing above is overturned by it: the root is still configured rather
-   than inferred, and still stated in every call. What changes is how many of them there are.
+   is the shape it forced. The root is still configured rather than inferred, and still stated in
+   every call; what changes is how many of them there are.
 
-   **The same section's other root was measured here rather than in the survey, and it is the one
-   root the surface cannot carry.** The shared reader resolves `.claude/mjolnir.yaml` against the
+   **The same section's other root is the one root the surface cannot carry.** The shared reader
+   resolves `.claude/mjolnir.yaml` against the
    skills root, so that root is needed before any configuration can be read. Every in-band
    candidate was tried:
 
@@ -335,12 +299,11 @@ obvious. The measurements that forced each to be independent:
 
    So it is stated as a definition rather than configured —
    [`schema.md § 1 → The skills root is where the role runs`](../plugins/mjolnir/config/schema.md#the-skills-root-is-where-the-role-runs).
-   The key that used to declare it carried `"."` in every configuration and was read by nothing:
-   declared and dead, which is worse than absent, because a project that pointed it at a
-   subdirectory was ignored in silence. The costs are accepted with it and are stated in that
-   section rather than here — the naming requirement being a statement rather than a stop, and
-   the argument form staying, because a role has to be able to address a project it is not
-   standing in.
+   A key declaring it would carry `"."` in every configuration and be read by nothing — worse than
+   absent, because a project that pointed it at a subdirectory would be ignored in silence. The
+   costs are stated in that section: the naming requirement is a statement rather than a stop, and
+   the argument form stays, because a role has to be able to address a project it is not standing
+   in.
 4. **Carrier.** See above. Three projects also run process hooks, at eight, five and four.
 5. **Audience and language.** One project writes its items in one language and its repository in
    another and states the split is by audience — its branch slug a **translation** of the item
@@ -348,7 +311,7 @@ obvious. The measurements that forced each to be independent:
    another writes it in a business register for a reader outside the build. Three settings, not
    one — hence
    [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project).
-   A seventh setting landed in the same axis later, measured rather than stated by any project:
+   A seventh setting in the same axis is measured rather than stated by any project:
    [prose width](#prose-width-is-a-habit-and-the-habits-differ).
 
    **One artifact in that map is fixed rather than configured.** The measurement that forced it
@@ -359,12 +322,10 @@ obvious. The measurements that forced each to be independent:
    carried nowhere, so there was no divergence to reconcile and nothing to make configurable
    from.
 
-   ⚠️ **The evidence for what to put there instead is of a different kind from the rest of this
-   document, and that is worth naming.** It is not a count across projects A–F: it is the stated
+   The evidence for what to put there instead is not a count across projects A–F: it is the stated
    requirement of the person the replies are written to, recorded on
-   [#79](https://github.com/ragnor-rs/mjolnir/issues/79) in their own words. The first entry here
-   whose argument a count does not carry. Why that still settles it as *procedure* rather than as
-   a setting is the rule's own, at
+   [#79](https://github.com/ragnor-rs/mjolnir/issues/79) in their own words. Why that settles it as
+   *procedure* rather than as a setting is the rule's own, at
    [`schema.md § 8 → The reply to the person running a role`](../plugins/mjolnir/config/schema.md#the-reply-to-the-person-running-a-role),
    which this document does not restate.
 6. **Branch model.** Four of the six cut a working tree per work item; two never do. Even the
@@ -387,8 +348,7 @@ obvious. The measurements that forced each to be independent:
      carries the routing, the setup steps and the teardown, and its own rule is
      read-it-from-one-place again: a skill on the route **names** that file rather than restating
      it. That is the shape the facet's `mechanics` pointer keeps, rather than growing those steps
-     into the shared procedure. Its length is not quoted here — the number lives in that file and
-     a copy of it would drift, which is the same reason the axes carry no count.
+     into the shared procedure.
    - **The routing itself is two measured positions, not one.** One project works in its shared
      checkout whenever that checkout is on the integration branch, clean and unoccupied, and
      takes a tree otherwise; another never works in it at all, every item getting its own tree,
@@ -406,17 +366,15 @@ obvious. The measurements that forced each to be independent:
      the host's web interface, in another session, or before any rule existed leaves a tree nothing
      is watching, and the trees then accumulate until somebody notices — the count is in
      [`schema.md § 10 → Pruning a tree whose branch has landed`](../plugins/mjolnir/config/schema.md#pruning-a-tree-whose-branch-has-landed),
-     which is also where both carriers are stated and is not quoted back here. What is worth
-     recording beside it is that **the measurements came from different projects and pointed at
-     different halves of one rule** — what *landed* means, what makes a tree disposable, and how
-     long a kept verdict is good for — which is why the subsection reads as four rules rather than
-     one and why no single project's experience would have produced it.
+     which is also where both carriers are stated. The measurements came from different projects
+     and pointed at different halves of one rule — what *landed* means, what makes a tree
+     disposable, and how long a kept verdict is good for — which is why the subsection reads as four
+     rules rather than one.
    - **`regenerable` is the one key that half needs, and it is a key for the reason `claimed_by`
      is.** What a rebuild writes again is a build directory in one project, a dependency cache in
      another, a service stack's own volumes in a third — and a carrier shipping any of those names
-     would be this toolkit carrying a project's value. ⚠️ What the empty form costs, and the
-     exemption without which the rule would prune nothing at all, are stated with the key rather
-     than explained twice.
+     would be this toolkit carrying a project's value. What the empty form costs, and the exemption
+     without which the rule would prune nothing at all, are stated with the key.
    - **A verdict has to name its tree, because the failure is silent and passes.** One project
      records that a check run against whichever service stack happens to be up is a check of
      another branch's code, and that an idle stack is not an unused one; another found a capacity
@@ -445,22 +403,17 @@ obvious. The measurements that forced each to be independent:
      not generalise and stays behind the `mechanics` pointer; the **placement** is a path, and the
      two measurements differ in the value rather than in the steps — so it is a key,
      [`schema.md § 10 → Where a tree is created`](../plugins/mjolnir/config/schema.md#where-a-tree-is-created-and-how-the-session-comes-to-be-in-it).
-     ⚠️ **The two placements above are what was measured, and the value has since been ruled
-     rather than left to each project**: one level under the agent harness's own managed directory,
-     that being the only placement a session is moved into without a person answering a prompt the
-     project cannot configure away. It stays a key — the depth is the rule, the directory is still
-     each project's to state, and a project carrying several code roots takes the prompt on the
-     roots it crosses.
-     ⚠️ Until that key existed the two were one pointer, which left the location stated in no
-     facet at all: every project that cut a tree carried its own standing convention, readable by
-     the person running a role and by nothing shipped. The same subsection carries what was
-     measured one step further on — that **cutting a tree is not working in it**, and a role
-     that stops at the cut leaves the session standing in the checkout the branch model just
-     forbade.
+     The value is ruled rather than left to each project: one level under the agent harness's own
+     managed directory, the only placement a session is moved into without a person answering a
+     prompt the project cannot configure away. It stays a key — the depth is the rule, the
+     directory is each project's to state, and a project carrying several code roots takes the
+     prompt on the roots it crosses. The same subsection carries the next measurement: **cutting a
+     tree is not working in it**, and a role that stops at the cut leaves the session standing in
+     the checkout the branch model forbids.
 
 ## Prose width is a habit, and the habits differ
 
-The seventh thing axis 5 turned out to carry. Where prose wraps was never in any copy of any role
+The seventh setting axis 5 carries. Where prose wraps was never in any copy of any role
 and in no project's written conventions, so unlike the six axes above it could not be read off
 what the projects *state* — only off what they do. Measured over every tracked markdown file in
 the six, counting lines of prose with fenced code, table rows and indented blocks removed:
@@ -486,10 +439,9 @@ and the absent case is the **commoner** of the two rather than a degenerate one 
 [`schema.md § 8 → Prose line width`](../plugins/mjolnir/config/schema.md#prose-line-width) makes
 `prose_width` configuration with absence meaning no wrapping at all.
 
-⚠️ **What the same measurement does *not* support is a second setting for bodies.** It covers
-files, because files are what a checkout holds; the rendered surfaces were argued from the
-renderer rather than from a count, and the rule there is procedure. A reader who wants the
-counting to carry that half too will not find it here.
+The same measurement does *not* support a second setting for bodies. It covers files, because
+files are what a checkout holds; the rendered surfaces were argued from the renderer rather than
+from a count, and the rule there is procedure.
 
 ## The tracker port
 
@@ -498,27 +450,23 @@ The operation list itself, and what the procedure does where an operation is una
 What follows is the measurement behind that list: the shapes the three implementations give these
 operations, which is why none of them could be assumed.
 
-Each row is keyed by the operation § 3 states, so the two tables are read against each other
-without a mapping in between. ⚠️ The rows are the operations the survey measured; § 3's list is
-longer, and `advance_on_merge`, `set_labels`, `assign`, `checklist_read` and `checklist_write` are
-argued below rather than in the table — stated because a reader comparing the two would otherwise
-read a missing row as an operation nobody had evidence for.
+Each row is keyed by the operation § 3 states. The rows are the operations the survey measured;
+§ 3's list is longer, and `advance_on_merge`, `set_labels`, `assign`, `checklist_read` and
+`checklist_write` are argued below rather than in the table.
 
-⚠️ **`search_items` is the one operation on § 3's list the survey did not reach**, in the table or
-in the argument below it, and it is named here so that a reader holding the two lists against each
-other finds nothing unexplained. Its shapes were measured afterwards, against plain issues rather
-than against the three above: terms and a field's value with no terms, each across every state the
+`search_items` is the one operation on § 3's list the survey did not reach. Its shapes were
+measured separately, against plain issues rather than against the three above: terms and a field's
+value with no terms, each across every state the
 tracker holds, and two ways an empty answer lies — a state qualifier carried in with the terms,
 which narrows the search while the all-states flag is still on the command line, and a label the
 repository does not have, which the host answers identically to a label nothing carries. Both are
 refused there rather than reported, because this is the one search the filing role performs.
 
-⚠️ **`set_field` is newer than this survey, and the sentence above is bounded by that.** It arrived
-with the gating role: of the two values that role writes, the estimate reaches the item as a label
-on the copy measured, and the date
+`set_field` is likewise outside the survey. It serves the gating role: of the two values that role
+writes, the estimate reaches the item as a label on the copy measured, and the date
 ([`schema.md § 4.5`](../plugins/mjolnir/config/schema.md#45-due-date)) reaches it as a field, which
-no operation carried. ⛔ **What that bound no longer covers is the implementations**: two of them
-perform the write now, and each shapes a value by the field's own type rather than by what the
+no operation carried. Two of the implementations perform the write, and each shapes a value by the
+field's own type rather than by what the
 value is — a column's type on the board, and a site-wide field catalogue on the issue tracker,
 where the estimate turns out to be a member of a composite field rather than a scalar. The rows
 below carry those; the operation still has no row in the table above, because the table records
@@ -550,110 +498,92 @@ Three of these measurements each forced a property of the port, stated in
   a third-party tracker holding someone else's material is why policy sits on the port beside
   capability — and why that project's branch name goes in the run report instead.
 
-⚠️ **Every impossibility in that table is a property of the tracker's API rather than of the
-project using it**, which is the measurement behind
+Every impossibility in that table is a property of the tracker's interface rather than of the
+project using it, which is the measurement behind
 [`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability).
 No comment action, no short-id field, no label at creation time — each of those is one tracker's
 API and not one project's choice, and no configuration a project writes can reach any of them.
 
-⛔ **The sentence above is narrowed by what building the third implementation found, and the four
-Trello cells are where** — the rule it serves being
+The four Trello cells are properties of the **interface** a project's copy used, not of the
+tracker: under
 [`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability),
-which is what the narrowing has to leave standing. *API* there is doing work it cannot carry: a
-tracker is reached through
-some **interface**, a project's copy had one, and four of that column's cells are properties of the
-interface rather than of the tracker. Measured against a live Trello through a different interface
-and read against the published reference — the detail is
-[below](#what-building-the-card-implementation-established) — three of the four reproduce on that
-second interface and one does not: **comments exist**. What the sentence still holds for is the
-direction of the argument, which is the half § 3 depends on: none of the four is a configuration a
-project writes, and a project cannot reach any of them either way. What it must not be read as is
-*this tracker cannot*, which is the reading the implementation would have taken into the adapter.
-⚠️ **And three of the six run on a single tracker**, so a difference between those three cannot be
-a capability difference at all — the API answering them is one API. What projects were found
+measured against a live Trello through a different interface and read against the published
+reference — the detail is [below](#what-building-the-card-implementation-established) — three of
+the four reproduce on that second interface and one does not: **comments exist**. None of the four
+is a configuration a project writes, and a project cannot reach any of them either way; none may be
+read as *this tracker cannot*. Three of the six projects run on a single tracker, so a difference
+between those three cannot be a capability difference at all. What projects were found
 differing in is which mechanism carries the type, the estimate and the template, which is a facet
 below and already has a home of its own.
 
 ### Reading a dependency back, per tracker, and the one tracker that cannot
 
-⚠️ **The read half is newer than the survey**, and this section is bounded the way the `set_field`
-paragraph above is bounded: the table at the top of this section records what the **copies** did,
-and no copy was measured reading a dependency back. ⛔ **So the write half is not restated here** —
-it is that table's `link_dependency` row and the Jira reference section below, and ⚠️ **the first
-form of this section copied both of them**, which is the defect it is the remedy for one layer
-down. A row below that needs the write form points at it rather than repeating it.
+No copy was measured reading a dependency back, so the read half is outside the survey too. The
+write half is that table's `link_dependency` row and the Jira reference section below.
 
-⛔ **Why it is here at all**: § 5 carries a blocker predicate in the shared library and, until this
-was written, nothing stated **where a blocker is recorded** — so the check had no source, and the
-honest reading of a tracker that cannot be asked was indistinguishable from a tracker with nothing
-to report. The rule is now
+§ 5 carries a blocker predicate in the shared library, and without a statement of **where a blocker
+is recorded** a tracker that cannot be asked is indistinguishable from a tracker with nothing to
+report. The rule is
 [`schema.md § 3 → An edge is a relation`](../plugins/mjolnir/config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)
 and the operations are `link_dependency` and `read_blockers`.
 
 | Tracker | How a dependency reads back | Source |
 |---|---|---|
-| plain issues, and a board | one endpoint, read on the *blocked* item — the same one the write posts to, the board holding no relation of its own. **Every page**, under the same silent ceiling the search rows below record, and the client merges them only when the paging flag is passed. ⚠️ **The entries are issues and carry their own repository address**, which is the half a bare number loses: a relation is recordable across repositories and a board draws cards from more than one, so a blocker read as `#13` resolves against the wrong backlog and the wrong `#13` answers perfectly. ⛔ **And the state word is not the whole state**: this host records *why* an item closed, so an item abandoned rather than finished is `closed` with a reason that says so — and § 5's bar is what the dependency produced | a live host |
-| Jira | **no call of its own**: the links arrive with the item. The sense is read from which side an entry carries and never from the type's wording — the inversion the reference section below measured, where the write is the other chance to invert it — and each entry holds the project's own status word *and* the tracker's category behind it, with the blocker's own summary and address beside them. ⛔ **And this is the tracker that cannot answer *why* a blocker closed**: a resolution is not in a link payload and the read makes no call, so a blocker abandoned and one finished arrive in the category that means neither. ⚠️ A reader here has the category and not what the dependency produced, which is the half § 5's bar is about | a live site, through a different interface |
-| Trello | ⛔ **absent.** There is no relation object to read, there being none to write either, so § 5's blocker predicate reports *unanswered* on this tracker. ⚠️ Never *no blockers*: a prose edge in two card descriptions is readable by a person and is not a verdict a gate may pass on | the published reference |
+| plain issues, and a board | one endpoint, read on the *blocked* item — the same one the write posts to, the board holding no relation of its own. **Every page**, under the same silent ceiling the search rows below record, and the client merges them only when the paging flag is passed. **The entries are issues and carry their own repository address**, which is the half a bare number loses: a relation is recordable across repositories and a board draws cards from more than one, so a blocker read as `#13` resolves against the wrong backlog and the wrong `#13` answers perfectly. **And the state word is not the whole state**: this host records *why* an item closed, so an item abandoned rather than finished is `closed` with a reason that says so — and § 5's bar is what the dependency produced | a live host |
+| Jira | **no call of its own**: the links arrive with the item. The sense is read from which side an entry carries and never from the type's wording — the inversion the reference section below measured, where the write is the other chance to invert it — and each entry holds the project's own status word *and* the tracker's category behind it, with the blocker's own summary and address beside them. **And this is the tracker that cannot answer *why* a blocker closed**: a resolution is not in a link payload and the read makes no call, so a blocker abandoned and one finished arrive in the category that means neither. A reader here has the category and not what the dependency produced, which is the half § 5's bar is about | a live site, through a different interface |
+| Trello | **absent.** There is no relation object to read, there being none to write either, so § 5's blocker predicate reports *unanswered* on this tracker. Never *no blockers*: a prose edge in two card descriptions is readable by a person and is not a verdict a gate may pass on | the published reference |
 
-⛔ **The absence is the row worth reading**, and it is why the predicate's stated behaviour is
-*unanswered* rather than a pass —
+The absence is why the predicate's stated behaviour is *unanswered* rather than a pass —
 [`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)
 is where that is stated. A gate that treated *cannot be asked* as *nothing to report* would start
 every item on that tracker whose dependency had not landed, which is § 2's absence-of-signal rule
-arriving at a readiness gate. ⚠️ **No count of the trackers that answer is given here**, for the
-reason this document gives about every other count: the kinds are built one work item at a time, and
-which implementations carry a capability is declared by implementing it rather than listed anywhere.
+arriving at a readiness gate. Which implementations carry a capability is declared by implementing
+it rather than listed anywhere.
 
-**The measurement that forced the ruling, taken in this repository's own backlog.** Sixty-eight
+**The measurement behind the ruling, taken in this repository's own backlog.** Sixty-eight
 dependency edges were stated as prose in issue bodies while the configured readiness list carried
-the blocker predicate with nothing to read; the host's dependency relations were available and
-carried three of the sixty-eight. All sixty-eight are relations now. ⛔ **So the prose line and the
-relation were two statements of one fact** — the defect this toolkit exists to delete, in its own
-backlog — and what settled it is not *delete every sentence naming another item*: some of those
-sentences carried what a relation cannot express, that two items were decided together or that one
-sits below another in an order without blocking it. ⚠️ **Which is why the ruling separates the edge
-from the reasoning about the edge** rather than banning prose, and why its test is what a gate would
+the blocker predicate with nothing to read; the host's dependency relations carried three of the
+sixty-eight. The prose line and the relation were two statements of one fact. Some of those
+sentences carried what a relation cannot express — that two items were decided together, or that
+one sits below another in an order without blocking it — which is why the ruling separates the edge
+from the reasoning about the edge rather than banning prose, and why its test is what a gate would
 answer rather than what a sentence looks like.
 
-⚠️ **One shape this left behind, measured in this repository's own carriers rather than reasoned
-about**: two project-local roles had written a tracker's own field name and endpoint path into their
-prose, and the naming sweep was green over both — it forbids a tracker's *name* and these are a
-level down from it, the tracker's vocabulary. That is now its own check, recorded with the sweep in
+Two project-local roles in this repository had written a tracker's own field name and endpoint path
+into their prose, and the naming sweep was green over both — it forbids a tracker's *name* and these
+are a level down from it, the tracker's vocabulary. That is its own check, recorded with the sweep
+in
 [`single-source-of-truth.md`](single-source-of-truth.md#the-second-sweep-naming-no-other-project).
-⚠️ **And the check's own first form over-reached in the other direction**, which is recorded there
-too.
 
 ### What building the board's implementation measured
 
-The survey above read the copies; these are the host's own answers, measured while the
-implementation behind `kind: github-projects` was written. Each one is a shape the implementation
-takes because of what came back, and none of them is derivable from the table above.
+These are the host's own answers, measured for the implementation behind `kind: github-projects`.
+Each one is a shape the implementation takes because of what came back, and none of them is
+derivable from the table above.
 
 | What was asked | What came back |
 |---|---|
 | the same field asked for **by name** twice in one query | refused outright — `fieldConflict`, *has an argument conflict* — and legal only with an alias on each. So the implementation asks for none by name: it reads a card's whole value connection once and keys the answer on each value's own field name, which has no alias to get wrong and costs one request rather than one per field |
 | a card's values, for a card on a live board | only the columns that **hold** a value: the host-managed ones carry none at all, so a column read as empty and a column the host maintains are the same answer and a write has to be refused by the field's own type rather than by its value |
-| a number that names a pull request | the host's own typename says which of the two it is, and a merged pull request answers with a state no `statuses` list contains. ⚠️ A stronger guard than reading a URL for `/pull/`, and the implementation beside this one takes the weaker route because that is what was measured for it |
+| a number that names a pull request | the host's own typename says which of the two it is, and a merged pull request answers with a state no `statuses` list contains. A stronger guard than reading a URL for `/pull/`, and the implementation beside this one takes the weaker route because that is what was measured for it |
 | a board addressed by an owner's login | resolvable through the owner interface with a fragment per owner kind, so nothing has to know whether an owner is a person or an organisation. Asking the wrong one of the two by name answers an **error** rather than nothing, which is what makes the guess expensive |
-| a board with more items than one page | the page's own cursor, and nothing in the answer that says a list is short. ⚠️ The client's paginate flag follows top-level pages and not a nested connection, so the ceiling is silent: a round total is the signature of an unfollowed cursor |
+| a board with more items than one page | the page's own cursor, and nothing in the answer that says a list is short. The client's paginate flag follows top-level pages and not a nested connection, so the ceiling is silent: a round total is the signature of an unfollowed cursor |
 | a project number nothing resolves | `NOT_FOUND` with a non-zero exit, which is why an address the reader accepts and the tracker rejects arrives as a failed call naming the owner and the number rather than as an empty board |
 | a field value handed in as one variable — the whole input object the write takes | refused: *provided invalid value*, because the client sends a variable as a string and the host wants an object. So a write takes the value as a **typed scalar**, one document per kind of column, and nothing is pasted into a request |
 | a number sent as that typed scalar | refused in turn: the client's typed field parses an integer and leaves anything else a string, and the untyped one is a string by definition, so a `Float` cannot travel as a variable at all. The number is formatted into the document — safe for one reason that does not generalise, which is that it is a `float` by then and a non-finite one is refused before formatting |
-| the board's items, read immediately after a card was added to it | the card is **absent**, while the item's own card list already carries it — and the host's own count agrees with the short page, `hasNextPage` false. ⛔ So the one omission a board read can carry is invisible to anything a reader could check, no guard catches it, and what the operation states instead is the bound: a duplicate check run straight after a filing may not see what it just filed |
+| the board's items, read immediately after a card was added to it | the card is **absent**, while the item's own card list already carries it — and the host's own count agrees with the short page, `hasNextPage` false. So the one omission a board read can carry is invisible to anything a reader could check, no guard catches it, and what the operation states instead is the bound: a duplicate check run straight after a filing may not see what it just filed |
 
-Both of the last two came out of writing rather than reading, with every read already green — which
-is the same shape the first implementation's three defects had, and the reason the live half of a
-run through this port is a write and not a report.
+Both of the last two came out of writing rather than reading, with every read already green, which
+is why the live half of a run through this port is a write and not a report.
 
 ### What building the card implementation established
 
-⛔ **Not *measured*, and the heading says so deliberately** — which is
+*Established*, not measured, per
 [`schema.md § 11 → A report names what it could not establish`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)
-applied to this document rather than to a run. The implementation behind `kind: trello` speaks the
-tracker's HTTP interface with a key and a token, and this repository's shell holds neither — so
-nothing below was established by running the adapter. Two weaker sources were used instead and are
-**named per row**, because they do not agree everywhere:
+— the implementation behind `kind: trello` speaks the tracker's HTTP interface with a key and a
+token, and this repository's shell holds neither, so nothing below was established by running the
+adapter. Two weaker sources were used instead and are **named per row**, because they do not agree
+everywhere:
 
 - **a live board, through a different interface** — a connector over the same tracker, which reads
   and writes cards but is not the interface the adapter speaks. What it shows about the tracker's
@@ -665,41 +595,38 @@ nothing below was established by running the adapter. Two weaker sources were us
 |---|---|---|
 | where a card's number lives | the card's URL is `/c/<link>/<number>-<slug>`, and the number opens the last segment; the connector's card carries **no** short-id field at all, which is this survey's own row | a live board |
 | what a card's state is | the board's states are its **lists**, and whether a card is archived is a separate fact — so a card in the project's terminal list is not archived and an archived card is still in a list. Both are reported, never collapsed | a live board |
-| what classifies a card | labels, as board-level objects carrying a free-text name. ⚠️ The name is neither unique nor required — the live board carried one label with a name and no colour — so a name is resolved to **at most one** label and an ambiguous one is refused | a live board |
+| what classifies a card | labels, as board-level objects carrying a free-text name. The name is neither unique nor required — the live board carried one label with a name and no colour — so a name is resolved to **at most one** label and an ambiguous one is refused | a live board |
 | whether a comment can be posted | **yes**, and this is the one row that refutes the survey above: the connector posts one, lists them, reads one back, and the board's own history names `COMMENT` as an action type | a live board |
 | whether a check item can be removed | the connector has `create`, `add_item` and `update_item` — rename and tick — and **no delete**, which is the survey's row exactly; the checklist endpoint documents `DELETE /checklists/{id}/checkItems/{id}` | both, disagreeing |
 | whether labels can be set at creation | the connector creates a card from a list, a name, a description, a due date and a position, then attaches labels one call each — the survey's row; the card endpoint documents `idLabels` on the create and on the update | both, disagreeing |
 | what a custom field costs | the live board has **none**, and the connector addresses one by an option id per type. So the one value § 4.5 names reaches this tracker as the card's own `due`, and a facet pointing anywhere else is refused naming the power-up it would need | a live board |
 | how a card is addressed by its number | the card endpoints take an id or a short link and **not** the number; the number resolves only as a nested segment of the board's own card path, which is the slot the documented `filter` keyword occupies. So the adapter resolves a number through the board's card index instead — which is also the only route to an **archived** card by number | both, agreeing |
-| whether a collection can be read whole | the card collection names no cursor, and a collection answers at most 1000. ⛔ So there is no page to follow and nothing to truncate, and the only honest guard is to **refuse** an answer that reaches the ceiling — a board that genuinely holds that many included | the published reference |
+| whether a collection can be read whole | the card collection names no cursor, and a collection answers at most 1000. So there is no page to follow and nothing to truncate, and the only honest guard is to **refuse** an answer that reaches the ceiling — a board that genuinely holds that many included | the published reference |
 | what a refusal looks like | 429 with the limit named, at 300 requests per 10 seconds per key and 100 per token; the key and the token travel as query parameters, which is why every failure message here names them rather than quoting the call it made | the published reference |
 
-⛔ **Where the two sources disagree the adapter follows the reference, and the direction of the two
-mistakes is the argument** — under
+Where the two sources disagree the adapter follows the reference, under
 [`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability),
-which makes a capability the adapter's own fact and leaves nothing else to decide it. An operation
-declared absent that in fact exists leaves a role taking a
-stated fallback for ever with nothing reporting it; one declared present that does not exist comes
-back as a failed operation naming the call. The second is visible and the first is not, so the two
-disagreeing rows — the check-item delete and the labels at creation — are implemented.
+which makes a capability the adapter's own fact. An operation declared absent that in fact exists
+leaves a role taking a stated fallback for ever with nothing reporting it; one declared present that
+does not exist comes back as a failed operation naming the call. The second is visible and the first
+is not, so the two disagreeing rows — the check-item delete and the labels at creation — are
+implemented.
 
-⚠️ **What this leaves unestablished, which is more than for the two implementations before it**: no
-call in that adapter has been made to a running host, so the three reference-only rows are the
+No call in that adapter has been made to a running host, so the three reference-only rows are the
 reference's word and nothing beyond it. What a run of it takes is a board and the pair of variables
 [`examples/trello.yaml`](../plugins/mjolnir/config/examples/trello.yaml) names, and the shell this
-repository's own roles are handed holds neither — which is a fact about this repository rather than
-about the adapter, since nothing here is configured for that tracker.
+repository's own roles are handed holds neither, since nothing here is configured for that tracker.
 
-⚠️ **What the implementation's own suite cannot answer is what the host does with a payload**, which
-is why the read half is driven against a live board by hand and recorded on the work item: a board
+The implementation's own suite cannot answer what the host does with a payload, which is why the
+read half is driven against a live board by hand and recorded on the work item: a board
 past one page read whole, a card's columns out of one query, and the pull-request guard refusing a
 real pull request number.
 
 ### What building the issue implementation established
 
-⛔ **Not *measured*, and the heading says so for the reason the one above it does** —
+*Established*, not measured, for the same reason —
 [`schema.md § 11 → A report names what it could not establish`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)
-applied to this document rather than to a run. The implementation behind `kind: jira` speaks the
+— the implementation behind `kind: jira` speaks the
 tracker's own HTTP interface with an account and a token, and this repository's shell holds
 neither. Two weaker sources were used and are **named per row**, because they do not answer the
 same questions:
@@ -713,54 +640,49 @@ same questions:
 | What was asked | What came back | Established by |
 |---|---|---|
 | what an item's identifier is | the project's key and a number, and the key resolves across the **whole site** — so a key from another project answers perfectly rather than being refused, which makes the project key a guard and not a label | a live site |
-| what a state is | a status the item is **in** and a transition that leads there, and a transition's `name` is a separate field from the `to.name` it leads to. ⛔ So a status word is matched on what a move leads to; matching the verb would match the wrong half on every workflow whose verbs differ from its states | a live site |
-| which statuses an item can reach | what the workflow offers **for that item's type**: on one project defining nine statuses, one type offered three of them and another all nine. ⚠️ So a word the project states and this item cannot reach has two readings — a vocabulary the tracker lacks, or a move this workflow does not allow from here — and neither is assumed | a live site |
-| what a move can carry | the fields a transition offers, asked for with `expand=transitions.fields` and keyed by the field's id, each with its type and, where it has them, the values it takes; the move's own write takes them under `fields` beside the transition's id. ⚠️ So a field the project states for a move is held to that offer before the write, and one the move does not offer is refused rather than sent. A resolution on a move to a finished status is the case one adopter's workflow was recorded as needing, and no move carrying one has been run | the published reference |
-| which types an item can have | nine available on one project with six in use, against a branch-prefix vocabulary of five — the case behind `type_branch_prefix` being a map rather than a boolean ([`schema.md § 4.1`](../plugins/mjolnir/config/schema.md#41-type)). ⛔ And a type is **required at creation**: there is no filing without one, which is the one place this tracker forces a question the code-host trackers leave open | a live site |
-| what a dependency's two sides are called | the link type reads `inward: is blocked by` / `outward: blocks`, and the call's `inwardIssue` is the item that **blocks** — the inversion this survey's own row named, now with both halves in hand. ⛔ Read the wording and the dependency is filed the wrong way round, and nothing in the answer says so | a live site |
-| how a dependency reads back | the entry an item carries names the *other* side, so an entry holding `inwardIssue` means this item **is blocked by** it. ⛔ Which is why the adapter's direction is held by a round trip rather than by reading the call: the write and the read are two separate chances to invert it | a live site |
-| whether an estimate exists on this tracker | a native composite field, holding a duration as text (`2h`) and mirrored as seconds, with a value on the large majority of one real project's items — and the values come from a closed ladder of size classes mapping to hours rather than being free numbers, so `estimate` here is *(native field, hours, a closed set)*. ⛔ What the sprint answers is the **gate** and not the carrier: an item with no estimate still starts, which is a statement about the readiness list. Reading that as the carrier being absent is how a configuration comes to claim a project sizes nothing while its own board sizes nearly every item | a live site |
-| what a search costs | a query with **no restriction is refused outright** — *Unbounded JQL queries are not allowed here*. ⛔ So the project restriction is the only shape the host accepts, which is also why the state qualifier the plain-issues implementation has to refuse cannot arrive here: every term is quoted into an operand | a live site |
-| what a body is | a structured document rather than a string, on the interface version the adapter speaks. ⚠️ So no markdown body is simply sent: the adapter renders headings, paragraphs, bullet and ordered lists and fenced code, states that nothing else survives, and reads a document back the same way — a fuller renderer is a markdown parser, which would be the implementation deciding what a template means | both, agreeing |
-| how a custom field is addressed | by an id that is **site-specific**, so a field is named in a configuration and resolved against the site's own catalogue per run. ⚠️ And a name is not unique there, so an ambiguous one is refused rather than resolved by position | both, agreeing |
-| what a field holding several values takes | the whole list under the field's id, which replaces what was there; the catalogue states `array` and the element type beside it. An option is a member named by `value`, a user by `id` (read back as `accountId`), and text is itself. A component or a version is shown by `id` in this interface's own example and by `name` in the self-hosted product's, and `name` is what is written here. ⛔ The reference states no shape for a sprint's elements, so one is refused | the published reference, the `name` form and the replacing in the self-hosted product's alone |
-| who moved an item | the history names an author, and ⛔ **a script running under somebody's token is indistinguishable from that person in it**. So the advance-off-a-merge operation reports whether the last status change was made by something *other than this credential* and refuses to call it automation | the published reference |
-| whether the merge is visible here | **no**: the merge is on the code host, and nothing on this tracker ties a status change to one. ⛔ So `link_for_close` is absent — there is no closing keyword to compose — and the advance operation answers the tracker's half alone, with the other half read from § 2's host | both, agreeing |
-| how a search is paged | a cursor in the answer, followed until the host says it is the last page. ⚠️ A page that fills says nothing about whether more exist, which is the same silent ceiling the board implementation pays a cursor-follower to avoid | the published reference |
+| what a state is | a status the item is **in** and a transition that leads there, and a transition's `name` is a separate field from the `to.name` it leads to. So a status word is matched on what a move leads to; matching the verb would match the wrong half on every workflow whose verbs differ from its states | a live site |
+| which statuses an item can reach | what the workflow offers **for that item's type**: on one project defining nine statuses, one type offered three of them and another all nine. So a word the project states and this item cannot reach has two readings — a vocabulary the tracker lacks, or a move this workflow does not allow from here — and neither is assumed | a live site |
+| what a move can carry | the fields a transition offers, asked for with `expand=transitions.fields` and keyed by the field's id, each with its type and, where it has them, the values it takes; the move's own write takes them under `fields` beside the transition's id. So a field the project states for a move is held to that offer before the write, and one the move does not offer is refused rather than sent. A resolution on a move to a finished status is the case one adopter's workflow was recorded as needing, and no move carrying one has been run | the published reference |
+| which types an item can have | nine available on one project with six in use, against a branch-prefix vocabulary of five — the case behind `type_branch_prefix` being a map rather than a boolean ([`schema.md § 4.1`](../plugins/mjolnir/config/schema.md#41-type)). And a type is **required at creation**: there is no filing without one, which is the one place this tracker forces a question the code-host trackers leave open | a live site |
+| what a dependency's two sides are called | the link type reads `inward: is blocked by` / `outward: blocks`, and the call's `inwardIssue` is the item that **blocks** — the inversion this survey's own row named, now with both halves in hand. Read the wording and the dependency is filed the wrong way round, and nothing in the answer says so | a live site |
+| how a dependency reads back | the entry an item carries names the *other* side, so an entry holding `inwardIssue` means this item **is blocked by** it. Which is why the adapter's direction is held by a round trip rather than by reading the call: the write and the read are two separate chances to invert it | a live site |
+| whether an estimate exists on this tracker | a native composite field, holding a duration as text (`2h`) and mirrored as seconds, with a value on the large majority of one real project's items — and the values come from a closed ladder of size classes mapping to hours rather than being free numbers, so `estimate` here is *(native field, hours, a closed set)*. What the sprint answers is the **gate** and not the carrier: an item with no estimate still starts, which is a statement about the readiness list. Reading that as the carrier being absent is how a configuration comes to claim a project sizes nothing while its own board sizes nearly every item | a live site |
+| what a search costs | a query with **no restriction is refused outright** — *Unbounded JQL queries are not allowed here*. So the project restriction is the only shape the host accepts, which is also why the state qualifier the plain-issues implementation has to refuse cannot arrive here: every term is quoted into an operand | a live site |
+| what a body is | a structured document rather than a string, on the interface version the adapter speaks. So no markdown body is simply sent: the adapter renders headings, paragraphs, bullet and ordered lists and fenced code, states that nothing else survives, and reads a document back the same way — a fuller renderer is a markdown parser, which would be the implementation deciding what a template means | both, agreeing |
+| how a custom field is addressed | by an id that is **site-specific**, so a field is named in a configuration and resolved against the site's own catalogue per run. And a name is not unique there, so an ambiguous one is refused rather than resolved by position | both, agreeing |
+| what a field holding several values takes | the whole list under the field's id, which replaces what was there; the catalogue states `array` and the element type beside it. An option is a member named by `value`, a user by `id` (read back as `accountId`), and text is itself. A component or a version is shown by `id` in this interface's own example and by `name` in the self-hosted product's, and `name` is what is written here. The reference states no shape for a sprint's elements, so one is refused | the published reference, the `name` form and the replacing in the self-hosted product's alone |
+| who moved an item | the history names an author, and **a script running under somebody's token is indistinguishable from that person in it**. So the advance-off-a-merge operation reports whether the last status change was made by something *other than this credential* and refuses to call it automation | the published reference |
+| whether the merge is visible here | **no**: the merge is on the code host, and nothing on this tracker ties a status change to one. So `link_for_close` is absent — there is no closing keyword to compose — and the advance operation answers the tracker's half alone, with the other half read from § 2's host | both, agreeing |
+| how a search is paged | a cursor in the answer, followed until the host says it is the last page. A page that fills says nothing about whether more exist, which is the same silent ceiling the board implementation pays a cursor-follower to avoid | the published reference |
 
-⛔ **One defect this implementation's own suite found, recorded because the shape generalises** —
-the standard it is measured against being
+A transport is a *seam*, so a guard inside it is a guard a substituted transport walks straight
+past — the standard being
 [`schema.md § What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable),
-which is where a guard's red has to be believable rather than merely present. The address and the
-credential were resolved **inside** the named transport in the first draft — and a
-transport is a *seam*, so every guard inside it is a guard a substituted transport walks straight
+where a guard's red has to be believable rather than merely present. With the address and the
+credential resolved inside the transport, both guards would be walked
 past. A site carrying a path and a shell holding no token both read as *the call went out and the
-host answered*. Both guards sit above the seam, which is where the card implementation puts its
-own, and the transport is handed an address and a credential rather than reading either — so a
-guard on either is a guard every transport is held by, the substituted one included.
+host answered*. Both guards sit above the seam, as in the card implementation, and the transport is
+handed an address and a credential rather than reading either — so a guard on either is a guard
+every transport is held by, the substituted one included.
 
-⛔ **And one it reddened in a sibling**, held to the same standard —
-[`schema.md § What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable).
-The port contract's suite registers a double against a kind
-nothing is installed for, and it chose one out of the set the surface states — so the day the last
-implementation landed there was no such kind left and the whole block went unasserted while
-reporting a failure nobody could fix. ⚠️ A gate that reddens on the project finishing is the shape,
-and the fix is the one the same file already records a block earlier: the kind is **derived** from a
-stated word rather than chosen out of the stated set.
+The same standard,
+[`schema.md § What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable),
+holds the port contract's suite: it registers a double against a kind nothing is installed for,
+and a kind chosen out of the set the surface states runs out once every kind is implemented,
+leaving the block unasserted while reporting a failure nobody could fix. So the kind is **derived**
+from a stated word rather than chosen out of the stated set.
 
-⚠️ **What this leaves unestablished** is what the two implementations before it leave: no call has
-been made to a running host through the interface the adapter speaks, so every reference-only row
-above is the reference's word and nothing beyond it. What a run takes is the site and the pair of
-variables [`examples/jira.yaml`](../plugins/mjolnir/config/examples/jira.yaml) names, and the shell
-this repository's own roles are handed holds neither.
+What this leaves unestablished: no call has been made to a running host through the interface the
+adapter speaks, so every reference-only row above is the reference's word and nothing beyond it.
+What a run takes is the site and the pair of variables
+[`examples/jira.yaml`](../plugins/mjolnir/config/examples/jira.yaml) names, and the shell this
+repository's own roles are handed holds neither.
 
 ## What is an ordered list of named checks rather than procedure
 
 No count is given, for the reason [`schema.md § The
-loop`](../plugins/mjolnir/config/schema.md#the-loop) gives for the axes — a count restated
-elsewhere drifts the moment one is added — and this section is the demonstration: it gained
-what counts as done after it was written, which would have made a number in the heading wrong while
-the gate stayed green.
+loop`](../plugins/mjolnir/config/schema.md#the-loop) gives for the axes: a number in this heading
+would have gone wrong when what counts as done was added, while the gate stayed green.
 
 ### The readiness gate
 
@@ -790,74 +712,68 @@ decision rather than the only possible one.
 
 ### A green gate is not a definition of done
 
-The one of this family whose evidence is a project's **written rule** rather than a reading of its
-role copies. ⚠️ **And the one carrying no count of projects**, which is a property of the evidence
-rather than a style: two are known to state the rule, and the source says *at least one* of the two
-positions below rather than enumerating the six, so a figure here would be wider than what was
-read. **Neither of the two could be configured as the other**, which is what made the entry a list
-with an answerer per check rather than a flag:
+The evidence here is a project's **written rule** rather than a reading of its role copies, and it
+carries no count of projects: two are known to state the rule, and the source does not enumerate
+the six. **Neither of the two could be configured as the other**, which is what made the entry a
+list with an answerer per check rather than a flag:
 
 | | what its rule says | what answers it |
 |---|---|---|
 | one project | a manual test on the running application is required before merging; a green gate plus a clean review is not enough | a **person**, and not the procedure |
 | another | an acceptance scenario suite that needs the application running, **and** a checklist carried on the pull request | the **procedure** for the first; a person for the second |
 
-**The first project's reason is structural rather than cultural**, which is why it cannot be read as
-that project's taste. Its own documentation says the whole automated suite runs in one process
-against doubles — no messaging platform, no model provider, no embedding service, no database over
-the wire — and names the user-visible behaviour that is therefore verified by hand: the rendering of
-buttons, file uploads and message chunking, and a whole submit-through-report flow for which it
-states outright that no automated test exists. A role that read that gate as *done* would report a
-feature shipped on evidence that never touched the feature.
+The first project's reason is structural rather than cultural. Its own documentation says the whole
+automated suite runs in one process against doubles — no messaging platform, no model provider, no
+embedding service, no database over the wire — and names the user-visible behaviour that is
+therefore verified by hand: the rendering of buttons, file uploads and message chunking, and a whole
+submit-through-report flow for which it states outright that no automated test exists. A role that
+read that gate as *done* would report a feature shipped on evidence that never touched the feature.
 
-**And the procedure cannot perform that check itself.** The credential it would drive the
+The procedure cannot perform that check itself. The credential it would drive the
 application with acts *as* the application rather than as a user, so the finishing role can hand
 over a type-this/expect-that script and then only **record a verdict it did not produce** — which
 is why the surface carries who answers a check rather than just which checks there are.
-⚠️ **Collapsing the two answerers loses a real check in the other direction**: the second project's
+Collapsing the two answerers loses a real check in the other direction: the second project's
 acceptance suite is a machine reading a machine, mirrored by no workflow at all, and configured as
 human-answered it would stop every completion for a hand-over nobody needed — the gate somebody
 turns off.
 
 Hence the ordered list and its per-check answerer, in
 [`schema.md § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check).
-⚠️ **And hence the refusal of a check the host already runs**
+And hence the refusal of a check the host already runs
 ([`§ 17 → A local check the host already runs`](../plugins/mjolnir/config/schema.md#a-local-check-the-host-already-runs-is-a-misconfiguration)):
 every check in the table above is mirrored by no workflow at all — a hand test on the running
 application, an acceptance suite needing it up, and a checklist carried on the pull request —
 which is the shape the facet was derived from. A check that *is* mirrored needs no entry, because
 the host has already answered it, and these two measurements supply no example of one.
-⚠️ **What this measurement does not support is a definition of done for every project.** A project
-whose deliverable is a library has nothing to drive, so the absent case is `[]` and is first-class
-rather than degenerate. ⚠️ **How common it is was not measured** — unlike the prose-width table
-above, which earns its *commoner* with a figure per project, this rests on two projects' stated
-rules and says nothing about the rest.
+This measurement does not support a definition of done for every project. A project whose
+deliverable is a library has nothing to drive, so the absent case is `[]` and is first-class rather
+than degenerate. How common it is was not measured: this rests on two projects' stated rules and
+says nothing about the rest.
 
 ## Which item is next is read, never derived
 
 [`schema.md § 12`](../plugins/mjolnir/config/schema.md#12-ordering) is the thinnest facet on the
-surface, and what it rests on is worth stating before the argument: two shapes, not a count across
-the six projects.
+surface, and it rests on two shapes, not a count across the six projects.
 
 - **One surveyed copy of the starting role checks an item's position in a priority queue** — the
   eight-check copy named in the readiness-gate section above. A gate whose input is a convention is
-  the shape this whole document exists to catch, and that check's input is a facet of its own
+  the shape this document catches, and that check's input is a facet of its own
   ([`schema.md § 4.6`](../plugins/mjolnir/config/schema.md#46-priority)) rather than anything this
-  ordering supplies: ⚠️ **the two are different questions**, which is why a project may configure
-  either without the other and why neither reads the other's key.
+  ordering supplies: the two are different questions, which is why a project may configure either
+  without the other and why neither reads the other's key.
 - **This repository's own ordering is a row table in a document outside every tree**, in the agent
   harness's per-project store, with the argument for each row written beside it. Nothing shipped
   from a plugin can reach that file. The role that needed it read it through a carrier only this
   project resolves, which is the duplication the extraction is for, one level up.
 
-The two have nothing in common but their output, and that is the whole reason the facet is a
-pointer. A tracker query answers it on one project and a document answers it on another, so an
-operation on the port ([`schema.md § 3`](../plugins/mjolnir/config/schema.md#3-tracker-port))
-would oblige every adapter to answer a question its tracker does not hold — and a rule in the
-procedure would have the toolkit ordering somebody's work, which is the one judgement here that is
-never the toolkit's.
+The two have nothing in common but their output, which is why the facet is a pointer. A tracker
+query answers it on one project and a document answers it on another, so an operation on the port
+([`schema.md § 3`](../plugins/mjolnir/config/schema.md#3-tracker-port)) would oblige every adapter
+to answer a question its tracker does not hold — and a rule in the procedure would have the toolkit
+ordering somebody's work, which is the one judgement here that is never the toolkit's.
 
-**The absent case is the one that was easy to get wrong.** A project with no ordering is not a
+A project with no ordering is not a
 project whose next item is the first row of whatever the tracker listed: that reading turns
 *nobody decided* into *this was decided*, which is
 [`schema.md § 2`](../plugins/mjolnir/config/schema.md#2-code-host)'s absence-of-signal rule one
@@ -908,31 +824,29 @@ fails on a project that is correctly configured.
   F labels its top tier alone with a prefixed label and leaves everything below it bare. B's
   filing role takes the same `high | medium | low` argument the other two take and has nowhere on
   its board to put it, which is the absent case with a working loop around it rather than a gap in
-  one. D and E carry nothing. ⚠️ **The two that share a tracker kind do not share a prefix**, which
-  is the sharpest thing in the row: F's axis and this repository's own are both prefixed labels on
-  plain issues and the prefixes differ, so a procedure matching a literal would read one project's
-  axis and no other's.
+  one. D and E carry nothing. The two that share a tracker kind do not share a prefix: F's axis and
+  this repository's own are both prefixed labels on plain issues and the prefixes differ, so a
+  procedure matching a literal would read one project's axis and no other's.
 
 - **Code root** — the one project with more than one code repository
   ([counted in the sibling document](build-surface.md#a-verdict-is-a-command-a-root-and-a-condition))
   **carries this fact nowhere.** A's instructions file records the consequence as a rule rather
   than as a gap: *no skill on the route drives* the second one, so that repository's branches,
   pull requests, dispatch and board moves are done by hand against its own equivalents.
-  ⚠️ **The same file states what decides which repository a card belongs in** — *whose code it is,
-  never which track asked for it* — and the case it gives is the one that discriminates: a counter,
-  a tag set and a consent gate are all one track's need, and their code is in the repository that
-  track does not own. ⚠️ Two of that board's label axes look like candidates and answer neither
+  The same file states what decides which repository a card belongs in — *whose code it is, never
+  which track asked for it* — and the case it gives is the one that discriminates: a counter, a tag
+  set and a consent gate are all one track's need, and their code is in the repository that track
+  does not own. Two of that board's label axes look like candidates and answer neither
   question — one carries whose need the work serves and one carries who does the work — so the fact
   is neither carried nor derivable there. That is the absent case with no loop around it: the
   carriers a tracker could hold it in are a label, a field, a component or a title prefix, and
   nothing was found holding it in any of them.
 
 - **Grouping** — read in three places, and the richest of them is the project with **no tracker**,
-  whose plan for a set of items is a document of its own. ⚠️ **Measured directly from that
-  project's specification tree on 2026-10-30**, rather than from a role copy, because the grouping
-  there is not a role's input at all — it is a document a person maintains, which is what makes it
-  the one reading that shows what a grouping *is* rather than what a gate asks about one. The
-  shape, item by item:
+  whose plan for a set of items is a document of its own. Measured directly from that project's
+  specification tree on 2026-10-30, rather than from a role copy, because the grouping there is not
+  a role's input at all — it is a document a person maintains, which makes it the one reading that
+  shows what a grouping *is* rather than what a gate asks about one. The shape, item by item:
 
   | What was asked | What the tree shows |
   |---|---|
@@ -945,8 +859,8 @@ fails on a project that is correctly configured.
   | who closes it | a person, in the pass that cuts the release. There is no automation in that tree and no role on this surface drives it |
   | whether a version runs beside it | **not established.** Nothing in that tree carries a version at all, so the one grouping is both the time box and the release scope, and the lockstep reading — a version tracking an iteration one for one — is *not* what this project shows |
 
-  ⛔ **And its carrier is the one thing that does not generalise**, which is why no key was added
-  for it: the grouping is a file in a tree, and a tree is the tracker
+  Its carrier is the one thing that does not generalise, which is why no key was added for it: the
+  grouping is a file in a tree, and a tree is the tracker
   [`schema.md § 3`](../plugins/mjolnir/config/schema.md#the-trackerless-adapter-and-a-kind-with-no-implementation)
   declines to grow an adapter for. What the measurement supplies is every key *except* the
   carrier — the kind, how the current one is found, the acceptance, the closer, and whether the
@@ -955,31 +869,29 @@ fails on a project that is correctly configured.
   **The other two readings are gates rather than documents, and between them they forced the
   collection.** One tracker's copy of the starting role refuses an item with no sprint, then one
   with no fix version, then one whose release branch for that fix version is missing from the
-  remote — ⛔ **two groupings in one project**, two fields, two checks, and the third check a ref
+  remote — **two groupings in one project**, two fields, two checks, and the third check a ref
   named after the second one's value. A board's copy gates on a grouping instead, and both copies
-  are stated as they stand in the readiness-gate section above. ⚠️ **Neither gate
-  carries anything else about its grouping** — not which one is current, not who closes it, not
+  are stated in the readiness-gate section above. Neither gate carries anything else about its
+  grouping — not which one is current, not who closes it, not
   what it is judged by — so what those two copies establish is the *number* of groupings a project
   has and the questions a gate asks, and the document above establishes what a grouping holds.
 
-  ⛔ **Both gates carry the project's own word for the grouping inside a `field_present` entry**,
-  which is the finding that made this a facet rather than two more predicates: the check states a
+  Both gates carry the project's own word for the grouping inside a `field_present` entry, which is
+  the finding that made this a facet rather than two more predicates: the check states a
   field and nothing else, so the sprint and the fix version are spelled in the gate and no second
   project can adopt that gate without renaming its own fields. That is the indirection
   [`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer) was
   built to keep out of the procedure, one layer up — and
-  [`§ 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list) now
+  [`§ 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)
   refuses that exact pair with the field named.
 
-  ⚠️ **The absent case is not the exceptional one.** A flat backlog ordered by its blockers and a
-  tier plans nothing into anything, and the shipped examples carry `none` with a reason wherever
-  the tracker has nowhere to put one. ⚠️ **That this repository is itself such a project is
-  load-bearing rather than illustrative**, which is
-  [`building-itself.md`](building-itself.md#the-absent-facets-this-repository-depends-on)'s subject
-  and is stated there. ⛔ **And the evidence is thin for a facet this size**, which is stated rather
-  than glossed over: two gates and one document. That is why every key traces to a row of the table
-  above rather than to a shape that seemed likely, and why the ref carrier the document shows was
-  left off the surface instead of generalised from one project.
+  The absent case is not the exceptional one. A flat backlog ordered by its blockers and a tier
+  plans nothing into anything, and the shipped examples carry `none` with a reason wherever the
+  tracker has nowhere to put one. This repository is itself such a project —
+  [`building-itself.md`](building-itself.md#the-absent-facets-this-repository-depends-on)'s subject.
+  The evidence is thin for a facet this size: two gates and one document. That is why every key
+  traces to a row of the table above rather than to a shape that seemed likely, and why the ref
+  carrier the document shows was left off the surface instead of generalised from one project.
 
 **What priority needed that the other facets did not: a statement of how two items compare.** The
 others answer a question about one item — what type it is, what it is worth, which template it
@@ -991,13 +903,11 @@ green to red, and another by a single label whose absence covers everything else
 rather than a check reporting itself unanswered forever on a project that configured it with no
 axis to read.
 
-**And what it deliberately does not carry.** A's gate turns the tier into a due date through a
-four-row table, which is the derivation the date facet's own paragraph at the top of this document
-declines to generalise. That decision is unchanged by the tier now having a key: what made the
-table one project's habit was that no second project was found to have one, and that is still true.
-⚠️ This repository's own axis is the other half of why the facet is a carrier rather than a rule —
-its two labels sat on the host while what they meant lived in a person's head and in one
-project-local script, which is the shape every facet here was extracted from.
+**And what it does not carry.** A's gate turns the tier into a due date through a four-row table,
+which is the derivation the date facet's own paragraph at the top of this document declines to
+generalise: no second project was found to have one. This repository's own axis is the other half
+of why the facet is a carrier rather than a rule — its two labels sat on the host while what they
+meant lived in a person's head and in one project-local script.
 
 ## The enforcement half: three keys, and the rest procedure
 
@@ -1013,14 +923,12 @@ of the first two, and the split falls where the thing being described stops gene
 | how many may be held | yes | `cap`, which already existed |
 | what holds a place | yes | `subject`, which already existed |
 | which calls put it at stake | yes: a guard takes a place or does not | `claimed_by`, a key. Four projects' claiming commands have nothing in common but being commands |
-| how many are held right now | yes: it is half the comparison | `probe`, a key. ⛔ **The one question the procedure cannot answer about somebody else's resource** |
+| how many are held right now | yes: it is half the comparison | `probe`, a key. **The one question the procedure cannot answer about somebody else's resource** |
 | how long a lease counts | yes | `ttl`, a key |
 | the comparison itself — a sum, and over distinct keys | no: it is the same arithmetic everywhere | procedure |
 | what happens on contention | no | procedure |
 | which direction a guard fails in | no | procedure, and the one of these that is not obvious |
 
-⛔ **The four keys that were already there are the measurement, and the three new ones are the same
-measurement one layer down**:
 [`schema § 10 → Exclusive resources`](../plugins/mjolnir/config/schema.md#exclusive-resources)
 declares all of them, and
 [`schema § 7 → A lease on an exclusive resource`](../plugins/mjolnir/config/schema.md#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
@@ -1029,13 +937,13 @@ leases too young to have registered one, capped at two* — so a facet with `cap
 nothing else describes a lease nobody can take, there being no way to ask how many are held and no
 way to know which call is asking.
 
-**Why the fail direction is procedure and not a per-guard setting.** It is the one part of this that
-looks like a preference and is not: both directions have a failure that reads like success, and
-which of them is wrong is decided by the act rather than by the project. A guard that refuses every
-call it could not reason about is a guard somebody turns off, and then nothing is held at all — the
+**Why the fail direction is procedure and not a per-guard setting.** Both directions have a failure
+that reads like success, and which of them is wrong is decided by the act rather than by the
+project. A guard that refuses every call it could not reason about is a guard somebody turns off,
+and then nothing is held at all — the
 same argument [`schema § 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)
 makes for not demanding a person everywhere. A guard that allows an act it could not reason about is
-only wrong where the act cannot be undone, and there the rule already exists: ⛔ **silence is not a
+only wrong where the act cannot be undone, and there the rule already exists: **silence is not a
 yes where the answer would license something irreversible**, which
 [`schema § The loop`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
 states for an ask nothing answered and
@@ -1046,7 +954,7 @@ happen unread.
 **What the merge gate can and cannot be keyed on, measured on two of the three projects.** One
 carries a pair of hooks — a recorder for the answer and a guard refusing a merge where no record
 exists — and the other carries a single hook holding every merge behind an ask that reads no record
-and that no review can silence. ⛔ **They are not two halves of one design**: the second cannot be
+and that no review can silence. They are not two halves of one design: the second cannot be
 satisfied, so it is argued with, and a guard that is argued with is a guard nobody has to satisfy
 again. The first is the one extracted, and what it needs that nothing stated is the record's own
 form — which is why
@@ -1071,11 +979,10 @@ validation harnesses that call two paid providers live on purpose, one grading t
 judge is not the generator's own family, several of them matrices whose cost scales with a run count
 read from the environment.
 
-⚠️ **What makes the second and third instances the sharp ones is that neither names a script a guard
-could recognise.** The second's paid command is an ordinary invocation of the runner that also runs
-its cheap suites; the third's are invoked exactly like the free unit tests beside them — same
-command prefix, adjacent names, same runner. ⛔ **So the decision rests on the arguments, and
-`args_match` is load-bearing rather than sugar on a command name**:
+Neither the second nor the third instance names a script a guard could recognise. The second's paid
+command is an ordinary invocation of the runner that also runs its cheap suites; the third's are
+invoked exactly like the free unit tests beside them — same command prefix, adjacent names, same
+runner. So the decision rests on the arguments, and `args_match` is not sugar on a command name:
 [`schema § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)
 declares it beside `command` for that reason, and a facet with `command` alone would describe one of
 the three.
@@ -1084,7 +991,7 @@ the three.
 |---|---|---|
 | which commands spend | yes | `deny`, a key. The three projects' paid commands have nothing in common but being commands |
 | what separates a paid invocation from a free one by the same binary | yes: it is the whole decision in two of the three | `args_match`, a key |
-| what the call costs | yes: a refusal names it | `reason`, a key. ⛔ **The figure itself never leaves the project** |
+| what the call costs | yes: a refusal names it | `reason`, a key. **The figure itself never leaves the project** |
 | whether a go covers one call or more | yes | `approval`, a key with two values: the legitimate uses are frequent in one instance and a metered release in another |
 | how much of a budget is left | no: there is no figure the procedure can read | nowhere, by the threshold argument [below](#why-there-is-no-threshold-on-the-surface) |
 | where the command is in a call | no: it is the same parse everywhere | procedure, and the one of these that was paid for |
@@ -1096,29 +1003,24 @@ strictly this is held* — and only one of them varies: the first project's legi
 same command differently scoped, run deliberately several times a week, so an approval it had to
 re-ask per session would be an approval nobody would keep; another project's spend is a release to a
 metered environment, where an answer given inside a session is a go for an act that reaches a live
-system. ⛔ **The parse varies in no project at all**, which is why
+system. The parse varies in no project at all, which is why
 [`schema § 19 → The command position`](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)
-states it as procedure, and the correction it carries is the reason it is extracted rather than
-rewritten: the guard's own header records an earlier version that grepped the raw command and
-refused a text edit whose prose contained a script path.
+states it as procedure — and a guard that greps the raw command refuses a text edit whose prose
+contains a script path, as that guard's own header records.
 
 ## The live half: one guard, and the two lists that are not interchangeable
 
 One project carries a deny guard in front of a shell command that could open a session on the
-machine it runs on. It began as one of two inline guards — "deny guards on a production path and
-on a route", which is how #16 recorded them with no acceptance item and no key on the surface for
-either — and by the time it was extracted it was a hook of its own with a test matrix beside it.
-⚠️ **That matrix is why it is extracted rather than written from the idea**: the verdict rule, the
-inversion and the four closed directions are each a line somebody was taught by a failure, and a
-rewrite from the idea reproduces none of them.
+machine it runs on — "deny guards on a production path and on a route", as #16 recorded the pair —
+as a hook of its own with a test matrix beside it. The matrix is why it is extracted rather than
+written from the idea: the verdict rule, the inversion and the four closed directions are each a
+line somebody was taught by a failure.
 
-**What the verdict depends on is not the command.** ⛔ **It is who would answer the prompt**, and
-that is the load-bearing line
+**What the verdict depends on is not the command but who would answer the prompt**
 ([`schema § 21 → Which verdict`](../plugins/mjolnir/config/schema.md#which-verdict-and-who-would-answer-the-prompt)):
 a mode a person answers gets an ask, a mode that answers its own prompts gets a refusal, and an
-unrecognised mode is read as the second. Both failures of that rule are cheap to picture and were
-expensive to find — a guard that always asks enforces nothing in a run nobody is watching, and a
-guard that always denies is one somebody turns off.
+unrecognised mode is read as the second. A guard that always asks enforces nothing in a run nobody
+is watching, and a guard that always denies is one somebody turns off.
 
 | the part | does a role or a guard read it to decide what to do next | where it lands |
 |---|---|---|
@@ -1134,8 +1036,8 @@ guard that always denies is one somebody turns off.
 line in a repository, and the test that decides which a name belongs in is whether the name
 identifies *another* machine: a loopback name does not, and everything else does
 ([`schema § 21 → The machines named`](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)).
-⛔ **Collapsing them into one configured list would put somebody's infrastructure into a repository
-anybody can clone**, which is the one thing this facet is organised to prevent; collapsing them
+Collapsing them into one configured list would put somebody's infrastructure into a repository
+anybody can clone, which is the one thing this facet is organised to prevent; collapsing them
 the other way — a file for both — would make a loopback name a per-machine fact that every new
 checkout has to be told.
 
@@ -1143,8 +1045,7 @@ checkout has to be told.
 nobody has written the list yet is one where every name that list would have cleared reads as live,
 so a half-set-up machine is safe by default and the remedy is visible in the refusal
 ([`schema § 21 → The four ways it fails closed`](../plugins/mjolnir/config/schema.md#the-four-ways-it-fails-closed)).
-⚠️ **That is the opposite of how a missing configuration file usually reads**, and it is the
-direction this facet cannot afford to have backwards.
+That is the opposite of how a missing configuration file usually reads.
 
 ## One rule that is procedure everywhere
 
@@ -1160,7 +1061,7 @@ Read across the same six projects' instructions files. Four carry a unit tier of
 48** cases; of the other two, one holds two specification files with its runner commented out of the
 host's own test workflow, and one has no automated suite at all. So the tier is not a minority
 practice — and the rules governing it are written in **one** of the six files each, two for the
-single rule that two state, every one of them written the day somebody was corrected:
+single rule that two state:
 
 | the rule | how many of the six state it |
 |---|---|
@@ -1169,34 +1070,33 @@ single rule that two state, every one of them written the day somebody was corre
 | the violation is written first and the red confirmed | 1 |
 | assert values and never key sets; a fixture thinner than the production shape tests the fixture | 1 each |
 
-⚠️ **No role reads any of them.** That is what makes this an extraction rather than a tidy-up: each
-is advice a careful reviewer would give in any of the six, held where one project's sessions can
-reach it and no other's. Hence the statement as procedure in
+No role reads any of them: each is advice a careful reviewer would give in any of the six, held
+where one project's sessions can reach it and no other's. Hence the statement as procedure in
 [`schema.md § The loop → What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable).
 
-⚠️ **A further rule stands in that subsection and is deliberately not a row above**, because no file
-of the six carried it: what a test is **derived from** was settled against the published work rather
-than against these copies ([the reading](test-first-for-a-model-writer.md)). So the table is what the
-six projects had, and never the subsection's own inventory.
+A further rule in that subsection is not a row above, because no file of the six carried it: what a
+test is **derived from** was settled against the published work
+([the reading](test-first-for-a-model-writer.md)). The table is what the six projects had, not the
+subsection's inventory.
 
 **Why the surface, and not either of the two homes it was weighed against.** The discipline is read
 by two legs — the implementing one and the reviewing role — and
 [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop) already settles what follows:
 a rule read by two roles and written in one of their skills is a second authority for the other.
 Promoting these rules into the reviewing role's own text is therefore the option with a precedent
-against it rather than the cheap one, and it is ruling 11's reasoning arriving a second time. A
+against it — ruling 11's reasoning. A
 per-project pointer — the shape the role-to-person map takes — fails a different test: a pointer
 carries values a role reads, and none of this is a value. Six copies free to disagree is the
 defect the extraction deletes rather than a configuration of it.
 
-**What was not promoted, and the measurement is the reason.** A coverage figure is set in one
+**What was not promoted.** A coverage figure is set in one
 project's runner configuration, written as a placeholder in a second, and stated by neither of the
 remaining four; promoted on that evidence it would be one project's taste imposed on five. The
 case-file naming, the package-mirroring layout and the decision *not* to sit cases beside the code
 they cover are one project's and are stated by none of the others.
 
-⚠️ **One of those local conventions is also the measurement for why a local rule is named rather
-than left out** — and it is a tier-boundary defect rather than a naming one. A project carrying nine
+One of those local conventions shows why a local rule is named rather than left out — a
+tier-boundary defect rather than a naming one. A project carrying nine
 cases against a dependency it stands up itself, under a distinct suffix, states that suffix
 **nowhere** in its own testing conventions, which list the framework, the mocking policy, the file
 naming and the layout — all four of them the unit tier's — and then stop. The tier it leaves
@@ -1207,8 +1107,8 @@ convention a migration can carry.
 
 One project of the six carries an end-to-end tier with a record of what it covers: **14 scenario
 groups**, a register table in that repository's own instructions file, and **two checks in the
-host's lint workflow** holding the three together. Measured 2026-10-19, and it is the only one of
-the six where the record exists at all.
+host's lint workflow** holding the three together. Measured 2026-10-19; it is the only one of the
+six where the record exists at all.
 
 The first check compares the register with the scenario files **both ways**, and its own stated
 reason is the failure neither direction shows on its own: the run prints its scenarios, the
@@ -1218,28 +1118,28 @@ document a reader trusts to say what is covered.
 
 The second compares the suite with the **change**: a pull request touching the source tree that
 carries neither a new case nor a register row fails, and the escape is a section of that same
-document reading *what is deliberately not covered, and why*. ⛔ Its rule is the one the facet
-keeps: an uncovered change is allowed; an uncovered change nobody wrote down is not
+document reading *what is deliberately not covered, and why*. Its rule is the one the facet keeps:
+an uncovered change is allowed; an uncovered change nobody wrote down is not
 ([`schema.md § 15`](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)).
 
-⚠️ Its stated limit is the one an adopter inherits rather than discovers. It judges one tree, so a
+Its stated limit is one an adopter inherits. It judges one tree, so a
 change to the container or deployment trees passes unremarked and a reviewer stands in for it
 there. That limit is carried onto the surface as the `judged` key and the run's own report of what
 it left unjudged, rather than closed by widening the judgement: a check that asked for an
 end-to-end case on a change to the thing that builds the image is a check somebody turns off.
 
-⚠️ **Nothing of the kind exists in the other five.** In the project carrying 12 end-to-end case
-files, which cases pin which behaviour is recorded in prose — a section of the README and each
-case's own comments — so a case too old for an assertion is a paragraph rather than a check. ⚠️
-What the remaining four do about the tier was not measured; what was measured is that none of the
-five carries a record anything compares to a suite.
+Nothing of the kind exists in the other five. In the project carrying 12 end-to-end case files,
+which cases pin which behaviour is recorded in prose — a section of the README and each case's own
+comments — so a case too old for an assertion is a paragraph rather than a check. What the
+remaining four do about the tier was not measured; none of the five carries a record anything
+compares to a suite.
 
 **Why the comparisons generalise and the content does not.** The suite root, the glob a case file
 matches, where the register lives, the heading its table sits under and which trees a behavioural
 change lands in are each one project's decision — the same boundary the unit tier's four local
 conventions sit on, one section up. *Does the register still describe the suite* and *is this
 change covered* are neither, and asking them needs no stack, no credential, no indexed material
-and no money. ⛔ So the facet states the five values and the procedure holds the agreement between
+and no money. So the facet states the five values and the procedure holds the agreement between
 them, authoring none of it
 ([`schema.md § 15`](../plugins/mjolnir/config/schema.md#15-end-to-end-coverage-recorded)).
 
@@ -1255,8 +1155,8 @@ check reads.
 
 Measured across the six consumers, 2026-10-19. The tier in question is the one whose dependency is
 **stood up** rather than deployed — a store the subject talks to over its real protocol, created for
-the run. ⛔ It is the only tier that can degrade to nothing at all while reporting success, and the
-reason is structural rather than a lapse: the thing it needs is created by the run, so its absence
+the run. It is the only tier that can degrade to nothing at all while reporting success, because
+the thing it needs is created by the run, so its absence
 is a condition the runner handles and not a connection that fails.
 
 The dependency arrives two ways, and the split decides who can answer the tier at all:
@@ -1267,7 +1167,7 @@ The dependency arrives two ways, and the split decides who can answer the tier a
 | the **host** supplies a service beside the run | two | the local run skips silently, and the suite's own gate is one environment variable |
 | no such tier | one | — |
 
-⛔ **So «the host cannot run this tier» is false here**, which is why this is not the unrunnable-tier
+So «the host cannot run this tier» is false here, which is why this is not the unrunnable-tier
 axis one tier down: the host usually *can*, and the defect is that it says so whether or not it did
 ([`schema.md § 16`](../plugins/mjolnir/config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)).
 
@@ -1278,14 +1178,14 @@ those suites exist for. That project's own workflow supplies a service beside th
 the build when any of the four suites it names reports zero tests or any skip** — the fourth is
 outside the money rules and is on the list because the rule is a list of names rather than a
 property of a suite, so a gated suite missing from it is exactly as silent as having no service
-container. ⚠️ That rule is written into one workflow file, mirrored by nothing, and stated nowhere
-on the surface it was read from — which is the shape a fact takes just before it is extracted.
+container. That rule is written into one workflow file, mirrored by nothing, and stated nowhere
+on the surface it was read from.
 
 **Why the count, and why it is not a coverage figure.** A dependency-gated suite's degradation is
 *designed* to be quiet: skipping is the correct behaviour for a case whose dependency is absent, and
 the defect is the aggregate reporting a pass. So what separates the two is arithmetic the run
 already has — how many executed, how many skipped and what each skip wanted, against how many the
-tree declares. ⚠️ **Why the rule stops at one floor** rather than becoming a percentage: a threshold
+tree declares. The rule stops at one floor rather than becoming a percentage: a threshold
 reddens on the count being wrong, which is a defect in the declaration rather than in the tier, and
 a check that reddens on a figure nobody maintains is the check somebody turns off. What the rule is
 therefore held to is the surface's
@@ -1293,14 +1193,14 @@ therefore held to is the surface's
 
 **Why it generalises and the commands do not.** How many cases a tree holds and what a run printed
 are each one project's command, written in that project's own runner; *did anything execute* is
-neither, and asking it needs two numbers. ⛔ So the facet states the commands and the floor, and the
+neither, and asking it needs two numbers. So the facet states the commands and the floor, and the
 procedure does the arithmetic — naming no runner, no task name and no report format, which is the
 same boundary the local-check and unrunnable-tier facets sit on.
 
 **Why it is a host check rather than a local one.** For the reason the register one
 above is: a command the host already runs is refused as a local check by
 [`schema.md § 17`](../plugins/mjolnir/config/schema.md#a-local-check-the-host-already-runs-is-a-misconfiguration),
-and this is the cheap half — two numbers — of a tier whose expensive half is the run itself. ⚠️ And
+and this is the cheap half — two numbers — of a tier whose expensive half is the run itself. And
 the honesty it adds is pointed at the **host's** verdict, where the four-valued rules already
 landed stop: a job whose every step ran and whose suite executed zero cases satisfies all of their
 preconditions and reads green.
@@ -1310,175 +1210,148 @@ preconditions and reads green.
 Read-it-from-one-place has been **independently invented six times** across these projects, in
 five different stores — a sibling reference file, a reference document, the project instructions
 file, a memory index, a memory fact, and the rules file a document checker walks its graph from —
-each with the same justification stated in its own words. Two of them put it most sharply:
+each with the same justification stated in its own words. Two of them:
 
 > a copy that has to be «kept in sync» is the defect rather than the maintenance burden
 
 > Two records of who owns the work that are allowed to disagree are worse than one
 
-The sixth is the most interesting, because it is the only one found **outside** the process roles:
+The sixth is the only one found **outside** the process roles:
 a checker that holds documents to a declared reference graph deliberately reads that graph from the
 rules file a person maintains, *so that the graph a machine walks and the statement a person
 maintains are one thing*. Same conclusion, reached in a different problem.
 
 Six instances, five stores, one pattern — which is itself an argument for the toolkit picking one.
-Convergent evolution rather than a borrowed idea.
 
 ## Prior art
 
 A public MIT plugin for an adjacent process — spec-driven development and TDD rather than this
 loop — already solves the two hardest parts in the shape proposed here: one directory per tracker
 with a template for adding another, and a tracker configuration that is a status list plus a
-roles map indirecting the procedure away from the words. That is independent confirmation of the
-status design, arrived at separately. It is superseded rather than adopted because of its
+roles map indirecting the procedure away from the words — independent confirmation of the status
+design. It is superseded rather than adopted because of its
 adapters: seven entries, of which only two are real trackers, and **neither is one any project
 in scope runs**. <https://github.com/nesquikm/dev-process-toolkit>
 
 ## The window is a resource the loop spends
 
 [`schema.md § 11`](../plugins/mjolnir/config/schema.md#11-session-context) is the only section of
-the surface derived from measurements taken **outside** these six projects as well as inside them,
-so what forced its shape is worth recording in both directions.
+the surface derived from measurements taken outside these six projects as well as inside them.
 
 ### What the published measurements establish
 
 - Input length alone degrades performance. Eighteen frontier models, 194,480 calls, task
-  complexity held constant and length varied: **every model degraded**, and not at the window's
+  complexity held constant and length varied: every model degraded, and not at the window's
   limit — a single irrelevant passage beside the relevant one measurably costs recall, and four
-  compound it. ⚠️ Their impact is **not uniform**, which is the source's own word; it does not
-  measure similarity, so nothing here reads the cost off how alike the passages look. The result
-  that matters most for a repository written like this one: a **coherent** haystack is worse than
-  a shuffled one, and the source declines to explain it, calling for work on how structure
-  influences attention rather than offering a reading. The explanation is therefore nobody's yet,
-  and this section does not supply one.
+  compound it. Their impact is not uniform, in the source's own word; it does not measure
+  similarity, so nothing here reads the cost off how alike the passages look. A coherent haystack
+  is worse than a shuffled one, and the source declines to explain it.
   <https://www.trychroma.com/research/context-rot>
-- The vendor's own framing is an **attention budget** — a finite resource every token draws on —
+- The vendor's own framing is an attention budget — a finite resource every token draws on —
   with three techniques for spending it: summarising a window and restarting from the summary,
   writing notes outside the window, and spending a separate window on a sub-task. The first is
   lossy, which is why § 11 makes the artifact the handoff rather than the summary.
   <https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents>
-- The published practice this loop's shape is closest to keeps a window at **40–60 %** of its
-  capacity — its own qualifier is that the figure depends on the problem's complexity —
-  separates research from planning from implementation into different windows, writes
-  each phase's output to a file that is the real handoff, and spends human review on the plan
-  rather than on the diff — *a bad line of a plan leads to hundreds of bad lines of code; a bad
-  line of research, thousands*. Its ranking of what hurts is the reason § 11 is about what enters
-  and what crosses a boundary rather than about token counts: **incorrect beats missing beats
-  noisy**. <https://github.com/humanlayer/advanced-context-engineering-for-coding-agents>
+- The published practice this loop's shape is closest to keeps a window at 40–60 % of its
+  capacity — a figure it says depends on the problem's complexity — separates research from
+  planning from implementation into different windows, writes each phase's output to a file that
+  is the real handoff, and spends human review on the plan rather than on the diff — *a bad line
+  of a plan leads to hundreds of bad lines of code; a bad line of research, thousands*. Its ranking
+  of what hurts is why § 11 is about what enters and what crosses a boundary rather than about
+  token counts: incorrect beats missing beats noisy.
+  <https://github.com/humanlayer/advanced-context-engineering-for-coding-agents>
 
 ### What this repository measures about itself
 
-⚠️ **No count of this tree's own files is written down here**, for the reason the gate's document
-gives for refusing to count schema sections: a number copied out of the tree drifts the moment the
-tree changes, silently and green. This subsection's first draft carried a three-row table of lines,
-bytes and markers. It was already two commits stale when it was written — and it understated by a
-fifth the one file the same change grows, so the argument it was offered as evidence for was
-weaker in the document than in reality. **Deleted rather than synchronised**, which is this
-repository's standing remedy — and the gate prints the live figure instead as of
-[#91](https://github.com/ragnor-rs/mjolnir/issues/91), which made each file's footprint part of its
-own run's output.
+No count of this tree's own files is written here: a number copied out of the tree drifts the
+moment the tree changes, silently and green. The gate prints each file's footprint in its own
+run's output instead, as of [#91](https://github.com/ragnor-rs/mjolnir/issues/91).
 
-What is stable enough to state without a number going stale: **a single role runs to thousands of
-tokens and carries dozens of ⛔ and ⚠️ markers, and there is one of them per leg the loop names**
-([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)). A window largely spent on
-procedure before a line of anyone's code is read is what § 11 exists to notice,
-and the harness vendor's own guidance is that an over-long instructions file is not read
+A single role runs to thousands of tokens and carries dozens of ⛔ and ⚠️ markers, and there is
+one per leg the loop names ([`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)).
+A window largely spent on procedure before a line of anyone's code is read is what § 11 exists to
+notice, and the harness vendor's own guidance is that an over-long instructions file is not read
 selectively — it is ignored wholesale. <https://code.claude.com/docs/en/best-practices>
 
-Two consequences, both already true of this tree rather than predicted of it. A role's body is
-loaded only when the role runs, and only its frontmatter — a name and a description — is always
-resident: that is the right shape, and it was not arrived at deliberately. And a role that cites
-the surface to settle one sentence resolves the whole of it to do so, which is the argument for a
-citation naming the narrowest section that states the fact. Since
-[#91](https://github.com/ragnor-rs/mjolnir/issues/91) closed, every heading of the surface is held
-to being motivated by a document whatever its level, and a citation resolving to a `##` section with
-no text of its own is refused by name; what stays a count rather than a verdict is the coarser case,
-which
+A role's body is loaded only when the role runs; only its frontmatter — a name and a description —
+is always resident. A role that cites the surface to settle one sentence resolves the whole of it,
+which is the argument for a citation naming the narrowest section that states the fact. Since
+[#91](https://github.com/ragnor-rs/mjolnir/issues/91), every heading of the surface is held to
+being motivated by a document whatever its level, and a citation resolving to a `##` section with
+no text of its own is refused by name; the coarser case stays a count rather than a verdict, as
 [`single-source-of-truth.md`](single-source-of-truth.md#what-the-granularity-check-deliberately-does-not-hold)
-records against itself.
+records.
 
 ### Why there is no threshold on the surface
 
-The harness exposes a window's utilization at **one moment only**, and never while a window is
-filling. Of its hook events, only the one that fires when a session is resumed or forked carries a
-token count — alongside the time since the
-last response, whether the prompt cache has likely expired, and the estimated cost of rewriting
-it — and the event that fires immediately before a window is summarised carries no count and no
-threshold at all. <https://code.claude.com/docs/en/hooks>
+The harness exposes a window's utilization at one moment only, and never while a window is
+filling. Of its hook events, only the one that fires when a session is resumed or forked is
+documented to carry a token count — alongside the time since the last response, whether the prompt
+cache has likely expired, and the estimated cost of rewriting it — and the event that fires
+immediately before a window is summarised carries no count and no threshold.
+<https://code.claude.com/docs/en/hooks>
 
 So a `budget: 60 %` key would be a number nothing could check at the moment it is exceeded: a
-convention written into the surface, which is the shape this repository calls a defect rather than
-a guideline. ⚠️ **The test that key failed is not "is it enforceable in principle" but "is there a
-run-time reading to enforce it against"** — § 11's own in-tree rule passes that test on three keys
-the reader already holds, and is refused there rather than stated and hoped for. The qualitative
-rules are stated instead, and the one live reading goes where something already reads it: the spend
-guard's own bar at
+convention, which this repository calls a defect. The test a key must pass is whether there is a
+run-time reading to enforce it against; § 11's own in-tree rule passes it on three keys the reader
+already holds. The qualitative rules are stated instead, and the one live reading goes where
+something already reads it: the spend guard's own bar at
 [`schema § 19 → What an approval is per`](../plugins/mjolnir/config/schema.md#what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs),
-which reports a resume priced above it and reports **no figure** where the harness gave none, and
+which reports a resume priced above it and reports no figure where the harness gave none, and
 [`schema § 24 → The window's own reading`](../plugins/mjolnir/config/schema.md#the-windows-own-reading),
-the role that restores a session, for the context half of the same payload. ⚠️ **Both arms are
-written around that payload carrying nothing**, which the subsection below is why.
+the role that restores a session, for the context half of the same payload. Both arms are written
+around that payload carrying nothing, for the reason below.
 
 ### What a resumed session is actually handed
 
-The field list two paragraphs up — the one carrying the vendor's own link — is the vendor's
-documentation. What a resumed session's event actually carried,
-probed rather than read: **five fields, and none of the four the documentation names.** A
-`SessionStart` payload on a resumed session carried the session's own identifier, its transcript
-path, the working directory, the event name and `source: resume` — no token count, no time since the
-last response, nothing about the prompt cache, and no price. The harness in question is **eighteen
-patch versions older** than the one the fields are documented from, which is the explanation and not
-an excuse: a machine running this toolkit is as likely to be behind as current.
+The field list above is the vendor's documentation. Probed on a resumed session, the `SessionStart`
+payload carried five fields and none of the four the documentation names: the session's own
+identifier, its transcript path, the working directory, the event name and `source: resume` — no
+token count, no time since the last response, nothing about the prompt cache, and no price. The
+harness probed was eighteen patch versions older than the one the fields are documented from, and a
+machine running this toolkit is as likely to be behind as current.
 
-Three consequences, and the first is the one that matters:
-
-- ⚠️ **An arm written to rely on those fields reports nothing on a machine where they are absent,
-  and nothing is indistinguishable from a cheap resume.** So both arms reading that payload are
-  written around the absence — the price half already reported *no figure* rather than *free*, and
-  the context half says it was handed no reading rather than describing an empty window.
-- ⚠️ **A tested-absence claim about a harness event is an assertion until a probe answers it**, and
-  this is the second time that has been paid for in this repository. The probe is cheap: a settings
-  file supplying one hook, a print-mode session, and the same session resumed — the payload lands in
-  a file and the question is answered in two commands.
-- ⛔ **What the probe measured is a version and not a contract**, so the arms are written to read the
-  fields where they are there. A reading that arrives tomorrow is reported with no edit, and the
-  rule those arms are held to is
+- An arm relying on those fields reports nothing where they are absent, and nothing is
+  indistinguishable from a cheap resume. So both arms are written around the absence: the price
+  half reports *no figure* rather than *free*, and the context half says it was handed no reading
+  rather than describing an empty window.
+- A tested-absence claim about a harness event is an assertion until a probe answers it. The probe
+  is a settings file supplying one hook, a print-mode session, and the same session resumed; the
+  payload lands in a file and the question is answered in two commands.
+- What the probe measured is a version, not a contract, so the arms read the fields where they are
+  present, and a reading that arrives later is reported with no edit. The rule is
   [`schema § 24 → The window's own reading`](../plugins/mjolnir/config/schema.md#the-windows-own-reading)
   rather than anything stated here.
 
 ### What a compaction leaves behind, and what it does not take
 
-The replay answer the restoring role gives rests on this, so it is measured rather than reasoned
-about. A compaction **appends** to the transcript it summarises rather than replacing it: one
-`system` record carrying the compaction's own metadata — its trigger, the token count before and
-after, and the cumulative total dropped — and one `user` record flagged as the summary, marked
-visible in the transcript only. Measured on one of this repository's own compacted sessions: 617,688
-tokens before, 14,285 after, 603,403 dropped, and **426 tool calls still in the file ahead of the
-boundary**, 132 of them calls that wrote a file, each with its full input.
+The restoring role's replay answer rests on this. A compaction appends to the transcript it
+summarises rather than replacing it: one `system` record carrying the compaction's own metadata —
+its trigger, the token count before and after, and the cumulative total dropped — and one `user`
+record flagged as the summary, marked visible in the transcript only. Measured on one of this
+repository's own compacted sessions: 617,688 tokens before, 14,285 after, 603,403 dropped, and 426
+tool calls still in the file ahead of the boundary, 132 of them calls that wrote a file, each with
+its full input.
 
-- ⛔ **So a compaction costs the window and not the evidence.** A file a session wrote before a
-  compaction is as replayable after one as before it, which is the difference between *lost* and
-  *out of the window* —
+- So a compaction costs the window and not the evidence. A file a session wrote before a
+  compaction is as replayable after one as before it — the difference between *lost* and *out of
+  the window*;
   [`schema § 24 → What a load may not assume survived`](../plugins/mjolnir/config/schema.md#what-a-load-may-not-assume-survived)
   is where that is a rule.
-- ⚠️ **The replay has a real limit, and it is the first call rather than the compaction.** A file
-  the session wrote whole is in the record with its content; a file it only ever *edited* is in the
-  record as a set of differences against content nothing there holds. The harness keeps the
-  pre-edit copy in a store of its own, which the sweep names rather than reads.
-- ⚠️ **One logical session is one session transcript here**, which is the opposite of what was
-  expected when the role was specified: across **863** session transcripts in this machine's store —
-  the top-level files, which is the universe the claim is about and not the 2,406 files the store
-  holds in all — none carried records of a
-  session other than the one its name states, and a resumed session probed directly wrote to the
-  same path it had before. So *the last session* and *the last session transcript* coincide, and the
-  sweep is written against the file.
-- ⚠️ **The sidecars are the other half of that and go the other way.** In this project's own store:
-  **153** subagent transcripts and **41** tool-result directories against **138** session
-  transcripts — and every sidecar sampled carries its **parent's** session identifier, which is
-  exactly the spans-more-than-one-file shape the item predicted, one level down from where it was
-  predicted. Delegating to a sub-window is the practice § 11 recommends, and it writes its trace out
-  of the file a sweep reads — so the sweep counts what is beside it and says it counted rather than
-  read.
+- The replay's limit is the first call, not the compaction. A file the session wrote whole is in
+  the record with its content; a file it only ever *edited* is in the record as a set of
+  differences against content nothing there holds. The harness keeps the pre-edit copy in a store
+  of its own, which the sweep names rather than reads.
+- One logical session is one session transcript. Across 863 session transcripts in this machine's
+  store — the top-level files, not the 2,406 files the store holds in all — none carried records of
+  a session other than the one its name states, and a resumed session probed directly wrote to the
+  same path it had before. So *the last session* and *the last session transcript* coincide, and
+  the sweep is written against the file.
+- The sidecars go the other way. In this project's own store: 153 subagent transcripts and 41
+  tool-result directories against 138 session transcripts, and every sidecar sampled carries its
+  parent's session identifier. Delegating to a sub-window is the practice § 11 recommends, and it
+  writes its trace out of the file a sweep reads — so the sweep counts what is beside it and says
+  it counted rather than read.
 
 ### Why `committed` is a key of its own, and not implied by `dir`
 
@@ -1487,18 +1360,12 @@ teardown removes everything git does not have, and a per-item plan is exactly wh
 and the repository does not. So an in-tree store and an uncommitted store are safe in opposite
 cases, and a single path key could not say which was intended.
 
-⚠️ Measured on this repository, 2026-10-18, which is why the hazard is stated rather than
-reasoned about: the one artifact several concurrent sessions coordinate through is a plan file
-carried in no configuration and committed nowhere. It lives in the agent harness's own per-project
-store, beside the session transcripts, while the standing convention that tells a session to read
-it names a path **beside the repository** — which does not resolve. The file and the pointer to it
-disagree, and nothing reports that: a session following the pointer finds nothing, and a session
-that knows better depends on a store no key names.
-
-⚠️ **The first draft of this paragraph said the file was gone**, on a search bounded to the
-repository's neighbourhood and the temp directory, which does not reach that store. The claim was
-wider than the search that produced it — the same defect one level up from the one the paragraph
-describes, and the reason it is recorded here rather than quietly corrected.
+Measured on this repository, 2026-10-18: the one artifact several concurrent sessions coordinate
+through is a plan file carried in no configuration and committed nowhere. It lives in the agent
+harness's own per-project store, beside the session transcripts, while the standing convention
+that tells a session to read it names a path beside the repository — which does not resolve. The
+file and the pointer disagree, and nothing reports that: a session following the pointer finds
+nothing, and a session that knows better depends on a store no key names.
 
 ### Why the read-side rule lives here rather than beside the write-side one
 
@@ -1509,171 +1376,141 @@ stating it under the tracker would have made two of the three a special case of 
 
 The published incident is a code-host one: payloads written into pull request titles, issue bodies
 and issue comments drove three separate agents into exfiltrating repository secrets back through
-the host itself, with no attacker-controlled server involved anywhere.
+the host itself, with no attacker-controlled server involved.
 <https://labs.cloudsecurityalliance.org/research/csa-research-note-comment-control-github-prompt-injection-20/> That is the measurement; the
-rule it forced, including the half about markup a reviewer never sees, is
-[`§ 11`](../plugins/mjolnir/config/schema.md#11-session-context)'s and is not restated here. The
-toolkit's own gate already holds the other half of the same shape, by
+rule it forced is [`§ 11`](../plugins/mjolnir/config/schema.md#11-session-context)'s. The
+toolkit's own gate holds the other half of the same shape, by
 [#50](https://github.com/ragnor-rs/mjolnir/issues/50)'s ruling: a workflow is granted no scope it
-does not need and its checkout persists no credential — which is a rule about what a run may
-hold, not a claim that every run holds nothing.
+does not need and its checkout persists no credential — a rule about what a run may hold, not a
+claim that every run holds nothing.
 
 ### Why the other two legs are a section of their own, and why only one of them has a key
 
-What a role may *believe* is one leg of three. The other two — what it **holds** while it reads, and
-what may **leave** with it — are
+What a role may *believe* is one leg of three. The other two — what it holds while it reads, and
+what may leave with it — are
 [`§ 14`](../plugins/mjolnir/config/schema.md#14-what-a-role-holds-and-what-may-cross-the-boundary),
-and three things forced that placement rather than a subsection under § 11.
+a section of their own for three reasons.
 
-**The belief rule had already been cited by a role and by this document**, so moving it would have
-broken two anchors to buy a tidier table of contents. A section appended at the end costs nothing
-and breaks nothing, which is the same argument every ordinal on this surface already rests on.
+The belief rule was already cited by a role and by this document, so moving it would have broken
+two anchors; a section appended at the end breaks nothing.
 
-**One of the three is a project's fact and the other two are not.** What a role's shell inherits
+One of the three is a project's fact and the other two are not. What a role's shell inherits
 differs per project and nothing can derive it; the ingestion step and the outward refusal are the
 same everywhere, and a key that let a project turn either off would be a key for deciding whether
-this procedure publishes credentials. So the section carries exactly one key, which is the shape
-§ 6 already has for authorship and § 8 for the reply's register: a rule stated inside the axis it
-would otherwise be a value of.
+this procedure publishes credentials. So the section carries exactly one key — the shape § 6 has
+for authorship and § 8 for the reply's register.
 
-**And the enforcement is one carrier for all three legs**, which is the reason they share a section
-rather than being filed beside the rules they enforce. The incident drove three agents through all
+The enforcement is one carrier for all three legs. The incident drove three agents through all
 three legs in one pass; three scripts would have given each leg its own grammar, its own self-test
-and its own chance to be the one nobody updated. What each arm reaches, and the several things none
-of them do, are in
+and its own chance to be the one nobody updated. What each arm reaches, and what none of them do,
+are in
 [`docs/single-source-of-truth.md`](single-source-of-truth.md#the-boundary-three-arms-two-of-them-held-in-the-session).
 
 ### What one run through the real tracker showed, and what it did not
 
-The arms are planted in both directions by their own self-test, which reads text in memory. ⚠️ **One
-run was made end to end through the host as well**, because the half that matters is what the host's
-own rendering does to a payload and no in-memory plant reaches it: a throwaway item was filed
-carrying a comment that renders as nothing, a zero-width character inside a word, and a visible
-announcement of fresh instructions; the body was read back through the tracker port and passed to
-the ingestion step; the item was closed in the same pass.
+The arms are planted in both directions by their own self-test, which reads text in memory. One
+run was also made end to end through the host, because what the host's own rendering does to a
+payload is out of reach of an in-memory plant: a throwaway item was filed carrying a comment that
+renders as nothing, a zero-width character inside a word, and a visible announcement of fresh
+instructions; the body was read back through the tracker port and passed to the ingestion step;
+the item was closed in the same pass.
 
-What the step returned: the hidden comment **shown in full**, the zero-width character located by
-line and column, and four imperatives named — the instruction to set aside what the role was told,
-the announcement, the address to the role, and the direction to act. Nothing in it was obeyed, which
-is the bullet the run exists to answer. ⚠️ **What the run does not establish is anything about a
-payload nobody planted**: the forms it found are the forms the grammar was written for, and the
-quoting limit on the imperative half is unchanged by having fired once.
+The step returned the hidden comment shown in full, the zero-width character located by line and
+column, and four imperatives named — the instruction to set aside what the role was told, the
+announcement, the address to the role, and the direction to act. Nothing in it was obeyed. The run
+establishes nothing about a payload nobody planted: the forms it found are the forms the grammar
+was written for, and the quoting limit on the imperative half is unchanged.
 
-⚠️ **The hook arm was reviewed separately and two defects came out of it**, both recorded here
-because each is a shape the next person writing a command-reading guard will reach for. The first:
-the git subcommand was found by dropping every word beginning with `-` and reading the next one,
-which left `-C`'s *value* standing where the subcommand should be — so no `git -C <root> push` was
-ever outward, and [§ 1](../plugins/mjolnir/config/schema.md#1-roots) **requires** that form, making
-it the shape every git call in this procedure takes. The arm was dead on its main case while its
-green plant passed, because that plant would have passed either way. The second: an argument to a
-flag that *can* name a file was read as a path unconditionally, so `-F title=hello` and
-`-d name=value` failed to open and the hook reported that a body could not be read — falsely, on
-two of the commonest outward calls there are, since that data is in the command text and had been
-read. Both now carry plants in both directions.
+A review of the hook arm found two defects, each a shape the next command-reading guard will reach
+for. The git subcommand was found by dropping every word beginning with `-` and reading the next
+one, which left `-C`'s value where the subcommand should be — so no `git -C <root> push` was ever
+outward, though [§ 1](../plugins/mjolnir/config/schema.md#1-roots) requires that form of every git
+call in this procedure; the green plant passed either way. And an argument to a flag that *can*
+name a file was read as a path unconditionally, so `-F title=hello` and `-d name=value` failed to
+open and the hook falsely reported that a body could not be read, on two of the commonest outward
+calls. Both now carry plants in both directions.
 
 ### Why the inherited set is names, and why its arm reports rather than refuses
 
 A list of names is not a secret, so the configuration can carry it; the value cannot be carried
-anywhere, which is what the section exists to say. The arm that reads it against the live
-environment then has only one honest answer available to it: a role cannot replace the environment
-it was handed, so an arm that stopped would stop every session over a fact the person running it
-already owns and can fix in one edit.
+anywhere. The arm that reads it against the live environment reports rather than stops: a role
+cannot replace the environment it was handed, so an arm that stopped would stop every session over
+a fact the person running it already owns and can fix in one edit.
 
-⚠️ **The anchors in that arm's name grammar were each added after a false report, measured on the
-shell this was written in.** Unanchored, `auth` claimed an agent socket's path and `session` claimed
-two terminal session ids — four entries on a report nobody would read twice. That is the same
-failure one level up from the one the arm exists to catch: a guard whose output is noise is a guard
-that is off.
+Each anchor in that arm's name grammar answers a false report on the shell it was written in:
+unanchored, `auth` claimed an agent socket's path and `session` claimed two terminal session ids. A
+guard whose output is noise is a guard that is off.
 
-What the empty list means is a real configuration rather than an absent facet, which is why the key
-carries no `carrier` and no `absent_reason`: a project whose roles need nothing beyond the shell's
-own variables has *stated* what it hands a role, and there is nothing for a reason to explain.
+The empty list is a real configuration rather than an absent facet, so the key carries no `carrier`
+and no `absent_reason`: a project whose roles need nothing beyond the shell's own variables has
+stated what it hands a role.
 
 ## Bounding the window at the call, and what the harness gives a hook to do it with
 
 [`schema.md § 22`](../plugins/mjolnir/config/schema.md#22-what-enters-the-window-bounded-where-the-call-is-made)
-is the enforcing half of the section above, and what forced it into a facet of its own is worth
-recording beside the measurements that forced that one.
+is the enforcing half of the section above.
 
 The [findings recorded above](#what-the-published-measurements-establish) rank what hurts a window
-and name summarising it as the lossy way to spend one; § 11 took the conclusion for the artifact,
-making the handoff a file somebody wrote rather than what a summary left behind. What it did not
-reach is the other end of the same finding: the window is spent one call at a time, and every one
-of those calls was a decision nothing was holding. A guard that acted after the summary would be
-acting on what survived it; a guard at the call is acting on the thing itself.
+and name summarising it as the lossy way to spend one; § 11 made the handoff a file somebody wrote.
+The window is also spent one call at a time: a guard acting after the summary acts on what survived
+it, and a guard at the call acts on the thing itself.
 
-So the facet is about **three places the harness publishes, and a fourth it does not**. A hook
+The harness publishes three places a hook can act, and a fourth this facet does not use. A hook
 answering before a call may refuse it or replace its arguments outright; a hook answering after one
-may replace what the call returned. ⚠️ **The fourth place is the event that fires before a window is
-summarised, and it is the one this facet does not use** — it was registered in every arm of the
-measurement recorded in the project store for this repository and **never fired**, so what it
-carries is unestablished rather than empty, and
+may replace what the call returned. The fourth is the event that fires before a window is
+summarised: registered in every arm of the measurement recorded in the project store for this
+repository, it never fired, so what it carries is unestablished rather than empty, and
 [`schema.md § 7`](../plugins/mjolnir/config/schema.md#what-a-hook-can-establish-about-the-role-it-is-running-under)
-already states that a rule reaching it would be written against a measurement nobody has taken.
-⛔ That is why nothing here refuses a compaction, and why the arms that ship are the three that
-answer on a call.
+states that a rule reaching it would be written against a measurement nobody has taken. So nothing
+here refuses a compaction, and the arms that ship are the three that answer on a call.
 
 **Why a result limit is a key while a window budget is not.** A result's own length is the opposite
 case to the one
 [refused above](#why-there-is-no-threshold-on-the-surface): the event that fires after a call
-carries the result, so its size is readable exactly when there is something to decide about it.
-⚠️ **It is the same test, passed rather than failed** — that subsection states what the test is, and
-this is why the same document can refuse one threshold and carry another without contradicting
-itself.
+carries the result, so its size is readable exactly when there is something to decide about it. It
+is the same test, passed.
 
 **Why the exemption is a project's list rather than a case inside the guard.** This toolkit ships a
-role that **forbids** truncating its own evidence output, and states why: the measurement is
-recomputed whole for the half that was cut off. A blanket bound would therefore contradict a shipped
-role — and the first shape that suggests itself, a name in the guard's own code, is the defect this
-repository exists to delete, since no project could see it and no project could add its own. The
-list is a project's for the same reason the mirrored commands are: what a project may not truncate
-is its own fact.
+role that forbids truncating its own evidence output, because the measurement is recomputed whole
+for the half that was cut off. A blanket bound would contradict a shipped role, and a name in the
+guard's own code is one no project could see or extend. What a project may not truncate is its own
+fact, as its mirrored commands are.
 
 ### What a hook may tell the session rather than the person
 
-The rewriting arm is the first thing in this toolkit that changes a call and lets it run, and that
-makes the channel it reports through load-bearing rather than cosmetic. A bound added silently is a
-bounded result read as complete — the window would then hold a *wrong* premise instead of a noisy
-one, which is the worst of the three ranks quoted above.
+The rewriting arm is the first thing in this toolkit that changes a call and lets it run, so the
+channel it reports through matters. A bound added silently is a bounded result read as complete —
+a *wrong* premise instead of a noisy one, the worst of the three ranks quoted above.
 
-⚠️ **The two channels are not interchangeable, and which one reaches the session was measured rather
-than read off the names** — the measurements are
-[recorded per event](single-source-of-truth.md#the-rules-loaded-rather-than-checked) and are not
-restated here. ⛔ **What is new for this facet is the event**: the field that adds context is
-documented for the event before a call, and the client that is installed states its support for it
-outright, which is what the rewriting arm rests on. ⚠️ **It is still a field whose validity is per
-event rather than universal** — the same document records one event rejecting it and failing the
-operation outright — so this is a reading of a reference and a client rather than of a run in this
-repository.
+The two channels are not interchangeable, and which one reaches the session was measured per
+event — [recorded there](single-source-of-truth.md#the-rules-loaded-rather-than-checked). The field
+that adds context is documented for the event before a call, and the installed client states its
+support for it, which is what the rewriting arm rests on. The field's validity is per event — the
+same document records one event rejecting it and failing the operation outright — so this is a
+reading of a reference and a client, not of a run in this repository.
 
 So the reports divide by audience rather than by severity: a call that was rewritten tells the
 **session**, because the session is about to read a result it would otherwise misread; a
 configuration that could not be read tells the **person**, because nothing the session does next
 depends on it and the remedy is an edit to a file.
 
-⚠️ **What the client does with a *replaced result* was read out of it rather than from the
-reference**, which states only that the field replaces a result: a tool that is not an external one
-has its replacement validated against that tool's own output schema, and a mismatch keeps the
-original and adds an error. ⛔ **So the shape of a replacement is not a choice the facet had** — it
-is the shape the response arrived in, and a first version answering with text alone would have left
-every oversized result whole with one more message beside it.
+What the client does with a *replaced result* was read out of the client, the reference stating
+only that the field replaces a result: a tool that is not an external one has its replacement
+validated against that tool's own output schema, and a mismatch keeps the
+original and adds an error. So a replacement takes the shape the response arrived in; one answering
+with text alone would leave every oversized result whole with one more message beside it.
 
 ## The revision key never moved, and the markers took its job
 
 What the surface now states is at
 [`schema.md § The file itself`](../plugins/mjolnir/config/schema.md#the-file-itself): the key is
 retired, a configuration still declaring it is refused, and a retirement is marked `# retired:`.
-What this section carries is the measurement that forced it.
+This section carries the measurement behind it.
 
-`version` was in every configuration from the first commit that carried one (`6410f34`) and the
-surface named it only at `9451882`, where this repository's own single-source gate found a key
-every adopter writes that the single statement of the surface did not declare. It was then read by
-nothing for the whole of its life, and it never moved — through a run of changes that each made an
-older configuration unreadable.
-
-The table below is the statement, and no count of its rows is written beside it: a figure in prose
-goes stale on the next row, green, which is the defect one level up from the one this section
-records.
+`version` was in every configuration from the first commit that carried one (`6410f34`); the
+surface named it only at `9451882`, where the single-source gate found a key every adopter writes
+that the surface did not declare. Nothing read it, and it never moved through a run of changes that
+each made an older configuration unreadable:
 
 | Change | What it did to a configuration already written | `version` |
 |---|---|---|
@@ -1688,65 +1525,54 @@ records.
 | `9bfa447` (#145) — § 3, the keys a tracker kind requires | added `# required_when`, so a tracker block that was complete before it is **refused** for keys that depend on a `kind` the configuration already declared | stayed `1` |
 | § 4.8, the grouping above a work item | required `work_item.grouping.carrier` by a **rule of the reader** rather than by a marker, the key whose absence is refused differing between the facet's two forms — so every configuration written before it is **refused**, this repository's included until it stated the absent case. ⚠️ The first row whose requiredness no marker carries, which is why § 1's obligation names both routes | no key to move: the revision was already retired (ruling 12) |
 
-⚠️ **The rows kept arriving while this change was open**, and each was added by merging `main` into
-it rather than by anyone revisiting the question. A revision that moved on every required key would
-have been stale inside the very branch that introduced the rule, twice over — which is the argument
-the table makes, made by the only means that can make it. ⛔ It is also why no figure accompanies
-the table: each of those merges would have falsified one.
+A revision that moved on every required key would have been stale twice over inside the branch
+that introduced the rule, since rows arrived there by merges from `main`.
 
-**Classified against the ruling, every row reads the same way: the key would not have moved.** The
-revision is retired, so no row is an instance of a revision that should have been bumped and was
-not — each is a configuration refused with the key named, which is what the marker beside that key
-already does. `host.landing.method`, `done` and `environment.inherits` are why the alternative of
-absorbing a new key with a default was not available: the first has no default by design, since one
-would pick a merge method for every project that did not notice the key, and the other two are
-facets whose `[]` the surface states in as many words is a decision and *not* an unset key — so a
-default there would manufacture the very decision those facets refuse to infer.
+Classified against the ruling, every row reads the same way: the key would not have moved. Each is a
+configuration refused with the key named, which the marker beside that key already does.
+`host.landing.method`, `done` and `environment.inherits` are why absorbing a new key with a default
+was not available: the first has no default by design, since one would pick a merge method for every
+project that did not notice the key, and the other two are facets whose `[]` the surface states is a
+decision and *not* an unset key — so a default there would manufacture the very decision those
+facets refuse to infer.
 
-**What settled it is `e62a1d9` (#137), which moved requiredness onto the surface and deleted the
-reader's own list of it.** Before that, a reader met a missing key with no way to say whether the
-project had decided against it; after it, requiredness is marked beside the key, a legitimately
-unset key carries no marker, and every facet with a real absent case carries a `carrier` whose
+What settled it is `e62a1d9` (#137), which moved requiredness onto the surface and deleted the
+reader's own list of it. Requiredness is marked beside the key, a legitimately unset key
+carries no marker, and every facet with a real absent case carries a `carrier` whose
 `absent_reason` is the decision written down. A configuration states its decision or is refused
-with the key named. That is the whole of what the revision was introduced to separate, answered
-where the key is declared rather than by a number describing the file.
+with the key named — which is what the revision was introduced to separate, answered where the key
+is declared.
 
-⚠️ **What the retirement gives up is stated on the surface** beside the retirement itself, and the
-measurement behind it is this table: on every row the remedy an adopter faces is the same act, so
-what is lost is a diagnostic during a phase of rapid surface change rather than a behaviour. The
-cost falls on a configuration written months earlier, which is told *which* keys are missing and
-never *that they are new*.
+What the retirement gives up is stated on the surface beside it, and the measurement behind that is
+this table: on every row the remedy an adopter faces is the same act, so what is lost is a
+diagnostic during a phase of rapid surface change rather than a behaviour. A configuration written
+months earlier is told *which* keys are missing and never *that they are new*.
 
-**The retirement is held in both directions, and the arm that holds the set was missing until this
-change.** The reader refuses a retired key and its self-test asserts both that the surface declares
-no such key and that a configuration still carrying one is refused — but every one of those
-assertions was generated from the reader's own list, so deleting an entry deleted the refusal and
-its only assertion together. Measured: with the `version` entry removed the suite stayed green on
-every assertion and the reader accepted `version: 1` again. That is exactly the defect the retired
-`REQUIRED` table demonstrated, surviving in the one list still shaped like it. What closes it is
-the marker the surface now declares, read against the reader's own list in both directions — and
-a third arm beneath those two, because the pair of them compare the derivation only against that
-list: replacing the derivation with a constant left both green until a plant stripped the clauses
-out of the surface and asserted the comparison notices.
+The retirement is held in both directions. The reader refuses a retired key, and its self-test
+asserts both that the surface declares no such key and that a configuration still carrying one is
+refused. Generated from the reader's own list alone, those assertions went with an entry: with the
+`version` entry removed the suite stayed green on every assertion and the reader accepted
+`version: 1` again — the defect the retired `REQUIRED` table demonstrated. The marker the surface
+declares is read against the reader's own list in both directions, and a third arm catches a
+derivation replaced with a constant, which left both green until a plant stripped the clauses out
+of the surface and asserted the comparison notices.
 
-⚠️ **That marker is a token because the first attempt at it was not.** The retired set was first
-read out of the surface's prose, by a grammar matching a backticked key followed by *is retired* —
-and it read `host.repo`, a live required key, out of a sentence stating it is retired **in no
-sense**. A negation is invisible to a grammar of that shape, and prose is where negations live, so
-a machine-read fact belongs in a clause with the prose beside it saying why.
+The marker is a token, not prose. A grammar matching a backticked key followed by *is retired* read
+`host.repo`, a live required key, out of a sentence stating it is retired in no sense. A negation
+is invisible to a grammar of that shape, and prose is where negations live, so a machine-read fact
+belongs in a clause with the prose beside it saying why.
 
 ## The boundary that was carved out six times
 
 What the surface now states is at
 [`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls):
 the test for a candidate key, what a configured command or path carries, and four worked cases.
-What this section carries is the measurement that forced it — and unlike the rest of this document,
-it is a measurement of this repository's own backlog rather than of the six projects the surface
-was derived from.
+This section carries the measurement behind it, taken on this repository's own backlog rather than
+on the six projects the surface was derived from.
 
-**Six work items stated the same boundary, each on whichever item happened to need it**, while the
-surface stated none of it. What each body held on 2026-10-21, the day the statement was written and
-each of the six reduced to a citation of it:
+Six work items stated the same boundary, each on whichever item needed it, while the surface stated
+none of it. What each body held on 2026-10-21, when the statement was written and each of the six
+reduced to a citation of it:
 
 | the item | what it stated |
 |---|---|
@@ -1757,88 +1583,80 @@ each of the six reduced to a citation of it:
 | #61 — the command root | the toolkit detects no manifest, infers no package manager and owns no build |
 | #66 — the local check | no tool, task name or flag of any stack enters the toolkit |
 
-⛔ **The copies disagreed, which is the part a list of homes understates.** #61 bars *detecting* a
-manifest, #66 bars a tool name entering the toolkit *at all*, #60 bars a *taxonomy* imposed on
-adopters, and #13 bars *build steps* while keeping a script path — so a reader could answer from
-none of them whether a manifest name may appear in a role's text, or whether a command flag may be
-buried in a `mirrors` string. Both are answered now at
+The copies disagreed. #61 bars *detecting* a manifest, #66 bars a tool name entering the toolkit
+*at all*, #60 bars a *taxonomy* imposed on adopters, and #13 bars *build steps* while keeping a
+script path — so none of them answered whether a manifest name may appear in a role's text, or
+whether a command flag may be buried in a `mirrors` string. Both are answered at
 [`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls),
 the second by ruling that the procedure matches nothing inside a command string, so the question is
-about where a fact is readable rather than about which tokens are forbidden.
+where a fact is readable rather than which tokens are forbidden.
 
-**The rule was propagating by restatement-with-attribution, which is the failure the collection was
-filed about.** Two of the six cite #13 while rewording it; three carry a body edited after the item
-collecting them was already open; and a **seventh** home is in the tree,
-[#19](https://github.com/ragnor-rs/mjolnir/issues/19)'s sweep stating the boundary in its own words
-and crediting the collection for it. ⚠️ **What the edit record cannot settle** is whether a given
-sentence predates the collection by minutes or postdates it by days: it keeps timestamps and not
-diffs, and all six were filed inside one four-hour window — two of them in the three minutes before
-the collection and one in the two minutes after. What it does settle is that the restating did not
-stop while an item to collect it was open.
+The rule was propagating by restatement-with-attribution. Two of the six cite #13 while rewording
+it; three carry a body edited after the item collecting them was open; and a seventh home is
+[#19](https://github.com/ragnor-rs/mjolnir/issues/19)'s sweep, stating the boundary in its own words
+and crediting the collection. The edit record keeps timestamps and not diffs, so it cannot settle
+whether a given sentence predates the collection; all six were filed inside one four-hour window,
+two in the three minutes before the collection and one in the two minutes after. It does settle
+that the restating did not stop while an item to collect it was open.
 
-⛔ **What the absence cost is the half that is not about tidiness.** An adopter whose bring-up
-command, acceptance suite and environment restore are all local commands reads the surface, finds a
-key for two of the three and nothing at all for the third, and meets nothing saying whether that
-third is a missing facet or the boundary working as designed. The honest response to an absence
-nobody can classify is an item per local command, which grows the surface in the one direction the
-boundary exists to prevent — so what the statement had to be was a test a reader runs, with the
-cases worked in the open, rather than a list of what stays local:
+An adopter whose bring-up command, acceptance suite and environment restore are all local commands
+finds a key for two of the three and nothing at all for the third, and nothing saying whether that
+third is a missing facet or the boundary working as designed. An absence nobody can classify
+invites an item per local command, which grows the surface in the one direction the boundary
+exists to prevent — so the statement is a test a reader runs, with the cases worked in the open:
 [`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls).
 
 ## Four checks behind one workflow name, and the tolerance that hid it
 
 The host facet was written workflow by workflow, which is how every project here that controls its
-own workflows writes them. One project in the migration set does not: a single workflow runs **four
-jobs mirroring four unrelated local commands** — two languages' linters and test runs, a document
+own workflows writes them. One project in the migration set does not: a single workflow runs four
+jobs mirroring four unrelated local commands — two languages' linters and test runs, a document
 gate, and a parse-and-lint of its shell scripts — and the four share a checkout and a build, so
-splitting them into four workflows pays for four of each. What that configuration cost every
-consumer is the same loss three times: a guard can only refuse or allow on *the workflow ran*, a
-precondition reading *a run exists for this commit* reads green for a command whose job was
-filtered out of it, and a coverage verdict computed per workflow reports a change covered on the
-strength of jobs that never ran for it.
+splitting them into four workflows pays for four of each. The cost to every consumer is the same
+loss three times: a guard can only refuse or allow on *the workflow ran*, a precondition reading *a
+run exists for this commit* reads green for a command whose job was filtered out of it, and a
+coverage verdict computed per workflow reports a change covered on the strength of jobs that never
+ran for it.
 
-**This repository tested the opposite arm and the facet held, which is what made it evidence rather
-than a second instance.** A second gate arrived with #19, and the obvious shape was a second job of
-the existing workflow. The first attempt stated one of the two commands in `host.checks` and parked
-the other in a comment beside it; a review rejected that, the sweep became a workflow of its own,
-and the two commands were never joined with `&&` — a conjunction improvised inside one string being
-the shape the facet already refuses for its triggers. So the cost of avoiding the shape was measured
-here at one workflow file and one extra checkout, which is cheap enough that a second job sharing a
-workflow name should need a reason. ⚠️ **What this repository could not tell anybody is whether
-nesting is right**, having never had to nest.
+This repository tested the opposite arm. A second gate arrived with #19; stating one of its two
+commands in `host.checks` with the other parked in a comment was rejected in review, and the sweep
+became a workflow of its own, its two commands never joined with `&&` — a conjunction improvised
+inside one string being the shape the facet already refuses for its triggers. Avoiding the shape
+cost one workflow file and one extra checkout, cheap enough that a second job sharing a workflow
+name should need a reason. Having never had to nest, this repository cannot say whether nesting is
+right.
 
-**The tolerance is the part that was invisible.** The reader accepted a `mirrors` holding a *list*
-of commands for as long as the gap was open — written deliberately, so that the refusal of a done
-check the host already runs would compare against whatever an entry mirrored rather than hold
-nothing, and recorded in the reader as promising nothing about the shape that would land. A
-configuration no section of the surface stated therefore loaded clean, and the only statement of
-its meaning was a docstring. ⛔ **That is the failure mode a tolerance has**: it is not a gap a
-reader meets, it is a shape that works until somebody states the other one, and the two then
-disagree about where a command's job and its filter live. Both are closed together at
+While the gap was open, the reader accepted a `mirrors` holding a *list* of commands — deliberately,
+so that the refusal of a done check the host already runs would compare against whatever an entry
+mirrored rather than hold nothing, and recorded in the reader as promising nothing about the shape
+that would land. A configuration no section of the surface stated therefore loaded clean, its
+meaning stated only in a docstring. A tolerance is a shape that works until somebody states the
+other one, and the two then disagree about where a command's job and its filter live. Both are
+closed at
 [`schema.md § 2 → A workflow whose jobs mirror more than one command`](../plugins/mjolnir/config/schema.md#a-workflow-whose-jobs-mirror-more-than-one-command),
 which states the nested form, refuses the list, and rules what the collision argument behind the
 workflow key does and does not reach.
 
-⚠️ **One half of that statement is held against nothing in this tree.** No workflow of this
-repository filters on paths — every entry of its own facet omits the key — so the rule that a filter
-sits at the level the workflow file states it at is exercised by the reader's own planted violations
-and by the example that illustrates the form, and by no configuration this project runs on.
+No workflow of this repository filters on paths — every entry of its own facet omits the key — so
+the rule that a filter sits at the level the workflow file states it at is exercised by the
+reader's own planted violations and by the example that illustrates the form, and by no
+configuration this project runs on.
 
 ### A task runner's suite, one of its tasks, and a run against the project's own database
 
-**Three calls that duplicate a host run went unrecognised by the guard on one**, each reproduced
-against the shipped matcher by an adopter measuring its migration. A mirror joined with `&&` never
-matched itself, the call being cut at its separators and the mirror not. A call running one task
-of a mirrored task runner did not match the runner's whole suite, the test being a prefix. And a
-run against that project's own billing or test database matched a mirror it does not duplicate,
-nothing on the surface saying so.
+Three calls that duplicate a host run went unrecognised by the guard on one adopter, each
+reproduced against the shipped matcher. A mirror joined with `&&` never matched itself, the call
+being cut at its separators and the mirror not. A call running one task of a mirrored task runner
+did not match the runner's whole suite, the test being a prefix. And a run against that project's
+own billing or test database matched a mirror it does not duplicate, nothing on the surface saying
+so.
 
 The three answers sit where each fact belongs:
 
 - **The compound is a matching rule and nothing a project states**, so it is the guard's, at
   [`schema.md § 18 → What may be guarded`](../plugins/mjolnir/config/schema.md#what-may-be-guarded-and-the-two-ways-a-refusal-stands-down).
-  This repository's own facet still never joins commands with `&&`, for the reason the section
-  above gives. The rule reaches a project that already does.
+  This repository's own facet still never joins commands with `&&`; the rule reaches a project that
+  already does.
 - **Which tasks a suite covers is the project's fact**, and no derivation from a runner's name can
   supply it. So it is a list beside the `mirrors` it parts, at
   [`schema.md § 2 → A command that runs other commands`](../plugins/mjolnir/config/schema.md#a-command-that-runs-other-commands-and-the-parts-its-run-answers-for).
@@ -1848,36 +1666,35 @@ The three answers sit where each fact belongs:
   so `unguarded_when_set` sits with the guard's other keys rather than on the facet: the facet
   states what the host runs, and the variable states what this one call is.
 
-⚠️ **The exemption reads only what the call itself sets.** A variable exported in an earlier call is
-held by the shell, and nothing in the call shows it. A guard reading the environment would exempt
-every later call that never mentions the database. For the same reason an assignment counts only on
-the mirrored command itself: one standing before another command in the same call reaches that
-command and never the mirrored one.
+The exemption reads only what the call itself sets. A variable exported in an earlier call is held
+by the shell, and nothing in the call shows it; a guard reading the environment would exempt every
+later call that never mentions the database. For the same reason an assignment counts only on the
+mirrored command itself: one standing before another command in the same call reaches that command
+and never the mirrored one.
 
 ## One entry's two events, and the types the pattern could not carry
 
-The same facet, a dimension over. `triggers` had two forms — an event and a base, or an event and a
-branch, one of them or a list — and one entry of this repository's own is the first written against
-it whose event **types** decide anything. The `Nothing deferred` workflow listens for
-`pull_request` with `types: [opened, edited, synchronize, reopened, ready_for_review]`, and neither
-form could spell that: the entry read `pull_request -> *`, which is the same text an entry for a
-workflow naming no types at all would carry.
+`triggers` had two forms — an event and a base, or an event and a branch, one of them or a list —
+and one entry of this repository's own is the first whose event types decide anything. The
+`Nothing deferred` workflow listens for `pull_request` with
+`types: [opened, edited, synchronize, reopened, ready_for_review]`, and neither form could spell
+that: the entry read `pull_request -> *`, the same text an entry for a workflow naming no types at
+all would carry.
 
-**`edited` is the one that is not decoration.** That gate reads the pull request body, and a body
-corrected in place pushes no commit — so without the type the check stays red until an unrelated
-push lands. The residue sat in a comment in the workflow file, which is the thing
+`edited` is the type that matters. That gate reads the pull request body, and a body corrected in
+place pushes no commit — so without the type the check stays red until an unrelated push lands. The
+residue sat in a comment in the workflow file, which is what
 [`schema.md § 2`](../plugins/mjolnir/config/schema.md#2-code-host) says `checks` exists to prevent:
 every consumer reads it and none carries the facts itself.
 
-**The second dimension turned up only once the first was being written down.** That workflow needs
-a second **event kind** as well — findings arrive when a review is submitted, with no commit
-pushed, so it listens for `pull_request_review` too — and `triggers` could state that no better
-than it could state a type. Two gaps of one shape in one entry is what made the key worth extending
-rather than annotating.
+That workflow needs a second event kind as well — findings arrive when a review is submitted, with
+no commit pushed, so it listens for `pull_request_review` too — and `triggers` could state that no
+better than a type. Two gaps of one shape in one entry made the key worth extending rather than
+annotating.
 
-**Three questions, and the arguments that settled each.** They are stated as rules at
+The rules are at
 [`schema.md § 2 → What a trigger states`](../plugins/mjolnir/config/schema.md#what-a-trigger-states-the-event-the-types-of-it-and-the-ref);
-what is here is why each went the way it did.
+the arguments that settled each question:
 
 | Question | Settled | The argument |
 |---|---|---|
@@ -1885,112 +1702,92 @@ what is here is why each went the way it did.
 | What an omitted clause means | **The workflow's event block states no `types:` key** | Read as *the host's default set* it is uncheckable: the defaults differ per event, this surface carries none of them, and the table that would supply them is a second statement of the host's vocabulary. Read as *the file states no filter* the comparison is one the workflow file answers by itself |
 | Whether the facet should hold types at all | **Yes, extended** | Neither guard needs one: #33's asks whether the host already runs a command, and the finishing role asks whether a run exists for *this commit*, which a run fired by `edited` is. What needs one is the consumer that writes a **verifier** rather than data — the drift check at [`§ 2 → The facet against the host's own definitions`](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions), which compares the clause against the workflow's own `types:` key in both directions. A facet that could not express the types would leave it reporting drift on a correct entry, green on one it had proved incomplete, or the dimension undeterminable, and each of the three is worse than the key being richer |
 
-⚠️ **The event vocabulary is where the extension stops, and the bound was measured rather than
-chosen.** The third event that workflow wanted is one no workflow file may name at all, and
-[the measurement is where it already lived](single-source-of-truth.md#what-this-gate-deliberately-does-not-check)
-rather than restated here. What it settles for the facet is that a pattern naming an event is not a
-claim that a workflow may listen for it: the facet enumerates no events, and what refuses such a
-name is the host as the file loads.
+The extension stops at the event vocabulary. The third event that workflow wanted is one no
+workflow file may name at all —
+[measured there](single-source-of-truth.md#what-this-gate-deliberately-does-not-check). A pattern
+naming an event is therefore not a claim that a workflow may listen for it: the facet enumerates no
+events, and what refuses such a name is the host as the file loads.
 
-⚠️ **What this repository can say about the type clause is one entry's worth.** Every other
-workflow here states no `types:` key and its entry carries no clause, which is exactly the reading
-the omission rule gives it; the one that does is the whole of the evidence that the clause is worth
-having, and the second event kind rests on that same entry. What exercises the rest is the reader's
-planted violations and the example that illustrates the form.
+This repository's evidence for the type clause and the second event kind is that one entry. Every
+other workflow here states no `types:` key and its entry carries no clause, the reading the
+omission rule gives it; the rest is exercised by the reader's planted violations and the example
+that illustrates the form.
 
 ## The filter a workflow states in the inverse, and the sense the key could not carry
 
-The same facet again, and the one fact in a migration project's whole host block the surface could
-not hold. **Two of that project's workflows filter on the paths they *ignore* and on nothing else**
-— run on everything except a list — where `paths` stated only the including form. So neither entry
-could carry its filter at all, and every consumer read both as running on every change. The rule is
+Two of a migration project's workflows filter on the paths they *ignore* and on nothing else — run
+on everything except a list — where `paths` stated only the including form. Neither entry could
+carry its filter, and every consumer read both as running on every change. The rule is
 [`schema.md § 2 → The two senses a path filter states`](../plugins/mjolnir/config/schema.md#the-two-senses-a-path-filter-states-and-why-they-are-one-key);
-what is here is the measurement and the arguments that settled the shape.
+what is here is the measurement.
 
-**The direction it was wrong in is the safe one, which is why it was a gap and not a defect.** An
-entry with no filter reads as covering every change, so the coverage reading never reported a run
-as covering a change the host in fact skipped — it reported the opposite, waiting for a run that
-would not come. ⚠️ **The one reading that lost a verdict** is the guard that refuses a local check
-the host has already run: it could decline a local run the host skipped, and it lost that verdict
-to a command the project can still run with its escape.
+The error was in the safe direction. An entry with no filter reads as covering every change, so the
+coverage reading never reported a run as covering a change the host skipped — it waited for a run
+that would not come. The one reading that lost a verdict is the guard that refuses a local check
+the host has already run: it could decline a local run the host skipped, and the project could
+still run the command with its escape.
 
-⛔ **And the drift check could not see any of it.** It compared `paths` in both directions against
-the workflow's own `paths:` key; a file stating the inverse key has no `paths:` for either side of
-that comparison, so an entry with no filter and a file with an inverse one **agreed** — the
-dimension reported as agreeing where nothing had been compared, which is the arm
-[ruling 18](divergences-and-rulings.md#4-the-rulings) forbids outright. The key sat in that check's own list of
-keys no entry has a form for, and ⚠️ **it was the one entry of that list a project could have done
-something about**: the others name refs the facet cannot enumerate, while this one named a sense the
-facet simply did not state.
+The drift check could not see any of it. It compared `paths` in both directions against the
+workflow's own `paths:` key; a file stating the inverse key has no `paths:` for either side, so an
+entry with no filter and a file with an inverse one agreed — a dimension reported as agreeing where
+nothing had been compared, which
+[ruling 18](divergences-and-rulings.md#4-the-rulings) forbids. The key sat in that check's list of
+keys no entry has a form for, the one entry of that list a project could act on: the others name
+refs the facet cannot enumerate.
 
-**Four questions were settled and the arguments are the subsection's own**, cited above rather than
-copied here — [that it is one key and not two](../plugins/mjolnir/config/schema.md#the-two-senses-a-path-filter-states-and-why-they-are-one-key),
-that the host's spellings stay off this surface, and that the two senses are not mirror images.
-⚠️ **Two things the surface does not carry, because they are about what was tried rather than about
-the rule:**
+The settled questions — that it is one key and not two, that the host's spellings stay off this
+surface, and that the two senses are not mirror images — are argued in that subsection. Two
+findings the surface does not carry:
 
-- **A translation at the point the filter is written was the cheap answer, and there is none to
-  write.** That is what forced the facet to carry the sense rather than leaving it to the writer:
-  the complement of a glob list is not a glob list, so the obvious fix — convert the filter where
-  it is stated and keep one form on the surface — had nothing to convert it into.
-- **The asymmetry was reproduced rather than reasoned about.** The case that decides it is a change
-  touching one excluded path and one outside the list: read as the watching sense's mirror image it
-  is *out of scope*, and the host runs that workflow. One case, and it is the one a reader checking
-  the two senses against each other would not think to write.
+- **No translation at the point the filter is written is possible.** The complement of a glob list
+  is not a glob list, so converting the filter where it is stated and keeping one form on the
+  surface had nothing to convert it into; the facet carries the sense.
+- **The asymmetry was reproduced.** The deciding case is a change touching one excluded path and
+  one outside the list: read as the watching sense's mirror image it is *out of scope*, and the
+  host runs that workflow.
 
-**What the reader and its two consumers answer now.** The reader normalises the sense once, so
-**neither consumer reads the value's shape**: a filter arrives as its sense and its globs, and a
-walk that dropped the sense would hand both of them a filter pointing the other way — which is why
-the record and not the load is what this project's suites assert. The coverage reading answers *out
-of scope* for a change whose every path an excluding filter names. The drift check compares the
-sense before the globs, ⚠️ **because two filters listing the same globs in opposite senses agree on
-every character and cover complementary sets of changes** — the one pair a comparison of the lists
-alone calls identical.
+The reader normalises the sense once, so neither consumer reads the value's shape: a filter arrives
+as its sense and its globs, and a walk that dropped the sense would hand both a filter pointing the
+other way — which is why the record and not the load is what this project's suites assert. The
+coverage reading answers *out of scope* for a change whose every path an excluding filter names.
+The drift check compares the sense before the globs, because two filters listing the same globs in
+opposite senses agree on every character and cover complementary sets of changes.
 
-**Two shapes stay unestablished rather than compared**, both of them
+Two shapes stay unestablished rather than compared, both on
 [`schema.md § 2 → The facet against the host's own definitions`](../plugins/mjolnir/config/schema.md#the-facet-against-the-hosts-own-definitions)'s
-own list of what leaves a dimension unestablished. ⛔ **An event block stating both of the host's
-path keys**: the host rejects such a file itself, so the entry beside it may be a correct statement
-of a run that never starts, which of the two keys the project meant is not a comparison's to pick,
-and reading the half the facet can spell would report drift on the strength of what was not read.
-⛔ **And a path key carrying no glob** — found while reviewing this change, and the sharper of the
-two: read as a filter naming nothing it is drift **no edit clears**, because the entry that would
+own list of what leaves a dimension unestablished. An event block stating both of the host's path
+keys: the host rejects such a file itself, so the entry beside it may correctly state a run that
+never starts, which key the project meant is not a comparison's to pick, and reading the half the
+facet can spell would report drift on the strength of what was not read. And a path key carrying no
+glob: read as a filter naming nothing, it is drift no edit clears, because the entry that would
 agree with such a file states an empty list and the reader refuses that at the key in either sense.
 
-⚠️ **What this repository can say about either sense is nothing, and the residue is the same one the
-level rule has.** No workflow here filters on paths at all — every entry of its own facet omits the
-key — so the sense is exercised by the reader's planted violations, by the drift check's planted
-definitions in each direction, and by the example that illustrates the form, and by no configuration
-this project runs on.
+No workflow here filters on paths at all, so the sense is exercised by the reader's planted
+violations, by the drift check's planted definitions in each direction, and by the example that
+illustrates the form, and by no configuration this project runs on.
 
-**And the two entries that found the gap still do not state their filter**, which is this
-section's one open residue rather than something the form closed. They are in a repository this one
-cannot open and no check here can reach them, so what landed here is the form, the checks and this
-sentence. ⚠️ **The form was held against those two files rather than assumed to fit them**: their
-excluding globs were read off the workflows, the two entries filled in and that project's own
-comment about the gap removed, in a temporary skills root served by this surface — the configuration
-loads, the whole facet agrees with its own definitions, and one glob dropped from one entry reddens
-and names the sense. ⛔ **Nothing in that repository was written**, and until it is, those two
-entries describe their runs as covering every change.
-
+The two entries that found the gap still do not state their filter; they are in a repository this
+one cannot open and no check here can reach. The form was held against those two files: their
+excluding globs were read off the workflows, the two entries filled in and that project's comment
+about the gap removed, in a temporary skills root served by this surface — the configuration loads,
+the whole facet agrees with its own definitions, and one glob dropped from one entry reddens and
+names the sense. Nothing in that repository was written, and until it is, those two entries
+describe their runs as covering every change.
 ## A section one role writes and another runs
 
 The facet is [`schema § 20`](../plugins/mjolnir/config/schema.md#20-the-sections-a-pull-request-body-must-carry);
-what is here is the measurement that made it one, and the questions settled while it was being
-written.
+what is here is the measurement behind it and the questions it settles.
 
 **What was found.** One project in the migration set carries a workflow of its own, separate from
 its lint suite, whose single job asserts that a pull request body states what the change needs
-done to an environment before it can be deployed. The section is not decoration there: the role
-that deploys a batch collects exactly it out of every change the batch carries and performs what it
-collected. So the body is an interface between two roles — and the heading it turns on was stated
-in a workflow file and nowhere else. Read against the surface as it then stood, § 6 ruled the body
-a summary and a test plan and deferred the closing form to § 3; environment preparation was a
-third element the configuration did not state, and a gate enforcing a fact no configuration states
-is the shape this surface exists to delete.
+done to an environment before it can be deployed. The role that deploys a batch collects exactly
+that section out of every change the batch carries and performs what it collected, so the body is
+an interface between two roles — and the heading it turns on was stated in a workflow file and
+nowhere else. Environment preparation was a body element the configuration did not state, and a
+gate enforcing a fact no configuration states is the shape this surface exists to delete.
 
-**Why it is not the title gate one item over.** Two properties separate them, and both change what
-can be built:
+**How it differs from the title gate.** Two properties separate them, and both change what can be
+built:
 
 | | The title gate | This one |
 |---|---|---|
@@ -1998,11 +1795,9 @@ can be built:
 | What `host.checks` records | an entry mirroring nothing, which the duplicate-run guard reads as never-guard | an entry whose `mirrors` names a command a person can run, which that guard reads as guardable |
 | What has to be installed | one file | a checker as well, because a host run executes files and the toolkit is not one of them |
 
-**The questions, and the arguments that settled each.** ⚠️ **The last three were settled later than
-the first three and against a surface this facet had already changed**, which is why they are rows
-of the same table rather than a second measurement: the step the facet was extracted from turned
-out to be unexpressible in the one direction that mattered, and what the facet was missing was
-established by reading its one reader rather than by finding another project.
+**The questions, and the arguments that settled each.** The last three were settled by reading the
+facet's one reader, which showed that the step it was extracted from could not be expressed in the
+direction that mattered.
 
 | Question | Settled | The argument |
 |---|---|---|
@@ -2013,40 +1808,34 @@ established by reading its one reader rather than by finding another project.
 | Where a collected step falls against the collecting role's own act | **`when`, required of every entry** | The measured step is a pair of schema changes that must reach a live database *before* the image carrying the code that reads them — and the facet's own text called it preparation needed *before the change can ship* while the one role collecting it ran it **after** the invocation. With no key, a step's timing is whatever the collector finds convenient, and the convenient place is after the act. The same argument `not_live` is required by one facet over: a project that never looked and a project that decided read identically otherwise |
 | Whether who answers a step is a second axis or derivable from `when` | **A key, and the correlation is stated rather than used** | The two measured steps are one `before`/`human` and one `after`/`procedure` — a correlation across two observations, and a value derived from it would be derived from two points that happen to agree. What makes the key load-bearing is the first of the two: the procedure holds no credential for the database that step is about, so with no way to say *this one is a person's*, the measured instance is expressible only as a step the collector would try to run itself |
 
-⚠️ **The headings are the repository's language and not the tracker's**, which is visible in the
-example that states two: its items are written in one language and its repository in another, and
-the body is a repository artifact. A heading transliterated out of the tracker's language matches
-nothing a body carries.
+The headings are in the repository's language, not the tracker's: the example that states two
+writes its items in one language and its repository in another, and the body is a repository
+artifact. A heading transliterated out of the tracker's language matches nothing a body carries.
 
-⚠️ **This repository requires no section and that is not a hole in the evidence.** Nothing here is
-deployed and no role collects a section out of a change, so `body_sections` is `[]` and the gate is
-installed nowhere in this tree — which is the facet's own stated absence rather than a project
-standing down. What exercises the rule is the checker's planted bodies, and what exercises the
-install is a fixture built from the example that states a section, with the generated workflow and
-its registered entry then handed to the drift check that holds every other entry here.
+This repository requires no section: nothing here is deployed and no role collects a section out of
+a change, so `body_sections` is `[]` and the gate is installed nowhere in this tree. The rule is
+exercised by the checker's planted bodies, and the install by a fixture built from the example that
+states a section, with the generated workflow and its registered entry handed to the drift check
+that holds every other entry here.
 
-⚠️ **The two keys added later are exercised the same way and in two more places.** The reader's own
-suite holds every shipped example to stating both of them and holds the examples between them to
-stating each value of `when` — so a row of the surface's own table that no example reaches is what
-reddens, rather than a value nobody happens to write. And the collecting reading, which is the
-opposite question over the same grammar, is asserted against planted bodies beside the gate's: the
-arm that makes it worth having at all is the *nothing* answer written as an emphasised bullet with
-no period, which the grammar reads as the answer and a role reading the section by eye would call
-owed. ⛔ **What is still unexercised here is the role**, this project deploying nothing: the
-collector's own refusal for a project stating no section was run in this tree, and the reading arm
-in a temporary skills root carrying a shipped example.
+The reader's own suite holds every shipped example to stating `when` and `answered_by`, and
+holds the examples between them to stating each value of `when`, so a row of the surface's table
+that no example reaches reddens. The collecting reading, the opposite question over the same
+grammar, is asserted against planted bodies beside the gate's; its key arm is the *nothing* answer
+written as an emphasised bullet with no period, which the grammar reads as the answer and a role
+reading by eye would call owed. The role itself is unexercised here, this project deploying
+nothing: the collector's refusal for a project stating no section was run in this tree, and the
+reading arm in a temporary skills root carrying a shipped example.
 
 ## The surface a tree is held to, and the guards that went quiet in a configured project
 
-The facet above is also what measured this one. Within a day of the body-sections key landing on
-the integration branch, a session working a different item in its own tree could run no guarded
-command at all: every call it made came back with three of the four guards reporting that the
-project's configuration could not be read and the command held to nothing, and any role that read
-the configuration exited naming `body_sections` as a required key. The project that produced those
-messages had written the key — on the integration branch, in the file every adopter writes.
+Within a day of the body-sections key landing on the integration branch, a session working a
+different item in its own tree could run no guarded command: every call came back with three of
+the four guards reporting that the project's configuration could not be read and holding the
+command to nothing, and any role that read the configuration exited naming
+`body_sections` as a required key. The project had written the key — on the integration branch.
 
-**Two copies of this surface can answer the question, and nothing had decided which one does.**
-Measured 2026-10-24:
+**Two copies of this surface can answer the question.** Measured 2026-10-24:
 
 | | Where it came from | Which commit |
 |---|---|---|
@@ -2054,15 +1843,13 @@ Measured 2026-10-24:
 | The configuration it resolved | the skills root, which § 1 rules is the directory the role ran in | the tree's own branch |
 
 So the newer surface was holding an older configuration to a key the older branch had never heard
-of. The skew is one-directional through the reader and that is worth stating, because it bounds what
-had to change: a key a branch *adds* loads against the installed surface — tested, with an invented
-top-level key accepted by the reader and reddened only by the single-source gate on the host — while
-a key the installed surface newly *requires* refuses every tree cut before the marker.
+of. Through the reader the skew is one-directional: a key a branch *adds* loads against the
+installed surface — tested, with an invented top-level key accepted by the reader and reddened only
+by the single-source gate on the host — while a key the installed surface newly *requires* refuses
+every tree cut before the marker.
 
-**Why the tree's surface wins rather than the primary checkout's configuration.** Three rules would
-each have cleared the measured failure, and they are not equivalent:
-
-The third is what the surface now states —
+**Why the tree's surface wins.** Three rules would each have cleared the measured failure, and they
+are not equivalent. The third is the rule —
 [`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration).
 
 | Candidate | What it does to the measurement | Why not |
@@ -2071,56 +1858,48 @@ The third is what the surface now states —
 | Resolve the configuration from the primary checkout always | clears it, the integration branch carrying the key | A branch changing this surface could then never be tested in its own tree, which is how every item that changed it was built. The configuration under work is the tree's |
 | Resolve the **surface** from the skills root where it ships one | clears it, and keeps the configuration where § 1 puts it | — |
 
-⚠️ **The asymmetry is the whole of the rule**: the configuration is the statement a branch is
-making, so it stays in the tree; the surface is what that statement is held to, so the half under
-work has to be the one in the tree as well. Resolving both from the primary checkout and resolving
-neither are the two symmetric answers, and each reproduces one direction of the failure.
+The configuration is the statement a branch is making, so it stays in the tree; the surface is
+what that statement is held to, so the half under work has to be in the tree as well. Resolving
+both from the primary checkout and resolving neither are the two symmetric answers, and each
+reproduces one direction of the failure.
 
 ### The direction the bound above does not state: a new surface read by an old reader
 
-The bound above says the skew is one-directional and that a key a branch *adds* loads against the
-installed surface. ⚠️ **That clause predates the rule beside it.** With the surface now resolved
-from the tree, a key a branch adds is held by the **tree's** surface and read by the **installed**
-reader — a third combination, and it reproduces the same failure the section opens with.
+With the surface resolved from the tree, a key a branch adds is held by the **tree's** surface and
+read by the **installed** reader — a third combination, and it reproduces the same failure.
 
-Measured in the change that added § 23. The new key's value is a list, and its membership was first
+Measured in the change that added § 23. The new key's value is a list, and its membership was
 written as an alternation beside the key. An alternation marks what a *value* may be; the value of
-that key is the whole list — so the installed reader, which has no rule telling the two apart for
-this key, compared the list against the members and refused the configuration. Four guards then
-reported the project's configuration as unreadable and held the command to nothing — the spend one,
-the live one, the context one on both of its events, and the enforcement one — on every call, for
-as long as the branch stood. ⚠️ **The outward guard is absent from that list and was not spared
-either**: it answers only on a write leaving the project, so a session making none hears nothing
-from it in the ordinary case — the same silence from a different cause, which is why the count is
-four rather than every hook installed.
+that key is the whole list — so the installed reader compared the list against the members and
+refused the configuration. Four guards then reported the configuration as unreadable and held the
+command to nothing — the spend one, the live one, the context one on both of its events, and the
+enforcement one — on every call, for as long as the branch stood. The outward guard answers only on
+a write leaving the project, so a session making none hears nothing from it: the same silence from
+a different cause.
 
-⛔ **What fixed it is the surface writing a list's membership as the list**, which is the shape
+The fix is the surface writing a list's membership as the list, the shape
 [`schema.md § 9`](../plugins/mjolnir/config/schema.md#9-day-log)'s streams and exclusions already
 had and which [`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs)
-now states as a rule rather than a habit: a membership written that way is **unread** by a reader
-older than the key instead of misread by it, and unread is the direction that fails safe. The
-reader derives the two facts apart, and a refusal names which of them is missing.
+states as a rule: a membership written that way is **unread** by a reader older than the key
+instead of misread by it, and unread is the direction that fails safe. The reader derives the two
+facts apart, and a refusal names which of them is missing.
 
-⚠️ **What this does not fix is the class.** Any rule a new surface states and an older reader
-performs differently reproduces it, and nothing compares the two copies: the installed reader's
-version is not a fact this repository's gates can see. The remedy that generalises is the one above
-applied as a habit — a new surface statement that an older reader will *not* read beats one it will
-read wrongly.
+This does not fix the class. Any rule a new surface states and an older reader performs differently
+reproduces it, and nothing compares the two copies: the installed reader's version is not a fact
+this repository's gates can see. The remedy that generalises is a habit — a new surface statement
+that an older reader will *not* read beats one it will read wrongly.
 
-⛔ **An adopter carries no second copy of the surface, and that is the exposure rather than an
-exemption.** A project that consumes the plugin has nothing for the resolution to find, so the
-installed copy is read — at whatever commit the checkout serving it stands on, which is the one
-state the rule at
+An adopter carries no second copy of the surface. A project that consumes the plugin has nothing
+for the resolution to find, so the installed copy is read — at whatever commit the checkout serving
+it stands on, the one state the rule at
 [`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration)
-cannot reach. The subsection at the end of this section is that case measured.
-⚠️ **The two answers do coincide for the shipping project's own primary checkout**, that root and
-the installed path being one directory, which is why the suite's assertion about this repository
-holds the resolution's *report* rather than a difference it cannot produce here.
+cannot reach; the last subsection of this section measures that case. For the shipping project's
+own primary checkout the two answers coincide, that root and the installed path being one
+directory, so the suite's assertion about this repository holds the resolution's *report*.
 
-**What the rule found once it was enforced: ten shape rules answering a question that was not
-theirs.** With the surface resolved from the tree, the measured configuration still would not load —
-the reader's own type rule for the key refused its absence, independently of any marker. The
-division had been stated in the comment beside that rule and not performed by it:
+**Ten shape rules answering a question that was not theirs.** With the surface resolved from the
+tree, the measured configuration still would not load: the reader's own type rule for the key
+refused its absence, independently of any marker. The division is:
 
 | Question | Whose | Where |
 |---|---|---|
@@ -2128,21 +1907,18 @@ division had been stated in the comment beside that rule and not performed by it
 | What a stated value has to be | the shape rule | the reader, per section |
 
 A rule that refuses absence states the marker's fact a second time, and the second statement
-outlives the first in exactly one place: a tree whose surface does not mark the key. Ten of them did
-it — every list-valued and block-valued required key on this surface. The assertion that found them
-is over the marked set rather than a list in the test, so a key that grows a shape rule is covered
-the day the surface marks it.
+outlives the first in one place: a tree whose surface does not mark the key. Ten rules did it —
+every list-valued and block-valued required key on this surface. The assertion that found them is
+over the marked set, so a key that grows a shape rule is covered the day the surface marks it.
 
-⛔ **What the silence cost is the reason this is a correctness rule and not a convenience.** A guard
-that cannot read a configuration fails closed and says so, which is right. But *held to nothing* and
-*this project configured nothing* are the same two lines to whoever is reading them, and three of
-the four guards produced the first while the project had written every one of their keys. Nothing
-reported the version skew as a skew. The rule removes the state **for a tree**, and naming the
-resolved surface among what a role reports is what makes the remaining case visible at the moment it
-happens —
+A guard that cannot read a configuration fails closed and says so. But *held to nothing* and *this
+project configured nothing* read the same, and three of the four guards produced the first while
+the project had written every one of their keys; nothing reported the version skew as a skew. The
+rule removes the state **for a tree**, and naming the resolved surface among what a role reports
+makes the remaining case visible when it happens —
 [`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration).
-⛔ **For an adopter the state stands**, which is the subsection below, and the answer a guard sends
-is where it was made visible instead.
+For an adopter the state stands (the subsection below), and the answer a guard sends is where it is
+made visible.
 
 ### The same failure in an adopter, which no resolution rule reaches
 
@@ -2160,32 +1936,28 @@ Measured 2026-10-30, a day after the role-to-person facet landed:
 | How the rest were found | sweeping every configuration on the machine; nobody was standing in them |
 | What the window cost | the enforcement gate, `context_guard.reread`, the approval arm, and every role that routes through the reader — the deny lists were empty in all five, so those arms held nothing either way |
 
-⛔ **No install step ran and no session was restarted.** The surface those files are held to moved
-under them, which is this section's asymmetry reaching the one case no resolution rule can fix:
-there is no second copy to prefer, so a project that consumes the surface is always held to the
-commit the install serves
+No install step ran and no session was restarted: the surface those files are held to moved under
+them. There is no second copy to prefer, so a project that consumes the surface is always held to
+the commit the install serves
 ([`schema.md § 1 → The surface is resolved beside the configuration`](../plugins/mjolnir/config/schema.md#the-surface-is-resolved-beside-the-configuration)).
-One of the five was itself edited hours after the break, and the session editing it was never told
-that the file it was writing no longer resolved.
+One of the five was edited hours after the break, and the session editing it was never told that
+the file no longer resolved.
 
-⚠️ **The answer named no key for the whole window, and the reader it had just called knew which
-one.** That is why a guard's answer now carries the reader's own stop
+The answer named no key for the whole window, while the reader it had called knew which one. A
+guard's answer therefore carries the reader's own stop
 ([`schema.md § 19`](../plugins/mjolnir/config/schema.md#19-a-command-that-spends-and-the-supervision-it-is-refused-without)),
-and it is the only half of this a check here can hold: the configurations are files no check in this
-repository can open.
+the only half a check here can hold: the configurations are files no check in this repository can
+open.
 
-⚠️ **The stop is the reader's first refusal and not a diagnosis.** A configuration with more than
-one fault answers with whichever `validate` reached first — a stub stating `roots` as a list answers
-about a required key nobody wrote — so the answer carries it as the reader's stop rather than as the
-repair. ⛔ **And it is cut**, because the reader's refusals interpolate the project's own stated
-value: one long mistyped scalar answered with 50,063 characters of itself, which is the figure a
-first pass at this missed by measuring the required-key arm alone.
+The stop is the reader's first refusal, not a diagnosis. A configuration with more than one fault
+answers with whichever `validate` reached first — a stub stating `roots` as a list answers about a
+required key nobody wrote — so the answer carries it as the reader's stop, not as the repair. It is
+also cut, because the reader's refusals interpolate the project's own stated value: one long
+mistyped scalar answered with 50,063 characters of itself.
 
 ### How loud that window was, and the two defects measuring it found
 
-The two subsections above are about the state. This one is about what the state *sounded like* while
-it stood, which nothing had measured. Taken 2026-11-05 against a configured project three required
-keys short of resolving:
+Taken 2026-11-05 against a configured project three required keys short of resolving:
 
 | | |
 |---|---|
@@ -2195,29 +1967,23 @@ keys short of resolving:
 | distinct facts those five messages carried | one |
 | messages in a session of 73 guarded calls | ≈ 290, and a floor rather than a total: the session was still open when it was counted |
 
-⛔ **The cost is linear in the guarded calls a session makes**, so what it charged most was the
-session doing the most work — against a state the surface creates deliberately every time a key is
-newly marked `# required`, and calls one line to answer rather than a migration
-([`schema § 29`](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)). The interval
-between such a key landing and that line being written was as loud as four messages per shell
-command, in every project the install reaches.
+The cost is linear in the guarded calls a session makes, so it charged most the session doing the
+most work — against a state the surface creates every time a key is newly marked `# required`, and
+calls one line to answer rather than a migration
+([`schema § 29`](../plugins/mjolnir/config/schema.md#29-the-hosts-run-operations)). Until that line
+was written, every project the install reaches heard four messages per shell command.
 
-⛔ **What was wrong was the cadence and never the direction.** Failing open is right for the reason
-each guard states, and so is carrying the reader's stop; what neither of those licenses is saying it
-again on the next call, which is how *the answer says so* had been read
+The defect was the cadence, not the direction. Failing open is right, and so is carrying the
+reader's stop; neither licenses saying it again on the next call. The second defect was four
+sentences for one fact: they differed in a prefix and a section citation, the enforcement guard's
+carried none, and four messages leave the reader to work out that they add up to every guard
+installed. The cadence and the consolidation are therefore one rule — a per-guard claim would have
+kept the four sentences and only thinned them
 ([`schema § 19 → How often a configuration that does not resolve is reported`](../plugins/mjolnir/config/schema.md#how-often-a-configuration-that-does-not-resolve-is-reported)).
 
-⚠️ **The second defect is in the same measurement: four sentences for one fact.** They differed in a
-prefix and a section citation, and the enforcement guard's carried no citation at all — and four
-messages also leave whoever reads them to work out that they add up to every guard installed, where
-one sentence naming the set says so. ⛔ **Which is why the cadence and the consolidation are one
-rule rather than two**: a per-guard claim would have kept the four sentences and merely thinned them
-([`schema § 19 → How often a configuration that does not resolve is reported`](../plugins/mjolnir/config/schema.md#how-often-a-configuration-that-does-not-resolve-is-reported)).
-
-⚠️ **What the rule does not change is the state.** A project whose configuration the installed
-surface has just invalidated still has every call held to nothing until somebody writes the key; it
-is now told once instead of four times per command. The subsection above is that state, and the
-files it happens in are ones no check here can open.
+The rule does not change the state: a project whose configuration the installed surface has just
+invalidated still has every call held to nothing until somebody writes the key, and is now told
+once instead of four times per command.
 
 ## The bookkeeping role: three copies that are a third of it, and two keys that came out of it
 
@@ -2225,28 +1991,23 @@ This role divided in two directions at once, and this is the one place the copie
 **Four projects carry it whole; three further copies are its commit third alone**, under two other
 names and two different carriers — one a skill, one a command — which is the *one name, a subset
 role* case [above](#name-and-role-diverge-in-both-directions) and the reason the inventory key is
-*(role, carrier)* read out of the body rather than the directory name. ⚠️ **No superlative is
-claimed for the figure**: the day-log role's five copies carry their own argument for extraction a
-document over, and a *most* stated in two places is the restated fact this document keeps catching.
+*(role, carrier)* read out of the body rather than the directory name.
 
-What that forced is a key naming which thirds a project runs, at
+That forced a key naming which thirds a project runs, at
 [`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs),
-and ⚠️ **the load-bearing observation is which reading it rules out**: the measured
-commit-third-only project **has a tracker**. So the question is not derivable from the tracker axis,
-from the carrier axis, or from anything else already on the surface — a project with a board and a
-backlog can still have a bookkeeping carrier that commits and does nothing else, and that is a
-configuration rather than an adoption that stopped halfway.
+and the measured commit-third-only project **has a tracker**, so the question is not derivable from
+the tracker axis, the carrier axis, or anything else on the surface: a project with a board and a
+backlog can have a bookkeeping carrier that commits and does nothing else, and that is a
+configuration, not an adoption that stopped halfway.
 
-The order the thirds run in is procedure and not part of the key, and ⚠️ **the reason is one the
-copies agree on without any of them stating it** — which is why the rule is on the surface at
-[`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs)
-and the observation is here: no copy had to be overridden to reach it, so there was no divergence to
-rule on, only a sequence every copy already ran in.
+The order the thirds run in is procedure, not part of the key: the rule is at
+[`schema.md § 23`](../plugins/mjolnir/config/schema.md#23-session-bookkeeping--which-thirds-a-project-runs),
+and every copy already ran in that sequence, so there was no divergence to rule on.
 
 ### Staging is per role, measured inside one project
 
-The first form of the staging ruling made `staging` a project-level value. It is wrong, and the
-counter-example is one project holding both positions **in two of its own carriers**:
+`staging` is not a project-level value: one project holds both positions **in two of its own
+carriers**:
 
 | the carrier | what it states | why it is right there |
 |---|---|---|
@@ -2254,51 +2015,43 @@ counter-example is one project holding both positions **in two of its own carrie
 | its finishing role, same repository | never stage everything; name the paths you intend, and watch for credentials and build output | that commit rides an item's branch into a pull request, where a swept-in artifact lands with it |
 
 Neither is a mistake, so a single value cannot express that project without making one of its two
-roles wrong — and the ruling as first written would have picked one of them. The revised key is
+roles wrong. The key is
 [`schema.md § 6 → What staging is per`](../plugins/mjolnir/config/schema.md#what-staging-is-per-and-the-two-rules-that-hold-regardless),
 with one entry per role that commits.
 
-⚠️ **What the split does not touch is the pair of rules that hold regardless**, and the strict copy
-of the `all` position is the evidence for that rather than against it: it names a credential file
-outright. So `all` is *no path filtering* and has never been *no scanning*, which is the distinction
-a per-role key has to keep and the one a reader skimming two opposite instructions would lose.
+The split does not touch the pair of rules that hold regardless; the strict copy of the `all`
+position names a credential file outright. So `all` is *no path filtering*, never *no scanning*.
 
 ### A save is owed at a compaction boundary, and nothing delivers one
 
 A window is summarised without being asked, long before a session ends, and what the summary dropped
 is unrecoverable from inside the session — the measurements are
 [above](#the-window-is-a-resource-the-loop-spends). That makes a compaction a save point like any
-other, which is
+other:
 [`schema.md § 23 → When a save is owed`](../plugins/mjolnir/config/schema.md#when-a-save-is-owed-and-the-boundary-it-names).
 
-⚠️ **The mechanism that would have handed the role that boundary is unavailable, and the limit is
-recorded rather than designed around.** The event that fires before a window is compacted is one of
-two that **never fired** in the measurement that built
+The event that fires before a window is compacted is one of two that **never fired** in the
+measurement that built
 [`schema.md § 7`'s table](../plugins/mjolnir/config/schema.md#what-a-hook-can-establish-about-the-role-it-is-running-under),
-so what it carries is unestablished and a rule resting on it would be written against a measurement
-nobody has taken. The role therefore takes the boundary when it notices one, the artifact names
-which boundary it was, and the cost — a compaction nobody saved before costs the window — is stated
-on the surface instead of being discovered by whoever loses one.
+so what it carries is unestablished. The role therefore takes the boundary when it notices one, the
+artifact names which boundary it was, and the cost — a compaction nobody saved before costs the
+window — is stated on the surface.
 
-⚠️ **Two of the item's acceptance bullets split at exactly that line**, one of them decidable and
-one of them only decidable as far as the artifact's fields. Which end of that split the carrier
-holds, and what it does not reach, is the reach of a check and belongs where every other check's
-reach does —
+What the carrier can decide here stops at the artifact's fields; that reach is recorded with every
+other check's —
 [`docs/single-source-of-truth.md`](single-source-of-truth.md#the-bookkeeping-roles-derivations-and-the-round-trip-that-is-the-resumability-arm).
 
 ## The memory store is derived from the working directory
 
-The memory third of the bookkeeping role was the one third of it with no store on the surface at
-all. What it writes to was found by reading the memory step of every copy that carries one and by
-asking where the store this project itself refreshes lives, and the answer is the reason the facet
-is not a path key:
+The memory third of the bookkeeping role had no store on the surface. Where it writes was found by
+reading the memory step of every copy that carries one and where this project's own store lives,
+and the answer is why the facet is not a path key:
 [`schema.md § 25`](../plugins/mjolnir/config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from).
 
 ### What the copies' memory steps say, read rather than assumed
 
-Every copy that carries the role whole carries a memory step, and the four of them were read
-against each other. ⚠️ **They agree on more than the surface needed and disagree on exactly one
-thing**, which is what decided the facet's shape:
+Every copy that carries the role whole carries a memory step; the four agree on all but one
+thing, which decided the facet's shape:
 
 | what was read | how many copies | what it decided |
 |---|---|---|
@@ -2309,29 +2062,28 @@ thing**, which is what decided the facet's shape:
 | prefer recording the measurement over the conclusion — a memory saying *X is slow* rots in a way one carrying the figure and the date does not | one | **the write-time half, invented independently**: this is `provenance` and `premise` in prose, and it is the strongest evidence the entry form has |
 | the tree hazard, at all | **one of the four** | the hazard is real and is not generally known: three copies of the same step, on the same harness, say nothing about it |
 
-**The one copy that does state it states it twice, and the second statement is a repair rather than
-a rule.** It carries a standing instruction to run the role from the main checkout, and a
+**The one copy that states it states it twice, the second time as a repair.** It carries a standing
+instruction to run the role from the main checkout, and a
 script that **symlinks each worktree's derived directory to the checkout's**, with the diagnosis
 written out in the script's own header: the harness derives its per-project directory from the
 working directory, so a worktree session gets one with no store in it — no index is loaded, and
 anything saved lands where the main checkout never reads it.
 
-⚠️ **That repair is what `carrier: path` is for, and not what `derived` plus `any_tree` is**, which
-is worth being exact about because it is the first question the refusal at
+That repair is what `carrier: path` is for, not what `derived` plus `any_tree` is — the first
+question the refusal at
 [`schema.md § 25 → write_from`](../plugins/mjolnir/config/schema.md#write_from-and-the-pair-of-outcomes-a-refusal-is-one-half-of)
 raises. A project that has linked its trees' directories has *made the store pinnable*: it names
 that one path, every tree writes it, and the link is how the harness's own loader comes to agree
 with the pin. The refused pair is the other case — a project that has done nothing, where *wherever
 the session is standing* really is a different store.
 
-**The measurement in this repository**, which is the copy that has done nothing and is therefore
-the one the `derived` arm is written from. The agent harness keeps a per-project directory and
-derives its name from the **absolute path of the working directory**. At the time this was read the
-harness held five such directories for this one repository — the primary checkout's and one for each
-of four worktrees cut from it — and the store existed under the checkout's alone. The other four
-carried transcripts and no store. So a session standing in a tree had: no index to load, and nowhere
-a save would write that the checkout would ever read. Nothing announced either half; the save
-reports success.
+**The measurement in this repository**, the copy that has done nothing and the one the `derived` arm
+is written from. The agent harness keeps a per-project directory and derives its name from the
+**absolute path of the working directory**. When read, the harness held five such directories for
+this one repository — the primary checkout's and one for each of four worktrees cut from it — and
+the store existed under the checkout's alone. The other four carried transcripts and no store. So a
+session standing in a tree had: no index to load, and nowhere a save would write that the checkout
+would ever read. Nothing announced either half; the save reports success.
 
 | what was measured | what follows |
 |---|---|
@@ -2339,8 +2091,8 @@ reports success.
 | a store under the checkout's directory and under none of the four trees' | a session in a tree loads no index and writes where nothing reads |
 | nothing in either half says so | the hazard is silent, which is what makes it a rule rather than a caution |
 
-**A moved or renamed checkout is the same failure without a tree**, which is why the facet is not
-scoped to the worktree branch model: the derived name changes with the path, and the old store is
+**A moved or renamed checkout is the same failure without a tree**, so the facet is not scoped to
+the worktree branch model: the derived name changes with the path, and the old store is
 orphaned.
 [`schema.md § 24`](../plugins/mjolnir/config/schema.md#what-a-load-may-not-assume-survived)
 already lists a moved checkout among what a load must not assume survived, and this is what it
@@ -2352,48 +2104,44 @@ is where all three of those land.
 
 ### Why two carriers rather than one path key
 
-The obvious shape — a path every project writes — was tried against this project first and does not
-survive it. The store this repository refreshes is the harness's own derived directory; a path
-written in the configuration would create a **second** store, one the procedure writes and the
-harness's own machinery ignores. That is two records of one thing allowed to disagree, which is the
-defect the whole toolkit exists to delete, so the honest value for a project in that position is a
-statement that the harness decides and the procedure must not guess.
+A path every project writes does not survive this project. The store this repository refreshes is
+the harness's own derived directory; a path written in the configuration would create a **second**
+store, one the procedure writes and the harness ignores — two records of one thing allowed to
+disagree. The value for a project in that position states that the harness decides and the
+procedure must not guess.
 
-What the two carriers buy is therefore different in kind rather than in degree, and the table at
+The two carriers differ in kind, not degree, and the table at
 [`schema.md § 25 → The carriers`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
 is the comparison: a pinned store closes the hazard by construction and owes the project one thing
 to keep true, while a derived store closes nothing by construction and has every open half it leaves
 reported instead. Neither is the better configuration in general; which one a project gets is a
 property of where its store already is.
 
-**Why the absent case is a carrier and not a null path.** The first form of this facet made the
-block optional — written where `session.parts` names the third, refused where it did not. It is
-wrong for a mechanical reason found by this repository's own gate: every configuration here is held
-to carrying every top-level key the surface declares, so an optional block is a block three of the
-five shipped examples could not write. The absent case is therefore `carrier: none` with a reason,
-exactly as every other facet's is, and what keeps that from being a second statement of the thirds
-list is that the reader refuses every disagreement between the two —
+**Why the absent case is a carrier and not a null path.** The block is not optional — not even
+written where `session.parts` names the third and refused where it does not — for a reason found by
+this repository's own gate: every configuration here is held to carrying every top-level key the
+surface declares, so an optional block is one three of the five shipped examples could not write.
+The absent case is `carrier: none` with a reason, as every other facet's is, and it is not a second
+statement of the thirds list because the reader refuses every disagreement between the two —
 [`schema.md § 25 → The carrier and the third have to agree`](../plugins/mjolnir/config/schema.md#the-carrier-and-the-third-have-to-agree-in-both-directions).
 
-⚠️ **A second mechanical finding, recorded because it decided a key's shape.** `write_from` was
-first marked `# default: main_tree`. A marked default is applied by creating whatever blocks it
-needs to land in, so the default wrote a `memory` block into every project — including the shipped
-collection example, which then stopped loading, naming a store it does not configure. No key under
-this block carries a default, and the reason is that rather than a preference about defaults.
+No key under this block carries a default. A marked default is applied by creating whatever
+blocks it needs to land in, so `# default: main_tree` on `write_from` wrote a `memory` block into
+every project — including the shipped collection example, which then stopped loading, naming a
+store it does not configure.
 
 ### What a refusal buys over a convention
 
-The standing practice before this facet was a rule held in one project's prose: run the bookkeeping
-role from the main checkout and reach into the tree with an explicit path. It is correct and it is
-unenforceable, which is the shape this toolkit replaces everywhere else. `write_from` is that rule
-made a value, and the thing it buys is the **pair of outcomes** at
+One project's prose holds the rule: run the bookkeeping role from the main checkout and reach into
+the tree with an explicit path. It is correct and unenforceable. `write_from` is that rule made a
+value, and it buys the **pair of outcomes** at
 [`schema.md § 25 → write_from`](../plugins/mjolnir/config/schema.md#write_from-and-the-pair-of-outcomes-a-refusal-is-one-half-of):
 either the one store was written, or the third refused and the reply names it. A third that quietly
 wrote nothing reads exactly like one that wrote.
 
 **Which working directory a session is standing in is read from git and never from the
-configuration**, and that is the part worth recording: § 1 resolves a work tree against that tree's
-own files, so a session in a tree resolves the *tree* as its skills root. Comparing a working
+configuration.** § 1 resolves a work tree against that tree's own files, so a session in a tree
+resolves the *tree* as its skills root. Comparing a working
 directory against the resolved root answers *yes, this is the checkout* in exactly the case the
 facet is written about. What answers it instead is `--git-dir` against `--git-common-dir`, which
 differ in a linked worktree and agree in the checkout — and where git answers neither, the decision
@@ -2408,12 +2156,11 @@ index is not, being the file every session reads and rewrites.
 [`schema.md § 25 → The index`](../plugins/mjolnir/config/schema.md#the-index-is-the-one-file-two-sessions-contend-on)
 makes the write an append under a lock rather than a read, an edit and a write back.
 
-⚠️ **The measurement that decided how that is tested.** The obvious assertion — many sessions
-writing at once, every entry still present — **passes with no lock at all**: twelve processes each
-appending one short line kept all twelve lines with the `flock` call removed. So the outcome arm
-does not reach the mechanism, and a second arm holds it directly: with one process holding the lock,
-a second writer must wait. That one is the single assertion that reddens when the lock goes. The two
-arms and what each reaches are in
+The outcome assertion — many sessions writing at once, every entry still present — **passes with no
+lock at all**: twelve processes each appending one short line kept all twelve lines with the `flock`
+call removed. A second arm holds the mechanism directly: with one process holding the lock, a second
+writer must wait, the single assertion that reddens when the lock goes. The two arms and what each
+reaches are in
 [`docs/single-source-of-truth.md`](single-source-of-truth.md#the-memory-store-the-write-decision-and-the-two-arms-on-the-index).
 
 ### Write-time admission, and the half a reader cannot recover
@@ -2424,12 +2171,11 @@ time** — what may be committed, with what provenance — and a **re-check at r
 prompt-level filtering of a store that is already wrong as repeatedly insufficient. A store whose
 only policy is *the save writes it* has neither.
 
-⚠️ **And one of the surveyed copies had already reached the write-time half on its own**, in its own
-words: prefer recording the measurement over the conclusion, because a memory saying *X is slow*
-rots in a way one carrying the figure and the date does not. That is this rule arrived at from
-inside the practice rather than from the literature, which is the same convergence the extraction
-argument rests on [above](#the-strongest-argument-for-extraction-is-not-borrowed) — and it is why
-the form asks for the source and not only for a label.
+One surveyed copy reached the write-time half on its own: prefer recording the measurement over
+the conclusion, because a memory saying *X is slow* rots in a way one carrying the figure and the
+date does not — the convergence the extraction argument rests on
+[above](#the-strongest-argument-for-extraction-is-not-borrowed), and the reason the form asks for
+the source and not only for a label.
 
 So the entry form carries the fact, its provenance, what it was established from, and the premise it
 rests on, and the admission runs before anything is written:
@@ -2440,50 +2186,44 @@ reflects what was true when it was written
 so an entry that does not say what would falsify it obliges its reader to invent the check — and a
 repeated fact rendered identically to a measured one becomes a measured one by being read twice.
 
-⚠️ **What the rule reaches is the entry's shape and not its truth**, and the split is stated rather
-than implied: that a fact carries its provenance and its premise is decidable, and whether the
-premise still holds is read against the tree by whoever reads the fact. `asof` was considered for
-the form and left out for that reason — a date says when a fact was written, not whether it is still
-true, so it would answer staleness with a number that reads like an answer.
+The rule reaches the entry's shape, not its truth: that a fact carries its provenance and its
+premise is decidable, and whether the premise still holds is read against the tree by
+whoever reads the fact. `asof` was left out of the form for that reason — a date says when a fact
+was written, not whether it is still true, so it would answer staleness with a number that reads
+like an answer.
 
 ### What the admission costs a store it cannot reach
 
-⚠️ **Measured in this repository, which is the only project here that runs the memory third and the
-copy the `derived` arm was written from.** The admission is held by the one command that places a
-fact in the store, and under a derived carrier that command composes no path and writes nothing:
-handed a complete entry it answers that there is no directory for it to write a fact into and no
-index for it to lock. So every entry in that store is in the harness's own shape — a leading YAML
+Measured in this repository, the only project here that runs the memory third. The admission is
+held by the one command that places a fact in the store, and under a derived carrier that command
+composes no path and writes nothing: handed a complete entry it answers that there is no directory
+for it to write a fact into and no index for it to lock. So every entry in that store is in the
+harness's own shape — a leading YAML
 document carrying a name, a one-line description and a subject label, then the fact as prose — and
 not one of them has been through the rule.
 
-What makes it a **third** cost rather than a restatement of the two already reported is the way it
-fails: the index's contention loses work somebody did and a moved checkout orphans it, both of which
-a reader eventually notices, while an unprovenanced fact reads exactly like a provenanced one
-forever. The table at
+It is a **third** cost by the way it fails: the index's contention loses work and a moved checkout
+orphans it, both of which a reader eventually notices, while an unprovenanced fact reads exactly
+like a provenanced one forever. The table at
 [`schema.md § 25 → The carriers`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes)
-is where the three are stated, and this document carries no second list of them — ⚠️ **which is the
-discipline this measurement is itself an instance of failing**: the first form of the change wrote
-the enumeration into this document, the decision record, the live configuration, an example and a
-role's own procedure, five copies of a list whose mis-statement was the finding.
+states the three.
 
-⚠️ **The read-time check met the same wall from the other side.** A reading written for the entry
+The read-time check meets the same wall from the other side. A reading written for the entry
 form alone refuses a store-shaped entry as a file that is not one YAML document — true, and it tells
 its reader nothing about what they are holding. The rules that replaced it are at
 [`schema.md § 25 → What a reader does with a store whose admission never ran`](../plugins/mjolnir/config/schema.md#what-a-reader-does-with-a-store-whose-admission-never-ran),
 and each of them fails in the direction that under-claims.
 
-**The layout the carrier reads, which is the measurement and not the rule.** The store this
+**The layout the carrier reads.** The store this
 repository's harness keeps holds each fact as a file opening with a `---`-fenced YAML document —
 `name`, a one-line `description`, and a `metadata` block whose `type` is one of a small set of
 subject words — followed by the fact itself as prose. That is the one foreign layout the carrier
-reads, and the surface defers to it rather than describing it, a store's own layout being the
-harness's fact.
+reads, and the surface defers to it, a store's own layout being the harness's fact.
 
-⚠️ **The mapping a reader reaches for first is the one that must not be made.** `metadata.type` says
-which part of the project a fact is about; a provenance is an evidence class. Reading the first as
-the second would make every fact in the store *measured* by construction, which is precisely what
-the provenance field exists to prevent — and it is the reason the rule is written as *no key of a
-foreign shape*, rather than as a list of keys not to read.
+⚠️ `metadata.type` is not a provenance: it says which part of the project a fact is about, and a
+provenance is an evidence class. Reading the first as the second would make every fact in the store
+*measured* by construction, which the provenance field exists to prevent — hence the rule *no key
+of a foreign shape*, not a list of keys not to read.
 
 ### Reporting a fact stale rather than restating it
 
@@ -2493,33 +2233,29 @@ reading that can only ever say *unchecked* renders **nothing checked it** and **
 true** identically, and a fact whose premise has gone has no way of being reported at all except in
 the prose of whoever happened to notice.
 
-[`schema.md § 25 → The standing a recalled fact is reported under`](../plugins/mjolnir/config/schema.md#the-standing-a-recalled-fact-is-reported-under)
-is where that lands. What is worth recording beside it is the one decision in it that is **not**
-symmetric, because it reads as an oversight until the argument is written out: *current* over an
-entry stating no premise is refused and *stale* over the same entry is not. The two answers do not
-cost the same thing. A reader who has found the fact wrong has found that out whatever the entry
-says, and treating it as stale under-claims; a reader who says the premise holds when the entry
-stated none has asserted the fact, which over-claims. Refusing both would be refusing the safe
-answer for the unsafe one's reason.
+[`schema.md § 25 → The standing a recalled fact is reported
+under`](../plugins/mjolnir/config/schema.md#the-standing-a-recalled-fact-is-reported-under) is where
+that lands. One decision in it is **not** symmetric: *current* over an entry stating no premise is
+refused and *stale* over the same entry is not. The two answers do not cost the same. A reader who
+has found the fact wrong has found that out whatever the entry says, and treating it as stale
+under-claims; a reader who says the premise holds when the entry stated none has asserted the fact,
+which over-claims. Refusing both would be refusing the safe answer for the unsafe one's reason.
 
-⚠️ **What the whole mechanism buys is that the three are told apart at all**, and that the exit
-status a caller reads keeps a stale fact off the one a current fact gets. Whether the reader's own
-reading of the premise against the tree is right is outside it — the same split the admission
-carries one half over.
+The mechanism tells the three apart, and the exit status a caller reads keeps a stale fact off the
+one a current fact gets. Whether the reader's reading of the premise against the tree is right is
+outside it — the same split the admission carries.
 
 ## The third surface: one store read whole, and the classes the loop's share misses
 
-The facet above says where a project's memory store **is**. This section is about what is **in**
-one, together with the project's own instructions file — the two stores a migration leaves standing
-when it deletes a project's loop carriers and writes its configuration. The ruling is
+The facet above says where a project's memory store is; this section measures what is in one,
+together with the project's own instructions file — the two stores a migration leaves standing when
+it deletes a project's loop carriers and writes its configuration. The ruling is
 [`schema.md § What a project already holds`](../plugins/mjolnir/config/schema.md#what-a-project-already-holds-that-states-the-loop-and-what-adopting-it-does-to-that);
 what follows is the measurement it was taken on.
 
-**Measured 2026-11-24, on project E**, which is the project whose two surfaces are in the shape the
-question was raised about. ⚠️ **The date carries the same weight it does in
-[`build-surface.md`](build-surface.md)**: these are living stores that move independently of this
-repository, so every figure below is a figure re-taken rather than trusted, which the last
-subsection makes a bound on re-using any of it.
+**Measured 2026-11-24, on project E.** As in [`build-surface.md`](build-surface.md), these are
+living stores that move independently of this repository, so every figure below is re-taken before
+it is re-used (see the last subsection).
 
 ### The instructions file, and the four ways it states a loop that has moved
 
@@ -2532,21 +2268,21 @@ A 1,139-line file, and the loop is in it four times over:
 | the gating rule, in its own words — *refuses an issue with any open blocker* | a sentence of its own, which is [`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)'s `no_open_blockers` restated |
 | the status vocabulary and two label conventions, as document bullets rather than as keys | four lines of the same section — which are [`schema.md § 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)'s ordered set and [`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)'s carrier and values |
 
-⛔ **The third row is the one that makes this a second authority rather than a stale link.** A path
-that no longer resolves is discoverable; a gating rule stated in prose beside a configured one is
-two statements of a predicate, and the prose copy is the one a session reads first — which is why
-the file is held as a governed document rather than merely edited
+The third row makes this a second authority rather than a stale link. A path that no longer
+resolves is discoverable; a gating rule stated in prose beside a configured one is two statements
+of a predicate, and the prose copy is the one a session reads first — which is why the file is held
+as a governed document
 ([`schema.md § What each store owes`](../plugins/mjolnir/config/schema.md#what-each-store-owes-and-why-the-two-are-mechanically-different)).
-⚠️ **The first row is the half that has a second reader**: the bare form stays matched for ever by
-the day log's ritual list while the document is rewritten to the namespaced one, which is
+The first row has a second reader: the day log's ritual list matches the bare form for ever while
+the document is rewritten to the namespaced one —
 [`schema.md § The invocation changes`](../plugins/mjolnir/config/schema.md#the-invocation-changes-and-the-two-surfaces-move-in-opposite-directions).
 
 ### The store, read whole: 23 entries, of which 17 are rulings
 
 One file per fact plus the index, with a row in the index for every file and no file the index
-misses. ⚠️ **Classified against the homes that exist now**, which is the point of the exercise: a
-disposition is only sound against a surface somebody can open. The three dispositions and the rule
-that the subject is the whole store rather than its loop rulings are
+misses. Entries are classified against the homes that exist now, since a disposition is only sound
+against a surface somebody can open. The three dispositions, and the rule that the subject is the
+whole store, are
 [`schema.md § Every ruling in those stores is classified`](../plugins/mjolnir/config/schema.md#every-ruling-in-those-stores-is-classified-and-the-subject-is-the-whole-store).
 
 | the entry, by its content | class | disposition |
@@ -2577,66 +2313,57 @@ that the subject is the whole store rather than its loop rulings are
 
 ### The fourth class, which a reading scoped to the loop does not surface at all
 
-**Four of the rulings above are about the shared toolkit and are held in a consumer's store.**
-They are not that project's rulings at all: they state how to file into this backlog, what priority
-an item here carries, where a gap goes, and that nothing here names a technology. ⛔ **Left where
-they are, they are read by the one project's sessions and by no other's, which is this argument in
-its purest form** — the subject is the shared thing and the store is one consumer's.
+Four of the rulings above are about the shared toolkit and are held in a consumer's store: how to
+file into this backlog, what priority an item here carries, where a gap goes, and that nothing here
+names a technology. Left where they are, they are read by that one project's sessions and by no
+other's — the subject is the shared thing and the store is one consumer's.
 
-⚠️ **The class is confirmed independently in a second store**, measured the same day: another
-project of the set carries an entry whose subject is a guard **in this repository**, naming this
-repository by a path on the machine. ⛔ **So the direction is not one project's habit.** That second
-store is otherwise a different shape entirely — hundreds of entries, an index whose rows are rolled
-up rather than one line each, and its own language — which is why the inventory above is one store's
-and the class is the finding.
+A second store, measured the same day, confirms the class: another project of the set carries an
+entry whose subject is a guard in this repository, naming it by a path on the machine. That store is
+otherwise a different shape — hundreds of entries, an index whose rows are rolled up rather than one
+line each, and its own language — so the inventory above is one store's and the class is the
+finding.
 
 ### A disposition is re-taken and never cited
 
-⛔ **Both of this classification's inputs move: the store is live, and so is the surface the
-dispositions name.** Three of the sections the table above sends a ruling to are newer than the
-question it answers, and the figures in the item that raised that question are that item's —
-⛔ **not repeated here**, by the rule that an artifact states what is true now
+Both inputs move: the store is live, and so is the surface the dispositions name. Three of the
+sections the table sends a ruling to are newer than the question it answers, and the figures in the
+item that raised that question are not repeated here
 ([`schema.md § An artifact states what is true now`](../plugins/mjolnir/config/schema.md#an-artifact-states-what-is-true-now)).
 
-⚠️ **So the rule this subsection exists to state is a bound on re-use**: a disposition above holds
-as of the date at the head of this section, and is **re-derived** rather than quoted by whoever
-classifies the next store. ⛔ **The one thing that does not need re-deriving is the form** — the
-three dispositions, and that a homeless ruling is named — which is procedure and is on the surface.
+A disposition above holds as of the date at the head of this section and is re-derived, not quoted,
+by whoever classifies the next store. The form — the three dispositions, and that a homeless ruling
+is named — is procedure, is on the surface, and needs no re-deriving.
 
 ### What the forbidding kind cannot hold here, and why no entry is written for this repository
 
 [`schema.md § 38`](../plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property)'s
-`forbidden` is what holds the instructions-file half in an adopting project. ⛔ **This repository
-writes no such entry for itself, and the reason is measured rather than conceded.** Swept over the
-21 governed documents, a pattern for the bare form of every loop name matches **exactly one line** —
-a measurement in a role's own carrier, stating that one project's transcripts carry the namespaced
-and the bare form side by side, which is why the day log's ritual list reads both. ⛔ **That document
-is correct**, and a lexical ban cannot tell it from one naming a dead route. ⚠️ **It is the failure
-[the sweep for the role-resolution shortcut](#the-shortcut-one-copy-names-outright) reproduced inside
-the change that introduced it**, arriving one facet over and in the same direction: a forbidding
-check about a rule is the one most likely to forbid the prose that states it. ⛔ **An adopting
-project is not in that position** — its documents have no reason to quote the form as evidence — so
-the entry is sound there and stated as that project's rather than as this one's.
+`forbidden` is what holds the instructions-file half in an adopting project. This repository writes
+no such entry for itself. Swept over the 21 governed documents, a pattern for the bare form of every
+loop name matches exactly one line — a measurement in a role's own carrier, stating that one
+project's transcripts carry the namespaced and the bare form side by side, which is why the day
+log's ritual list reads both. That document is correct, and a lexical ban cannot tell it from one
+naming a dead route; this is the failure
+[the sweep for the role-resolution shortcut](#the-shortcut-one-copy-names-outright) also met: a
+forbidding check about a rule is the one most likely to forbid the prose that states it. An adopting
+project's documents have no reason to quote the form as evidence, so the entry is sound there and is
+stated as that project's.
 
 ## The day log's destination port
 
-The destination was on this surface from the start, and as one key: a directory, in the section
-that measures a day. That is the shape
-[`schema.md § 26`](../plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port) replaced,
-and what follows is the argument it was replaced on rather than a second statement of the rule.
+The destination began as one key: a directory, in the section that measures a day. That is the
+shape [`schema.md § 26`](../plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port)
+replaced; what follows is the argument for the replacement.
 
-**The surveyed copies all wrote a file**, which is why nothing in the original survey put this in
-tension: a directory addresses a file store completely, and a single implementation needs no
-contract. What moved it afterwards is below, and none of it is about files being insufficient.
+The surveyed copies all wrote a file, and a directory addresses a file store completely. None of the
+reasons below is about files being insufficient.
 
 - **The store is read back, and not only written.** § 9's own cross-day validation already reads
   every recorded day, and against a directory of per-day text files that is a filename convention
-  the surface never stated. ⚠️ **A second reader is proposed and not built** — the role that takes
-  a period's line items out of the same store is in
-  [`divergences-and-rulings.md`](divergences-and-rulings.md)'s still-open list — so what carries
-  this is the reader that exists, with the proposed one as the reason the shape has to admit
-  another. An operation with a stated absent case is what already answers this everywhere else
-  here.
+  the surface never stated. A second reader — the role that takes a period's line items out of the
+  same store — is proposed and not built
+  ([`divergences-and-rulings.md`](divergences-and-rulings.md)'s still-open list); the shape has to
+  admit it. An operation with a stated absent case is what answers this everywhere else here.
 - **The grain of the two values differs by consumer.** Hours aggregate across days and a
   description does not, so the store has to be readable for hours over a range without the
   descriptions being what is read — which a store addressed as *a directory of entries* cannot
@@ -2646,143 +2373,126 @@ contract. What moved it afterwards is below, and none of it is about files being
   ([`schema.md § 11`](../plugins/mjolnir/config/schema.md#the-store-and-when-an-in-tree-store-is-safe))
   cannot carry one either.
 - **The day-log role's own rules were written in one carrier's vocabulary.** *A redo deletes the
-  file and writes a new one* is how a **file** is rebuilt whole; a spreadsheet row is replaced, and
-  a store with no delete would be patched in place — which is the thing the rule exists to forbid.
-  The rule was right and its statement was not portable, which is the diagnosis that makes this a
-  port rather than a second key, and the same reading reaches every other place that skill said
-  *the file* where it meant *the entry*.
+  file and writes a new one* is how a file is rebuilt whole; a spreadsheet row is replaced, and a
+  store with no delete would be patched in place — the thing the rule exists to forbid. The rule
+  was right and its statement was not portable, which makes this a port rather than a second key,
+  and the same reading reaches every other place that skill said *the file* where it meant *the
+  entry*.
 
 ### The section a port's operation list is read from had to become a parameter
 
-⛔ **The contract finds an operation list by its table's column headers and refuses a second one.**
-Measured, by appending a second table with those headers to the surface and asking the contract for
-the list: it came back refused, with the operation list stated more than once and the tables free to
-disagree. That refusal is correct, and it is also what made a second port impossible while the
-section the contract read was a constant —
+The contract finds an operation list by its table's column headers and refuses a second one:
+appending a second table with those headers to the surface and asking for the list comes back
+refused, the operation list stated more than once and the tables free to disagree. That refusal is
+correct, and it made a second port impossible while the section the contract read was a constant —
 [`schema.md § 26 → Which section`](../plugins/mjolnir/config/schema.md#which-section-a-ports-operation-list-is-read-from)
-is the shape that resolved it, and the alternative it was chosen over was a sibling module.
+is the shape that resolved it, chosen over a sibling module.
 
-⚠️ **A second copy of the contract per port was the obvious move and is the worse one.** A copy is
-a second place a fallback could be defaulted, which is the defect the contract's own docstring
-exists to refuse — so what is parameterised is the lookup, and a port is three facts carried by one
-marker on the line stating its kind.
+A second copy of the contract per port would be a second place a fallback could be defaulted — the
+defect the contract's own docstring refuses — so what is parameterised is the lookup, and a port is
+three facts carried by one marker on the line stating its kind.
 
-⚠️ **The marker's own limit is stated rather than discovered**: two near-miss spellings come back
-**dropped** rather than refused — a clause that lost its colon, which is indistinguishable from
-English prose, and a capitalised keyword, matched case-sensitively like every other clause there.
-⛔ **What catches a marker lost that way is the contract and not the reader**
+Two near-miss spellings of the marker come back **dropped**, not refused — a clause that lost its
+colon, which is indistinguishable from English prose, and a capitalised keyword, matched
+case-sensitively like every other clause there. What catches a marker lost that way is the contract,
+not the reader
 ([`schema.md § 26 → Which section`](../plugins/mjolnir/config/schema.md#which-section-a-ports-operation-list-is-read-from)):
 its section's table then belongs to no port, which is refused as an operation list nothing reads.
-⚠️ **The reader's own inventory comparison catches it only where the surface is left declaring no
-port at all** — with another port still declared the inventory is non-empty and that comparison is
-silent, which is why the comparison is written out rather than derived but is not what holds this.
+The reader's inventory comparison catches it only where the surface is left declaring no port at
+all; with another port still declared the inventory is non-empty and that comparison is silent.
 
 ### Where the directory went, and why it is still not required
 
 The directory key moved under the kind it was always addressing —
 [`schema.md § 26 → What each kind`](../plugins/mjolnir/config/schema.md#what-each-kind-of-destination-block-carries).
-⚠️ **It is deliberately still unmarked**, which is the position § 3 already takes on the three
-state-mapping keys in its own per-kind blocks and for the same reason: whether a project needs a
-destination at all is the carrier axis's question, so an absent directory is a decision this reader
-cannot tell from an oversight.
+It is deliberately unmarked, as § 3 leaves the three state-mapping keys in its per-kind blocks:
+whether a project needs a destination at all is the carrier axis's question, so an absent directory
+is a decision this reader cannot tell from an oversight.
 
-⛔ **What makes that safe rather than lax is that the reader reports it**, which is the route an
-unset evidence script already takes: a project mapping the day-log carrier and stating no directory
-for the file kind gets the key in `unavailable`, and the role says what it could not record —
+The reader reports it instead, as it does an unset evidence script: a project mapping the day-log
+carrier and stating no directory for the file kind gets the key in `unavailable`, and the role says
+what it could not record —
 [`schema.md § 11 → A report names what it could not establish`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish).
 
-⚠️ **The conditional marker was measured and rejected here.** The kind defaults to the file kind, so
-a condition on that kind fires for every configuration — including one that writes no `day_log`
-block at all, which the reader's own defaults create on the way past. Marking the directory
-conditionally required would therefore refuse a project that maps no day-log carrier, which is the
-one project certain not to need it.
+The conditional marker does not fit. The kind defaults to the file kind, so a condition on that kind
+fires for every configuration — including one that writes no `day_log` block at all, which the
+reader's own defaults create on the way past. Marking the directory conditionally required would
+refuse a project that maps no day-log carrier, the one project certain not to need it.
 
 ### The grain, and the address
 
-⛔ **One entry per day per project**, which the skills root already decides rather than this port
-adding anything —
+One entry per day per project, which the skills root already decides —
 [`schema.md § 26 → One entry per day`](../plugins/mjolnir/config/schema.md#one-entry-per-day-and-the-day-belongs-to-one-project).
-The alternative considered was one entry per day across projects with the project named inside the
-entry, and it loses to a rule the day log already carries: the entry is the two values and nothing
-else, which a project name inside it would be the first thing to break. ⚠️ **A shared timesheet is
-the first store two projects would write to**, and it is answered by the store partitioning rather
-than by the entry growing a third value.
+One entry per day across projects, with the project named inside the entry, loses to a rule the day
+log already carries: the entry is the two values and nothing else, which a project name inside it
+would be the first thing to break. A shared timesheet, the first store two projects would write to,
+is answered by the store partitioning, not by the entry growing a third value.
 
-⛔ **A destination block carries an address and never a credential**, which is why this surface
-declares no key for one —
+A destination block carries an address and never a credential, so this surface declares no key for
+one —
 [`schema.md § 26 → The store's address`](../plugins/mjolnir/config/schema.md#the-stores-address-and-what-may-not-be-written-beside-it).
-⚠️ **That is a bound on what may be *written* in the block and not on which kinds may exist**, which
-is how the first kind behind a service came to be statable without the rule moving: the credential
-is named in `environment.inherits` and carried by the shell, exactly as a tracker kind behind a
-service already did it.
+That bounds what may be written in the block, not which kinds may exist: the credential is named in
+`environment.inherits` and carried by the shell, exactly as a tracker kind behind a service does it.
 
 ### The spreadsheet kind, and the three things it had to settle that a directory never did
 
-⛔ **The reading half of this port is what the kind was stated for** —
+The kind was stated for the reading half of this port —
 [`schema.md § 26 → The destination's operations`](../plugins/mjolnir/config/schema.md#the-destinations-operations-and-what-each-absence-does).
 A directory answers a period by being listed and parsed per entry; a spreadsheet already holds a
-column of figures against a column of days, which is what a period's consumer sums.
-⚠️ **The descriptions ride in a column of their own and are not a period's line items** — those are
-stated at a grain the day log is deliberately below.
+column of figures against a column of days, which is what a period's consumer sums. The
+descriptions ride in a column of their own and are not a period's line items, which are stated at a
+grain the day log is deliberately below.
 
 **The sheet's shape is the project's.** A person who already keeps a timesheet has their own header
 words in their own order, so the kind configures a mapping from the surface's three roles to the
 sheet's own words and resolves it against the tab's header row —
 [`schema.md § 26 → What each kind`](../plugins/mjolnir/config/schema.md#what-each-kind-of-destination-block-carries).
-⛔ **Every way that resolution fails is a refusal naming the key**: a word the sheet does not carry,
-a word two of its columns carry, two roles landing on one column. ⚠️ **The alternative was a fixed
-layout**, which refuses every sheet that already exists — and the failure a looser mapping has is
-not a refusal at all: a figure written into whichever cell happened to be third reads as a run that
-worked, and the period read back out is short with nothing saying so.
+Every way that resolution fails is a refusal naming the key: a word the sheet does not carry, a word
+two of its columns carry, two roles landing on one column. A fixed layout would refuse every sheet
+that already exists, and a looser mapping fails without a refusal: a figure written into whichever
+cell happened to be third reads as a run that worked, and the period read back is short with
+nothing saying so.
 
-**Values, never formulas, and the rule binds the read as well as the write.** A summing formula in
-the sheet is a second statement of the period and a stale one is a wrong invoice, so the write asks
-the host not to parse what it is given and the read asks for what was *entered* rather than for what
-is displayed. ⚠️ **A formula in the hours cell is therefore an unreadable day and never the number
-it currently shows** — which is the one shape of that reading that answers with a plausible figure
-instead of with nothing.
+**Values, never formulas, on the read as well as the write.** A summing formula in the sheet is a
+second statement of the period and a stale one is a wrong invoice, so the write asks the host not to
+parse what it is given and the read asks for what was *entered*, not what is displayed. A formula in
+the hours cell is therefore an unreadable day, never the number it currently shows.
 
-⛔ **And nothing holds a spreadsheet against two writers, which is reported rather than designed
-around** —
+**Nothing holds a spreadsheet against two writers**, and that is reported —
 [`schema.md § 26 → What each kind`](../plugins/mjolnir/config/schema.md#what-each-kind-of-destination-block-carries).
 The file kind makes *one entry per day* a property of the file system by opening
 exclusively; a spreadsheet has no such call and the host publishes no compare-and-swap. So the write
 reads the day back and **fails naming both rows** where it finds two, and a person removes one.
-⚠️ **The limit is stated rather than closed**: a second row is still possible, and what the kind
-guarantees is that no period is answered with the doubled total.
+A second row is still possible; what the kind guarantees is that no period is answered with the
+doubled total.
 
-⚠️ **One limit of the read is worth writing down because it looks like an oversight.** A date cell
-holding a real date comes back as a serial number, and the epoch those count from is a property of
-the spreadsheet this host's API does not publish — so such a row is reported as one the kind cannot
-place in a day, rather than placed by guessing an epoch. ⛔ **That is the fail-closed direction**: a
-guess about which day somebody's hours belong to is the thing this port refuses, and the row is
-reported apart from the days for the reason § 26 already gives.
+A date cell holding a real date comes back as a serial number, and the epoch those count from is a
+property of the spreadsheet this host's API does not publish — so such a row is reported as one the
+kind cannot place in a day, not placed by guessing an epoch. That is the fail-closed direction, and
+the row is reported apart from the days for the reason § 26 gives.
 
 ### What `locate` may answer with once an address is private
 
-⛔ **The spreadsheet's identifier is marked `# private`, and the mark bounds the port's own reporting
-operation.** `locate` exists so a role can say where an entry landed, and § 28 keeps a private value
+The spreadsheet's identifier is marked `# private`, and the mark bounds the port's own reporting
+operation. `locate` exists so a role can say where an entry landed, and § 28 keeps a private value
 out of every report — so under this kind `locate` names **the tab and the row** and never the store.
-⚠️ **That is the capability answering rather than its absent case**: the fallback names the store by
-its configuration, and a tab and a row say more than that to whoever can already reach the sheet
-while saying nothing to whoever cannot.
+That is the capability answering, not its absent case: a tab and a row say more than the fallback's
+configuration name to whoever can reach the sheet, and nothing to whoever cannot.
 
-⚠️ **The same bound reaches a failure's own wording**, which is the half that is easy to miss: every
-refusal quotes the call it made, and the identifier is in that call's URL path. What is quoted is
-the part of the path *after* the sheet — the range, the tab and the operation — so a failure says
-what was asked without saying where.
+The same bound reaches a failure's wording: every refusal quotes the call it made, and the
+identifier is in that call's URL path, so what is quoted is the part of the path *after* the sheet —
+the range, the tab and the operation.
 
 ## The role-to-person map: four stores and one pointer
 
-The readiness library carried `assignee_matches_role` with **no configured source for it to read**,
-and the gating role said so in its own text: presence and correspondence are two questions, and
-only the first was answerable. What closed it is
+The readiness library carried `assignee_matches_role` with no configured source for it to read, and
+the gating role said so: presence and correspondence are two questions, and only the first was
+answerable. What closed it is
 [`schema.md § 27`](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map).
 
-**What the survey found was the same map in four places, in four kinds of store** — a sibling
-reference file, a project instructions file, a memory index section, and a memory fact — none of
-them aware of the others. ⛔ **And each copy carries the argument against copying, in its own
-words:**
+The survey found the same map in four places, in four kinds of store — a sibling reference file, a
+project instructions file, a memory index section, and a memory fact — none aware of the others.
+Each copy carries the argument against copying, in its own words:
 
 > Read this file; do not copy the table into a skill. Two gates on one route that each carry their
 > own copy will disagree about the same card, and a copy that has to be «kept in sync» is the defect
@@ -2796,144 +2506,121 @@ about people.
 
 ### Why a pointer rather than a map
 
-The maps hold personal names, handles and tracker member ids. ⛔ **None of that may enter a toolkit
-several projects share**, and the reason is not the one § 14 gives for a credential: an identity is
-a fact about somebody who did not agree to be named in anybody's tooling. So what the facet carries
-is the pointer and the shape, and the lookup is the shared reader's — one implementation, which is
-the half the survey shows four projects did not have.
+The maps hold personal names, handles and tracker member ids. None of that may enter a toolkit
+several projects share, and the reason is not § 14's for a credential: an identity is a fact about
+somebody who did not agree to be named in anybody's tooling. So the facet carries the pointer and
+the shape, and the lookup is the shared reader's — one implementation, which four projects did not
+have.
 
-⚠️ **The cost of the pointer form is named rather than discovered**: all four stores are prose, and
-a reader that parsed one would be guessing at a table's columns in the one facet that may not
-guess, so a project keeping the fact in a document writes a mapping beside it. The alternative
-measured against that was a command carrier, as the ordering facet has — it is what `revisit_when`
-on this facet records, and it was not taken now because one parser is cheaper than one more
-configured command for every project that keeps its map as data already.
+All four stores are prose, and a reader that parsed one would be guessing at a table's columns, so
+a project keeping the fact in a document writes a mapping beside it. A command carrier, as the
+ordering facet has, is what `revisit_when` on this facet records; one parser is cheaper now than one
+more configured command for every project that keeps its map as data already.
 
 ### The shortcut one copy names outright
 
-⛔ **Never resolve a role by asking who the current user is** —
+Never resolve a role by asking who the current user is —
 [`schema.md § 27`](../plugins/mjolnir/config/schema.md#27-the-role-to-person-map). One of the four
-copies states it flatly, and the statement is the measurement: asking the tracker answers *who is
-running the skill*, not *who holds the role*. The two coincide exactly while one person runs
-everything — which is the state every project in the survey was in — and the check then silently
-becomes *assigned to whoever is asking*, green on every item including the ones on the wrong person.
+copies states it flatly: asking the tracker answers *who is running the skill*, not *who holds the
+role*. The two coincide exactly while one person runs everything — the state every project in the
+survey was in — and the check then silently becomes *assigned to whoever is asking*, green on every
+item including the ones on the wrong person.
 
-⚠️ **That failure is why the rule is held in three places rather than argued once.** The reader
-refuses `current_user` wherever a configuration writes it, the sweep over the carrier roots refuses
-the spellings that ask, and the reader's own suite writes a map with one identity in it and the
-shell with another and asserts the answer is the map's. ⛔ **The one thing none of those reaches is a
-role instructed in words to ask**, and a sweep for that is a sweep for every word: what holds it is
+The rule is therefore held in three places. The reader refuses `current_user` wherever a
+configuration writes it, the sweep over the carrier roots refuses the spellings that ask, and the
+reader's own suite writes a map with one identity in it and the shell with another and asserts the
+answer is the map's. None of those reaches a role instructed in words to ask; what holds that is
 § 27 being the single statement of the rule.
 
-⚠️ **The sweep's own grammar reproduced both of its failure directions inside the change that
-introduced it**, which is worth recording because the change's subject *was* this rule: separating
-the two words on `[_-]?` refused a carrier describing the rule in English — *the current-user
-spelling* — and left `--current-user`, the one spelling that cannot be anything but code, unread
-because the lookbehind rejected the dash in front of it. ⛔ **A forbidding check about a rule is the
-one most likely to forbid the prose that states it**, and the only thing that found it was planting
-the English form and watching it redden.
+The sweep's grammar has two failure directions: separating the two words on `[_-]?` refuses a
+carrier describing the rule in English — *the current-user spelling* — and a lookbehind rejecting
+the dash leaves `--current-user`, the one spelling that cannot be anything but code, unread. A
+forbidding check about a rule is the one most likely to forbid the prose that states it; planting
+the English form and watching it redden is what tests it.
 
-⚠️ **Writing an assignee is not the same act**, and keeping the two apart is what makes the rule
-meetable: recording who *took* an item is a fact about this run, so the implementation behind
-`assign` may legitimately translate the running user's own spelling. The sweep is scoped to the
-carrier roots for exactly that reason, and the exemption is asserted on the green side rather than
-left to forbearance.
+Writing an assignee is a different act: recording who *took* an item is a fact about this run, so
+the implementation behind `assign` may translate the running user's own spelling. The sweep is
+scoped to the carrier roots for that reason, and the exemption is asserted on the green side.
 
 ## The half of a configuration no project could commit
 
-The whole payoff of a configuration file is that it is **committed**: five projects each kept their
-own copy of the day-log procedure, and extraction was worth doing because the copy became one
-shared, reviewable statement. ⚠️ **All five git-ignored their copy**, and the reasons are in
-[the decision record](divergences-and-rulings.md) rather than restated here: two had organisational
-reasons of their own — a client's organisation, a second collaborator — and **all five** had the
-archive, every copy reading one private source on the machine the log is kept on. ⚠️ **The
-two-project framing is the narrow one and it was the one this change started from**: the item's own
-text says *two of its five copies*, which is the reason that reaches two rather than the reason that
-reaches every project, and the record was explicit about that distinction before this change
-misread it.
+The payoff of a configuration file is that it is **committed**: five projects each kept their own
+copy of the day-log procedure, and extraction made the copy one shared, reviewable statement. All
+five git-ignored their copy; the reasons are in [the decision record](divergences-and-rulings.md):
+two had organisational reasons of their own — a client's organisation, a second collaborator — and
+all five had the archive, every copy reading one private source on the machine the log is kept on.
 
 The end state the migration's acceptance item named — *only their chat patterns, calendars and
 exclusions local* — had no mechanism behind it, and
 [`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
-is now that mechanism. What it rules, and why a tracked file carrying those values would have
-inverted the payoff rather than collecting it, is stated there.
+is now that mechanism, including why a tracked file carrying those values would invert the payoff.
 
 ### Three shapes, and why the one that shipped is neither of the first two
 
-**Declaring the whole configuration private was rejected on sight.** It un-reviews the procedure to
-protect the values, which is the opposite of what the migration was for.
+**Declaring the whole configuration private** un-reviews the procedure to protect the values, the
+opposite of what the migration was for.
 
-**An overlay file merged over the tracked one** — the obvious shape, and the one the item named
-first — fails for a reason that only shows up when you ask what a *missing* overlay looks like. With
-no list of what the overlay supplies, a layer that is absent is indistinguishable from a layer with
-nothing in it: a day log then quietly measures no chats, under-reports the day and reports success.
-⚠️ And an overlay free to supply any key is the rejected shape arriving one key at a time — nothing
-stops `host.checks` or a readiness list moving out of review.
+**An overlay file merged over the tracked one** fails on a *missing* overlay. With no list of what
+the overlay supplies, an absent layer is indistinguishable from an empty one: a day log then quietly
+measures no chats, under-reports the day and reports success. And an overlay free to supply any key
+is the first shape arriving one key at a time — nothing stops `host.checks` or a readiness list
+moving out of review.
 
 **A pointer per private facet**, as the role-to-person map above has, fails the other way: several
 keys carry the class in § 9 alone, so each would need its own carrier, its own path and its own
 absent case — one fact stated once per key, and a project moving a further value out would be a
 surface change rather than a line in a list.
 
-⛔ **What shipped is the overlay with both of the pointer form's disciplines** — the project names
-the keys, and the surface marks which keys may be named
+What shipped is the overlay with both of the pointer form's disciplines — the project names the
+keys, and the surface marks which keys may be named
 ([`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)).
-Each half closes one of the two failures above, and neither is decoration: without the list a
-missing layer is silent, and without the marks the list is the rejected shape with extra steps.
+Without the list a missing layer is silent; without the marks the list is the first shape again.
 
 ### What was measured while the facet was built
 
-**Three of its rules are ordering or shape decisions that look arbitrary until they are met**, and
-all three were met on this change rather than reasoned about. What each of them *is* is
-[`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)'s;
-what is recorded here is the measurement behind it.
+Three ordering and shape rules of
+[`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
+rest on these measurements:
 
 - **Requiredness against the list.** Enforcing requiredness before reading the list refused the
-  migrated example outright, on the archive address it had legitimately moved out — the facet's own
-  shipped shape rejected by the facet.
+  migrated example outright, on the archive address it had legitimately moved out.
 - **Presence against value.** A gate that asked whether the private file *carried* a listed key
   passed a layer holding it with null under it, and the day log then counted every committer as the
-  log's owner. The same question asked of the tracked half had always been about the value; the two
-  halves now read one test, and the asymmetry was the whole of the defect.
+  log's owner. The two halves now read one test, on the value.
 - **A block read.** `day_log.evidence` answered with the tracked file's shape — six keys resolved to
-  nothing, no stop — while the leaf reads every consumer actually makes were correct. The report
-  path had already been defended against the same shape by hand, which is the evidence that the
-  accessor path was simply not looked at.
+  nothing, no stop — while the leaf reads every consumer makes were correct; the report path had
+  been defended by hand and the accessor path was not looked at.
 
-⛔ **And the direction that is not closed is stated rather than discovered**
+The direction not closed
 ([`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)):
-a reader older than a mark reads the tracked file alone — and that splits by requiredness rather
-than failing one way, which was measured on the change itself rather than reasoned about. The
-installed reader, one commit behind, **refused** the migrated example outright — *is empty*, against
-the conditional marker on `day_log.evidence.chat.path` — the archive address being a key it requires
-and the list being something it cannot see. So a listed key carrying a requiredness marker
-fails loudly there, which is § 1's obligation arriving from the other side, and only a key carrying
-neither resolves absent and measures a day from nothing. What closes that half is the plugin and the
-surface travelling together, not anything a configuration can say; the day-log role holds the part
-that lands in a day, refusing a `chat` stream whose patterns resolve to nothing rather than
-measuring a day with no chats in it.
+a reader older than a mark reads the tracked file alone, and that splits by requiredness. A reader
+one commit behind **refused** the migrated example — *is empty*, against the conditional marker on
+`day_log.evidence.chat.path` — the archive address being a key it requires and the list being
+something it cannot see. So a listed key carrying a requiredness marker fails loudly there (§ 1's
+obligation from the other side), and only a key carrying neither resolves absent and measures a day
+from nothing. What closes that half is the plugin and the surface travelling together; the day-log
+role holds the part that lands in a day, refusing a `chat` stream whose patterns resolve to nothing.
 
 ## The changes that never entered the loop, and the rule nobody had written
 
-Every entry point on this surface assumed an item exists. **Nothing said what a project does with
-the changes that should never have one** — and both projects measured were already doing it, neither
-of them from a stated fact. What closed it is
+Every entry point on this surface assumed an item exists, and nothing said what a project does with
+the changes that should never have one — though both projects measured were already doing it. What
+closed it is
 [`schema.md § 30`](../plugins/mjolnir/config/schema.md#30-the-changes-that-do-not-go-through-the-loop).
 
-**The day it cost something.** A pull request was opened for a one-line correction to a
-documentation file and refused in four words: *this is a change too small for a pr*. The rule
-written down afterwards split behavioural change — code, configuration defaults, prompts, schema
-migrations — from documentation, comments, ignore files and typo or accuracy fixes, and offered one
-test for a hard case: *could a reviewer disagree about correctness*.
+A pull request opened for a one-line correction to a documentation file was refused in four words:
+*this is a change too small for a pr*. The rule written down afterwards split behavioural change —
+code, configuration defaults, prompts, schema migrations — from documentation, comments, ignore
+files and typo or accuracy fixes, and offered one test for a hard case: *could a reviewer disagree
+about correctness*.
 
-⛔ **Two things make that a configured fact rather than somebody's preference**, and the rule they
-forced is [`schema.md § 30`](../plugins/mjolnir/config/schema.md#30-the-changes-that-do-not-go-through-the-loop).
-The first is that **the repository's own history already did it that way** before the rule existed:
-the convention was visible in the log, and the session followed a generic branch-first instruction
-over it. That is precisely the failure a stated fact removes — a convention readable by a person and
-by nothing shipped, which is the same shape `tree_dir` was extracted for one section over. The
-second is the cost: a branch, three gate jobs, a merge commit and a branch deletion for a one-line
-fix, during which the document stays wrong.
+Two things make that a configured fact, ruled in
+[`schema.md § 30`](../plugins/mjolnir/config/schema.md#30-the-changes-that-do-not-go-through-the-loop).
+The repository's own history already did it that way before the rule existed, and the session
+followed a generic branch-first instruction over it — a convention readable by a person and by
+nothing shipped, the same shape `tree_dir` was extracted for. And the cost: a branch, three gate
+jobs, a merge commit and a branch deletion for a one-line fix, during which the document stays
+wrong.
 
 ### The axis is what a change is, and the measurement rules out the obvious alternative
 
@@ -2942,68 +2629,52 @@ measurement harnesses and documentation — while every product change in that s
 through the loop. That project also keeps one-line-fix commits on release branches with no item at
 all.
 
-⛔ **So the gate there cannot tell a deliberate bypass from a missed item** —
+So the gate there cannot tell a deliberate bypass from a missed item —
 [`schema.md § 30`](../plugins/mjolnir/config/schema.md#30-the-changes-that-do-not-go-through-the-loop)
-— which is the whole cost: a commit with no work item is otherwise indistinguishable from one that
-skipped the process by accident, and the day log, the session summary and the hours breakdown all
-read commits.
+— and the day log, the session summary and the hours breakdown all read commits.
 
-⚠️ **And the axis that separated the two in practice was not size and not risk.** Some of the
-unticketed tooling work was **larger** than the ticketed product changes beside it, so a
-size-derived rule — *under N lines* — would have exempted the wrong half of that release. ⛔ **Which
-is why no key states a size and why the decision is handed no count at all** —
+The axis that separated the two was neither size nor risk. Some of the unticketed tooling work was
+**larger** than the ticketed product changes beside it, so *under N lines* would have exempted the
+wrong half of that release. No key states a size and the decision is handed no count —
 [`schema.md § 30 → Why the axis is kind`](../plugins/mjolnir/config/schema.md#why-the-axis-is-kind-and-never-size):
 the reader takes the changed paths and a kind, so a change wholly inside a class answers the same
-way at one line and at two hundred files. The two spellings a project would reach for are refused by
-name beside that, and a third nobody thought of would get past them — the signature is what holds
-the rule and the markers hold the habit.
+way at one line and at two hundred files. The signature holds the rule; the refused spellings only
+catch the habit.
 
 ### Why the two projects' tests are both kept
 
-They divided the same question differently: one by the files a change touches, the other by whether
-a user sees the result, and ⚠️ **the two do not line up** — the second project's tooling lives
-beside its product code, so no path glob expresses its rule. ⛔ **So neither division is the
-surface's** —
-[`schema.md § 30 → What a class is`](../plugins/mjolnir/config/schema.md#what-a-class-is-and-the-conjunction-that-makes-it-one):
-a class carries path globs, change kinds, or both, and a project states whichever of them it can
-decide. Where it states both, the two are a **conjunction** — narrower than either alone, which is
-the direction a conjunction fails in and the reason it is that way round.
-
-⛔ **The case that argues for the whole facet is a change that touches one exempt path and one that
-is not** —
+One divided the question by the files a change touches, the other by whether a user sees the
+result, and the two do not line up — the second project's tooling lives beside its product code, so
+no path glob expresses its rule. So a class carries path globs, change kinds, or both, and where it
+states both they are a **conjunction** —
 [`schema.md § 30 → What a class is`](../plugins/mjolnir/config/schema.md#what-a-class-is-and-the-conjunction-that-makes-it-one).
-It reads as documentation to every rule that asks *does this change touch the docs*, and waves the
-code through under cover of the documentation edit. The test is therefore *every* changed path and
-never *any*, which is the single word the acceptance check for this turned on.
 
-⚠️ **A glob crosses a directory separator here**, which is one rule a project writing a class has to
-know, and the two-star form every other tool teaches is **refused** rather than reinterpreted — a
-glob quietly matching less than its author meant sends a change through the loop that should not
-have been in it, which is the harmless direction and still one spelling read two ways.
+The case that argues for the whole facet is a change touching one exempt path and one that is not
+(same section). It reads as documentation to every rule asking *does this change touch the docs*,
+and waves the code through under cover of the documentation edit; the test is therefore *every*
+changed path, never *any*.
+
+A glob crosses a directory separator here, and the two-star form every other tool teaches is
+**refused** rather than reinterpreted: one spelling read two ways.
 
 ### Who answers a case the paths cannot, and where the change then goes
 
-⚠️ **A class decided by its kind leaves a question the changed paths cannot settle**, and the two
-projects would answer it differently: the first would put a hard case to a person, while the second
-takes that round trip on no commit in its measured history. So who answers is configuration —
+A class decided by its kind leaves a question the changed paths cannot settle, and the two projects
+answer it differently: the first would put a hard case to a person, the second takes that round
+trip on no commit in its measured history. So who answers is configuration —
 [`schema.md § 30 → Who decides`](../plugins/mjolnir/config/schema.md#who-decides-a-case-the-paths-do-not-settle)
-— asking is the default, and ⚠️ **a class stating paths alone reaches neither arm**, its question
-being answered by the changed-path list.
+— asking is the default, and a class stating paths alone reaches neither arm.
 
-⚠️ **One consequence worth stating, because it was found by running the decision rather than by
-reading it:** under a project that carries a kind-decided class, a change whose kind nobody has
-stated is **unanswered** rather than not-exempt. The safe-looking reading is the wrong one there —
-it silently drops the exemption the project configured — which is why there are three verdicts and
-not two.
+Under a project that carries a kind-decided class, a change whose kind nobody has stated is
+**unanswered**, not not-exempt; reading it as not-exempt silently drops the exemption the project
+configured, which is why there are three verdicts.
 
-The first project commits an exempt change to the integration branch, which this surface already
-derives rather than names: `§ 10` reads it from what the remote advertises as its default. ⚠️ **The
-second project does not** — a release's tooling work goes to that release's branch. So the key
-exists for the second case and is null for the first, and ⛔ **it names a branch and never a working
-directory** —
+The first project commits an exempt change to the integration branch, which `§ 10` already derives
+from what the remote advertises as its default. The second sends a release's tooling work to that
+release's branch. So the key exists for the second case and is null for the first, and it names a
+branch, never a working directory —
 [`schema.md § 30 → Where an exempt change goes`](../plugins/mjolnir/config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs):
-`work_in_shared_checkout` routes the work of an *item*, and an exempt change has no item, no claim
-and no tree cut for it.
+an exempt change has no item, no claim and no tree cut for it.
 
 ## A status that moves backwards, in three of six projects and ruled in two
 
@@ -3022,55 +2693,43 @@ The remaining projects state nothing about a reverse edge: two have roles that r
 status later than the work supports and never the other way, and one carries no work-item status
 vocabulary for a reverse edge to move through at all.
 
-⚠️ **Two of the three are not what the item asking for this predicted**, which is worth recording
-because the prediction is what the facet was nearly built against: it read as one project ruling two
-cases, and what the copies say today is three projects with one case each, in three different roles,
-answered three different ways. ⛔ **The design consequence is the trigger key.** One reverse edge per
-project and one case each means a project's answer is a function of *what happened* rather than of
-where the item sits, so the edge is keyed on the trigger and carries its own writer —
+Three projects with one case each, in three different roles, answered three different ways: a
+project's answer is a function of *what happened*, not of where the item sits, so the edge is keyed
+on the trigger and carries its own writer —
 [`schema.md § 32`](../plugins/mjolnir/config/schema.md#32-a-status-that-moves-backwards).
 
-**What the three cases establish about the writer**, which is the half § 4.2 had nowhere to say: A's
-sits on a status its own forward writer is the deploy, and the person sending it back is the one who
-ordered the work. So the writer of a reverse edge is **not** the target status's — two writers on
-one transition pair, and the forward one answers who advances into a status rather than who sends an
-item back out of it.
+A's case also settles the writer, which § 4.2 had nowhere to say: the status's forward writer is
+the deploy, and the person sending it back is the one who ordered the work. So a reverse edge's
+writer is not the target status's — two writers on one transition pair.
 
-**And the failure that makes it a facet rather than a convention** is B's, read off its own release
-gate: that gate reads every item *below* the deployed status and fails the release where one owns a
-commit on the integration branch. An item that stepped back out of a later status is caught by it;
-an item that should have stepped back and did not is **invisible to it**, ships in the batch and is
-named in no report. The gate is sound and the ladder is wrong, which is why the edge belongs on the
-surface and not in the role that reads it.
+B's case makes it a facet. Its release gate reads every item *below* the deployed status and fails
+the release where one owns a commit on the integration branch. An item that stepped back is caught;
+an item that should have stepped back and did not is invisible to it, ships in the batch and is
+named in no report. The gate is sound and the ladder is wrong, so the edge belongs on the surface.
 
-⚠️ **One more trigger was looked for and not found**: a deploy that fails after the advance was
-already written. No project's deploy role steps the item back on a failed run — one of them states
-the opposite, that a failed release is not repaired by moving anything backwards — so the surface's
-list is the cases above and no more.
+A deploy that fails after the advance was written is not a trigger: no project's deploy role steps
+the item back on a failed run, and one states that a failed release is not repaired by moving
+anything backwards.
 
-⛔ **The criterion is what a project's work was measured *doing*, ruled or not** — stated, with the
-alternative it rejects, at
-[`schema.md § 32`](../plugins/mjolnir/config/schema.md#32-a-status-that-moves-backwards). Two
-near-miss criteria were each written into the surface and taken back out, which is worth recording
-because both read as the obvious one:
+The criterion is what a project's work was measured *doing*, ruled or not
+([`schema.md § 32`](../plugins/mjolnir/config/schema.md#32-a-status-that-moves-backwards)). Two
+near-miss criteria each drop a case:
 
 | Criterion | What it wrongly excludes |
 |---|---|
 | *What a role in this procedure observes* | A's acceptance rejection, that project's deploy role having no counterpart here either — so it drops a case with a rule behind it |
 | *What a project was measured **ruling*** | B's merge case, which is ruled nowhere — so it drops the one case with **no** rule, which is the one that needs a key |
 
-The second is the sharper trap: a facet whose purpose is to let a project rule what is already
-happening to it cannot take *already ruled* as its admission test. What would add the missing one is
-a project found doing it, and the section below is where that was looked for end to end.
+A facet that lets a project rule what is already happening to it cannot take *already ruled* as its
+admission test. What would add a missing trigger is a project found doing it; the section below is
+where that was looked for end to end.
 
 ## Seven deploying carriers read in full, and the provisional ruling they revise
 
-Ruling (10) was settled on **one** copy read in full and the rest read structurally, and it says so
-on its own face. It was also settled against an incomplete set: a carrier whose name contains no
-form of the word *deploy* was outside the survey altogether, in the project that already had a
-second deploying carrier beside it. ⛔ **Both halves are closed here** — every deploying carrier the
-readiness run enumerates under this role was read end to end, and the set is seven carriers across
-five of the six projects.
+Ruling (10) was settled on one copy read in full and the rest read structurally, against a set that
+left out a carrier whose name contains no form of the word *deploy*. Every deploying carrier the
+readiness run enumerates under this role has since been read end to end: seven carriers across five
+of the six projects.
 
 | | the carriers | lines | what reaching the target invokes |
 |---|---|---|---|
@@ -3081,15 +2740,13 @@ five of the six projects.
 | F | one, whose second target the command refuses by name | 381 | the project's own command |
 | D | none | — | — |
 
-⚠️ **The line range the item predicted held and the shape of it did not.** The carriers run 69 to
-381 lines, and the two longest are not the two most irreversible: the longest of them all deploys to
-a stack on the machine it runs on, and its length is verification and board bookkeeping rather than
-rails.
+The carriers run 69 to 381 lines, and the two longest are not the two most irreversible: the
+longest deploys to a stack on the machine it runs on, and its length is verification and board
+bookkeeping.
 
 ### What the full read confirmed
 
-**Every clause of the provisional ruling but one survived**, and the one that did not is the clause
-about a script. Held against all seven:
+Every clause of the provisional ruling but the one about a script survived. Held against all seven:
 
 | the clause | what the carriers say |
 |---|---|
@@ -3101,180 +2758,148 @@ about a script. Held against all seven:
 | hosts, services, secrets and build steps stay local | **nothing contradicted it** |
 | and tier selection with them | ⛔ **replaced rather than confirmed** — [`§ 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states which tiers a project has, what each needs, whether it is asked for, how its cases are selected and which targets refuse it; each tier's own **command** is what stayed local |
 
-⛔ **The boundary clause is the one a full read could have falsified and did not**, and the clause
-itself is
+The boundary clause is
 [`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls).
 Every host address, service name, credential path, image reference, container name, queue, health
-endpoint and suite invocation in all seven is the project's own, and no two projects' are alike:
-what a reader would have to learn to share any of it is the project.
+endpoint and suite invocation in all seven is the project's own, and no two projects' are alike.
 
 ### What it revises, and why each revision is the measurement rather than a preference
 
-⛔ **«A project whose deploy is one script keeps that script» describes four of seven carriers.**
-Two have no script in the repository at all — one's deploy is a configuration a hosted service
-executes, the other's is a run the host makes — and one of the four sources three further commands
-before the one it is named for. ⚠️ **The build-side reading of the same projects had already found
-this from the other direction**
-([*Where a deploy lives*](build-surface.md#where-a-deploy-lives)), and what the carrier-side reading
-adds is the third shape: a target a project rules **a person performs**, which is not the absent
-case of a capability but a decision, stated beside the reason — the act spends a version for ever.
-Hence the three shapes at
+«A project whose deploy is one script keeps that script» describes four of seven carriers. Two have
+no script in the repository — one's deploy is a configuration a hosted service executes, the
+other's is a run the host makes — and one of the four sources three further commands before the one
+it is named for. The build side found the same
+([*Where a deploy lives*](build-surface.md#where-a-deploy-lives)); the carrier side adds a third
+shape: a target a project rules **a person performs**, a decision stated beside its reason (the act
+spends a version for ever), not the absent case of a capability. Hence
 [`schema.md § 33 → The three shapes a target is reached by`](../plugins/mjolnir/config/schema.md#the-three-shapes-a-target-is-reached-by).
 
-⛔ **«An explicit go for a live environment» understates what the copies do, and the key had to be
-written in the negative.** Five of seven ask on **every** target, including every staging
-environment in the survey; the two that make a target free to run name a stack the session is the
-only user of, and say so. So *not production* is not the test, and a key naming what **is** live
-would be silent on precisely the target nobody has thought about — which is
-[`§ 21`](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live)'s
-inversion, made again one facet over at
+Five of seven ask for a go on every target, including every staging environment in the survey; the
+two that make a target free to run name a stack the session is the only user of. So *not
+production* is not the test, and a key naming what is live would be silent on the target nobody has
+thought about — the key is written in the negative, as in
+[`§ 21`](../plugins/mjolnir/config/schema.md#the-machines-named-are-the-ones-that-are-not-live), at
 [`§ 33 → Which target, and what makes one live`](../plugins/mjolnir/config/schema.md#which-target-and-what-makes-one-live).
-⚠️ **What liveness decides is whether the ask is put at all**, which is the only test
+Liveness decides whether the ask is put at all, the only test
 [`§ The loop`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
-admits for one — and it reads the two free targets exactly as their own copies state them, *fine to
-run freely* rather than *asked and proceeded on silence*. ⚠️ **One rail is unconditional beside it
-and stays so**:
+admits for one, and it reads the two free targets as their copies state them, *fine to run freely*.
 [`§ 29`](../plugins/mjolnir/config/schema.md#a-dispatch-is-the-only-write-and-it-carries-its-own-go)'s
-refusal sits on the operation and reads no facet, so a dispatch carries a go wherever it is made —
-and ⛔ **no target in the survey is both dispatching and not live**, so that pairing is the two rails
-composing rather than a case anybody was measured in.
+refusal stays unconditional beside it: it sits on the operation and reads no facet. No target in the
+survey is both dispatching and not live.
 
-⛔ **The go has to name something a gate can read back, which one project enforces mechanically** —
-the binding at
+The go has to name something a gate can read back — the binding at
 [`schema.md § 29 → A dispatch is the only write`](../plugins/mjolnir/config/schema.md#a-dispatch-is-the-only-write-and-it-carries-its-own-go).
-Four of the seven state what the question must carry — the version, the flags, the target, the batch
-— and in one of them the record is only written when the answer names the version, with a guard
-refusing the act without it. ⚠️ **That is that binding measured a second time**, in a project
-whose act is a tag push rather than a dispatch, which is what makes it a property of the act rather
-than of the port.
+Four of the seven state what the question must carry (the version, the flags, the target, the
+batch), and in one the record is written only when the answer names the version, with a guard
+refusing the act without it. That project's act is a tag push, not a dispatch, so the binding is a
+property of the act rather than of the port.
 
-⛔ **The preflight clause survives and the ordering around it had to be stated.** Six write nothing
-before the go; one advances a long-lived branch first, because the run it is about to start asserts
-the released commit is contained in that branch and refuses otherwise — with the version already
-spent. ⚠️ **That copy names the window it opens and rules out the obvious repair** — a failed
-release is not fixed by moving the branch back — so what the surface does is place the write outside
-the preflight and ask for the window to be named:
+Six write nothing before the go; one advances a long-lived branch first, because the run it starts
+asserts the released commit is contained in that branch and refuses otherwise, with the version
+already spent. That copy names the window it opens and rules out moving the branch back as a
+repair, so the surface places the write outside the preflight and asks for the window to be named:
 [`§ 33 → What runs before the target is confirmed`](../plugins/mjolnir/config/schema.md#what-runs-before-the-target-is-confirmed-and-what-it-may-not-do).
-⚠️ **And the thing about to be invoked is established first**, which two copies measure from
-opposite ends: a secrets file absent, which one stops on and points at a template; and a workflow
-present on the dispatched ref and absent from the host's own registry, which is refused by the host
-with a message naming neither the ref nor the file.
+The thing about to be invoked is established first, measured by two copies from opposite ends: a
+secrets file absent, which one stops on and points at a template; and a workflow present on the
+dispatched ref and absent from the host's own registry, which the host refuses with a message
+naming neither the ref nor the file.
 
-⛔ **The tracker write is absent from the provisional ruling and is in six of the seven carriers**,
-and where it is stated now is
+The tracker write, absent from the provisional ruling, is in six of the seven carriers and is now
+stated in
 [`schema.md § 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes).
-Each writes exactly one forward edge, and three projects write **two different** ones from two
-targets — so which status a deploy advances to is a property of the target rather than of the
-project, which is the second reason the facet is a list.
+Each writes exactly one forward edge, and three projects write two different ones from two targets
+— so the status a deploy advances to is a property of the target, which is the second reason the
+facet is a list.
 
-⚠️ **The role an item must already hold is derived rather than configured, and it is right for all
-seven.** It is the status immediately before the advance in
+The role an item must already hold is derived, and the derivation is right for all seven: the
+status immediately before the advance in
 [`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)'s own
 order, including in the project whose ladder has no deployed status and whose one target steps an
-item straight from code landed to finished. ⛔ **What would make it a key is a project whose batch is
-drawn from further back**, and none was found.
+item straight from code landed to finished. A project whose batch is drawn from further back would
+make it a key; none was found.
 
 ### The batch, and the two assemblies that lose an item
 
-⛔ **No copy advances an item on its status alone, and two name the failure in their own words**: a
-card that moved while its code never reached the branch. Each narrows the status list by a test of
-its own — owned commits on the integration branch, a fix version with the commits verified in the
-log, a milestone, a commit list — which is why
+No copy advances an item on its status alone, and two name the failure: a card that moved while its
+code never reached the branch. Each narrows the status list by a test of its own — owned commits on
+the integration branch, a fix version with the commits verified in the log, a milestone, a commit
+list — so
 [`schema.md § 33 → The batch`](../plugins/mjolnir/config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)
-makes the narrowing a command and states what it is asked rather than how it answers.
+makes the narrowing a command and states what it is asked, not how it answers.
 
-⛔ **And two of the seven narrow by a *range* rather than by membership**, which is the finding this
-reading owes the reverse-edge facet. A batch computed from *what changed since the last deploy*
-answers **no** for an item whose code landed earlier — so an item that stepped back out of a later
-role, whose code is in the branch and has been for weeks, is in no batch and in no batch report.
-⚠️ **Both of those copies describe the symptom and neither reaches the cause**: one's own table
-carries a row for *a merged pull request in neither the list nor a later one*, with an instruction
-to say it out loud. Hence the rule at
+Two of the seven narrow by a *range* rather than by membership. A batch computed from *what changed
+since the last deploy* answers no for an item whose code landed earlier, so an item that stepped
+back out of a later role, its code in the branch for weeks, is in no batch and no batch report.
+Both copies describe the symptom without reaching the cause: one's table carries a row for *a merged
+pull request in neither the list nor a later one*, with an instruction to say it out loud. Hence the
+rule at
 [`§ 33 → The batch`](../plugins/mjolnir/config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong),
-which states what the command is asked rather than how it answers, and the limit beside it: nothing
-here checks the command, which is
+and the limit beside it: nothing here checks the command, which is
 [`§ 12`](../plugins/mjolnir/config/schema.md#12-ordering)'s position for its own.
 
 ### What the reading settles about the trigger that was left out
 
-[`§ 32`](../plugins/mjolnir/config/schema.md#32-a-status-that-moves-backwards) left one case out —
-a deploy that fails after the advance was already written — on a **structural** reading of these
-same carriers. ⛔ **The full read settles it the stronger way: the state is unreachable by
-construction.** Every one of the six that advances an item writes the advance *after* the deploy it
-advances on has been verified, so there is no point at which a failure meets an advance already
-made. One of them states the prohibition outright — a card is never moved back a column by that
-skill — and another assigns the reverse move to the person who ordered the work.
-
-⚠️ **So nothing is added to the trigger set, and what would add it is a project whose advance runs
-first.** The criterion is unchanged; what changed is that the absence now rests on seven carriers
-read end to end rather than on their shape.
+[`§ 32`](../plugins/mjolnir/config/schema.md#32-a-status-that-moves-backwards) leaves out a deploy
+that fails after the advance was already written. The state is unreachable by construction: every
+one of the six that advances an item writes the advance after the deploy it advances on has been
+verified. One states the prohibition outright — a card is never moved back a column by that skill —
+and another assigns the reverse move to the person who ordered the work. Nothing is added to the
+trigger set; a project whose advance runs first would add it.
 
 ### What a deploy verifies, which is the half the copies spend their length on
 
-⛔ **The invocation's own answer is not the delivery, and the measured failures are not alike.** A
-build the service reported successful shipped one of two halves, because the configuration it was
-pointed at was the wrong one and the service reported success anyway. A container reported healthy
+The invocation's own answer is not the delivery. A build the service reported successful shipped
+one of two halves, because it was pointed at the wrong configuration. A container reported healthy
 was mid-load and refusing every request, its liveness check deliberately saying nothing about
-readiness. A suite exited zero having deselected the cases that needed material. ⚠️ **Three
-incidents, three projects, one shape** — which is what makes
+readiness. A suite exited zero having deselected the cases that needed material. Three incidents in
+three projects, one shape, which makes
 [`§ 33 → What a deploy verifies`](../plugins/mjolnir/config/schema.md#what-a-deploy-verifies-and-what-it-reports)
 a rule rather than three cautions.
 
-⛔ **A command finishing is not a step finishing**, stated by three copies about work a command
-queues and exits ahead of, each with its own reading to judge progress by. And ⛔ **the report names
-what it could not establish** — every skipped scenario, every item left behind, every step still
-running, and what the deploy left standing — which is
+A command finishing is not a step finishing, stated by three copies about work a command queues and
+exits ahead of, each with its own reading to judge progress by. The report names what it
+could not establish — every skipped scenario, every item left behind, every step still running, and
+what the deploy left standing — which is
 [`§ 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)'s rule with
 this role's own list under it.
 
-⚠️ **And the two things the facet left open are both settled now**, each in its own reading below:
-whether the target list is a project's or a code root's is
+Whether the target list is a project's or a code root's is
 [`Which repository an act is in`](#which-repository-an-act-is-in-and-why-it-is-not-the-lists-own-axis),
-and which subset of a grouping a target advances is
+and
 [`Publishing a release`](#publishing-a-release-the-two-writers-and-the-precondition-that-holds-a-target)
-after it. ⚠️ **Neither is a second survey**: both rest on the reading above and on the build side's,
-which is why each is a subsection rather than a page.
+settles which subset of a grouping a target advances.
 
 ### Which repository an act is in, and why it is not the list's own axis
 
-**The question** was whether `deploy` belongs to a project or to one of
-[`§ 1`](../plugins/mjolnir/config/schema.md#a-projects-code-is-not-always-one-repository)'s code
-roots, and the answer is **the list is the project's and the repository is the entry's**:
-[`§ 33 → Which repository a target's act happens in`](../plugins/mjolnir/config/schema.md#which-repository-a-targets-act-happens-in).
-⛔ **No reading was taken for it and none was needed** — the two already here answer it, and a third
-survey would have been evidence collected to confirm a shape rather than to choose one.
-
-⛔ **What rules out nesting is the axis, and a directory is what no project's deploy resolves
-against.** The build side read what each project's deploy *resolves against* and found a directory
-in none of them ([*Where a deploy lives*](build-surface.md#where-a-deploy-lives)). ⛔ **Which shape
-each one resolves against is left on that page rather than copied onto this one**, which that page
-asks for in as many words: the two readings count different things — a project there and a carrier
-here — so neither restates the other, and a copy would be a second classification of the same
-projects with nothing holding it to the first. ⚠️ **So a list keyed on the directory
-would be keyed on the one axis no project's targets divide on**, and the facet's own reason for
-being a list — every fact measured is a target's — reaches this fact exactly as it reaches the rest,
-which is where
-[`§ 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)
-states it.
-
-⛔ **And nesting would owe a second rule it cannot avoid.** `name` is the word a deploy is asked
-for by, so two roots' lists would still have to hold their names apart across the project — which is
-[`§ 1`](../plugins/mjolnir/config/schema.md#a-command-root-is-not-a-code-root)'s own rule for a
-command root's name, and for the same stated reason: the reference is written somewhere else, so one
-name answering in two places resolves into whichever repository was read first.
-
-⚠️ **The one project with two repositories is the one that exhibits the case**, which is what makes
-this a measurement rather than a guess. Its two roots share nothing but the host kind — disjoint
-check sets, a different number of long-lived branches each, and **a deploy that takes a ref on one
-side and no ref at all on the other** — and its second repository carries a deploying workflow of
-its own. ⛔ **That project's own instructions state the consequence as a rule**: no skill on its
-route drives the second repository, so its dispatch is by hand — recorded at
-[ruling (26)](divergences-and-rulings.md#4-the-rulings) rather than restated here.
-
-⛔ **What the key buys is four references that were answered from a union across repositories, and
-one that was answered by nothing** — the table at
+The list is the project's and the repository is the entry's, at
 [`§ 33 → Which repository a target's act happens in`](../plugins/mjolnir/config/schema.md#which-repository-a-targets-act-happens-in)
-is where each is now held. Reproduced on the shipped two-root example, which carries three targets:
+against [`§ 1`](../plugins/mjolnir/config/schema.md#a-projects-code-is-not-always-one-repository)'s
+code roots. The two readings already here answer it.
+
+What rules out nesting is the axis. The build side read what each project's deploy resolves against
+and found a directory in none of them
+([*Where a deploy lives*](build-surface.md#where-a-deploy-lives)); that page holds the per-project
+classification, since it counts projects and this one counts carriers. A list keyed on the directory
+would be keyed on the one axis no project's targets divide on, and every fact measured is a
+target's, as
+[`§ 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)
+states.
+
+Nesting would also owe a second rule. `name` is the word a deploy is asked for by, so two roots'
+lists would still have to hold their names apart across the project —
+[`§ 1`](../plugins/mjolnir/config/schema.md#a-command-root-is-not-a-code-root)'s rule for a command
+root's name, for the same reason: one name answering in two places resolves into whichever
+repository was read first.
+
+The one project with two repositories exhibits the case. Its two roots share nothing but the host
+kind — disjoint check sets, a different number of long-lived branches each, and a deploy that takes
+a ref on one side and no ref at all on the other — and its second repository carries a deploying
+workflow of its own. Its instructions state that no skill on its route drives the second
+repository, so its dispatch is by hand: [ruling (26)](divergences-and-rulings.md#4-the-rulings).
+
+The key makes four references resolve per repository, each held in the table at
+[`§ 33 → Which repository a target's act happens in`](../plugins/mjolnir/config/schema.md#which-repository-a-targets-act-happens-in).
+Reproduced on the shipped two-root example, which carries three targets:
 
 | what was read | what it answered before | the probe |
 |---|---|---|
@@ -3283,260 +2908,208 @@ is where each is now held. Reproduced on the shipped two-root example, which car
 | `code_root_runs_nothing` | nothing | that first repository states it, and a command target with no root named loaded anyway |
 | the repository a dispatch is made against | nothing | — |
 
-⛔ **The last row is the one that was firing rather than latent.** The deploying role's preflight
-begins by resolving the entry's command through the reader, and on that project the call **stops**:
+Without the last row the deploying role could not run on that project: its preflight resolves the
+entry's command through the reader, and
 [`§ 1`](../plugins/mjolnir/config/schema.md#a-command-root-is-not-a-code-root) states a command root
-relative to one repository, two carry the block, and the reader refuses a project-level read of it
-rather than answering with the first. ⚠️ **So the role could not run there at all**, and
-the one value that resolves the call — the name of the repository the act is in — was in no file
+relative to one repository, so with two carrying the block the reader refuses a project-level read
+rather than answering with the first. The value that resolves the call was in no file
 this repository ships.
 
-⚠️ **Two of the shipped examples were wrong in a way nothing could catch**, found by the rule the
-ruling made possible rather than by reading them: each stated a
+Two shipped examples each stated a
 [`§ 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all)
-tier refused on a target name its own `deploy` did not carry. ⛔ **A tier refused on a word nothing
-deploys to reads as refused somewhere and is run against every target there is** — which is why that
-facet's entries are now resolved against § 33's own names, a reference that section had deliberately
-left as a bare string while this question was open.
+tier refused on a target name their own `deploy` did not carry. A tier refused on a word nothing
+deploys to reads as refused somewhere and runs against every target, so that facet's entries are
+resolved against § 33's own names.
 
 ## Publishing a release: the two writers, and the precondition that holds a target
 
 The reading behind
 [`§ 33 → Publishing a grouping`](../plugins/mjolnir/config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)
 and the two operations it rests on in
-[`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does). It
-is the half the deploy facet above named and left where it was, and what settles it is the same
-seven carriers read again for one question: **what a release writes that is not an item.**
+[`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does): the
+same seven carriers read for what a release writes that is not an item.
 
 ### One act or two, decided by the writers rather than by the shape
 
-⛔ **Two, and the deciding evidence is a single pass in a single project.** One carrier's version is
-marked released **by hand** — the step is a link handed to a person, every release — while the items
-in that same version are advanced programmatically in the same minute. So one half's writer is a
-person and the other's is the procedure, on two objects a single operation would have had to write
-together. ⚠️ **A single operation cannot carry two writers**, which is what makes this a shape
-argument rather than a preference: the surface already states a writer per status
+Two. One carrier's version is marked released by hand — the step is a link handed to a person,
+every release — while the items in that version are advanced programmatically in the same minute.
+One half's writer is a person and the other's is the procedure, and a single operation cannot carry
+two writers: the surface states a writer per status
 ([`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)) and a
 writer per grouping ([`§ 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s
-`closed_by`), and folding the acts together would have obliged one of those two keys to be ignored.
-
-⚠️ **And `closed_by` was a key with no act behind it until this reading.** § 4.8 stated the writer
-and said outright that no role in the loop closed a grouping, so the refusal was reserved for
-whichever role came to. The deploying one is that role, and it asks as `deploy` — which is also why
-§ 4.8's own sentence about *performed by nothing yet* is now wrong and was corrected rather than
-left.
+`closed_by`), and folding the acts together would oblige one of those keys to be ignored. The
+deploying role is the one that closes a grouping, and it asks as `deploy`.
 
 ### Which subset: one key, because the rest was already derived
 
-⛔ **The filter the deploy facet described as `(grouping, from_role, to_role)` needed one key and
-not three.** § 33 already derives the role an item is advanced *from* — the status immediately
-before `advances` in § 4.2's own order, right for every one of the seven — and already states the
-role it advances *to*. What no key carried was **which grouping** a target is scoped to, and that is
-the one addition: a name § 4.8 carries, or `none`.
+§ 33 already derives the role an item is advanced *from* — the status immediately before `advances`
+in § 4.2's order, right for every one of the seven — and states the role it advances *to*. The one
+addition is which grouping a target is scoped to: a name § 4.8 carries, or `none`.
 
-⚠️ **`none` is not the absent case of a project with no grouping alone**, which is what makes the
-key worth stating on every target. One carrier plans in an iteration and deploys what landed: its
-batch must not be narrowed by the time box, because an item whose code shipped from an earlier
-column is in the deploy and not in the iteration. So a project that *has* a grouping still writes
-`none` on a target that is not scoped to it.
+`none` is not only the case of a project with no grouping. One carrier plans in an iteration and
+deploys what landed: its batch must not be narrowed by the time box, because an item whose code
+shipped from an earlier column is in the deploy and not in the iteration. So a project that has a
+grouping still writes `none` on a target not scoped to it.
 
 ### The precondition: a key, and the two shapes that make it one
 
-⛔ **Stated and not derived, and the alternative is the one a reader will reach for first**, which
-is the rule at
+The precondition is stated, not derived:
 [`§ 33 → Publishing a grouping`](../plugins/mjolnir/config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target).
-In both
-measured shapes the required role coincides with the role the advance is made from: one project's
-release may carry only items a person has already accepted, and another's live deploy **refuses to
-run at all** while any item with commits on the integration branch has not reached the
-staging-deployed state. ⚠️ **Deriving it from `advances` would therefore look right on both** — and
-would give every project with a ladder a precondition it never ruled, which the item's own
-acceptance forbids in as many words: a project whose statuses map no such role publishes exactly as
-it does today.
+In both measured shapes the required role coincides with the role the advance is made from: one
+project's release may carry only items a person has already accepted, and another's live deploy
+refuses to run while any item with commits on the integration branch has not reached the
+staging-deployed state. Deriving it from `advances` would look right on both, and would give every
+project with a ladder a precondition it never ruled; a project whose statuses map no such role
+publishes as it does today.
 
-⛔ **What the key changes is the consequence, not the role.**
+The key changes the consequence, not the role.
 [`§ 33 → The batch`](../plugins/mjolnir/config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)'s
-existing rule for an item
-outside the advance's own role is *named and not advanced*, with the deploy going ahead; this one
-holds the **whole target** and names every item short of the role, because a release is a set and a
-set with a hole in it is not a release. ⚠️ **Which is also why the refusal names all of them**: the
-answer a person needs is what the release is waiting on, and the first item found is not that.
+rule for an item outside the advance's role is *named and not advanced*, with the deploy going
+ahead; this one holds the whole target and names every item short of the role, because a release is
+a set and a person needs to know everything it is waiting on.
 
-⚠️ **The procedure cannot produce the state either way**, which is what keeps this a precondition
-rather than a step: § 4.2 maps the role to a status written by the person who ordered the work, or
-by a lower environment's own deploy. It is
+The procedure cannot produce the state: § 4.2 maps the role to a status written by the person who
+ordered the work, or by a lower environment's own deploy. It is
 [`§ 13`](../plugins/mjolnir/config/schema.md#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s
-`answered_by` one state later — a verdict somebody else records, blocking a step the procedure would
-otherwise take.
+`answered_by` one state later.
 
-⚠️ **One carrier's gate has a known hole and names it itself**: an item whose change is confined to
-a shared library can never reach the earlier role, because no deployable service's flag set names
-it, so it is advanced by hand. ⛔ **Which is why the bar is read over a set that is reported rather
-than assumed**: an item the answer could not place is reported **unanswered**, never short and never
-clear, and a release held by an item nobody could place reads exactly like one held by nothing.
+One carrier's gate has a known hole it names itself: an item whose change is confined to a shared
+library can never reach the earlier role, because no deployable service's flag set names it, so it
+is advanced by hand. So the bar is read over a reported set: an item the answer could not place is
+reported unanswered, never short and never clear, since a release held by an item nobody could place
+reads exactly like one held by nothing.
 
 ### Where the set comes from, and the two arms it has
 
-⛔ **The publishing set is the grouping's items where a target names one and the batch's own
-candidates where it does not** — the two arms at
+The publishing set is the grouping's items where a target names one and the batch's own candidates
+where it does not — the two arms at
 [`§ 33 → Publishing a grouping`](../plugins/mjolnir/config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target),
-and the reason the precondition is independent of the grouping key.
-The first arm is the body of the reading above; the second is the carrier whose gate reads *items
-with commits on the integration branch*, on a project that plans in no grouping at all.
+which is why the precondition is independent of the grouping key. The second arm is the carrier
+whose gate reads *items with commits on the integration branch*, on a project that plans in
+no grouping at all.
 
-⛔ **The batch stays the only source of candidates for the advance**, which
+The batch stays the only source of candidates for the advance, as
 [`§ 33 → The batch`](../plugins/mjolnir/config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)
-already rules: the grouping **narrows**, and an item the grouping holds that the batch never named
-is reported rather than advanced. ⚠️ **An unread grouping and a grouping holding nothing are the
-same list**, so what the report carries is which of the two it was and never its length.
+rules: the grouping narrows, and an item the grouping holds that the batch never named is reported,
+not advanced. An unread grouping and an empty one are the same list, so the report carries which of
+the two it was.
 
 ### What the trackers can actually do, which is where the absence is real
 
-⛔ **Reading a grouping's membership rides a query on every tracker that has one**, so it is one of
-the two operations at
-[`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does): a
-milestone's issue listing, a board read filtered on a field's value, a bounded query on
-the field a project names. ⛔ **Marking one released does not.** A grouping held in a **field's
-value** — the commonest carrier in the survey — is not an object anything can close: there is no
-endpoint, and a board's iteration rolling over is a date passing rather than an act.
-
-⚠️ **So behind the port the set is readable wherever a tracker's grouping has a query that
-reaches it, and the mark only where that grouping is a native object with a state of its own.**
-⛔ **Neither side is written as a figure here**, and the reason is
+Reading a grouping's membership rides a query on every tracker that has one — a milestone's issue
+listing, a board read filtered on a field's value, a bounded query on the field a project names — so
+it is one of the two operations at
+[`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does).
+Marking one released does not: a grouping held in a field's value, the commonest carrier in the
+survey, is not an object anything can close, and a board's iteration rolling over is a date passing
+rather than an act. So the set is readable wherever a tracker's grouping has a query, and the mark
+only where the grouping is a native object with a state of its own. No count is given here, for
+the reason at
 [`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability):
-each implementation declares what it does by implementing it, so a count over those declarations is
-a copy that drifts the day one of them grows the mark.
+each implementation declares what it does by implementing it.
 
-⛔ **The implementations that cannot mark one declare the mark absent rather than implementing it
-against something else** — against an iteration's dates, or against a label that cannot be closed —
-which would be an implementation inventing a release out of a calendar, and
+Implementations that cannot mark one declare the mark absent rather than implementing it against an
+iteration's dates or a label that cannot be closed;
 [`schema.md § 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)
-states what an absence does instead.
+states what an absence does.
 
-⛔ **A carrier a given tracker has no object for is refused with the key named rather than reported
-absent**, which is
+A carrier a given tracker has no object for is refused with the key named rather than reported
+absent —
 [`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)'s rule
-for a status word a tracker cannot hold, one facet up: the
-capability is the adapter's fact and the carrier is the project's, so a configuration naming a
-carrier its tracker cannot address is a defect in the text. ⚠️ **The two readings are kept apart on
-purpose** — *this tracker cannot do it at all* takes § 3's fallback and the run carries on, while
-*this project wrote something this tracker has nowhere to put* stops with the key.
+for a status word a tracker cannot hold. *This tracker cannot do it at all* takes § 3's fallback and
+the run carries on; *this project wrote something this tracker has nowhere to put* stops with the
+key.
 
 
 ## The release half: one copy that arrives as data
 
-Ruling (10) settled the deploying role and left a question beside it that the deploy survey could
-not answer: whether turning landed work into a released **version** is that role's terminal third
-or a role of its own. The item carrying it named the test and declined to apply it, the deploy
-ruling being provisional at the time. ⛔ **It is applied here, and the answer is a role of its
-own** — the facet it produced is
+Turning landed work into a released version is a role of its own, not the deploying role's terminal
+third; the facet is
 [`schema.md § 34`](../plugins/mjolnir/config/schema.md#34-the-files-that-carry-a-version-and-what-cutting-a-release-writes).
 
-**The test is the preconditions, and they do not overlap.** A deploy names a target environment and
-is refused without an explicit go for a live one; a release names a version and is refused without
-landed work to carry it. ⚠️ **That is weak evidence on its own** and is stated as weak: two acts
-with different preconditions can still be two steps of one role, and what decides it is what the
-copies carry rather than what the distinction suggests.
+A deploy names a target environment and is refused without an explicit go for a live one; a release
+names a version and is refused without landed work to carry it. Different preconditions alone do not
+make two roles; what the copies carry decides it.
 
 | | what the copy carries | where it lives | what it invokes |
 |---|---|---|---|
 | the deploy survey | seven carriers across five projects, each naming a **target** | a script, a hosted configuration, or a run the host makes | the project's own command, a dispatch, or an act handed to a person |
 | the release half | **one** copy, naming a **version** | a rules file, as **data** rather than as procedure | an ordered file list, a changelog insert, a tag and a publish |
 
-⛔ **The deciding fact is the second row's middle cell.** Every other process fact in the surveyed
-copies arrives as prose a role performs; this one arrives already written as an ordered list of
-`(path, kind, pattern, replace, optional)` — so what varies between projects here is a **file
-list** and not a sequence of steps, which is the shape
+The deciding fact is the second row's middle cell. Every other process fact in the surveyed copies
+arrives as prose a role performs; this one arrives as an ordered list of
+`(path, kind, pattern, replace, optional)`, so what varies between projects is a file list, which
 [`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls)
-makes configuration rather than procedure.
+makes configuration.
 
-⚠️ **One copy is thin evidence for a facet, and that is stated rather than glossed**, exactly as
-ruling (31) states it for the grouping axis. What makes it admissible is that the copy carries the
-facet's whole shape already: every key the surface now declares is a key that copy writes, and no
-key was invented to round the list out.
+One copy is thin evidence for a facet, as ruling (31) states for the grouping axis. It is admissible
+because the copy carries the facet's whole shape: every key the surface declares is a key that copy
+writes, and none was invented to round the list out.
 
 ### The three switches, and the one of them that is not a key
 
 The same rules file carries three switches beside the file list: whether the release has a
-user-facing audience, whether it publishes packages, and whether CI owns the changelog. ⛔ **Two
-became keys and the third did not**, and the third is the one already answered one section over —
-the audience and register of an artifact a role writes are
+user-facing audience, whether it publishes packages, and whether CI owns the changelog. The audience
+is not a key: the audience and register of an artifact a role writes are
 [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)'s,
-per artifact, so a key here would be a second statement of a fact the surface already holds.
+per artifact.
 
-**What the two surviving switches buy is measured on what they change.** `changelog_ci_owned` is the
-sharper of them: it is an absence that changes what the procedure **does** rather than what it
-reads, because a role that wrote a file CI also writes produces a conflict on every single release
-rather than occasionally. ⚠️ **It is a project's statement about ownership and not a reading of the
-file**, which is why it is configured: a changelog CI writes and a changelog nobody writes look
-identical in a tree. The statement is
+`changelog_ci_owned` changes what the procedure does: a role that wrote a file CI also writes
+produces a conflict on every release. It is a project's statement about ownership, not a reading of
+the file, because a changelog CI writes and one nobody writes look identical in a tree:
 [`schema.md § 34 → The changelog CI owns`](../plugins/mjolnir/config/schema.md#the-changelog-ci-owns-which-inverts-the-role).
 
-⛔ **`publishes_packages` decides whether the release is the person's act**, which is the only test
+`publishes_packages` decides whether the release is the person's act, the only test
 [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)
-admits for an ask — and the deploy survey already measured the same reasoning on its own most
-irreversible target, the one carrier that hands its act to a person outright because it spends a
-version for ever. ⚠️ **The tag is deliberately not what the ask is about**: a tag can be moved and a
-published artifact cannot, which is stated at the key rather than left as an omission —
+admits for an ask — the reasoning the deploy survey measured on the carrier that hands its act to
+a person because it spends a version for ever. The tag is not what the ask is about, since a tag
+can be moved and a published artifact cannot:
 [`schema.md § 34 → What a release publishes`](../plugins/mjolnir/config/schema.md#what-a-release-publishes-and-what-this-section-does-not-carry).
 
 ### The flag with a measurement behind it, and the default that inverts § 33's
 
-`optional` is the one key in the file list whose value was observed being *needed* rather than
-merely written: one of the three files that copy lists **does not exist** in the project it came
-from, and a release that errors on it is a release that cannot be cut.
+`optional` was observed being needed: one of the three files that copy lists does not exist in the
+project it came from, and a release that errors on it cannot be cut.
 
-⛔ **Its absent reading is the strict one, which is the opposite of the ruling on `not_live` one
-section earlier, and the asymmetry is the whole of the argument.** There, a key read as absent
-would make a live target not live and the failure is silent; here, a file a project does not have
-and did not mark gets the release stopped with the file named, which is loud — so the strict
-direction costs an adopter nothing it cannot see. The statement is
+Its absent reading is the strict one, the opposite of `not_live`'s. There, a key read as absent
+would make a live target not live, silently; here, a file a project does not have and did not mark
+stops the release with the file named, which is loud. See
 [`schema.md § 34 → The files a version is written in`](../plugins/mjolnir/config/schema.md#the-files-a-version-is-written-in-and-the-two-kinds-of-edit),
-and the deploy side of the contrast is
+and for the deploy side
 [`schema.md § 33 → Which target`](../plugins/mjolnir/config/schema.md#which-target-and-what-makes-one-live).
 
-⚠️ **One thing had to be translated rather than accepted**, and it is the only place this facet
-does not take the copy's data as written: the copy spells its named capture in its own stack's
-dialect, and the expression here is the carrier's engine's. ⛔ **Stated rather than left to be
-discovered by a release that stops at its first file** — the rule is the one
+The copy spells its named capture in its own stack's dialect, and the expression here is the
+carrier's engine's — the rule
 [`schema.md § 8`](../plugins/mjolnir/config/schema.md#8-language-register-audience--per-artifact-not-per-project)
-already states for a branch slug, arriving at an expression, and the expression is compiled at the
-load so that a dialect mismatch is refused where it is written.
+states for a branch slug. The expression is compiled at the load, so a dialect mismatch is refused
+where it is written.
 
 ### What the ordering buys, and the one guarantee the carrier does not make
 
-⛔ **The edit is all of it or none of it**, and that ordering is the facet's rather than an
-implementation detail of the carrier: a release with half its files bumped is worse than a release
-not cut, because the half that moved is what every later reader believes. ⚠️ The copy surveyed
-makes no such guarantee — its file edits run in sequence and a failure part of the way through
-leaves the tree mixed — so this is the measurement being **improved on** rather than reproduced,
-and the statement is at
+The edit is all of it or none of it: a release with half its files bumped is worse than a release
+not cut, because the half that moved is what every later reader believes. The surveyed copy makes no
+such guarantee — its edits run in sequence and a failure part way leaves the tree mixed:
 [`schema.md § 34 → The files a version is written in`](../plugins/mjolnir/config/schema.md#the-files-a-version-is-written-in-and-the-two-kinds-of-edit).
 
-⚠️ **What the carrier cannot promise is atomicity against a crash**, and it says so in its own
-report rather than claiming what a filesystem does not support: the write loop can be interrupted
-between two files. What is closed is the case a plan can close — a release that was never going to
-work being carried out part of the way — and the residue is named instead of being covered by a
-guarantee nothing performs.
+The carrier does not promise atomicity against a crash, and its report says so: the write loop can
+be interrupted between two files. What is closed is a release that was never going to work being
+carried out part of the way.
 
-⚠️ **And two questions are left where they already are.** Which work a release carries is read where
-a deploy's batch is read, by
+Which work a release carries is read by
 [`schema.md § 33 → The batch`](../plugins/mjolnir/config/schema.md#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong)'s
-rule rather than by a second command; and closing whatever the release corresponds to is the
-grouping axis's question, the copy surveyed having closed a release and an iteration together one
-to one, which is one project's coincidence until a second shows it. The deploy side of the first is
-[the reading above](#the-batch-and-the-two-assemblies-that-lose-an-item).
+rule, not a second command
+([the reading above](#the-batch-and-the-two-assemblies-that-lose-an-item)); closing whatever the
+release corresponds to is the grouping axis's question — the surveyed copy closed a release and an
+iteration together one to one, one project's coincidence until a second shows it.
 
 ## The live data step: two copies, and the four stops they already carry
 
-Ruling (10) settled the deploying role and its skeleton carries one rail on the read half —
-*the preflight writes nothing* — and none on the one step inside a deploy that writes irreversibly
-to a live store. ⛔ **The seven carriers read above were re-read for that step alone**, and the
-answer is the facet at
+The seven carriers re-read for the one step inside a deploy that writes irreversibly to a live store
+give the facet at
 [`schema.md § 35`](../plugins/mjolnir/config/schema.md#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under).
 
-**Two of the seven perform such a write.** The rest are worth stating, because the shape of the
-absence is what made the key a target's rather than a project's:
+Two of the seven perform such a write. The shape of the absence in the rest is what made the key a
+target's rather than a project's:
 
 | | what the carrier does with a live store | what that leaves the facet |
 |---|---|---|
@@ -3546,150 +3119,120 @@ absence is what made the key a target's rather than a project's:
 | E, F | the store is reached by the application's **own startup** — a framework migrates on boot and the deploy never performs a step | an absence with a cause, rather than a project that has not got round to it |
 | D | no deploying carrier at all | — |
 
-⚠️ **The two copies that do carry the step agree on its sequence and disagree on three of its four
-stops**, which is what makes each of the three a key rather than a rule. The sequence both carry is
-dump → verify → *(rehearse)* → confirm → write, and the facet performs it at
+The two copies agree on the sequence — dump → verify → *(rehearse)* → confirm → write — and disagree
+on three of its four stops, which makes each of the three a key. The facet performs the sequence at
 [`schema.md § 35 → The ordering`](../plugins/mjolnir/config/schema.md#the-ordering-and-what-the-role-reports).
 
 ### The size assertion that was the wrong strictness
 
-⚠️ **This is the one place in the whole survey where the stricter-looking copy is the one that was
-measured wrong.** C asserts the archive exists and is non-trivial in size before continuing, which
-reads as the careful version of a dump that failed and left a file anyway. B carries the opposite
+C asserts the archive exists and is non-trivial in size before continuing. B carries the opposite
 rule, with an incident behind it: a dump came back at roughly a quarter of the previous release's
-bytes, the shrink was read aloud as catalogue loss, the catalogue was in fact intact, and the
-difference was row-overhead, index and dead-tuple volume that a dump does not write at all. Its own
-text puts it as *two dumps taken months apart are not comparable by size in either direction*, and
-what it verifies instead is that reading the dump back enumerates every table the store holds.
+bytes, the shrink was read aloud as catalogue loss, the catalogue was intact, and the difference was
+row-overhead, index and dead-tuple volume that a dump does not write. Its text: *two dumps taken
+months apart are not comparable by size in either direction*; it verifies instead that reading the
+dump back enumerates every table the store holds.
 
-⛔ **So the facet carries two keys and no size**, and the verdict is an exit status rather than a
-figure this toolkit compares — [`schema.md § 35 → The backup is verified by a
+So the facet carries two keys and no size, and the verdict is an exit status —
+[`schema.md § 35 → The backup is verified by a
 command`](../plugins/mjolnir/config/schema.md#the-backup-is-verified-by-a-command-and-never-by-the-artifact-it-wrote).
-⚠️ **A project that still wants the size test states it inside its own verification command**, where
-it is that project's claim about its own store. The facet does not forbid it; it declines to be the
-thing that makes it.
+A project that wants the size test states it inside its own verification command.
 
-⚠️ **And the unconditional reading came from the same copy**: its dump runs whether or not the
-release carries anything to apply, with no override, because what a release turns out to write
-against a store is not fully known until it has run and a dump taken afterwards records the damage
-rather than the state before it.
+The same copy's dump runs whether or not the release carries anything to apply, with no override,
+because what a release writes against a store is not fully known until it has run, and a dump taken
+afterwards records the damage rather than the state before it.
 
 ### A rehearsal one copy has for everything and the other has for nothing
 
-⚠️ **C carries a dry variant for every write it performs and B carries none**, and both arrangements
-are deliberate in their own text. C's writes are scripted, each one paired with a sibling that sets
-a dry flag and changes nothing, and its carrier runs the dry one first and reviews the output. B's
-writes are plain statements applied one at a time; what it does instead is print each one in full
-and confirm it, and its own note is that re-applying one may error and that this is expected.
+C pairs every scripted write with a sibling that sets a dry flag and changes nothing, and its
+carrier runs the dry one first and reviews the output. B's writes are plain statements applied one
+at a time; it prints each in full and confirms it, noting that re-applying one may error and that
+this is expected.
 
-⛔ **So the rehearsal is a key and not a step**, and the surface that demanded one would make the
-second project unable to state its own procedure —
+So the rehearsal is a key, not a step —
 [`schema.md § 35 → A rehearsal the project may not
 have`](../plugins/mjolnir/config/schema.md#a-rehearsal-the-project-may-not-have-and-what-reading-it-is-for).
-⚠️ **What both copies agree on is the reading**: C's text says the guarded variant must report no
-divergence and that a guard which aborts stops the deploy — a verdict that exists only once it is
-read. A role that ran the dry variant and parsed nothing performed a ritual.
+Both copies agree on the reading: C's text says the guarded variant must report no divergence and
+that a guard which aborts stops the deploy, a verdict that exists only once it is read.
 
 ### The prompt the session would have to answer on the applicant's behalf
 
-⚠️ **C's writes block on a prompt of their own.** Its shared helper opens a reader on standard
-input, asks whether to continue, and exits on anything but a yes — and it returns immediately
-without asking when the dry flag is set, so the prompt guards exactly the irreversible half.
-⚠️ **That is the measurement behind the rule**: a session running such a command unattended has to
-feed it an answer, and the answer it feeds is one it gave for the person whose store is about to
-change.
+C's shared helper opens a reader on standard input, asks whether to continue, and exits on anything
+but a yes; it returns without asking when the dry flag is set, so the prompt guards exactly the
+irreversible half. A session running such a command unattended would have to feed it an answer on
+behalf of the person whose store is about to change.
 
-⛔ **So the go is the procedure's own recorded ask and the command's prompt is never it**, and a
-configured command carrying its own answer is refused where it is written —
+So the go is the procedure's own recorded ask, never the command's prompt, and a configured command
+carrying its own answer is refused where it is written —
 [`schema.md § 35 → Who performs the
 apply`](../plugins/mjolnir/config/schema.md#who-performs-the-apply-and-the-go-that-is-never-the-commands-own-prompt).
-⚠️ **C also states the standing rule the `apply_by` key exists for**, in as many words: the live
-writes are the operator's to perform, and its carrier performs them only under an explicit go for
-that deploy. Both readings are a project's to state, which is why the key has two values rather
-than the procedure choosing one.
+C also states the standing rule the `apply_by` key exists for: the live writes are the operator's,
+and its carrier performs them only under an explicit go for that deploy. Both readings are a
+project's to state, so the key has two values.
 
-⚠️ **The ask being a *second* one inside a single deploy is the part worth defending.** Both copies
-put their confirmation **before** the dump, where neither the verified dump nor the rehearsal's
-output exists yet — so the question they ask is *shall this deploy happen*, and the question the
-facet adds is *shall this write happen, given what the rehearsal said*. ⛔ **The test is
+Both copies put their confirmation before the dump, where neither the verified dump nor the
+rehearsal's output exists — their question is *shall this deploy happen*; the facet adds *shall this
+write happen, given what the rehearsal said*. The test is
 [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)'s
-and nothing else**: the act is the person's, and the evidence is new.
+and nothing else: the act is the person's, and the evidence is new.
 
-⚠️ **One key the item behind this facet proposed did not survive** — an `answered_by` beside the
-step. It would have made the one unconditional rail configurable, under a word the surface already
-uses for who answers a completion check, so a project writing anything but *human* there would have
-turned the ask off. Stated here because a key dropped in silence reads as a key nobody thought of.
+No `answered_by` key sits beside the step: it would make the one unconditional rail configurable,
+under a word the surface uses for who answers a completion check, and anything but *human* there
+would turn the ask off.
 
 ### The ordering against the image, which one copy calls a decision
 
-⚠️ **C holds the order constant and B states outright that it is a decision rather than a default.**
-C writes before its build, always. B's text carries the reasoning and the case: its store sat
-several writes behind a release whose new code reads a table, a column and a dropped type on its
-first call, so the write had to precede the image — while a write purely additive to code already
-running belongs after it. ⚠️ **And B asks for exactly what the facet now does**: that the order
-chosen be stated in the confirmation, so the operator rules on it rather than discovering it.
+C writes before its build, always. B states the order is a decision: its store sat several writes
+behind a release whose new code reads a table, a column and a dropped type on its first call, so the
+write had to precede the image, while a write purely additive to running code belongs after it. B
+asks that the order chosen be stated in the confirmation.
 
-⛔ **So `order` is a configured default the go names**, which is the only arrangement both copies
-can state — [`schema.md § 35 → Where the step falls against the
+So `order` is a configured default the go names —
+[`schema.md § 35 → Where the step falls against the
 invocation`](../plugins/mjolnir/config/schema.md#where-the-step-falls-against-the-invocation-which-the-go-names).
-⚠️ **What the role may not do is decide it by reading the pending writes**: judging whether new code
-hard-requires a schema is knowledge of that project's code, which is the boundary's middle column,
-and a role that attempted it would be guessing under a key the project already answered.
+The role may not decide it by reading the pending writes: whether new code hard-requires a schema is
+knowledge of that project's code, the boundary's middle column.
 
 ### Two adopters a single block could not state
 
-⚠️ **Both copies read above carry one write per deploy, and the facet was cut to that**: one `apply`,
-and one `order` moving the whole step — dump, rehearsal and write — to one side of the image.
-⚠️ **Two adopters then reported shapes it cannot state**, read against the block as it stood rather
-than run:
+Both copies carry one write per deploy, and a single block holds one `apply` and one `order` moving
+the whole step — dump, rehearsal and write — to one side of the image. Two adopters reported shapes
+it cannot state, read against the block rather than run:
 
 | the adopter's step | what one block does with it |
 |---|---|
 | the dump has to be taken before the image, and the write made after it | `order` moves the dump with the write, so either the dump lands after the new code has served or the write lands before it |
 | several writes against one store, some owed before the image and some after | one `apply` holds one write, so the rest are performed outside the procedure and outside every rail on it |
 
-⛔ **So the block became a list of steps, and each step's phases a placement of their own** —
+So the block is a list of steps, each step's phases placed on their own side —
 [`schema.md § 35 → Several steps on one target`](../plugins/mjolnir/config/schema.md#several-steps-on-one-target-and-the-side-each-phase-falls-on).
-⚠️ **The placement is not free, and that is what keeps it the same facet**: every rail the single
-block carried was a statement about the order *dump → verify → rehearse → go → write*, so a
-placement is admitted only where it never runs that sequence backwards — refused at the load, where
-an adopter reads it, and refused again at the write, where a deploy taken out of order would
-otherwise reach the store. ⛔ **Each write keeps its own go after its own evidence**, since the
-reason for a second ask inside one deploy — the evidence did not exist when the first was put —
-holds per write and not per target. ⚠️ **And a stop now names every write made and not made**: with
-several writes falling after the image, a report naming only the one that failed leaves a reader not
-knowing which of the others the store, and the new code reading it, already has.
-
-⚠️ **A single block with no `sides` is exactly the facet it was**, which is what the two copies
-above state and what every configuration written before this change carries.
+A placement is admitted only where it never runs *dump → verify → rehearse → go → write* backwards,
+refused at the load and again at the write. Each write keeps its own go after its own evidence, and
+a stop names every write made and not made. A single block with no `sides` is the facet the two
+copies state.
 
 ### The forbidding rule no copy carries
 
-⛔ **Neither copy forbids editing a write that has already been applied, and the facet does.** Both
-warn about *re-applying* one — B's confirmation says a non-idempotent write may error on a second
-run and that skipping it is safe — and neither says anything about changing its text afterwards.
-⚠️ **So this is the position [`schema.md
+Neither copy forbids editing a write that has already been applied, and the facet does. Both warn
+about re-applying one — B's confirmation says a non-idempotent write may error on a second run and
+that skipping it is safe. This is the position [`schema.md
 § 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes)
-takes for the one of its three review classes that came from no copy**: a rule with no project's
-experience behind it, stated as such.
+takes for the one of its three review classes that came from no copy: a rule with no project's
+experience behind it.
 
-The reasoning is that an applied write is no longer an instruction but the record of what the store
-was made to be, so editing it leaves every later reader believing a state the store never passed
-through. ⛔ **What makes it checkable is that the released set is the project's to print**, by the
-device the ordering axis already uses for its own queue — and it is read from **live** targets only,
-a store the session is the only user of being one it can rebuild:
+An applied write is no longer an instruction but the record of what the store was made to be, so
+editing it leaves every later reader believing a state the store never passed through. The released
+set is the project's to print, by the device the ordering axis uses for its own queue, read from
+live targets only, since a store the session is the only user of can be rebuilt:
 [`schema.md § 35 → A record of the store's
-state`](../plugins/mjolnir/config/schema.md#a-record-of-the-stores-state-is-never-rewritten).
-⚠️ **A command that could not be run leaves the change reported unchecked rather than passed**,
-which is (10)'s own absence-of-signal rule met at the one gate whose silence would read as a clean
-diff.
+state`](../plugins/mjolnir/config/schema.md#a-record-of-the-stores-state-is-never-rewritten). A
+command that could not be run leaves the change reported unchecked rather than passed, (10)'s
+absence-of-signal rule.
 
 ## Two skills outside the loop, counted rather than taken on the claim
 
 The survey that produced the loop's roles was keyed on those roles, so it missed skills the same
-projects had copied for reasons that have nothing to do with an issue. **Two were named as missed,
-and both are now ruled out of this toolkit** — which is the finding, because they fail and pass the
-de-duplication test on opposite sides of it.
+projects had copied for reasons unrelated to an issue. Two were named as missed, and both are ruled
+out of this toolkit, though they fall on opposite sides of the de-duplication test.
 
 ### The counts, and the one of the two that has only ever had one copy
 
@@ -3700,33 +3243,27 @@ copy under another name would still be found.
 | what was claimed | what the count says |
 |---|---|
 | an editor-workspace skill, **two copies**, 127 lines each, apparently identical | **confirmed.** Two copies, both 127 lines, and the carrier's text byte-identical between them |
-| a browser-through-a-borrowed-egress skill, **two copies**, 47 and 48 lines | ⛔ **one copy.** 47 lines, in one project, added in one commit — and no other project's history carries the path, nor any file anywhere else built on the mechanism it needs |
+| a browser-through-a-borrowed-egress skill, **two copies**, 47 and 48 lines | **one copy.** 47 lines, in one project, added in one commit — and no other project's history carries the path, nor any file anywhere else built on the mechanism it needs |
 
-⛔ **Nothing but the count produced the second row**, which is why the count is a property of the
-class at [`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
-rather than a step somebody remembers. Both skills read as equally extractable from the item that
-named them: the same sentence, the same shape, two line figures each. ⚠️ **A line figure is the part
-of a claim that reads most like a measurement**, and one of the two figures the claim carried for
-the second skill is right — so the claim was partly correct in the one way that makes it hardest to
-doubt.
+Only the count produced the second row, which is why the count is a property of the class at
+[`schema.md
+§ 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
+rather than a step somebody remembers. A line figure reads like a measurement, and one of the two
+figures claimed for the second skill is right.
 
 ### Identical in the carrier, diverged in the script beside it
 
-**The confirmed pair had diverged, and not in the file anyone compares.** The carrier's text matches
-byte for byte; the script it calls does not. One copy's anchor was widened to tolerate the
-attributes the editor appends to a configuration's opening tag — `singleton`, `temporary`,
-`nameIsGenerated` — and the other copy never got it, so a block the editor had touched reads there
-as a template that is not in the file.
-
-⚠️ **The copy was taken before the fix and the fix went to the original**, which is the ordinary
-shape of this divergence and the reason *looks identical* is not a reading: the fix is a few tokens
-in a regular expression, it is invisible in a listing, and the copy that lacks it fails by reporting
-the argument as wrong.
+The confirmed pair had diverged in the script the carrier calls, not in the carrier, whose text
+matches byte for byte. One copy's anchor was widened to tolerate the attributes the editor appends
+to a configuration's opening tag — `singleton`, `temporary`, `nameIsGenerated` — and the other copy
+never got it, so a block the editor had touched reads there as a template that is not in the file.
+The fix is a few tokens in a regular expression, invisible in a listing, and the copy that lacks it
+fails by reporting the argument as wrong.
 
 ### Why the counts did not decide it, which is the whole of the finding
 
-⛔ **The two candidates land on opposite sides of the de-duplication test and get the same answer.**
-That is what retires the test as an admission rule, at [`schema.md § 36 → Why a utility has no
+The two candidates land on opposite sides of the de-duplication test and get the same answer, which
+retires the test as an admission rule, at [`schema.md § 36 → Why a utility has no
 home`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-surface-from-either-direction):
 
 | | the de-duplication test | the per-project values in it | the answer |
@@ -3734,36 +3271,26 @@ home`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-sur
 | the editor-workspace skill | **passed.** Two copies, measurably diverged, and nothing in the procedure belonging to any one project | **none.** The file's path, the block to copy and the entry point are arguments of the pass | not carried |
 | the browser skill | **failed.** One copy, so nothing to reconcile | an egress machine, a port, a target site, a browser's own path | not carried |
 
-**So the first one is the instructive case and not the second.** A candidate that passes every
-stated test and is still refused is the one that shows what the test was for — the de-duplication
-properties find a candidate and [`schema.md
+So the first one is the instructive case: the de-duplication properties find a candidate, and
+[`schema.md
 § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
-makes the loop what admits one. ⚠️ **And the property that reads
-most like a qualification is the disqualifying one** — the editor skill has *nothing* per-project
-in it, so there is no configuration for this toolkit's one mechanism to carry, and what would be
-shared is a file.
-
-⛔ **A pointer would have satisfied the boundary and delivered nothing**, which is the reading
-[`schema.md § 36 → Why a utility has no
+makes the loop what admits one. The editor skill has nothing per-project in it, so there is no
+configuration for this toolkit to carry, and what would be shared is a file. For the browser skill,
+a name for a command each project writes would have satisfied the boundary and delivered nothing,
+which [`schema.md § 36 → Why a utility has no
 home`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-surface-from-either-direction)
-forecloses for the second skill: the surface already has that shape for a tree's own setup, so the
-browser skill could have been carried as a name for a command each project writes.
-
-⚠️ **One figure is worth stating because it is the one a reader expects to decide this and does
-not**: the skill with nothing per-project in it is the longer of the two, 127 lines against 47.
-Length says nothing about whether a procedure belongs to a shared loop.
+forecloses. Length did not decide it either: the skill with nothing per-project in it is the longer,
+127 lines against 47.
 
 ## The one role whose subject is several projects
 
 One project holds a skill that builds a client's invoice for a period from that period's hours and
-deliverables and renders it with every value checked, and it covers **more than one client** — so
-it reads other projects' outputs. ⛔ **It is the only role surveyed with that shape**, and the
-shape is what made it hard to place rather than anything about what it does.
+deliverables and renders it with every value checked, and it covers more than one client — so it
+reads other projects' outputs. It is the only role surveyed with that shape.
 
 ### Why it reads as not belonging, which is the position that had to be overridden
 
-Every other role narrows to one project, and the narrowing is not incidental — it is how the
-surface is organised:
+Every other role narrows to one project, and the narrowing is how the surface is organised:
 
 | what a role reads | what scopes it |
 |---|---|
@@ -3771,37 +3298,25 @@ surface is organised:
 | the evidence a day is measured from | the same root, and the day log states outright that this project's evidence is the **only** input |
 | the audience each artifact is written for | § 8's per-artifact triple, stated by that project |
 
-**So the local answer is the strong one and is recorded here rather than summarised away.** The
-invoice is one project's skill that happens to aggregate; leaving it there costs this toolkit
-nothing, asks no project for a key, and keeps a rate and a client's name out of the repository by
-never bringing them near it. ⚠️ **Nothing in the de-duplication properties overrides that** — the
-skill has one copy.
+The local answer is strong: the invoice is one project's skill that happens to aggregate, has one
+copy, and leaving it there asks no project for a key and keeps a rate and a client's name out of
+the repository.
 
-⛔ **What overrides it is the role list**, at
+What overrides it is the role list, at
 [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop) and read as [`schema.md
 § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
-reads it. The role was already named apart on it, by the ruling that split one directory name into
-three roles, and the ruling after that one made the list what
-admits a skill at all. **Both would have had to be reopened to leave this one out**, which is a
-different and much larger claim than *this skill is awkward*: a leg of the route cannot be refused
-for being hard to place.
-
-⚠️ **And the span is not an exception to the admission rule.** A utility that read two projects
-would still be refused; this role is admitted on the reason every member of the list is, which is
-that the route needs a leg there. The two statements are compatible because neither is about how
-many projects a thing reads.
+reads it. The role was already named apart on it, and the list is what admits a skill; leaving this
+one out would reopen both rulings. A utility that read two projects would still be refused; this
+role is admitted because the route needs a leg there, not for how many projects it reads.
 
 ### What made the extraction possible, measured rather than assumed
 
-⛔ **The seam is a port, and the extraction is impossible without it** — [`schema.md
+The seam is a port — [`schema.md
 § 26`](../plugins/mjolnir/config/schema.md#26-the-day-logs-destination-port), and the operation
 list at [`schema.md § 26 → The destination's
 operations`](../plugins/mjolnir/config/schema.md#the-destinations-operations-and-what-each-absence-does).
-Before the day log's
-destination became one, the output was a filesystem path — so a cross-project consumer would have
-had to compose a directory per project and read files out of it, which is a second resolver of
-somebody else's configuration. With the port, one operation answers, and the table states what each
-half of that is:
+Without it a cross-project consumer would compose a directory per project and read files out of it,
+a second resolver of somebody else's configuration:
 
 | what the consumer needs | what answers it | what it would have been without the port |
 |---|---|---|
@@ -3809,27 +3324,19 @@ half of that is:
 | which day each figure came from | the operation's own per-day answer | a sum, with nothing behind any figure |
 | that a day could not be read | named in the answer, apart from the hours | indistinguishable from a day nobody worked |
 
-⚠️ **The per-day answer was ruled for its own reason and is what the traceability turns out to rest
-on.** It was ruled because a consumer handed a sum cannot tell a period that was short from one it
-could only partly read. The consumer that ruling named is this role, and the property it bought is
-the one the item's acceptance check asks for: ⛔ **a line item naming a root and a day names the
-entry and the run that wrote it**, the grain being one entry per day per project — so **no
-provenance field is added to an entry**, and the traceability costs the store nothing.
+The per-day answer, ruled so that a consumer can tell a short period from a partly read one, is
+what the traceability rests on: a line item naming a root and a day names the entry and the run
+that wrote it, the grain being one entry per day per project — so no provenance field is added to
+an entry.
 
 ### The two values that may not enter the toolkit, and the mark that was already there
 
-⛔ **A rate and a client's identity are the constraint the item states, and the mechanism for them
-predates this facet** — [`schema.md § 37 → The
+A rate and a client's identity are held by [`schema.md § 37 → The
 rate`](../plugins/mjolnir/config/schema.md#the-rate-and-what-this-surface-holds-about-a-client),
 resolved through [`schema.md
 § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold).
-The destination port's own ruling states that hours, rates and a client's
-identity reach no key of it, and at the time this was written **no key of that port was marked** —
-so the mark was already what made such a value statable, and this facet was the first to use it.
-⚠️ **That port has since marked one key** — the spreadsheet kind's own identifier, which is a
-store's address rather than a figure or a person — and the ruling still holds for the reason it was
-made rather than for the count: what the mark reaches is the key that *names* the store, and hours,
-a rate and a client's identity are not it.
+The destination port states that hours, rates and a client's identity reach no key of it; the one
+key it marks is the spreadsheet kind's identifier, which names a store and is none of those.
 
 | the value | where it is stated | where the value lives |
 |---|---|---|
@@ -3837,31 +3344,24 @@ a rate and a client's identity are not it.
 | the rate per client | `billing.rates`, marked `# private` | the untracked file § 28 points at |
 | which client a period is for | **nowhere.** No key names one | the invocation |
 
-⚠️ **The third row is the one a reader expects to be a key and is not**, and the test that places it
-is the surface's own: no role reads the client to decide what to do next, so it is told rather than
-configured.
+No role reads the client to decide what to do next, so it is told rather than configured.
 
 ### What a marked value costs the role that needs it, measured on this one
 
-⛔ **The second row above is unreadable by the role it exists for, and that is the mark working
-rather than failing** — [`schema.md
-§ 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold) states
-the class, and a value this repository may not hold is one the reader's report replaces with a
-marker. ⚠️ **Measured on the § 28 arm of this facet**: a run
-against a project whose `private.keys` names `billing.rates` printed `rates: "<private:
-private.source>"`, while `Config.billing` over the same project resolved the real mapping. The role
-was documented as reading the key and forbidden from parsing the file, so the chain had **no route
-to a rate at all**, and the one guard on the resolved value was reachable by nothing: disabling it
-left every suite in this repository green.
+The second row above is unreadable by the role it exists for, which is the mark working —
+[`schema.md
+§ 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold): the
+reader's report replaces such a value with a marker. A run against a project whose `private.keys`
+names `billing.rates` printed `rates: "<private: private.source>"`, while `Config.billing` over the
+same project resolved the real mapping. A role that reads the key and may not parse the file has no
+route to a rate.
 
-⛔ **So the division is the one the measuring role already had**, and it is a property of the class
-rather than of this facet — [`schema.md § 28 → The
-pointer`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
-being what puts such a value outside the tracked file in the first place: it is read **inside a
-process**, and a role that needs one names the key and runs the carrier that resolves it.
+So the value is read inside a process, per [`schema.md § 28 → The
+pointer`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold): a
+role that needs one names the key and runs the carrier that resolves it.
 [`day_log.py`](../plugins/mjolnir/scripts/day_log.py) reads `day_log.attribute_to` that way, and
-[`billing.py`](../plugins/mjolnir/scripts/billing.py) reads the rate that way, with two outputs
-whose difference is the whole of its contract:
+[`billing.py`](../plugins/mjolnir/scripts/billing.py) reads the rate that way, with outputs whose
+difference is its contract:
 
 | what it emits | what it carries | why there |
 |---|---|---|
@@ -3869,21 +3369,17 @@ whose difference is the whole of its contract:
 | the artifact, at the destination the invocation names | the rate, the money, and the client | the one output a rate is owed to, being what whoever pays reads |
 | each root's own answer, where `--answers-dir` names | that root's port answer, one file per root | § 11's ingestion step is run **per root**, and one pass over the concatenation reports one verdict for every store |
 
-⚠️ **The ingestion step moved with the reading**, and that is the same rule one level down: the
-carrier is what reads another project's store, so it is what runs the step and what stops on a
-directive found in one — a pass running it afterwards would be examining a period whose artifact was
-already written.
+The carrier reads another project's store, so it runs the ingestion step and stops on a directive
+found in one; a pass running it afterwards would examine a period whose artifact was already
+written.
 
 ### The row the port cannot answer, found by running the chain
 
-⛔ **A root that maps no day-log carrier still answers**, which is the one arm on this facet the
-obvious reading gets backwards — [`schema.md § 37 → What the list
+Each root's answer is stated at [`schema.md § 37 → What the list
 names`](../plugins/mjolnir/config/schema.md#what-the-list-names-and-what-resolves-each-entry).
-Each arm below was driven, and ⚠️ **against what each row's own description says rather than against
-a real project every time**: the first row has no project under it to be one and the third has
-something at the address that is not a store, which is what those rows *are*. ⚠️ **Nor is every row
-a fallback of the port's** — the first is § 1's reader refusing and the third is a capability
-working and its call failing, and only the second carries § 26's own stated fallback:
+Each arm below was driven against what its row describes. Only the second is § 26's stated
+fallback; the first is § 1's reader refusing and the third is a capability working and its call
+failing:
 
 | the root | what asking its store for a period returned |
 |---|---|
@@ -3892,106 +3388,76 @@ working and its call failing, and only the second carries § 26's own stated fal
 | an address occupied by something that is not a store | `failed: true`, naming the address — the capability working and the call failing |
 | a store nobody has written to yet | **performed**, with nothing in it — which is the answer, and must not stop the period |
 
-⛔ **The store nobody has written to is the green side, and is why the store that could not be
-reached cannot be collapsed into it** — [`schema.md § 26 → The destination's
+The empty store is the green side, and the unreachable one cannot be collapsed into it — [`schema.md
+§ 26 → The destination's
 operations`](../plugins/mjolnir/config/schema.md#the-destinations-operations-and-what-each-absence-does),
-which separates a failed call from an empty answer. A period nobody could ask about and a period
-nobody worked are the same empty answer otherwise. ⚠️ **Each row is named by its own subject here
-and never by its position**: an ordinal breaks silently when a row is added, which is the defect the
-count that used to sit above this table already was.
+which separates a failed call from an empty answer. Each row is named by its subject, never by its
+position, since an ordinal breaks silently when a row is added.
 
-⚠️ **And the arm that is not in that table is the one that matters**: a project mapping no `day_log`
-carrier at all. § 26's `kind` defaults to `file`, so such a project still *addresses* a store, and
-asking it comes back **performed with nothing in it** — indistinguishable from the store nobody has
-written to. ⛔ **So the carrier is read from § 7's block before the store is asked**, and the first
-version of this facet said the opposite, claiming such a root "addresses no store". It does.
+A project mapping no `day_log` carrier still answers: § 26's `kind` defaults to `file`, so it
+addresses a store, and asking it comes back performed with nothing in it — indistinguishable from
+the store nobody has written to. So the carrier is read from § 7's block before the store is asked.
 
-⛔ **And one implementation gap was found by writing the facet rather than by reasoning about it**,
-in what [`schema.md § 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold)
-routes and what [`schema.md § The file itself`](../plugins/mjolnir/config/schema.md#the-file-itself)
-marks.
-`rates` is the first `# private` key whose shape is a **mapping**, and the setup role's router read
-two shapes — a bare value and a list — so a project illustrating the shape with stand-ins had its
-illustration routed into the untracked file, and the write then refused for want of a layer that
-project deliberately states none of. The third shape is now read, both halves of each entry,
-because a client's name is as much the value as the rate beside it.
+`rates` is the first `# private` key whose shape is a **mapping** — [`schema.md
+§ 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold),
+[`schema.md § The file itself`](../plugins/mjolnir/config/schema.md#the-file-itself). The setup
+role's router reads a bare value, a list and a mapping, both halves of each entry, because a
+client's name is as much the value as the rate beside it.
 
 ## The document checks: two implementations, and the claim measured rather than taken
 
 One project holds its documents to a declared reference graph and another classifies the checks
 themselves, and the item asking for the extraction carried both as line figures — 489 and roughly
-2,400. ⛔ **The figures were measured rather than taken**, which is the property
+2,400. Both were counted, as
 [`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
-already makes a rule after a sibling claim turned out to be half invented:
+requires:
 
 | what was claimed | what the count says |
 |---|---|
 | a reference-graph implementation, **489 lines** | **confirmed.** 503 lines today, one project, reading its graph out of the rules file that governs its documents |
 | a check-classifying implementation, **roughly 2,400 lines** | **confirmed.** 2,194 lines, a different project, 140 references to markdown files in it |
 
-⚠️ **The second was found only by sweeping on behaviour and not on filename.** It is a **shell**
-script, so every sweep over `*.py` named like a check missed it — four such sweeps did, and the
-largest candidate any of them returned was 1,047 lines in a third project and was not a document
-check at all. What found it was asking which sizeable script names more than one markdown file and
-holds something.
-
-⚠️ **And the theory the item quoted is a quotation.** The three kinds, the discipline and the
-reading rule are in that script's own header, word for word — which is worth stating because the
-claim read exactly like a surveyor's paraphrase, and a paraphrase would have been this repository's
-own rule wearing another project's authority.
+The second is a shell script, so sweeps over `*.py` named like a check miss it; the largest such
+candidate, 1,047 lines in a third project, is not a document check at all. It was found by asking
+which sizeable script names more than one markdown file. The three kinds, the discipline and the
+reading rule the item quoted are in that script's own header, word for word, not a paraphrase
+carrying this repository's own rule.
 
 ### The admission question, which had to be answered before any of it was built
 
-⛔ **The two rulings that landed immediately before this one close the list of **roles** and say
-nothing about a facet**, which is what
+The closed list at [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop) admits
+**roles** and says nothing about a facet, as
 [`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
-now states outright. The reading to refuse is the one the item invites by calling itself a role: on
-that reading
-[`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)'s closed list refuses this
-work, because holding documents to a property is no leg of the route.
-
-⛔ **What shows the reading is wrong is that it refuses half the surface.** Five sections already
-carry per-project facts whose only consumer is a check or a hook rather than a role, and none of
-them is on that list — so the closed list has never been what admits a facet, and
+states. Five sections already carry per-project facts whose only consumer is a check or a hook, and
+none is on that list, so
 [`schema.md § 38`](../plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property)
-is carried on the reason § 34's is: the per-project values arrive already written as **data**.
-
-⚠️ **The item's own framing is therefore refused rather than honoured**: nothing is added to the
-loop, no `carriers` key answers for this, and no role enters it.
+is carried on § 34's reason: the per-project values arrive already written as data. The item's
+framing as a role is refused rather than honoured: nothing is added to the loop, no `carriers` key
+answers for this, and no role enters it.
 
 ### One root is false for a set whose members are addressed by name
 
-The implementation this property came from holds reachability from a **single** document. ⛔ **That
-is false of this repository, and the measurement is every role carrier it ships**, which is why
+The implementation this property came from holds reachability from a single document. That is
+false of this repository: each role carrier is loaded by name by the harness and named by no
+document, so a single-root reading reports every one unreachable, which is why
 [`schema.md § 38 → The two edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)
-states a list of entry points instead: each carrier here is loaded by name by the harness and named
-by no document, so a single-root reading reports every one of them as unreachable while a reader
-reaches them all every session. ⛔ **No count is written for it**: the figure is the length of the
-carrier directory, which the loop growing by a role changes, and a number here would then be a
-measurement that reads as current and is not.
-
-⚠️ **The teeth survive because the list is short and declared.** A project that states every
-document an entry point has turned the check off and can read that off its own configuration, which
-a single root hides by making the same decision look like a graph problem.
+states a list of entry points. No count is written for it, since it is the length of the carrier
+directory and changes with the loop. A project that states every document an entry point has
+turned the check off and can read that off its own configuration.
 
 ### The first real run reported a correct document as broken
 
-⛔ **The check's own first pass over this repository's documents produced one failure, and the
-assertion was what was wrong** — which is the reading
+The check's first pass over this repository's documents produced one failure, and the assertion
+was what was wrong — the reading
 [`schema.md § 38 → What a red says`](../plugins/mjolnir/config/schema.md#what-a-red-says-and-what-stays-in-a-projects-own-script)
-exists to force. A ruling whose cell carries `` `high \| medium \| low` `` was reported as a row
-with two cells too many: the pipes are escaped, the document renders exactly as written, and the
-count was of the raw character.
-
-⚠️ **The implementation this property was read out of has the same defect**, counting the raw
-character in the same way — so the extraction is where it was found rather than where it was
-copied. ⚠️ **And a doubled backslash is its own arm**: the pipe after a literal backslash *is* a
-delimiter, which a look-back implementation gets wrong and a consuming one gets right.
+exists to force. A cell carrying `` `high \| medium \| low` `` was reported as a row with two cells
+too many: the pipes are escaped, the document renders as written, and the count was of the raw
+character. The source implementation has the same defect. A pipe after a literal doubled backslash
+*is* a delimiter, which a look-back implementation gets wrong and a consuming one gets right.
 
 ### Three plants that certified nothing, each found by disabling the mechanism
 
-⛔ **Every arm was verified by breaking the thing it names and watching the suite redden**, which is
-the discipline
+Every arm was verified by breaking the thing it names and watching the suite redden —
 [`schema.md § 38 → Every check carries a violation`](../plugins/mjolnir/config/schema.md#every-check-carries-a-violation-it-reddens-on)
 states. Three plants did not survive it:
 
@@ -4001,28 +3467,24 @@ states. Three plants did not survive it:
 | a tilde fence that closes | the same shape: inert prose inside it stays green whether the delimiter is recognised or not |
 | a path that is not a governed document | written as a bare path in backticks, it was reachable only by the loop over documents already known, so no mutation of the edge reader could have reddened it. It is a **link** now, which is resolved and then tested against the governed set |
 
-⚠️ **One plant is kept with its limit written down instead.** The smallest legitimate table — one
-row and its delimiter — is decided by the delimiter counts agreeing and not by the run-length guard
-beside it, measured by widening that guard and watching the plant stay green. The guard's own
+One plant is kept with its limit written down. The smallest legitimate table — one row and its
+delimiter — is decided by the delimiter counts agreeing and not by the run-length guard beside it,
+measured by widening that guard and watching the plant stay green. The guard's own
 subject is a *lone* line of pipes, whose red belongs to the block check and is planted there.
 
-⚠️ **And the same discipline over the reader found five plants sharing one refusal**: absence, a
-container and a blank value had been one branch, so the suite asserted one arm three times and
-reported two it had never exercised. The branches are split, and every one of the facet's thirty-
-eight planted violations now names its own.
+The reader had five plants sharing one refusal: absence, a container and a blank value had been one
+branch, so the suite asserted one arm three times and reported two it had never exercised. The
+branches are split, and every one of the facet's thirty-eight planted violations names its own.
 
 ### A ban fails the document that states it
 
-⛔ **A forbidding entry with no scope holds every governed document, including the one that defines
-the ban**, and that document has to name the banned thing to define it. An adopter audit found the
-gap by reading the shipped surface and code, without running them. That is why
+A forbidding entry with no scope holds every governed document, including the one that defines the
+ban, which has to name the banned thing to define it. So
 [`schema.md § 38 → Which documents a forbidding entry holds`](../plugins/mjolnir/config/schema.md#which-documents-a-forbidding-entry-holds)
 lets an entry narrow itself with `covers` and take documents out with `exempt`, each exemption
-carrying its reason.
-
-⚠️ **Both keys are omitted rather than defaulted to an empty list.** The absent key keeps the
-unscoped meaning every configuration already had. An empty list would read as a decision and hold
-nothing, which is the state the facet's `graph: []` refusal already exists against.
+carrying its reason. Both keys are omitted rather than defaulted to an empty list: the absent key
+keeps the unscoped meaning, while an empty list would read as a decision and hold nothing, the
+state the facet's `graph: []` refusal exists against.
 
 A scope glob matching nothing is reported by the check rather than refused by the reader, because
 the reader opens no tree: it holds the shape, and the check, which reads the governed set, holds
@@ -4032,50 +3494,43 @@ out reads as an exemption doing its job and does nothing.
 
 ### What the facet cannot express, measured on the project it came from
 
-⛔ **The classifying implementation runs twenty-five check groups and this facet expresses four
-kinds of thing**: the governed set, the graph, the forbidden names and a document's own blocks.
-Most of the rest are computed properties of that project's **subject matter** — whether its five
-request shapes each have a home in its layout, whether its predicate vocabulary's width is stated
-where the extraction stage holds it — and
+The classifying implementation runs twenty-five check groups and this facet expresses four kinds of
+thing: the governed set, the graph, the forbidden names and a document's own blocks. Most of the
+rest are computed properties of that project's subject matter — whether its five request shapes
+each have a home in its layout, whether its predicate vocabulary's width is stated where the
+extraction stage holds it — and
 [`schema.md § 38 → What a red says`](../plugins/mjolnir/config/schema.md#what-a-red-says-and-what-stays-in-a-projects-own-script)
-leaves every one of them in that project's own script.
-
-⚠️ **Stated as a boundary rather than as coverage**, because the alternative was measured and
-refused one section over: a key pointing at a command that answers such a question satisfies the
-boundary's letter and leaves the adopting project writing the whole working procedure for a name
-back.
+leaves every one in that project's own script. A key pointing at a command that answers such a
+question would satisfy the boundary's letter and leave the project writing the whole procedure.
 
 ### Both projects' rules, expressed in the facet and run against their own trees
 
-⛔ **The facet was driven against both projects rather than argued about**, each one's rules written
-as a `documents` block in a temp skills root — neither repository touched — read by the shipped
-reader and then run by the shipped carrier over that project's own index. ⛔ **Two keys exist only
-because this was driven**, and both are
-[`schema.md § 38 → The two edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)'s:
+Each project's rules were written as a `documents` block in a temp skills root — neither repository
+touched — read by the shipped reader and run by the shipped carrier over that project's own index.
+Two keys of
+[`schema.md § 38 → The two edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)
+come from that run:
 
 | what the drive found | what it cost |
 |---|---|
 | **Thirty of one project's declared edges read as dropped.** It names each of its eight role carriers by that carrier's **slug** and never by its filename, with a per-node pattern for every other document besides | `named_as`, a row's own spelling, with the path as the default and a link resolving either way. With it, thirty failures became none |
-| **The other project declares no reference graph at all.** Under two states its only options were to list every edge its text happens to carry — turning on a graph it never asked for — or to be red for ever | a third state, `may_name: null`. ⚠️ **And warned about rather than refused**: a project in that position is a legitimate configuration, so the run names the rows it does not enforce and says which three checks hold nothing, which is the shape the quoting kind already had |
+| **The other project declares no reference graph at all.** Under two states its only options were to list every edge its text happens to carry — turning on a graph it never asked for — or to be red for ever | a third state, `may_name: null`. Warned about rather than refused: a project in that position is a legitimate configuration, so the run names the rows it does not enforce and says which three checks hold nothing, which is the shape the quoting kind already had |
 
-**What the two runs then said.** The graph-less project came back **green on every check** — its
-governed set, all seven of its forbidden names, and all three block properties, over its own six
-documents. The graph project came back with **five**, and all five are worth stating because none of
-them is a defect in that project:
+The graph-less project came back green on every check — its governed set, all seven of its
+forbidden names, and all three block properties, over its own six documents. The graph project
+came back with five, none a defect in that project:
 
 | the five | what each is |
 |---|---|
-| three edges out of its root file | cells of the **derivation table** it keeps inside that document. ⛔ The facet moves that record into configuration, so under § 38 those rows are not in the document at all — the exclusion that project's own checker needs is made unnecessary rather than expressed |
-| two mentions of its root file | a per-**citer** exception: inside its two documents about a client's repository, the root file counts only in the one form that cannot mean anything else. ⛔ **The facet does not express this and the residue is stated rather than closed** — two of that project's fifty-five edges, in one project, and a key for it would be a map per row carrying a pattern per citing document |
+| three edges out of its root file | cells of the **derivation table** it keeps inside that document. The facet moves that record into configuration, so under § 38 those rows are not in the document at all — the exclusion that project's own checker needs is made unnecessary rather than expressed |
+| two mentions of its root file | a per-**citer** exception: inside its two documents about a client's repository, the root file counts only in the one form that cannot mean anything else. **The facet does not express this** — two of that project's fifty-five edges, in one project, and a key for it would be a map per row carrying a pattern per citing document |
 
-⚠️ **Its own gate is green**, which is how the five were told apart from findings: the comparison
-was run against a project whose checker passes, so a difference is this facet's shape and not that
-project's prose.
+That project's own gate is green, so each difference is this facet's shape and not its prose.
 
 ## The specification corpus: a block of three keys, one of which was already carried
 
-The item asking for this wrote the shape it wanted, and ⛔ **one of its three keys is a second
-record of a fact that had already landed.** Read against the surface as it now stands:
+The item asking for this wrote the shape it wanted, and one of its three keys is a second record of
+a fact the surface already carries:
 
 | what the item asked for | what the surface already says |
 |---|---|
@@ -4083,105 +3538,90 @@ record of a fact that had already landed.** Read against the surface as it now s
 | `load_bearing`, the part read whole | **carried as asked**, with `[]` legitimate and the corpus's own list refused empty — § 38's division between a marker's question and a shape rule's |
 | `ref_for_version`, how a version names a ref | **already there.** [`schema.md § 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s `ref_prefix` is a ref named after a grouping's own value, and [`schema.md § 5`](../plugins/mjolnir/config/schema.md#5-readiness-gate--an-ordered-predicate-list)'s `grouping_ref_exists` already composes it. A key here would be two records of one branch-naming scheme |
 
-So what the facet carries is a carrier, two glob lists and ⛔ **one key naming which of § 4.8's
-groupings the corpus hangs off** —
+So the facet carries a carrier, two glob lists and one key naming which of § 4.8's groupings the
+corpus hangs off —
 [`schema.md § 39 → The ref is the grouping's`](../plugins/mjolnir/config/schema.md#the-ref-is-the-groupings-and-this-facet-declares-none).
-⚠️ **Written as a rule of the reader rather than a marked condition**, because what its
-requiredness turns on is *how many* groupings a project carries, which is `work_item.code_root`'s
-own reason for the same choice.
+It is a rule of the reader rather than a marked condition, because its requiredness turns on how
+many groupings a project carries, which is `work_item.code_root`'s reason for the same choice.
 
 ### The obvious rule about `kind` is refused by a shipped example
 
-⛔ **Refusing every grouping whose `kind` is not `version` reads as the natural rule and is wrong**,
-and the measurement is in this repository's own examples: the cheapest configuration there is names
-its releases with the tracker's **milestones** and cuts a branch per release, so `kind` is
-`milestone` and a ref is named after it. That rule would refuse it.
-
-⚠️ **What `kind` and `ref_prefix` each answer is therefore stated rather than conflated**: the first
-says what a grouping is **to the plan** and the second says that a ref carries its value, and it is
-only the second this facet needs —
+Refusing every grouping whose `kind` is not `version` would refuse this repository's own cheapest
+example, which names its releases with the tracker's milestones and cuts a branch per release, so
+`kind` is `milestone` and a ref is named after it. `kind` says what a grouping is to the plan and
+`ref_prefix` says that a ref carries its value; this facet needs only the second —
 [`schema.md § 39 → The ref is the grouping's`](../plugins/mjolnir/config/schema.md#the-ref-is-the-groupings-and-this-facet-declares-none).
-⛔ **What not reading it gives up is stated too**: a `ref_prefix` on a time box, named here, gets the
-corpus read at an iteration's branch and nothing refuses it.
+What not reading `kind` gives up: a `ref_prefix` on a time box gets the corpus read at
+an iteration's branch and nothing refuses it.
 
 ### Three outcomes, and the third was found by building the read
 
 The item names two — the version's own ref, and the fallback where that branch does not exist yet.
-⛔ **A third exists and only appears once the read is actually taken**, which is why
+The third is a branch on the remote and not in this clone, so there is no object to read;
 [`schema.md § 39 → The fallback`](../plugins/mjolnir/config/schema.md#the-fallback-is-correct-and-it-is-the-one-thing-here-that-must-be-said-out-loud)
-states the pair it must not be folded into: the branch is on the remote and is **not in this
-clone**, so there is no object to read.
+keeps it apart from the fallback.
 
 | the outcome | what it means | the wrong answer it is not |
 |---|---|---|
 | the version's ref resolved | the copy that governs | — |
-| the branch does not exist | the integration branch was read instead. ⚠️ Correct, and reported on every run that takes it | a verdict about the governing copy |
-| the branch is on the remote and not in this clone | **nothing was read** | the fallback. ⛔ Folding the two would read the governing copy's absence from a clone as the version's absence from the project |
+| the branch does not exist | the integration branch was read instead. Correct, and reported on every run that takes it | a verdict about the governing copy |
+| the branch is on the remote and not in this clone | **nothing was read** | the fallback. Folding the two would read the governing copy's absence from a clone as the version's absence from the project |
 
-⚠️ **The limit this makes explicit is that the read is a read.** It reaches the remote for one
-question and opens objects only out of the clone, so a version nobody has fetched is reported
-unread with the one command that would fetch it — rather than fetched, which is the role's call and
-not the carrier's.
+The read reaches the remote for one question and opens objects only out of the clone, so a version
+nobody has fetched is reported unread with the one command that would fetch it — fetching is the
+role's call, not the carrier's.
 
 ### The negative is asserted, and one arm's first form reported the right colour
 
-⛔ **"Nothing is checked out" is asserted rather than promised**: the branch, the head, the porcelain
-status and a corpus file's own uncommitted text are digested before and after a read taken from a
-third branch with a dirty tree, and compared. The read it takes is the version's copy and not the
-uncommitted one, which is the whole of what
+"Nothing is checked out" is asserted: the branch, the head, the porcelain status and a corpus
+file's own uncommitted text are digested before and after a read taken from a third branch with a
+dirty tree, and compared. The read takes the version's copy and not the uncommitted one, which is
+what
 [`schema.md § 39 → Which copy governs`](../plugins/mjolnir/config/schema.md#which-copy-governs-and-why-the-working-tree-is-never-it)
 is for.
 
-⚠️ **The arm needed a second tree, and a plant is what found it.** Planting a plain `git checkout`
-into the read reported **green**: on a dirty tree git refuses that checkout, because it would
-overwrite the local change — so the arm was reached only by a *forcing* checkout, and a plant
-nobody forced certified nothing. ⛔ **So the negative is asserted twice**, on the dirty tree and on
-a clean one, the clean tree being where a plain checkout succeeds; and the suite asserts that the
-clean tree really was clean, or the pair would be the dirty arm written out twice.
+On a dirty tree git refuses a plain `git checkout` that would overwrite the local change, so a
+planted plain checkout stays green there and only a forcing one is caught; a plant nobody forced
+certified nothing. So the negative is asserted on the dirty tree and on a clean one, where a plain
+checkout succeeds, and the suite asserts that the clean tree really was clean.
 
 ### A bare-revision candidate was two of the defects the facet exists against
 
-⛔ **The reading resolves two candidates and no third: the remote-tracking ref and the local
-branch**, which is what
+The reading resolves two candidates and no third: the remote-tracking ref and the local branch —
+what
 [`schema.md § 39 → The ref is the grouping's`](../plugins/mjolnir/config/schema.md#the-ref-is-the-groupings-and-this-facet-declares-none)
-means by a ref composed from a prefix. The first form carried the composed name as a bare revision
-beside them, which reads as a convenience and is two defects:
+means by a ref composed from a prefix. The composed name as a bare revision would be a third
+candidate, and two defects:
 
 | what the third candidate admitted | what it would have reported |
 |---|---|
 | a **tag** of the composed name | *at the version* — while the arm that decides the unread outcome reads the remote's **heads** only, so the same name is simultaneously *there* and *not advertised*. The two answers § 39 keeps apart, reached through a candidate nothing on the surface asks for |
 | a `ref_prefix` leaving the composed name a revision expression | the working tree's own commit, read as the version's copy — the one thing the facet is for |
 
-⚠️ **Found by reading the diff rather than by a red**, and closed with the arm that reproduces it: a
-tag named with the facet's own prefix, at the version's commit, with no branch of that name. It
-reddens when the candidate is put back. ⛔ **So a branch is what the facet composes throughout**,
-which is what § 4.8's `ref_prefix` already means — `grouping_ref_exists` looks for it among the
+An arm reproduces it: a tag named with the facet's own prefix, at the version's commit, with no
+branch of that name, which reddens if the candidate is put back. A branch is what the facet
+composes throughout, as § 4.8's `ref_prefix` means — `grouping_ref_exists` looks for it among the
 remote's heads.
 
 ### The claim about contradictions covers every outcome, not the arms that mentioned it
 
-⛔ **No outcome carries a verdict about whether the request contradicts the corpus**, that reading
-being the filing role's by
+No outcome carries a verdict about whether the request contradicts the corpus, that reading being
+the filing role's by
 [`schema.md § 39 → the absent case`](../plugins/mjolnir/config/schema.md#carrier-none-and-the-two-answers-it-must-not-collapse-into-one).
-⚠️ **Two of the four arms asserted it and two did not**, which is a claim
-about two answers wearing the shape of a claim about all of them — so every answer the suite takes
-is collected and the claim is made once over the set, with the **reached** set asserted beside it: a
-collector nothing fed would make the claim vacuously true.
+The suite collects every answer it takes and makes the claim once over the set, with the reached
+set asserted beside it, since a collector nothing fed would make the claim vacuously true.
 
-⚠️ **And one arm's first form was measured wrong rather than failing.** The grouping rule asked its
-question against the raw `work_item.grouping` block, where a grouping whose carrier is `none` is
-still written; § 4.8's own rules drop it, and the gate's checks read the set that remains. So a
-project planning in no grouping was refused for stating no `ref_prefix` — the right colour under
-the wrong key, and a plant certifying the wrong arm. ⛔ **The fix was to ask the resolved set**, in
-the one function that produces it, which is why this rule sits beside § 5's rather than with the
-facet's own glob arms.
+The grouping rule asks its question of the resolved set, not the raw `work_item.grouping` block:
+a grouping whose carrier is `none` is still written there, § 4.8's rules drop it, and asking the
+raw block refused a project planning in no grouping for stating no `ref_prefix` — the right colour
+under the wrong key, and a plant certifying the wrong arm. The rule sits beside § 5's, in the one
+function that produces the resolved set, rather than with the facet's own glob arms.
 
 ### The roles that hold the item read it too, where the project says so
 
-One adopter loads its version's specification at start and again while implementing, and the
-filing role is the only one here that reads it. ⛔ **The answer is a list of roles and not a second
-read**: `while_working.roles` names which of the starting and implementing roles run the same
-command, at the same ref, for the item they hold —
+One adopter loads its version's specification at start and again while implementing. The answer is
+a list of roles and not a second read: `while_working.roles` names which of the starting and
+implementing roles run the same command, at the same ref, for the item they hold —
 [`schema.md § 39 → The roles that read it while the work is done`](../plugins/mjolnir/config/schema.md#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read).
 
 | what was weighed | what the surface says, and why |
@@ -4192,62 +3632,55 @@ command, at the same ref, for the item they hold —
 | a narrowing list read as a corpus of its own | **an intersection instead.** A document is loaded only where both lists match it, so a glob reaching outside `files` cannot widen the read |
 | an item carrying no version falling back | **a stop.** The fallback is for a version with no branch; an item naming no version has no governing copy to decide, and reading the integration branch for it would read as the version's own |
 
-⛔ **The two roles add a statement the filing role never needed**: *this project does not have this
-role read its corpus*. It is neither the absent subject nor a verdict, and the carrier prints it in
-its own words so that a role asked to read nothing cannot report that nothing contradicts the item
-([`schema.md § 39 → The roles that read it while the work is done`](../plugins/mjolnir/config/schema.md#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read)).
+The two roles add a statement the filing role never needed: *this project does not have this role
+read its corpus*. It is neither the absent subject nor a verdict, and the carrier prints it in its
+own words so that a role asked to read nothing cannot report that nothing contradicts the item.
 
 ## The role that writes a specification: two implementations, and the half already carried
 
 A role that turns raw source material into a specification and then into work items was named as
-missed by the survey that produced the loop's roles, with **two independent implementations** behind
-the claim. ⛔ **Both exist and the count behind the word *two* is the first thing that moves**: one
-is a project's own skill and the other is the [public plugin cited as prior art](#prior-art), so
-across the six projects here there has only ever been **one** copy of this role.
+missed by the survey that produced the loop's roles, with two independent implementations behind
+the claim. Both exist, and the count behind the word *two* is the first thing that moves: one is a
+project's own skill and the other is the [public plugin cited as prior art](#prior-art), so across
+the six projects here there has only ever been one copy of this role.
 
 | what was claimed | what the count says |
 |---|---|
-| a project skill turning sources into a requirements document, a screens-and-components breakdown and a cross-session task list | **confirmed, and one copy.** 95 lines, in one project. Every skill and command directory across the six holds no second one, and no other project's history carries the path. ⚠️ **The sweep was keyed on the path and not on the mechanism**, so a copy under a wholly unrelated name is outside what it covered — the step [the earlier count](#the-counts-and-the-one-of-the-two-that-has-only-ever-had-one-copy) did take and this one did not |
+| a project skill turning sources into a requirements document, a screens-and-components breakdown and a cross-session task list | **confirmed, and one copy.** 95 lines, in one project. Every skill and command directory across the six holds no second one, and no other project's history carries the path. The sweep was keyed on the path and not on the mechanism, so a copy under a wholly unrelated name is outside what it covered — the step [the earlier count](#the-counts-and-the-one-of-the-two-that-has-only-ever-had-one-copy) did take and this one did not |
 | a superseded plugin carrying it as five skills plus a brainstorm front end | **confirmed.** Six carriers, 902 lines — 337, 195, 143, 114, 63 and 50 — in a third-party repository, not in any project here |
 
-⚠️ **The one copy has had two carriers and never two copies.** It was a slash command until
-2026-09-01 and has been a skill since, on a pass whose subject was making that project's
-configuration skills-only — which is [§ 7](../plugins/mjolnir/config/schema.md#7-carrier)'s axis
-moving under a role that stayed put, and the reason a sweep keyed on either carrier alone reports a
-different number from a sweep keyed on the role.
+The one copy has had two carriers and never two copies: first a slash command, now a skill. That
+is [§ 7](../plugins/mjolnir/config/schema.md#7-carrier)'s axis moving under a
+role that stayed put, and why a sweep keyed on either carrier alone reports a different number
+from a sweep keyed on the role.
 
 ### The adopting project drew the seam itself, in its own migration
 
-**The strongest evidence about where this role belongs is a diff that already exists.** On
-2026-11-19 the project holding it moved its development process onto this toolkit, and what that
-commit did to this 95-line file is **six insertions and six deletions**, leaving it 95 lines:
+On 2026-11-19 the project holding the role moved its development process onto this toolkit, and
+that commit made six insertions and six deletions in the 95-line file, leaving it 95 lines:
 
 | what changed, over six lines | what it means |
 |---|---|
 | **four lines** naming that project's own former role carriers now name this toolkit's starting and finishing roles — five references, one line carrying two | the legs this toolkit carries are called rather than reimplemented |
-| **one line** where *per that role's rules* became *which is `work_item.grouping.sprint` in the configuration*. ⚠️ The tracker field identifier beside it is unchanged — what moved is where its value is **stated**, not the value | the per-project fact is read from the one file rather than depending on another role's text |
-| **one line** where *follow that role's steps 4–5 verbatim* became a pointer at `branch_model.tree_dir` and that project's own tree-mechanics file | ⚠️ **the direction worth noting** — the migration **removed** the instruction to follow another role's steps and replaced it with a key |
+| **one line** where *per that role's rules* became *which is `work_item.grouping.sprint` in the configuration*. The tracker field identifier beside it is unchanged — what moved is where its value is stated, not the value | the per-project fact is read from the one file rather than depending on another role's text |
+| **one line** where *follow that role's steps 4–5 verbatim* became a pointer at `branch_model.tree_dir` and that project's own tree-mechanics file | the migration removed the instruction to follow another role's steps and replaced it with a key |
 
-**Nothing moved out of the file.** An adopter mid-migration, with every incentive to hand this work
-to the toolkit it was adopting, kept the document-writing local and rewired the three things it
-wanted from the loop into calls and keys.
+Nothing moved out of the file. An adopter mid-migration kept the document-writing local and rewired
+the three things it wanted from the loop into calls and keys.
 
 ### What the overlap is, measured against the roles that have landed
 
-The item carried the claim that *roughly half* of that skill is already the filing and starting
-roles. ⛔ **Measured, the overlap is the whole of what it names and not half of anything**: creating
-the item, a duplicate search of two or more keyword passes over summary and description in both
-languages with no status filter, and the branch cut in its own tree. All three are the filing role's
-duplicate check and the starting role's claim, both landed.
-
-⚠️ **As a share of the file it is 9 lines of 95** — one step of eight, two rules, and one phrase of
-the closing report. The *capability* share and the *line* share differ by an order of magnitude, and
-only the second can be checked.
+The item claimed that *roughly half* of that skill is already the filing and starting roles.
+Measured, the overlap is the whole of what it names: creating the item, a duplicate search of two
+or more keyword passes over summary and description in both languages with no status filter, and
+the branch cut in its own tree. All three are the filing role's duplicate check and the starting
+role's claim, both landed. As a share of the file it is 9 lines of 95 — one step of eight, two
+rules, and one phrase of the closing report.
 
 ### The two residues do not meet
 
-With the overlap removed, what is left of each implementation is disjoint from the other — ⛔ **not
-two copies of one procedure, but two procedures that share a sentence of description**:
+With the overlap removed, what is left of each implementation is disjoint from the other: two
+procedures that share a sentence of description.
 
 | | the project skill | the plugin |
 |---|---|---|
@@ -4256,40 +3689,34 @@ two copies of one procedure, but two procedures that share a sentence of descrip
 | what it validates | each document against the sources, in both directions | each document against the others, for consistency |
 | where the items go | a tracker, through this toolkit's own roles | a file per entry, or one of that plugin's own tracker adapters |
 
-⛔ **Reconciling them would mean adopting one and configuring the other away**, which is a copy with
-a configuration wrapper rather than a procedure over configuration — the shape
+Reconciling them would mean adopting one and configuring the other away — a copy with a
+configuration wrapper, the shape
 [`schema.md § 36`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-surface-from-either-direction)
-already refuses from both ends.
+refuses from both ends.
 
-⚠️ **And the plugin's residue is mostly its own machinery.** 126 of its principal skill's 337 lines
-are about a specification at all — its six numbered steps, the rest being its layout and
-tracker-mode probes, its resolver entry, its creation path, its commit gate and its closing-summary
-token contract. The 211 that remain name that plugin's own helper modules, probe names, refusal
-shapes, approval-marker protocol and token ledger; and even inside the 126, the milestone-identity
-guard and the branch gate are its own again.
+The plugin's residue is mostly its own machinery. 126 of its principal skill's 337 lines are about
+a specification at all — its six numbered steps; the other 211 are its layout and tracker-mode
+probes, resolver entry, creation path, commit gate, closing-summary token contract, helper modules,
+refusal shapes and approval-marker protocol. Even inside the 126, the milestone-identity guard and
+the branch gate are its own.
 
 ### The part with nothing per-project in it
 
-**Three rules are the residue that generalises, and all three are about the *source* rather than
-about the document.** They are stated once, at
+Three rules generalise, all about the *source* rather than the document. They are stated at
 [`schema.md § 11`](../plugins/mjolnir/config/schema.md#what-a-source-establishes-and-the-hole-a-distillation-reads-over),
-and are not repeated here. ⛔ **They come from one of the two implementations and not from both**,
-which is the weaker provenance and is stated rather than netted out: the project skill carries them
-as a pass its own text calls mandatory, and the plugin carries no source-validation step at all —
-it interviews a person, so there is no export for it to parse and no referenced artifact for it to
-go looking for.
+and come from one of the two implementations: the project skill carries them as a pass its own
+text calls mandatory, and the plugin carries no source-validation step — it interviews a person, so
+there is no export to parse and no referenced artifact to look for.
 
-⚠️ **Their per-project values are none**, which
+Their per-project values are none, which
 [`schema.md § 36`](../plugins/mjolnir/config/schema.md#why-a-utility-has-no-home-on-this-surface-from-either-direction)
-makes the sign that a shared **file** is what is wanted — except that these are not a utility: the
-filing role already reads a request somebody else wrote and already distils it into an item, so the
-leg that owes them exists. ⛔ **Which is why they ship as procedure on that leg** and not as a
-reference two projects point at.
+makes the sign that a shared file is wanted — except that these are not a utility: the filing role
+already reads a request somebody else wrote and distils it into an item, so the leg that owes them
+exists. They ship as procedure on that leg.
 
 ### What the dependent project holds, which is what *dropped* has to be true of
 
-The project that depended on the superseded plugin keeps its specification in that plugin's layout,
-and the figures are what any answer here has to be honest about:
+The project that depended on the superseded plugin keeps its specification in that plugin's layout:
 
 | what it holds | the count |
 |---|---|
@@ -4298,90 +3725,79 @@ and the figures are what any answer here has to be honest about:
 | archived entries | 12 files, 1,039 lines |
 | the active plan, and the finished ones | 1 file of 44 lines, and 2 of 192 |
 
-⚠️ **None of that is in the path of this question.** The entries move onto a real tracker and the
+None of that depends on this toolkit authoring it. The entries move onto a real tracker and the
 documents stay documents under that project's own migration item, and the two things that bear on
-such a corpus are **both carried**: what *holds* it is
+such a corpus are both carried: what *holds* it is
 [§ 38](../plugins/mjolnir/config/schema.md#38-the-documents-a-project-holds-to-a-checkable-property),
 and which *copy* of it governs a given item is
 [the corpus facet](#the-specification-corpus-a-block-of-three-keys-one-of-which-was-already-carried)
-the filing role reads. ⛔ **What is dropped is the authoring**, and nothing that project holds
-depends on this toolkit authoring it.
+the filing role reads. What is dropped is the authoring.
 
-⛔ **That second one is the strongest form this section's own test takes, and it is a shipped facet
-rather than an argument.** The filing role reads a specification corpus **it did not author**, at
-the ref the item's grouping names
+The filing role reads a specification corpus it did not author, at the ref the item's grouping
+names
 ([`schema.md § 39`](../plugins/mjolnir/config/schema.md#39-the-specification-corpus-and-which-copy-of-it-governs))
-— so the thing a spec-writing leg would produce is already consumed by a leg that never needed one
-to exist. ⚠️ **And a project carrying no corpus files its items unchanged**, which is that facet's
-own absent case: the one test a leg of [§ The
-loop](../plugins/mjolnir/config/schema.md#the-loop) has to pass, answered by
-configuration instead of by this document.
+— so what a spec-writing leg would produce is already consumed by a leg that never needed one. A
+project carrying no corpus files its items unchanged — that facet's absent case, and the test a
+leg of [§ The loop](../plugins/mjolnir/config/schema.md#the-loop) has to pass.
 
 ## The ordering record: the leg the route consumed and no leg produced
 
-The closing-out role is this repository's own prototype promoted, and ⛔ **it is the one candidate so
-far admitted to [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)'s
-closed list rather than ruled a facet.** The two readings before it went the other way — one was
-ruled out of the toolkit entirely and one was carried as a block of configuration with a check — so
-the admission is the finding and the argument has to be the one
+The closing-out role is this repository's own prototype promoted, and it is the one candidate so
+far admitted to [`schema.md § The loop`](../plugins/mjolnir/config/schema.md#the-loop)'s closed
+list rather than ruled a facet, on the test
 [`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
-states and not a new one.
+states.
 
 | what the list's test asks | the answer for this candidate |
 |---|---|
 | does the **route** need a leg here? | **yes, and the gap is readable off the surface.** [`§ 12`](../plugins/mjolnir/config/schema.md#12-ordering) is read by the starting role to decide which item to offer, and no leg of the route wrote one. A route that consumes an ordering and never maintains it reads a stale answer on its first act |
-| is the reason statable, and the same one every time? | **yes**: it is the leg after a batch lands, the same way filing is the leg before a gate. ⚠️ It is not *this thing has several copies* — the candidate has exactly one copy, in this repository |
+| is the reason statable, and the same one every time? | **yes**: it is the leg after a batch lands, the same way filing is the leg before a gate. It is not *this thing has several copies* — the candidate has exactly one copy, in this repository |
 | would a facet and a check do instead? | **no.** The pass makes **writes** that are judgement — which item goes where in an order — and § 38's own argument is that what a facet carries is a graph, a file set or a list that arrives already written as data. An order of work does not: nothing derives it |
 
-⚠️ **The facet it needed came with it rather than instead of it**, which is the part the table above
-would otherwise read as contradicting: what a project differs on is *where the order is kept*, and
+The facet it needed came with it: what a project differs on is *where the order is kept*, and
 that is [`schema.md § 40`](../plugins/mjolnir/config/schema.md#40-the-record-a-projects-ordering-is-kept-in-and-what-brings-one-into-existence)
 — a role on the list, with one block of configuration under it.
 
-⚠️ **The de-duplication test is silent here, in the direction that matters.** One copy is what ruled
-the browser skill out two sections up, and this candidate has one copy as well — so a list that
-admitted on duplication would have refused this and admitted that. The scope is what decides, which
-is § 36's own statement arriving on the first candidate it admits.
+The de-duplication test is silent here. One copy is what ruled the browser skill out two sections
+up, and this candidate has one copy as well; the scope is what decides, as § 36 states.
 
 ### What the prototype hardcoded, which is the facet
 
 The prototype is 604 lines of implementation under a 203-line carrier, tracked in this repository's
-own skills root — so it was already under the strictest naming rule here and already free of a
-project's name. ⛔ **What it was not free of is this project's own *shape***, and the four values it
-composed are what the facet had to answer:
+own skills root — so already under the strictest naming rule here and free of a project's name. It
+was not free of this project's own *shape*, and the four values it composed are what the facet had
+to answer:
 
 | what the prototype held | what it is now |
 |---|---|
-| a filename glob for the ordering document | `ordering.record.document` — **one** document and not a glob. ⚠️ The glob was there because the prototype could not be told the name, and it carried a refusal for *several matched* that the key makes unreachable |
-| the directory, composed from a home directory and the working tree's own path | `ordering.record.dir`, marked `# private`. ⛔ The composition was a second implementation of the harness's own rule, which is exactly what [`§ 25`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes) forbids a role to do about the memory store |
-| the baseline's filename, beside the document | **procedure, and deliberately not a key.** A key would let a project point the record and its baseline at different places, which reads as a pass that found no drift. ⚠️ Its *directory* is `ordering.record.dir`, which is why that key is required under the grouping carrier too — the baseline needs a place to stand whichever carrier the record is on |
+| a filename glob for the ordering document | `ordering.record.document` — **one** document and not a glob. The glob was there because the prototype could not be told the name, and it carried a refusal for *several matched* that the key makes unreachable |
+| the directory, composed from a home directory and the working tree's own path | `ordering.record.dir`, marked `# private`. The composition was a second implementation of the harness's own rule, which is exactly what [`§ 25`](../plugins/mjolnir/config/schema.md#the-carriers-and-what-each-of-them-closes) forbids a role to do about the memory store |
+| the baseline's filename, beside the document | **procedure, and deliberately not a key.** A key would let a project point the record and its baseline at different places, which reads as a pass that found no drift. Its *directory* is `ordering.record.dir`, which is why that key is required under the grouping carrier too — the baseline needs a place to stand whichever carrier the record is on |
 | the row table's grammar — an integer label places, a non-integer retires | **procedure, and the `document` carrier's.** A project that could reword it is a project whose ordering the shared role cannot read, which is the whole of what the carrier is for |
 
-⛔ **And one value it read correctly already**: the tiers an ordering may carry came out of
-[`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority) through the shipped reader rather than out
-of a constant, which is why that is not a key of this facet. The three that are deliberately not
-keys are stated together at
+The tiers an ordering may carry already came out of
+[`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority) through the shipped reader rather than a
+constant, so that is not a key of this facet. The three that are deliberately not keys are stated
+together at
 [`§ 40 → The one directory`](../plugins/mjolnir/config/schema.md#the-one-directory-why-it-is-marked-and-what-is-not-a-key-here).
 
 ### The second carrier came from the trackers rather than from this project
 
-⛔ **This repository exercises one of the two carriers and could not have produced the other.** It
-runs on plain issues with no board, so the only shape it can measure is a document — and a facet
-read off it alone would have shipped a path key, which is the reading
+This repository runs on plain issues with no board, so the only carrier it can measure is a
+document, and a facet read off it alone would have shipped a path key — the reading
 [`§ 40 → The two carriers`](../plugins/mjolnir/config/schema.md#the-two-carriers-and-the-one-thing-neither-of-them-is)
-refuses. What the grouping carrier is read off is
+refuses. The grouping carrier is read off
 [`§ 4.8`](../plugins/mjolnir/config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s own
-survey, already recorded above: one measured tracker holds a time box and a release scope as two
-fields, and the order of work is kept in the first of them.
+survey: one measured tracker holds a time box and a release scope as two fields, and the order of
+work is kept in the first of them.
 
-⚠️ **Which is why the record's `grouping` key is a *name* and not a flag.** A project carrying two
+That is why the record's `grouping` key is a *name* and not a flag. A project carrying two
 groupings has one it orders work in and one it does not, so a carrier word alone would leave the
-role choosing — and the choice is invisible on the item, which is the property § 4.8 already states
-about a grouping's wrong value.
+role choosing, invisibly on the item.
 
-⛔ **And the third shape measured is carried by neither carrier, stated rather than smoothed over**
+A third measured shape is carried by neither carrier
 ([`§ 40 → The two carriers`](../plugins/mjolnir/config/schema.md#the-two-carriers-and-the-one-thing-neither-of-them-is)).
-One surveyed board's order is the **position of a card in a list**, written by whoever drags it:
+One surveyed board's order is the position of a card in a list, written by whoever drags it:
 neither a grouping nor a document, and nothing here reads or writes it. That project states
 `ordering.carrier: command` with `ordering.record.carrier: none` — the one combination that shows the
 two keys are different questions — and the shipped Trello example is written that way.
@@ -4389,37 +3805,33 @@ two keys are different questions — and the shipped Trello example is written t
 ### Why `derived` is not one of the carriers, measured against the store that has it
 
 [`§ 25`](../plugins/mjolnir/config/schema.md#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)
-carries a `derived` carrier for the memory store and this facet carries none, and the asymmetry is
-mechanical rather than a preference: under `derived` the procedure **composes no path and resolves
-nothing inside the store**, and the memory third survives that because the harness itself does the
-reading. ⛔ **There is no second reader here.** The closing-out role has to open the document, so a
-derived carrier would state a store the role may not look inside — and the prototype's own answer to
-that was to guess the harness's layout, which is the defect rather than the precedent.
+carries a `derived` carrier for the memory store and this facet carries none. Under `derived` the
+procedure composes no path and resolves nothing inside the store, and the memory facet survives
+that because the harness itself does the reading. There is no second reader here: the closing-out
+role has to open the document, so a derived carrier would state a store the role may not look
+inside — and the prototype's answer to that was to guess the harness's layout, which is the defect.
 
 ### The private layer's absence is not a load-time refusal, measured
 
 [`§ 28`](../plugins/mjolnir/config/schema.md#28-a-configured-value-a-repository-may-not-hold) states
-that a `source` which does not open is refused, and the obvious reading is that a clone without the
-untracked file cannot read its configuration at all — which for this repository would mean every
-gate that loads the configuration going red in a checkout that cannot have the file.
-⛔ **Measured, and it does not happen.** With this project's private file moved aside, the whole
-mirrored gate set returns **the same verdict on every check** as with it in place, and the reader
-itself loads and prints: the layer is held at load time for its *shape* — the pointer, the list, the
-marks, the collision with a tracked value — and the **values** are resolved where they are read.
+that a `source` which does not open is refused, which might read as a clone without the untracked
+file being unable to read its configuration at all. Measured, it is not: with this project's
+private file moved aside, the whole mirrored gate set returns the same verdict on every check as
+with it in place, and the reader itself loads and prints. The layer is held at load time for its
+*shape* — the pointer, the list, the marks, the collision with a tracked value — and the values are
+resolved where they are read.
 
-⚠️ **So the refusal moves to the role rather than disappearing**, which is the honest half: a
-closing-out pass run on a machine with no private layer is refused with the key named, and that is
-the one place the absence can be reported to somebody who can fix it. ⚠️ **And it is why this
-repository could adopt the facet at all** — it is the toolkit itself, it is public, and until this
-section it carried `private.carrier: none` on the stated ground that every value it holds may be
-committed. An ordering document's directory is the first value here for which that is false.
+The refusal moves to the role: a closing-out pass run on a machine with no private layer is
+refused with the key named, the one place the absence can be reported to somebody who can fix it.
+This repository carried `private.carrier: none` while every value it held could be committed; an
+ordering document's directory is the first value here for which that is false.
 
 ### The two operations the port did not state
 
-The prototype reached the host directly — one client call for the repository and two GraphQL queries
-— and ⛔ **two of those reads and one write had no operation on
+The prototype reached the host directly — one client call for the repository and two GraphQL
+queries — and two of those reads and one write had no operation on
 [`§ 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)'s
-closed list**, which is what a role carrying its own client hides:
+closed list:
 
 | what the pass needs | what answered it before | what answers it now |
 |---|---|---|
@@ -4428,50 +3840,43 @@ closed list**, which is what a role carrying its own client hides:
 | the change that closed a landed item, and its commit | a second GraphQL query | **`read_closing_change`**, new: `link_for_close`'s own read after the fact |
 | an ordering that does not exist yet, where it is a grouping | nothing — the prototype has no such arm | **`create_grouping`**, new: the one write about a grouping made before any item is in it, which is what [`§ 39 → An ordering that does not exist yet`](../plugins/mjolnir/config/schema.md#an-ordering-that-does-not-exist-yet-and-the-one-act-that-is-the-persons) makes the bootstrap on that carrier |
 
-⛔ **Neither new operation is implemented by every adapter, and the absences are stated rather than
-left to read as gaps**
+Neither new operation is implemented by every adapter
 ([`§ 3 → The operations`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)).
-The closing-change read is implemented on both GitHub kinds, where an item
-*is* an issue on the host that holds the change, and absent on the other two: a Trello card holds no
-reference to a change in either direction, and what a Jira item shows is written by a code-host
-integration somebody installed, which is a fact about that installation rather than about the
-tracker. The grouping create is implemented on plain issues alone, the milestone being an object;
-everywhere else the grouping is a **field's value**, and a field's value is not an object anything
-creates — which is the same argument `mark_grouping_released` is already absent on for those kinds.
+The closing-change read is implemented on both GitHub kinds, where an item *is* an issue on the
+host that holds the change, and absent on the other two: a Trello card holds no reference to a
+change in either direction, and what a Jira item shows is written by a code-host integration
+somebody installed. The grouping create is implemented on plain issues alone, the milestone being
+an object; everywhere else the grouping is a field's value, which nothing creates — the same
+argument `mark_grouping_released` is absent on for those kinds.
 
 ### The prototype's own rule the promotion kept, and the one it had to make general
 
-⛔ **The prototype already left no audit trail** — its carrier says the ordering document states what
-is true now and that everything about a pass goes in the reply — and
+The prototype already left no audit trail — its carrier says the ordering document states what is
+true now and that everything about a pass goes in the reply — and
 [`§ 40 → What a pass may not do`](../plugins/mjolnir/config/schema.md#what-a-pass-may-not-do-whatever-the-carrier)
-is that rule stated where a check can be pointed at it rather than in one project's skill. ⚠️ **Its
-own note said no gate reaches that document**, which is still true of a document outside every tree
-and is the reason the rule is written on the surface rather than relied on.
+states that rule on the surface. No gate reaches a document outside every tree, which is why the
+rule is written there.
 
-⚠️ **What had to become general is the residue rule.** The prototype's statement about another
-session's half-made edit is about *the plan file*, which has no lock; under the facet the same
-situation on the grouping carrier is two sessions writing one tracker. ⛔ **So what the surface
-states is the act and not the file** — reported, never repaired, with whose it is named — and the
-baseline is what makes the report possible on either carrier, no tracker bumping an item's own
-modification time when a relation changes.
+The residue rule had to become general. The prototype's statement about another session's
+half-made edit is about *the plan file*, which has no lock; on the grouping carrier the same
+situation is two sessions writing one tracker. So the surface states the act and not the file —
+reported, never repaired, with whose it is named — and the baseline makes the report possible on
+either carrier, no tracker bumping an item's own modification time when a relation changes.
 
 ## The stage between a deploy and a release, measured where there is no copy of it
 
-⛔ **This is the one role whose facet was derived from no shipped carrier at all**, and the
-measurement is what makes that a finding rather than an excuse —
+This is the one role whose facet was derived from no shipped carrier:
 [`schema.md § 41`](../plugins/mjolnir/config/schema.md#41-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed)
 is the facet, and
 [`schema.md § 41 → Its own role`](../plugins/mjolnir/config/schema.md#its-own-role-and-the-two-grounds-that-rule-it-apart-from-the-reviewing-one)
-is the ruling that separates it from the reviewing one. Every other facet on the surface was
-read out of several copies and reconciled; this one had exactly one artefact behind it.
+is the ruling that separates it from the reviewing one. It had exactly one artefact behind it.
 
 | what was there | and what that costs |
 |---|---|
 | **A draft runbook for the stage, written against one consumer and held outside every tree.** Nothing loads it, no gate reads it, and no project's configuration points at it | the same cost two other carriers record one stage later: a document nothing holds is a document free to disagree with whatever the loop actually does, and nobody finds out |
 | **One recorded run of it against that consumer's deployed target**, carrying a scenario count and, inside it, one tier **held** rather than run — a form submission there would have reached real recipients | a reading that is a **precondition** and not a verdict, which is why the facet makes a skip name itself rather than fold into a pass |
 
-⛔ **So the keys are argued from the surface's existing sections rather than from a survey**, and
-each of them is a question one of those sections leaves open —
+So each key answers a question one of the surface's existing sections leaves open —
 [`schema.md § 41`](../plugins/mjolnir/config/schema.md#41-what-a-deployed-item-is-judged-against-and-the-readings-a-person-is-handed)
 states all three, and
 [`schema.md § 41 → The four buckets`](../plugins/mjolnir/config/schema.md#what-the-criteria-are-read-from-and-the-four-buckets-one-falls-in)
@@ -4479,16 +3884,15 @@ states what each criterion they are read for owes the record:
 
 | the key | what already existed, and what it did not answer |
 |---|---|
-| `verify.identity` | [`schema.md § 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes) states what a target **is** and what reaching it invokes. ⛔ It states nothing about reading what a target is **serving**, which a judgement is about: the facet keys a command per target and holds the keys to that list |
-| `verify.baseline` | [`§ 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states what a tier needs before it can run. ⛔ The before-and-after comparison is not a tier by that section's own test — it selects no set of cases — so its two inputs had nowhere to be stated |
-| `verify.breakpoints` | ⛔ Surface by the test that admits a facet at all: a **shared role** reads it to decide what to hand over. A project-local list would have left the one question a person is asked keyed on a value no role could reach |
+| `verify.identity` | [`schema.md § 33`](../plugins/mjolnir/config/schema.md#33-the-deploy-targets-and-what-reaching-one-invokes) states what a target **is** and what reaching it invokes. It states nothing about reading what a target is **serving**, which a judgement is about: the facet keys a command per target and holds the keys to that list |
+| `verify.baseline` | [`§ 31`](../plugins/mjolnir/config/schema.md#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) states what a tier needs before it can run. The before-and-after comparison is not a tier by that section's own test — it selects no set of cases — so its two inputs had nowhere to be stated |
+| `verify.breakpoints` | Surface by the test that admits a facet at all: a **shared role** reads it to decide what to hand over. A project-local list would have left the one question a person is asked keyed on a value no role could reach |
 
 ### The two wrong readings of a deployed commit, and why neither is a key
 
-⛔ **Both were available and both are refused by the mechanism rather than by a setting**, which is
+Both are refused by the mechanism rather than by a setting —
 [`schema.md § 41 → `identity``](../plugins/mjolnir/config/schema.md#identity-and-the-two-readings-of-a-deployed-commit-that-are-wrong).
-The facet states one command per target and the role has nowhere else to read from, so neither
-reading is reachable to be configured:
+The facet states one command per target and the role has nowhere else to read from:
 
 | the reading | why it is wrong |
 |---|---|
@@ -4498,33 +3902,30 @@ reading is reachable to be configured:
 
 ### The writer bar turned out to be stronger than the facet assumed
 
-⚠️ **Measured against the port rather than argued.** The facet's first form said the accepting role
-is refused the `accepted` write *unless it asks as the status's own writer* — which would have made
-the bar a wrong-writer mistake. [`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)
-closes the set an ask may be **made** as to the procedure and the deploy, and the measured
-configuration maps that status to the person who ordered the work, so:
+Measured against the port: an accepting role asking as the status's own writer is not a way
+through.
+[`§ 4.2`](../plugins/mjolnir/config/schema.md#42-status--an-ordered-set-of-name-role-writer)
+closes the set an ask may be made as to the procedure and the deploy, and the measured
+configuration maps the `accepted` status to the person who ordered the work, so:
 
 | the ask | what came back |
 |---|---|
 | as the procedure, or the deploy | refused against the configured writer |
 | as the configured writer itself | refused **before the configuration is read at all**, as a claim to be somebody |
 
-⛔ **So there is no writer the role could ask as**, and the record it produces carries a standing
-rather than a status word —
+There is no writer the role could ask as, and the record it produces carries a standing rather than
+a status word —
 [`schema.md § 41 → What the role records`](../plugins/mjolnir/config/schema.md#what-the-role-records-and-what-it-may-not-record). The suite beside the carrier asserts both arms and the green side with
 them — a role the procedure does write is not refused — so the four refusals are about this role
 rather than about every move being barred.
 
 ## Whether the work is already built, a step three roles skipped
 
-**The filing role searched the tracker and never the code, and the starting and implementing roles
-took an item's statement as still true.** The gap was found by reading the role texts while
-preparing adopters' migrations, and nothing there was run. Two cases follow from it: an item whose
-work landed under another item is started and built again, and a closed duplicate whose work was
-never built receives every new request for that work, so the work drops out of every list. No role
-asked the question, so nothing in the loop could catch either case.
-
-Each subsection of the answer sits where its fact belongs:
+The filing role searched the tracker and never the code, and the starting and implementing roles
+took an item's statement as still true. Two cases follow: an item whose work landed under another
+item is started and built again, and a closed duplicate whose work was never built receives every
+new request for that work, so the work drops out of every list. The gap was found by reading the
+role texts, and nothing there was run.
 
 - **Where the step runs is the project's choice, and running nowhere is the default**, at
   [`schema.md § 42 → The three points`](../plugins/mjolnir/config/schema.md#the-three-points-and-what-each-one-reads).
