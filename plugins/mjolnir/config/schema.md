@@ -2411,7 +2411,9 @@ value under it with no `writer` of its own is written by nobody.
 
 ⛔ **The gating role writes a value whose writer is `procedure`, and makes the move only where the
 status's writer is `procedure` too.** Where the move is somebody else's, it writes the values, then
-reports the move for that writer and names who it is. ⚠️ **What that costs is an item carrying its
+reports the move for that writer and names who it is. ⛔ **Where the move is the procedure's and a
+carried value is somebody else's, the move waits for that value** and the report names it: an item
+admitted without its commitment reads as gated to every role after it. ⚠️ **What that costs is an item carrying its
 commitment and still outside the committed set** until the person moves it. A project stating the
 key has accepted that cost; one that states nothing still gets the all-or-nothing rule.
 

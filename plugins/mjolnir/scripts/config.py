@@ -2520,11 +2520,21 @@ class Config:
                     f"The {value} is written by {f'`{writer}`' if writer else 'nobody'} "
                     "here, so the gating role reports it rather than writing it."
                 )
+        # ⛔ The move waits for every carried value the gate does not write: an
+        # item admitted without its commitment reads as gated to every role after
+        # it, which is the gating role's own not-admitted rule.
+        waiting = [v["value"] for v in values if v["carried"] and not v["gate_writes"]]
         if mover != "procedure":
             report.append(
                 f"The move into `{status.get('name')}` is made by "
                 f"{f'`{mover}`' if mover else 'nobody named'} ({why}), so the gating "
                 "role reports it as still to be made, naming that writer."
+            )
+        elif waiting:
+            report.append(
+                f"The move into `{status.get('name')}` is the procedure's, and it waits "
+                f"for the {' and the '.join(waiting)}, which the gating role does not "
+                "write here: an item admitted without its commitment reads as gated."
             )
         return {
             "status": status.get("name"),
@@ -2532,7 +2542,8 @@ class Config:
             "move": {
                 "writer": mover,
                 "from": why,
-                "gate_moves": mover == "procedure",
+                "gate_moves": mover == "procedure" and not waiting,
+                "waits_for": waiting,
             },
             "report": report,
         }
@@ -16562,6 +16573,16 @@ def self_test() -> int:
         gate(whole) == {"estimate": True, "due_date": True}
         and whole["move"]["gate_moves"] is True and not whole["report"],
         f"answered {whole!r}",
+    )
+    waits = _commitment_of(
+        "procedure", estimate={**estimate, "writer": "orderer"}, due_date=date
+    )
+    check(
+        "a procedure move waits for a value somebody else writes",
+        gate(waits) == {"estimate": False, "due_date": True}
+        and waits["move"]["gate_moves"] is False
+        and waits["move"]["waits_for"] == ["estimate"],
+        f"answered {waits!r}",
     )
     none = _commitment_of(None)
     check(
