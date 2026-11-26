@@ -40,7 +40,10 @@ what this role does report is every value it could not establish, which is step 
 ## 2. Which target
 
 **Named on the invocation** — the argument is the target's `name`, and a name the facet does not
-carry is a stop listing the names it does.
+carry is a stop listing the names it does. ⛔ **A target the entry states as `not_implemented` is a
+stop too, with the entry's own reason**, which step 3's reader returns as its refusal — named and
+planned, by
+[`§ 33`](../../config/schema.md#the-three-shapes-a-target-is-reached-by), rather than misspelled.
 
 **Nothing named** — ⛔ **ask, with the targets as the options.** A project carrying one target still
 gets the question, because the ask in step 5 is about *this deploy* and a target chosen silently is
@@ -363,16 +366,20 @@ the write cannot be taken back — and ⛔ **no key turns it off**, `apply_by` d
 the command once it is recorded.
 
 **Show, in the question:** the target, that the entry states it live, the dump's path or name and
-that it was read back, the rehearsal's output **whole** or that there was none, the order being
-taken and that it is the configured one, and who the entry says performs the write.
+that it was read back, the preview of the pending writes **whole** — or the path the carrier names
+where the step states `preview.at` — or that no preview is stated, the rehearsal's output **whole**
+or that there was none, the order being taken and that it is the configured one, and who the entry
+says performs the write. ⛔ **The preview is shown as a preview and never as the rehearsal**: it
+runs nothing against the store, so a step stating one and no `rehearse` is still asked with *no
+rehearsal* said.
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" apply --target "<the entry's name>" \
   [--step "<the step's name>"] --given "<their answer, in their words>"
 ```
 
-⛔ **One go per write, asked once that step's own dump and rehearsal are on record** — never one go
-for every step of a target, and never before the rehearsal a later side still owes. ⚠️ **The
+⛔ **One go per write, asked once that step's own dump, preview and rehearsal are on record** — never
+one go for every step of a target, and never before the rehearsal a later side still owes. ⚠️ **The
 carrier refuses the write while either is missing**, whichever order was asked for, and on a listed
 step it refuses a go that does not name that step.
 
