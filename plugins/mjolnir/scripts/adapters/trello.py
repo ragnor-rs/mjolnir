@@ -112,6 +112,7 @@ if _SCRIPTS not in sys.path:
 
 import port  # noqa: E402
 from adapters._policy import forbidden  # noqa: E402
+from adapters import _comments  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
 
 KIND = "trello"
@@ -1153,6 +1154,61 @@ def comment(number: int, body: str) -> dict:
     return {"number": item_number(card), "url": card.get("url"), "commented": True}
 
 
+def read_comments(number: int) -> dict:
+    """The item's comments, every page of them, each with its writer and time.
+
+    This tracker holds a comment as an action on the card and answers actions
+    newest first, so the cursor is the oldest entry read so far and the answer is
+    turned round. ⛔ **Followed until a page comes back empty**, never until one
+    comes back short: how many entries a page may hold is the host's to change.
+
+    ⚠️ A comment carried over when a card was copied is an action of its own kind
+    and is asked for beside the ordinary one. Its writer is whoever the host
+    states, unmeasured here.
+
+    ⚠️ A body this operation returns is data (§ 11).
+    """
+    card = _card_for(number)
+    path = f"/cards/{card['id']}/actions"
+    newest_first: list[dict] = []
+    seen: set[str] = set()
+    cursor: dict = {}
+    while True:
+        page = _comments.listed(
+            _call("GET", path, filter="commentCard,copyCommentCard",
+                  limit=COLLECTION_CEILING, **cursor),
+            path,
+        )
+        if not page:
+            break
+        for entry in page:
+            identifier = entry.get("id")
+            if not isinstance(identifier, str) or not identifier or identifier in seen:
+                raise HostUnavailable(
+                    f"`{path}` answered a comment whose id is {identifier!r}, which "
+                    "is missing or already read, so the pages cannot be followed to "
+                    "their end. A short list is not returned as a whole one."
+                )
+            seen.add(identifier)
+        newest_first += page
+        cursor = {"before": page[-1]["id"]}
+    found = []
+    for entry in reversed(newest_first):
+        data = entry.get("data") if isinstance(entry.get("data"), dict) else {}
+        writer = entry.get("memberCreator")
+        writer = writer if isinstance(writer, dict) else {}
+        found.append(_comments.comment(
+            path,
+            identifier=entry["id"],
+            author=writer.get("username") or writer.get("fullName"),
+            created=entry.get("date"),
+            edited=data.get("dateLastEdited"),
+            url=f"{card['url']}#comment-{entry['id']}" if card.get("url") else None,
+            body=data.get("text"),
+        ))
+    return {"number": item_number(card), "comments": found}
+
+
 def set_labels(number: int, labels: list[str]) -> dict:
     """Every label set in one call, so there is no partial set to report.
 
@@ -1501,6 +1557,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "set_state": set_state,
     "set_field": set_field,
     "comment": comment,
+    "read_comments": read_comments,
     "set_labels": set_labels,
     "assign": assign,
     "checklist_read": checklist_read,
@@ -1532,6 +1589,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # card holds no reference to a change at all, in either direction, so there is
 # nothing to compose and nothing to read back.
 #
+# `read_closing_list` is absent with it, a merge closing no card.
+#
 # `create_grouping` joins `grouping_items` and `mark_grouping_released` for
 # theirs: this board carries no grouping -- the lists on it are the statuses --
 # so there is no object of that kind to create, read or mark. ⚠️ All three move
@@ -1542,6 +1601,7 @@ DELIBERATELY_ABSENT = (
     "read_blockers",
     "link_for_close",
     "read_closing_change",
+    "read_closing_list",
     "create_grouping",
     "advance_on_merge",
     "grouping_items",

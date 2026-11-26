@@ -25,8 +25,8 @@ stand between any call and its command whatever the stack, which is the one
 thing a parse has to know to find where a command is.
 
 ⚠️ **What this cannot hold is the spend it never sees.** A paid command reached
-through an interpreter stands in no command position of its own, and a project
-that invokes one that way states that spelling itself -- the residue is stated
+through a launcher the project did not list stands in no command position of its
+own (`schema.md § 19 -> The launchers a project lists`) -- the residue is stated
 in `docs/single-source-of-truth.md` § The spend half rather than restated here.
 
 Usage:
@@ -62,6 +62,7 @@ SURFACE = Path(__file__).resolve().parent.parent / "config" / "schema.md"
 ARM_ANCHORS = {
     "facet": "19-a-command-that-spends-and-the-supervision-it-is-refused-without",
     "position": "the-command-position-and-why-the-whole-call-is-not-one",
+    "launchers": "the-launchers-a-project-lists-and-what-each-one-runs",
     "approval": "what-an-approval-is-per-and-the-one-price-stated-before-a-turn-runs",
     # The rules this carrier obeys rather than states: an install is silent in a
     # project that configures nothing, the direction a guard fails in is
@@ -95,6 +96,23 @@ GUARDED_TOOL = "Bash"
 DENY = "spend_guard.deny"
 APPROVAL = "spend_guard.approval"
 RESUME_BAR = "spend_guard.resume_bar_usd"
+LAUNCHERS = "command_position.launchers"
+
+# What a launcher's plain words are, by the surface's own alternation.
+OPERANDS_COMMAND = "command"
+OPERANDS_STRING = "string"
+
+# How many launchers deep a call is read. ⚠️ A bound rather than a vocabulary: each
+# level is strictly shorter than the one holding it, so what this stops is a call
+# built to exhaust the parse rather than any call somebody writes.
+LAUNCHER_DEPTH = 16
+
+# An expansion escaped for the launcher's shell rather than for the outer one. ⚠️
+# The lexer keeps the escape it read inside double quotes, so without this the
+# substitution the launcher would run reads as text. A single-quoted escape is
+# undone with it: the parse no longer knows which quotes stood there, and what
+# that costs is a held call rather than a passed one.
+ESCAPED_EXPANSION = re.compile(r"\\([$`])")
 
 # The two decisions an approval resolves to, and the harness's own word for
 # each. ⛔ The keys are the surface's alternation and `--self-test` asserts the
@@ -152,6 +170,12 @@ REDIRECTIONS = set("<>&")
 # the comparison strips it rather than the token.
 HEREDOC = "<<"
 
+# A here-document whole, for the one reading that has no lexer under it: what
+# follows the delimiter on its line is kept, and the body is text.
+HEREDOC_BODY = re.compile(
+    r"<<-?[ \t]*([\"']?)([A-Za-z_]\w*)\1([^\n]*)\n(?:.*?\n)?[ \t]*\2[ \t]*(?=\n|$)", re.DOTALL
+)
+
 # A line continuation, which is not a token at all. ⚠️ Left in place, the escaped
 # newline became a separator of its own where the next line was indented, which
 # cut one command in two -- taking its arguments out of reach of an `args_match`
@@ -168,7 +192,8 @@ ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 # review, the first command of every `if`/`for`/`while` body was invisible.
 # ⚠️ `in` is deliberately absent -- the words after it are a list and not
 # commands, so skipping it would read a denied path in that list as a call of it.
-INTRODUCERS = {"then", "do", "else", "elif", "exec", "command", "coproc", "!"}
+INTRODUCERS = {"if", "while", "until", "then", "do", "else", "elif", "exec", "command", "coproc",
+               "!"}
 
 # A runner runs the command that follows it, so the command is one token further
 # right -- and its own flags move it further right again. ⛔ The flags that take
@@ -242,7 +267,22 @@ def _lexer(command: str) -> shlex.shlex:
     return lexer
 
 
-def readable(command: str) -> bool:
+def launchers_of(config) -> list[dict]:
+    """The launchers this project lists. Absent is none, and changes no reading."""
+    stated = config.get(LAUNCHERS)
+    return [entry for entry in stated if isinstance(entry, dict)] if isinstance(stated, list) else []
+
+
+def _lexes(text: str) -> bool:
+    """Whether the lexer can read this one text, whatever it launches."""
+    try:
+        list(_lexer(text))
+    except ValueError:
+        return False
+    return True
+
+
+def readable(command: str, launchers=()) -> bool:
     """Whether this call is one the lexer could read, rather than fall back on.
 
     ⛔ Answered here rather than inferred from `words`, whose fallback returns
@@ -258,11 +298,8 @@ def readable(command: str) -> bool:
     report, and the fallback is what keeps such a call guarded rather than
     waved through.
     """
-    try:
-        list(_lexer(command))
-    except ValueError:
-        return False
-    return True
+    return _lexes(command) and all(
+        _lexes(text) for text in launched_texts(command, launchers))
 
 
 def words(command: str) -> list[str]:
@@ -373,7 +410,11 @@ def _segments_of(call: str) -> list[list[str]]:
     for the reason stated beside `HEREDOC`.
     """
     out: list[list[str]] = [[]]
-    tokens = words(call)
+    # ⚠️ An apostrophe in a here-document is the ordinary way a call the shell
+    # reads is one this lexer cannot, so its body is taken out before the words
+    # are read. ⛔ Here and not in `words`: a guard that holds an unparseable call
+    # on its tokens reads them there, a body's among them.
+    tokens = words(call if _lexes(call) else HEREDOC_BODY.sub(r"\3", call))
     index = 0
     while index < len(tokens):
         token = tokens[index]
@@ -398,19 +439,125 @@ def _segments_of(call: str) -> list[list[str]]:
     return out
 
 
-def segments(command: str) -> list[list[str]]:
+def segments(command: str, launchers=()) -> list[list[str]]:
     """Every command of the call and of everything nested in it.
 
     An empty segment is kept out, so a trailing separator is not a command that
-    spends nothing.
+    spends nothing. ⛔ What a listed launcher runs is segments of its own, beside
+    the launcher's: a guard reading this list reads the inner command by the rule
+    it reads every other one by, and names it in the refusal.
     """
-    out: list[list[str]] = []
+    return _read_call(command, launchers)[0]
+
+
+def launched_texts(command: str, launchers=()) -> list[str]:
+    """Every string a listed launcher in this call runs as a command text."""
+    return _read_call(command, launchers)[1]
+
+
+def _read_call(command: str, launchers, depth: int = 0,
+               seen: set | None = None) -> tuple[list[list[str]], list[str]]:
+    found: list[list[str]] = []
+    texts: list[str] = []
     for call in calls(command):
-        out.extend(_segments_of(call))
-    return [segment for segment in out if segment]
+        for segment in _segments_of(call):
+            if segment:
+                _expand(segment, launchers, depth, found, texts,
+                        set() if seen is None else seen)
+    return found, texts
 
 
-def command_chain(segment: list[str]) -> list[tuple[str, list[str]]]:
+def _expand(segment, launchers, depth, found, texts, seen) -> None:
+    """Put one segment, and whatever its launchers run, onto the two lists.
+
+    ⛔ What is already read inside one segment of the call is not read again. One
+    segment has several command positions and each may be a launcher of the same
+    tail, so without it the reading doubles at every one and a guard that never
+    answers is a guard the harness proceeds past.
+    """
+    found.append(segment)
+    if not launchers or depth >= LAUNCHER_DEPTH:
+        return
+    for called, arguments in command_chain(segment, launchers):
+        for entry in launchers:
+            configured = entry.get("command")
+            if not isinstance(configured, str) or not names_the_command(called, configured):
+                continue
+            text, inner = _launched(arguments, entry)
+            if text is not None:
+                text = ESCAPED_EXPANSION.sub(r"\1", text)
+                if text not in seen:
+                    seen.add(text)
+                    texts.append(text)
+                    more, deeper = _read_call(text, launchers, depth + 1, seen)
+                    found.extend(more)
+                    texts.extend(deeper)
+            elif inner and tuple(inner) not in seen:
+                seen.add(tuple(inner))
+                _expand(inner, launchers, depth + 1, found, texts, seen)
+            # ⛔ One entry answers for one position: a second entry naming the
+            # same command would report one inner command twice.
+            break
+
+
+def _launched(arguments: list[str], entry: dict) -> tuple[str | None, list[str]]:
+    """What one launcher call runs: a command text, or the words of a command.
+
+    The reading is `schema.md § 19 -> The launchers a project lists`. ⛔ The scan
+    stops at the first plain word, so a string flag belonging to the command
+    being launched is not read as the launcher's own.
+    """
+    strings = set(entry.get("string_flags") or [])
+    valued = set(entry.get("valued_flags") or [])
+    index = 0
+    while index < len(arguments):
+        word = arguments[index]
+        if word == "--":
+            index += 1
+            break
+        flag, equals, value = word.partition("=")
+        if word in strings:
+            # ⚠️ A flag may stand between this one and the string, which is how a
+            # shell reads its own options: the string is the next plain word.
+            index += 1
+            while index < len(arguments) and arguments[index].startswith("-"):
+                past = arguments[index]
+                index += 1
+                if past == "--":
+                    break
+                if past in valued:
+                    index += 1
+            return (arguments[index], []) if index < len(arguments) else (None, [])
+        if equals and flag in strings:
+            return value, []
+        if word in valued:
+            index += 2
+            continue
+        if word[:1] in "-+" and len(word) > 1:
+            index += 1
+            continue
+        break
+    rest = arguments[index:]
+    if not rest:
+        return None, []
+    if entry.get("operands") == OPERANDS_STRING:
+        return " ".join(rest), []
+    if entry.get("operands") == OPERANDS_COMMAND:
+        return None, rest
+    return None, []
+
+
+def _reads_its_flag(called: str, flag: str, launchers) -> bool:
+    """Whether a listed launcher's own reading already covers this flag's value."""
+    return any(
+        isinstance(entry.get("command"), str)
+        and names_the_command(called, entry["command"])
+        and flag in (entry.get("string_flags") or [])
+        for entry in launchers
+    )
+
+
+def command_chain(segment: list[str], launchers=()) -> list[tuple[str, list[str]]]:
     """Every command position in one segment, as (the token, its arguments).
 
     A segment with no wrapper has one position. A wrapper contributes its own,
@@ -446,9 +593,14 @@ def command_chain(segment: list[str]) -> list[tuple[str, list[str]]]:
             # rather than reading further words, which is the whole positional
             # rule. What is still read is a flag whose value is a command: the
             # one way a command stands behind something that is not a runner.
+            owner = token
             for at in range(index + 1, len(segment) - 1):
-                if segment[at] in COMMAND_FLAGS:
+                # ⛔ Not where a listed launcher reads it, or one inner command is
+                # reported twice: once as a word here and once from its own text.
+                if segment[at] in COMMAND_FLAGS and not _reads_its_flag(
+                        owner, segment[at], launchers):
                     out.append((segment[at + 1], list(segment[at + 2:])))
+                    owner = segment[at + 1]
             return out
         flags, positionals = runner
         index += 1
@@ -470,10 +622,13 @@ def command_chain(segment: list[str]) -> list[tuple[str, list[str]]]:
                     # skipped. ⚠️ Where that value is a multi-word string the
                     # shell splits, only its first word stands here, which is the
                     # interpreter residue § 19 states.
+                    covered = _reads_its_flag(token, flag, launchers)
                     if equals:
-                        out.append((value, []))
+                        if not covered:
+                            out.append((value, []))
                     elif index < len(segment):
-                        out.append((segment[index], list(segment[index + 1:])))
+                        if not covered:
+                            out.append((segment[index], list(segment[index + 1:])))
                         index += 1
                     continue
                 if not equals and flag in flags and index < len(segment):
@@ -507,7 +662,25 @@ def entries(config) -> list[dict]:
     return [entry for entry in stated if isinstance(entry, dict)] if isinstance(stated, list) else []
 
 
-def matches(command: str, stated: list[dict]) -> list[dict]:
+def names_the_call(called: str, arguments: list[str], entry: dict) -> bool:
+    """Whether one command position is a call an entry names, its pattern included."""
+    configured = entry.get("command")
+    if not isinstance(configured, str) or not names_the_command(called, configured):
+        return False
+    pattern = entry.get("args_match")
+    if not isinstance(pattern, str) or not pattern.strip():
+        return True
+    try:
+        return bool(re.search(pattern, " ".join(arguments)))
+    except re.error:
+        # Refused at load by the shared reader (§ 19), so this is the arm nothing
+        # reaches through a validated configuration. It does not match on a
+        # pattern it cannot compile: a guard that refused every call of the
+        # command instead would be refusing on a configuration defect.
+        return False
+
+
+def matches(command: str, stated: list[dict], launchers=()) -> list[dict]:
     """Every (entry, segment) pair this call matches, in the call's own order.
 
     ⛔ One record per *segment* rather than one per call, because a refusal has
@@ -515,24 +688,11 @@ def matches(command: str, stated: list[dict]) -> list[dict]:
     four semicolons has no way to tell which of them was meant.
     """
     found: list[dict] = []
-    for position, segment in enumerate(segments(command), start=1):
-        for called, arguments in command_chain(segment):
+    for position, segment in enumerate(segments(command, launchers), start=1):
+        for called, arguments in command_chain(segment, launchers):
             for entry in stated:
-                configured = entry.get("command")
-                if not isinstance(configured, str) or not names_the_command(called, configured):
+                if not names_the_call(called, arguments, entry):
                     continue
-                pattern = entry.get("args_match")
-                if isinstance(pattern, str) and pattern.strip():
-                    try:
-                        if not re.search(pattern, " ".join(arguments)):
-                            continue
-                    except re.error:
-                        # Refused at load by the shared reader (§ 19), so this is
-                        # the arm nothing reaches through a validated
-                        # configuration. It does not match on a pattern it cannot
-                        # compile: a guard that refused every call of the command
-                        # instead would be refusing on a configuration defect.
-                        continue
                 found.append({
                     "entry": entry,
                     "segment": position,
@@ -572,7 +732,7 @@ def spend_guard(config, command: str) -> dict:
     stated = entries(config)
     if not stated:
         return {}
-    found = matches(command, stated)
+    found = matches(command, stated, launchers_of(config))
     if not found:
         return {}
     kind = approval_of(config)
@@ -1026,6 +1186,11 @@ MUST_REFUSE = [
     ("inside a process substitution", "a-diffing-command <(<deny> --the-paid-tier) a-file"),
     ("inside a brace group", "{ <deny> --the-paid-tier; }"),
     ("as the body of a condition", "if a-free-command; then <deny> --the-paid-tier; fi"),
+    ("as a condition", "if <deny> --the-paid-tier; then a-free-command; fi"),
+    ("as a loop's condition", "while ! <deny> --the-paid-tier; do a-free-command; done"),
+    ("as the condition a loop ends on", "until <deny> --the-paid-tier; do a-free-command; done"),
+    ("on the line after a here-document carrying an apostrophe",
+     "a-free-command <<'EOF'\nit's text\nEOF\n<deny> --the-paid-tier"),
     ("as the body of a loop", "for i in a b; do <deny> --the-paid-tier; done"),
     ("as the alternative of a condition",
      "if a-free-command; then a-free-command; else <deny>; fi"),
@@ -1091,6 +1256,40 @@ MUST_ALLOW = [
      "a-reading-command \\\n    <deny>"),
     ("the denied path inside single quotes", "a-printing-command '<deny> --the-paid-tier'"),
     ("the denied path as a word of a loop's own list", "for f in <deny>; do a-free-command; done"),
+]
+
+
+# The spellings a listed launcher runs the denied command in, and the ones that
+# only carry its text. The launchers are the fixture's own names.
+LAUNCHED = [
+    "a-shell -c '<deny> x'",
+    "a-shell -c <deny>",
+    "a-shell -lc '<deny> x'",
+    "a-shell -l -c '<deny> x'",
+    "a-shell -c -x '<deny> x'",
+    "a-shell -o an-option -c '<deny> x'",
+    "/a-root/a-shell -c '<deny> x'",
+    "sudo a-shell -c '<deny> x'",
+    "a-shell -x <deny> x",
+    "a-shell +x <deny> x",
+    "an-evaluator '<deny> x'",
+    "an-evaluator <deny> x",
+    "su -c '<deny> x' a-user",
+    "a-shell -c 'cd a-directory && <deny> x'",
+    "a-shell -c 'a-shell -c \"<deny> x\"'",
+    "a-shell -c 'an-evaluator \"<deny> x\"'",
+    'a-shell -c "OUT=\\"\\$(<deny> x)\\""',
+    'a-shell -c "OUT=\\`<deny> x\\`"',
+    "OUT=\"$(a-shell -c '<deny> x')\"",
+]
+NOT_LAUNCHED = [
+    "a-shell -c 'a-printing-command <deny>'",
+    "a-shell -c \"a-search '<deny> x' a-file\"",
+    "a-printing-command \"a-shell -c '<deny> x'\"",
+    "a-shell a-free-script -x '<deny> x'",
+    "a-shell -o <deny> a-free-script",
+    "an-evaluator 'a-printing-command <deny>'",
+    "another-shell -x <deny>",
 ]
 
 
@@ -1197,6 +1396,57 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         command = shape.replace("<deny>", paid).replace("<base>", base)
         answered = guard_answer(_call(command), config=one)
         check(label, answered == {}, f"{command[:60]!r} → {answered!r}"[:140])
+
+    out.append("")
+    out.append("What a listed launcher runs is read, and an unlisted one's is not:")
+    listing = _a_config([_a_denial(paid)])
+    listing.data["command_position"] = {"launchers": [
+        {"command": "a-shell", "string_flags": ["-c", "-lc"], "valued_flags": ["-o"],
+         "operands": OPERANDS_COMMAND},
+        {"command": "an-evaluator", "operands": OPERANDS_STRING},
+        {"command": "su", "string_flags": ["-c"]},
+    ]}
+    for shape in LAUNCHED:
+        command = shape.replace("<deny>", paid)
+        answered = guard_answer(_call(command), config=listing)
+        check(f"listed: {shape}", decision(answered) == "ask", repr(answered)[:140])
+        check(f"and reported once: {shape}",
+              reason(answered).count("\n  segment ") == 1, reason(answered)[:300])
+    for shape in NOT_LAUNCHED:
+        answered = guard_answer(_call(shape.replace("<deny>", paid)), config=listing)
+        check(f"no call of it: {shape}", answered == {}, repr(answered)[:140])
+    for shape in ("a-shell -c '<deny> x'", "a-shell -lc '<deny> x'",
+                  "an-evaluator '<deny> x'", "a-shell -x <deny>"):
+        check(f"unlisted, read as it always was: {shape}",
+              guard_answer(_call(shape.replace("<deny>", paid)), config=one) == {})
+    check("the refusal names the inner command",
+          f"`{paid} x`" in reason(guard_answer(
+              _call(f"a-shell -c 'a-free-command && {paid} x'"), config=listing)))
+    inner = _a_config([_a_denial(base, args_match=r"^--the-paid-tier$")])
+    inner.data["command_position"] = listing.data["command_position"]
+    check("and the inner command's own arguments decide",
+          decision(guard_answer(_call(f"a-shell -c '{base} --the-paid-tier'"),
+                                config=inner)) == "ask"
+          and guard_answer(_call(f"a-shell -c '{base} --the-free-tier'"),
+                           config=inner) == {})
+    unclosed = 'a-shell -c "a \'b"'
+    check("an inner text nothing closes is unreadable, and the outer one alone is not",
+          not readable(unclosed, launchers_of(listing)) and readable(unclosed))
+    once = reason(guard_answer(_call(f"a-search -exec a-shell -c {paid} ;"), config=listing))
+    check("a launcher behind a command-valued flag is reported once",
+          once.count("\n  segment ") == 1, once[:300])
+    wide = [segment for segment in segments(
+        "a-search" + " -exec a-shell" * 12 + f" {paid}", launchers_of(listing))]
+    check("a tail several positions launch is read once each, not once per route",
+          len(wide) <= 40, f"{len(wide)} segments")
+    deep = "a-shell " * (LAUNCHER_DEPTH + 3000) + paid
+    check("a call built past the stated depth ends rather than raising",
+          guard_answer(_call(deep), config=listing) == {})
+    within = "a-shell " * LAUNCHER_DEPTH + paid
+    check("and one at the stated depth is read",
+          decision(guard_answer(_call(within), config=listing)) == "ask")
+    check("the surface states that depth",
+          LAUNCHER_DEPTH == 16 and "to sixteen deep" in SURFACE.read_text(encoding="utf-8"))
 
     out.append("")
     out.append("The command is matched as a path and not as a word:")

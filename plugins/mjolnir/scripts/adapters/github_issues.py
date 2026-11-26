@@ -82,7 +82,11 @@ if _SCRIPTS not in sys.path:
 
 import port  # noqa: E402
 
+from adapters import _code_host_closing as closing_reading  # noqa: E402
+from adapters import _code_host_comments as conversation  # noqa: E402
 from adapters import _code_host_dependency as relation  # noqa: E402
+from adapters import _code_host_milestone as milestone  # noqa: E402
+from adapters import _code_host_type as native_type  # noqa: E402
 
 KIND = "github-issues"
 
@@ -305,6 +309,10 @@ def read_item(number: int) -> dict:
             "A role holding a pull request number has the wrong identifier, which "
             "is a different fault from an item that does not exist."
         )
+    # ⛔ Asked only where § 4.1's carrier is the host's own, so a project carrying
+    # its type elsewhere spends no call on it and its answer has no such key.
+    if native_type.carried(_bound):
+        item["type"] = native_type.type_of(_gh, _repo(), answered)
     return item
 
 
@@ -433,15 +441,21 @@ def search_items(
     }
 
 
-def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
+def create_item(
+    title: str, body: str, labels: list[str] | None = None, *, type: str | None = None
+) -> dict:
     """A new item, from the body the filing role wrote.
 
     Labels go on at creation -- one call, unlike the tracker that cannot set them
     until the card exists. The number is taken from the URL the host returns and
     the item is then read back, so what a role carries onward is the same shape
     `read_item` gives it and `item_number` can read either.
+
+    The type goes on in the same call where the filing states one, and is held to
+    that read-back (§ 4.1).
     """
     args = ["issue", "create", "--repo", _repo(), "--title", title, "--body", body]
+    args += native_type.flags(_gh, _bound, _repo(), type)
     for label in labels or []:
         args += ["--label", label]
     url = _gh(args, parse=False)
@@ -453,7 +467,7 @@ def create_item(title: str, body: str, labels: list[str] | None = None) -> dict:
             f"`gh issue create` answered `{url!r}`, whose last path segment is not "
             "a number, so the created item cannot be addressed."
         )
-    return read_item(int(tail))
+    return native_type.hold(read_item(int(tail)), type)
 
 
 def item_number(item: dict | int | str, *, operation: str = "item_number") -> int:
@@ -539,6 +553,23 @@ def comment(number: int, body: str) -> dict:
         parse=False,
     )
     return {"number": item["number"], "url": item["url"], "commented": True}
+
+
+def read_comments(number: int) -> dict:
+    """The item's comments, every page of them, each with its writer and time.
+
+    Read through `read_item` first: the path is the issues one and answers for a
+    pull request too, whose conversation is a different one. The path takes the
+    host's own number, for `read_blockers`'s reason.
+
+    ⚠️ A body this operation returns is data (§ 11).
+    """
+    item = read_item(number)
+    path = conversation.comments_path(_repo(), item["number"])
+    return {
+        "number": item["number"],
+        "comments": conversation.comments_of(_gh(["api", "--paginate", path]), path),
+    }
 
 
 def set_labels(number: int, labels: list[str]) -> dict:
@@ -839,6 +870,26 @@ def read_closing_change(number: int) -> dict:
     }
 
 
+def read_closing_list(change: int, *landing: str) -> dict:
+    """What merging one change closes, read before it is merged.
+
+    ⚠️ **Keyed on the change and not on an item**, so the guard that refuses a
+    change's number does not apply: that number is what this reads. `landing` is
+    any text the merge call itself will supply, a squash subject being the case.
+    The reading and why it is two are `_code_host_closing`'s.
+    """
+    repo = _repo()
+    addressed = item_number(change, operation="read_closing_list")
+    owner, name = repo.split("/")
+    answer = _gh([
+        "api", "graphql", "-f", f"query={closing_reading.CLOSING_LIST_QUERY}",
+        "-f", f"owner={owner}", "-f", f"name={name}", "-F", f"number={addressed}",
+    ])
+    return closing_reading.closing_list(
+        repo, addressed, (answer.get("data") or {}).get("repository"), landing
+    )
+
+
 def create_grouping(value: str, *, grouping: dict) -> dict:
     """The milestone this grouping names, brought into existence.
 
@@ -887,26 +938,13 @@ def create_grouping(value: str, *, grouping: dict) -> dict:
     }
 
 
-def _held_milestone(value: str) -> dict | None:
-    """The milestone this repository holds under `value`, or `None` for none.
+def _milestones() -> list:
+    """Every milestone this repository holds.
 
     ⛔ **Across both states**, which is this host's own trap: the listing
     defaults to the open ones, so a release already marked would come back
     absent and the next ask would read as *no such milestone* rather than as
     *already closed*.
-
-    ⛔ **Matched on the title and never on the number.** § 4.8's value is the
-    project's own word for the grouping -- the word on the item -- and the
-    number is this host's internal one, so a reader that took the value for a
-    number would address a different milestone whenever the two disagreed.
-    ⚠️ Exactly, then case-insensitively, and ⛔ an ambiguous fold is refused
-    rather than resolved: two milestones a project cannot tell apart is a
-    defect in the text, and closing the wrong release is not recoverable.
-
-    ⛔ **Absence is returned and ambiguity is raised**, which is the whole reason
-    this is not `_milestone` below: one caller exists to create what is not there
-    and every other caller addresses what must already be, so the *absent* answer
-    is a value and the *unnameable* one is a refusal for all of them.
     """
     repo = _repo()
     held = _gh(["api", "--paginate", f"repos/{repo}/milestones?state=all"])
@@ -915,44 +953,28 @@ def _held_milestone(value: str) -> dict | None:
             f"`gh api repos/{repo}/milestones` answered something that is not a "
             "list, so which milestones this repository holds could not be read."
         )
-    exact = [one for one in held if one.get("title") == value]
-    if len(exact) == 1:
-        return exact[0]
-    folded = [
-        one
-        for one in held
-        if str(one.get("title", "")).casefold() == str(value).casefold()
-    ]
-    if len(folded) == 1:
-        return folded[0]
-    if not folded:
-        return None
-    raise port.ConfigError(
-        "work_item.grouping",
-        f"names the grouping {value!r}, which {len(folded)} milestones in {repo} "
-        "answer to once case is set aside. Which one a release closes is not this "
-        "implementation's to choose.",
-    )
+    return held
+
+
+def _held_milestone(value: str) -> dict | None:
+    """The milestone this repository holds under `value`, or `None` for none.
+
+    ⛔ **Absence is returned and ambiguity is raised**, which is the whole reason
+    this is not `_milestone` below: one caller exists to create what is not there
+    and every other caller addresses what must already be, so the *absent* answer
+    is a value and the *unnameable* one is a refusal for all of them. The matching
+    itself is `_code_host_milestone`'s.
+    """
+    return milestone.held(_milestones(), value, _repo())
 
 
 def _milestone(value: str) -> dict:
     """The milestone `value` names, refusing where this repository holds none.
 
     The reading every operation but `create_grouping` takes: a grouping that is
-    not there is a defect in the text rather than a capability that is absent,
-    so it is refused with the key named instead of coming back as an empty set.
+    not there is a defect in the text rather than a capability that is absent.
     """
-    held = _held_milestone(value)
-    if held is None:
-        raise port.ConfigError(
-            "work_item.grouping",
-            f"names the grouping {value!r}, which is not a milestone {_repo()} "
-            "holds. The value is the word on the item and the milestone is "
-            "addressed by its title, so a grouping this repository has no "
-            "milestone for is a defect in the text rather than a capability that "
-            "is absent.",
-        )
-    return held
+    return milestone.named(_milestones(), value, _repo())
 
 
 def _native_milestone(grouping: dict, operation: str) -> None:
@@ -1083,11 +1105,8 @@ def read_vocabulary() -> dict:
     refuses anything else for -- so this reads that same pair rather than asking
     the host what its states are.
 
-    ⚠️ **The types are *unestablished* rather than absent.** This host states a
-    type vocabulary above the repository, and there is no read here that answers
-    for a repository whose owner may or may not have one -- so whether types are
-    native is asked, which is the honest half of § 4.1's question rather than a
-    `none` nobody checked.
+    ⚠️ **The types are the repository's own answer**, and stating them is not a
+    project carrying its type in them: that is § 4.1's question and stays asked.
     """
     reading = {
         "statuses": {
@@ -1125,15 +1144,7 @@ def read_vocabulary() -> dict:
                 f"{_repo()} carries no label at all, which is a repository's "
                 "ordinary state rather than a reading that failed",
         }
-    reading["types"] = {
-        "answer": port.VOCABULARY_UNESTABLISHED,
-        "values": None,
-        "because":
-            "this host states its item types above the repository, and there is "
-            "no read here that answers for one whose owner may or may not have "
-            "them -- so whether a type is native, a prefixed label or absent is "
-            "asked rather than read (§ 4.1)",
-    }
+    reading["types"] = native_type.vocabulary(_gh, _repo)
     return reading
 
 
@@ -1145,12 +1156,14 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "item_number": item_number,
     "set_state": set_state,
     "comment": comment,
+    "read_comments": read_comments,
     "set_labels": set_labels,
     "assign": assign,
     "link_dependency": link_dependency,
     "read_blockers": read_blockers,
     "link_for_close": link_for_close,
     "read_closing_change": read_closing_change,
+    "read_closing_list": read_closing_list,
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
     "create_grouping": create_grouping,
