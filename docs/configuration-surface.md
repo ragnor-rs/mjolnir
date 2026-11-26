@@ -3959,6 +3959,27 @@ container and a blank value had been one branch, so the suite asserted one arm t
 reported two it had never exercised. The branches are split, and every one of the facet's thirty-
 eight planted violations now names its own.
 
+### A ban fails the document that states it
+
+⛔ **A forbidding entry with no scope holds every governed document, including the one that defines
+the ban**, and that document has to name the banned thing to define it. One adopter's audit, read
+against the shipped code and not run, measured this as the gap: under an unscoped entry that
+adopter's only options were to drop the ban or to reword the rule that states it until it no longer
+says what is banned. That is why
+[`schema.md § 38 → Which documents a forbidding entry holds`](../plugins/mjolnir/config/schema.md#which-documents-a-forbidding-entry-holds)
+lets an entry narrow itself with `covers` and take documents out with `exempt`, each exemption
+carrying its reason.
+
+⚠️ **Both keys are omitted rather than defaulted to an empty list.** The absent key keeps the
+unscoped meaning every configuration already had. An empty list would read as a decision and hold
+nothing, which is the state the facet's `graph: []` refusal already exists against.
+
+A scope glob matching nothing is reported by the check rather than refused by the reader, because
+the reader opens no tree: it holds the shape, and the check, which reads the governed set, holds
+the match. An exemption is judged against what its entry would otherwise hold rather than against
+the whole governed set, because an exempt glob that only matches documents `covers` already leaves
+out reads as an exemption doing its job and does nothing.
+
 ### What the facet cannot express, measured on the project it came from
 
 ⛔ **The classifying implementation runs twenty-five check groups and this facet expresses four

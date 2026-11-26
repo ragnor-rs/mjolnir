@@ -8854,6 +8854,10 @@ documents:
     pattern:        "<the name or pattern that may not appear in a governed document>"
     reason:         "<what its appearance would mean>"
     stable_because: "<what keeps the forbidden thing from being reworded into something else>"
+    covers:         ["<a glob of governed documents the entry holds>"]  # omitted where it holds every one
+    exempt:                                                             # omitted where none is exempt
+      glob:   "<a glob of governed documents the entry does not hold>"
+      reason: "<why a document it matches may carry the forbidden thing>"
   quoted:
     sentence: "<the sentence quoted back at the document it came from>"
     document: "<the document it is quoted against>"
@@ -8903,6 +8907,27 @@ of that check would move back out of the facet into a script nobody compares aga
 ⛔ **The kind is stated and never derived from what the entry looks like.** A pattern and a quoted
 sentence are the same string to a reader, so a facet guessing between them would warn about the
 wrong half of a project's list.
+
+### Which documents a forbidding entry holds
+
+⛔ **A forbidding entry holds every governed document unless it states otherwise, and it may state
+otherwise in two ways.** `covers` narrows it to the governed documents its globs match; `exempt`
+lists globs the entry does not hold, each with the `reason` a document it matches may carry the
+forbidden thing. ⚠️ **The case that needs this is the one the kind creates**: a document that
+defines a ban names the banned thing, so an entry with no scope fails the very document that states
+it.
+
+⛔ **An entry stating neither key holds every governed document**, and that is the whole of the
+default. The globs are the governed set's own (`*` stops at a separator, `**` crosses one), and a
+document an entry holds is one `covers` matches, or any governed document where `covers` is omitted,
+and no `exempt` glob matches.
+
+⛔ **A scope matching nothing is a red, not a scope that holds nothing.** A `covers` glob that
+matches no governed document, and an `exempt` glob that matches no document the entry would
+otherwise hold, are each reported by the check, so a scope that went stale when a file moved is not
+read as the entry having nothing to find. ⛔ **An exemption carries its reason, and `covers: []` and
+`exempt: []` are refused at load**: an empty `covers` would hold no document while reading as
+holding some, and the absent key is how an entry says it holds every one or exempts none.
 
 ### The two edges, and which of them is enforced
 

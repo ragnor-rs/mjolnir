@@ -1269,6 +1269,20 @@ ANSWERED_BY: dict[str, Answer] = {
         "that was renamed rather than removed still refers to something, and "
         "the check then refuses correct prose (§ 38).",
     ),
+    "documents.forbidden.covers": ask(
+        "Does it hold only some of the governed documents? Name them as globs, "
+        "or omit the key and it holds every one. ⛔ A glob matching no governed "
+        "document is a red, not a scope that holds nothing (§ 38).",
+    ),
+    "documents.forbidden.exempt.glob": ask(
+        "Is any document allowed to carry it -- the one that defines the ban, "
+        "say? Name it as a glob, or omit `exempt` where none is (§ 38).",
+    ),
+    "documents.forbidden.exempt.reason": ask(
+        "And why may that document carry it? ⛔ Stated, because an exemption "
+        "with no reason cannot be told from a check somebody switched off "
+        "(§ 38).",
+    ),
     "documents.quoted.sentence": ask(
         "Is any sentence quoted back at the document it came from? ⛔ This is "
         "the kind that does not work and it is admitted with a warning rather "

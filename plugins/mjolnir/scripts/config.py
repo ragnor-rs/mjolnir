@@ -5898,8 +5898,21 @@ def _validate_documents(data: dict, facts: dict) -> None:
                 "empty list is the statement; an omission is refused by the "
                 "marker before this runs.",
             )
-        entry_keys = _documents_entries(_get(data, "documents"), key, facts) if value \
+        declared_paths = _documents_entries(_get(data, "documents"), key, facts) if value \
             else set()
+        # ⚠️ **First segments**, for `_validate_deploy`'s stated reason: the fence
+        # declares a block on a forbidding entry (`exempt`), so it contributes
+        # `exempt.glob`, and the key an entry is held to is `exempt`.
+        entry_keys = {path.split(".")[0] for path in declared_paths}
+        scope = {name for name in FORBIDDEN_SCOPE if key == "forbidden" and value}
+        if scope - entry_keys:
+            raise ConfigError(
+                f"documents.{key}",
+                f"the surface declares no {', '.join(sorted(scope - entry_keys))} on "
+                "a forbidding entry, which this reader holds as optional (§ 38). A "
+                "surface that has lost the scope keys is refused rather than read as "
+                "making them required.",
+            )
         for index, entry in enumerate(value):
             where = f"documents.{key}[{index}]"
             if not isinstance(entry, dict):
@@ -5911,11 +5924,13 @@ def _validate_documents(data: dict, facts: dict) -> None:
                         f"is a key § 38 does not declare on a `{key}` entry. The "
                         f"keys it declares are: {', '.join(sorted(entry_keys))}.",
                     )
+            if scope:
+                _a_forbidding_scope(entry, where, declared_paths)
             # ⛔ Absence and a blank value are two arms, which is `_a_document`'s
             # own division one level over and for the same measured reason: a key
             # nobody wrote and a key somebody emptied are reached by different
             # mistakes, and one message names the wrong one half the time.
-            for needed in sorted(entry_keys):
+            for needed in sorted(entry_keys - scope):
                 if needed not in entry:
                     raise ConfigError(
                         f"{where}.{needed}",
@@ -5947,6 +5962,88 @@ def _validate_documents(data: dict, facts: dict) -> None:
                         "A sentence quoted against a document outside the governed "
                         "set is a check over a file nothing else here reads.",
                     )
+
+
+# The keys of a forbidding entry that narrow which documents it holds, and the
+# only keys of a § 38 entry that are omitted rather than stated. ⛔ Named here
+# because the surface's fence marks no key of a list member optional -- every
+# other key of an entry is required -- and the reader refuses a surface whose
+# fence has lost either of them rather than reading the loss as a requirement.
+FORBIDDEN_SCOPE = ("covers", "exempt")
+
+
+def _a_forbidding_scope(entry: dict, where: str, declared_paths: set) -> None:
+    """§ 38's `covers` and `exempt` on one forbidding entry, where either is stated.
+
+    ⛔ **What a glob matches is not held here**: the governed set is the tree's,
+    and this reader opens no tree. A glob matching nothing is the check's red,
+    read where the governed set is.
+    """
+    if "covers" in entry:
+        covers = entry["covers"]
+        if not isinstance(covers, list):
+            raise ConfigError(
+                f"{where}.covers",
+                "must be a list of globs (§ 38). One glob is a list of one, so that "
+                "a second can be added without changing shape.",
+            )
+        if not covers:
+            raise ConfigError(
+                f"{where}.covers",
+                "carries no glob (§ 38), so the entry holds no document while "
+                "reading as holding some. Omit the key where the entry holds every "
+                "governed document.",
+            )
+        for at, glob in enumerate(covers):
+            _a_document(glob, f"{where}.covers[{at}]", "a glob of governed documents")
+    if "exempt" not in entry:
+        return
+    exempt = entry["exempt"]
+    if not isinstance(exempt, list):
+        raise ConfigError(
+            f"{where}.exempt",
+            "must be a list of exemptions, each a glob and its reason (§ 38).",
+        )
+    if not exempt:
+        raise ConfigError(
+            f"{where}.exempt",
+            "carries no exemption (§ 38). Omit the key where no document is exempt; "
+            "an empty list reads as a decision nobody can find the subject of.",
+        )
+    inside = {
+        path[len("exempt."):] for path in declared_paths if path.startswith("exempt.")
+    }
+    for at, item in enumerate(exempt):
+        here = f"{where}.exempt[{at}]"
+        if not isinstance(item, dict):
+            raise ConfigError(
+                here,
+                "must be a mapping of the glob exempted and why (§ 38). A bare glob "
+                "is an exemption with no reason, which nobody can tell from a "
+                "check somebody switched off.",
+            )
+        for stated_key in item:
+            if stated_key not in inside:
+                raise ConfigError(
+                    f"{here}.{stated_key}",
+                    "is a key § 38 does not declare on an exemption. The keys it "
+                    f"declares are: {', '.join(sorted(inside))}.",
+                )
+        _a_document(item.get("glob"), f"{here}.glob",
+                    "a glob of governed documents the entry does not hold")
+        reason = item.get("reason")
+        if reason is None:
+            raise ConfigError(
+                f"{here}.reason",
+                "required (§ 38): why a document this glob matches may carry the "
+                "forbidden thing.",
+            )
+        if not isinstance(reason, str) or not reason.strip():
+            raise ConfigError(
+                f"{here}.reason",
+                "must be prose, and is written blank or as something else (§ 38). An "
+                "exemption whose reason is gone is a check switched off.",
+            )
 
 
 def _validate_spec_corpus(data: dict) -> None:
@@ -13570,6 +13667,19 @@ def self_test() -> int:
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
 
+    # ⛔ § 38's scope keys from the green side: an entry stating both loads, and
+    # one stating neither loads too -- the scope keys being the only keys of an
+    # entry this reader holds as optional, which a refusal of either would undo.
+    for label, entry in (
+        ("a forbidding entry stating what it covers and what it exempts",
+         _a_forbidden_name(covers=["*.md"], exempt=[_an_exemption()])),
+        ("a forbidding entry stating no scope at all", _a_forbidden_name()),
+    ):
+        scoped = _a_valid_example()
+        scoped["documents"] = _a_documents_of(forbidden=[entry])
+        broken = _refused(scoped)
+        check(f"{label} loads", broken is None, f"refused {broken!r}")
+
     # ⛔ § 37 against § 28's list, both directions. ⚠️ The list is how a project
     # states a key without writing it, and this facet read that rule in one
     # direction only -- so the arm below is the green side and the one under it
@@ -16081,6 +16191,37 @@ def _planted_violations():
         ("a forbidden pattern whose reason is blank", "documents.forbidden[0].reason",
          at("documents",
             _a_documents_of(forbidden=[_a_forbidden_name(reason="   ")]))),
+        # ⛔ The scope keys, which are the only keys of an entry that are omitted
+        # rather than stated: every arm below is one a project reaches by a
+        # different mistake, and each would otherwise leave an entry holding
+        # nothing while reading as holding something.
+        ("a covers written as one bare glob", "documents.forbidden[0].covers",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(covers="docs/*.md")]))),
+        ("a covers carrying no glob", "documents.forbidden[0].covers",
+         at("documents", _a_documents_of(forbidden=[_a_forbidden_name(covers=[])]))),
+        ("a covers glob written blank", "documents.forbidden[0].covers[0]",
+         at("documents", _a_documents_of(forbidden=[_a_forbidden_name(covers=["  "])]))),
+        ("an exempt that is not a list", "documents.forbidden[0].exempt",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=_an_exemption())]))),
+        ("an exempt carrying no exemption", "documents.forbidden[0].exempt",
+         at("documents", _a_documents_of(forbidden=[_a_forbidden_name(exempt=[])]))),
+        ("an exemption written as a bare glob", "documents.forbidden[0].exempt[0]",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=["a-document.md"])]))),
+        ("an exemption with no glob", "documents.forbidden[0].exempt[0].glob",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=[_an_exemption(glob=_ABSENT)])]))),
+        ("an exemption with no reason", "documents.forbidden[0].exempt[0].reason",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=[_an_exemption(reason=_ABSENT)])]))),
+        ("an exemption whose reason is blank", "documents.forbidden[0].exempt[0].reason",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=[_an_exemption(reason=" ")])]))),
+        ("a key § 38 declares on no exemption", "documents.forbidden[0].exempt[0].until",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=[_an_exemption(until="later")])]))),
         ("a quoted list that is not a list", "documents.quoted",
          at("documents", _a_documents_of(quoted="a sentence"))),
         ("a quoted entry with no sentence", "documents.quoted[0].sentence",
@@ -18708,6 +18849,13 @@ def _a_forbidden_name(**overrides) -> dict:
         "reason": "the component was deleted, so a document naming it describes nothing",
         "stable_because": "the name was removed rather than renamed",
     }
+    entry.update(overrides)
+    return {key: value for key, value in entry.items() if value is not _ABSENT}
+
+
+def _an_exemption(**overrides) -> dict:
+    """§ 38's smallest valid exemption on a forbidding entry."""
+    entry = {"glob": "a-document.md", "reason": "it is the document that defines the ban"}
     entry.update(overrides)
     return {key: value for key, value in entry.items() if value is not _ABSENT}
 
