@@ -2213,6 +2213,13 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
         # below, which is a configuration that *is* stated and does not resolve.
         return {}
     loaded, stop = (config, "") if config is not None else _read(payload.get("cwd"))
+    if loaded is not None:
+        # § 1's root this call addresses, before any arm reads a per-root fact:
+        # one root answers for itself, and several answer by where the call
+        # stands. ⛔ A call standing in none of several is the reader's stop, and
+        # it goes down the unresolved path below rather than into an arm that
+        # would raise on its first per-root read with no cause named.
+        loaded, stop = _standing_in(loaded, payload.get("cwd"))
     if loaded is None:
         # ⛔ A merge is recognised from the call alone, so it is refused here;
         # § 7 states why, and the arm below is every other call.
@@ -2228,6 +2235,59 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
         # the configuration makes inert, so this arm composes none of it and
         # carries no prefix of its own (§ 19 -> How often).
         return _inert(str(payload.get("session_id") or ""), stop)
+    try:
+        return _resolved_answer(loaded, payload, command, tool_input, now=now, store=store,
+                                probe=probe, host=host, runs=runs, code=code, git=git)
+    except Exception as error:  # noqa: BLE001 -- only the reader's refusal is answered here
+        if type(error).__name__ != "ConfigError":
+            raise
+        # ⛔ A read the configuration refuses inside an arm is the configuration
+        # not resolving for this call, so it is answered as the branch above
+        # answers one: a merge refused naming the reader's stop, and every other
+        # call proceeding with that stop reported (§ 7 -> Which direction a guard
+        # fails in). Without this the refusal escaped to `hook`, whose answer
+        # names the exception's type and not its cause.
+        stop = _stopped_on(error)
+        refused = unread_merge_guard(command, stop, str(payload.get("cwd") or "."), git=git)
+        return refused or _inert(str(payload.get("session_id") or ""), stop)
+
+
+def _standing_in(loaded, cwd: str | None):
+    """(§ 1's root a call standing in `cwd` addresses, "") or (None, the stop).
+
+    ⛔ The reader's own resolution, so which root a guard holds a call to and
+    which root a role addresses are one answer. ⚠️ A stand-in that carries no
+    roots answers as itself: the arms' plants hand over the facts one arm reads
+    and nothing about § 1.
+    """
+    resolve = getattr(loaded, "standing_in", None)
+    if resolve is None:
+        return loaded, ""
+    try:
+        return resolve(cwd or "."), ""
+    except Exception as error:  # noqa: BLE001 -- only the reader's refusal is answered here
+        if type(error).__name__ != "ConfigError":
+            raise
+        return None, _stopped_on(error)
+
+
+def _stopped_on(error: BaseException) -> str:
+    """The reader's refusal as a guard's answer carries it, after `REFUSAL_PREFACE`.
+
+    ⛔ The reader's sentence and its cut, for `_read`'s reason: the stop a guard
+    names is the same stop the reader gives, never one composed here.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        return f" {reader.REFUSAL_PREFACE} {reader.refusal_text(error)}"
+    except Exception:  # noqa: BLE001 -- an unreachable reader still names the type
+        return f" {type(error).__name__}"
+
+
+def _resolved_answer(loaded, payload: dict, command: str, tool_input: dict, *, now, store,
+                     probe, host, runs, code, git) -> dict:
+    """`guard_answer`'s arms, over a configuration resolved to the root the call addresses."""
     asked: dict = {}
     refused = merge_guard(loaded, command, host=host, asked=asked,
                           mode=str(payload.get(live.PERMISSION_MODE) or ""),
@@ -2492,11 +2552,16 @@ def release_answer(payload: dict, *, config=None, now: float | None = None,
     if config is None and not _states_a_configuration(payload.get("cwd")):
         return {}
     loaded = config if config is not None else _config(payload.get("cwd"))
+    # ⛔ The root the call stood in, resolved as the guard resolved it, so the
+    # resources a background process is recorded against are the ones the guard
+    # leased. `None` where the call stood in none of several roots: the guard
+    # held nothing there, so there is no process to record.
+    rooted = _standing_in(loaded, payload.get("cwd"))[0] if loaded is not None else None
     said = [
         # ⛔ First, so that a hook killed at its budget has written the record
         # before it reaches the reads that may hang.
         _prompt_recorded(loaded, payload, event, now=now, store=store, host=host),
-        _process_recorded(loaded, payload, event, now=now, store=store),
+        _process_recorded(rooted, payload, event, now=now, store=store),
         _places_given_back(loaded, payload, scope, now=now, store=store),
         behind_answer(payload, event=event, load=load, read=read),
     ]
@@ -2605,10 +2670,29 @@ def _process_recorded(loaded, payload: dict, event: str, *, now: float | None,
     )
 
 
+def _states_resources(loaded) -> bool:
+    """Whether any root of this configuration states an exclusive resource.
+
+    A stand-in carrying no roots answers for itself, as `_standing_in` does.
+    """
+    views = getattr(loaded, "views", None) or {}
+    if views:
+        return any(resources(view) for view in views.values())
+    return bool(resources(loaded))
+
+
 def _places_given_back(loaded, payload: dict, scope: str, *, now: float | None,
                        store: Path | None) -> str:
-    """What the sweep released, in words, or `""` where it released nothing."""
-    if loaded is None or not resources(loaded):
+    """What the sweep released, in words, or `""` where it released nothing.
+
+    ⛔ Whether to sweep is asked of **every** root, and never of the project
+    alone: the guard leases a resource the root a call stands in states, so under
+    § 1's collection of several a project-level read of the key is refused, and
+    the sweep then gave back nothing while the lease held its place until its
+    `ttl`. The release itself is keyed on the session and the call, so it needs
+    no root.
+    """
+    if loaded is None or not _states_resources(loaded):
         return ""
     where = store if store is not None else store_for(loaded.skills_root)
     command = str((payload.get("tool_input") or {}).get("command") or "")
@@ -5363,6 +5447,77 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("while a merge whose record could not be read is refused",
               denied(guard_answer(_call("gh pr merge 7"), config=_a_config([]), now=1000.0,
                                   store=fresh("merge"), host=_a_host(code=1))))
+
+        # § 1's collection of one root stating command roots in its entry, which
+        # the reader accepts. ⛔ Through the hook and from the project's own
+        # file, because that is where it failed: the already-run arm read the
+        # facet off the project and refused the root's own command root, and the
+        # hook answered with the exception's type and nothing else.
+        out.append("")
+        out.append("A collection of one root is held as that root:")
+        import yaml  # noqa: PLC0415 -- a fixture's dependency, not the arm's
+
+        stated = reader._a_one_root_collection_with_command_roots()
+        for entry in stated["roots"]["code"].values():
+            entry["path"] = "."
+        one_root = _a_root(Path(directory) / "states-one-root", yaml.safe_dump(stated))
+        printed = io.StringIO()
+        hook(io.StringIO(json.dumps(_call("ls", session="a-one-root-session", cwd=one_root))),
+             lambda payload: guard_answer(payload, now=1000.0, store=fresh("one-root")),
+             printed)
+        check("a call there is held rather than let through by a guard that did not run",
+              "did not run" not in printed.getvalue()
+              and "held to nothing" not in printed.getvalue(),
+              printed.getvalue()[:200])
+
+        # And several roots, called from a directory inside none of them: which
+        # root the call addresses has no answer, so the guard names the reader's
+        # stop rather than raising on its first per-root read.
+        several = _a_root(Path(directory) / "states-several-roots",
+                          yaml.safe_dump(reader._a_collection_example()))
+        nowhere = guard_answer(_call("ls", session="a-session-standing-nowhere", cwd=several),
+                               now=1000.0, store=fresh("several"))
+        said = str(nowhere.get("systemMessage", ""))
+        check("several roots and a call inside none of them is reported with the cause named",
+              reader.REFUSAL_PREFACE in said and "roots.code" in said
+              and "did not run" not in said, said[:240])
+        merged = guard_answer(_call("gh pr merge 7", cwd=several), now=1000.0,
+                              store=fresh("several"))
+        reason = str((merged.get("hookSpecificOutput") or {}).get("permissionDecisionReason"))
+        check("and a merge made there is refused naming the same cause",
+              denied(merged) and "roots.code" in reason and DIRECTION_CITATION in reason,
+              reason[:240])
+
+        # ⛔ A place the guard takes on a resource one of several roots states is
+        # given back, by the exit event and by the sweep from outside every root.
+        # The guard leases off the root it resolved, so a release reading the key
+        # off the project was refused and the place held until its `ttl`. ⚠️ The
+        # configuration is handed in: loading it from inside a root is a separate
+        # question from which root a loaded configuration addresses.
+        rooted = reader._a_collection_example()
+        names = list(rooted["roots"]["code"])
+        for name in names:
+            rooted["roots"]["code"][name]["path"] = name
+        rooted["roots"]["code"][names[0]].setdefault("branch_model", {})[
+            "exclusive_resources"] = [_a_resource(cap=1)]
+        nested = Path(_a_root(Path(directory) / "states-a-rooted-resource",
+                              yaml.safe_dump(rooted)))
+        for name in names:
+            (nested / name).mkdir(exist_ok=True)
+        project = reader.load(str(nested), check_paths=False)
+        for event, cwd in (("PostToolUse", nested / names[0]), ("Stop", nested)):
+            at = fresh(f"rooted-{event}")
+            leased = _call("a-claiming-command", session=f"a-rooted-{event}",
+                           cwd=str(nested / names[0]))
+            guard_answer(leased, config=project, now=1000.0, store=at)
+            held = len(live_leases(at, 1000.0))
+            ended = dict(leased, hook_event_name=event, cwd=str(cwd))
+            release_answer(ended, config=project, now=1001.0, store=at,
+                           load=lambda: None)
+            check(f"a place a root's own resource was leased on is given back by `{event}`"
+                  + (" from outside every root" if cwd == nested else ""),
+                  held == 1 and not live_leases(at, 1001.0),
+                  f"held {held}, then {len(live_leases(at, 1001.0))}")
 
         out.append("")
         out.append("A payload neither arm can read interrupts nothing:")

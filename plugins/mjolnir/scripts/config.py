@@ -3057,16 +3057,65 @@ class Config:
     def has_tracker(self) -> bool:
         return self.tracker_kind != "none"
 
+    @property
+    def answering(self) -> "Config":
+        """The object a read of this configuration is answered from.
+
+        Itself, except for § 1's collection carrying **one** root, where it is
+        that root's view. A collection of one is the only form that can state
+        `command_roots` beside a root's other per-root blocks under one entry, and
+        it has one answer to every per-root question -- so a project-level read
+        refused there with *there is no one answer to give* would be false, and
+        every consumer written against the single form would stop on a
+        configuration the reader accepted. ⚠️ The view and not this object's own
+        dict: the per-root blocks are inside the entry, and only the view lifts
+        them to where every accessor below reads them.
+        """
+        if self.root_key is None and len(self.views) == 1 and self.overridden:
+            return next(iter(self.views.values()))
+        return self
+
+    def standing_in(self, where: str | None) -> "Config":
+        """The root a call standing in `where` addresses, or a stop naming why not.
+
+        One root answers whatever `where` is: there is no second root a call
+        could mean. Several answer by the deepest code root `where` is inside,
+        compared on resolved paths, and a call standing in none of them is a
+        stop naming the roots and the directory -- never the first root, by
+        § 1's rule that a role with no key for a root stops rather than taking
+        the first.
+        """
+        if self.root_key is not None or len(self.views) < 2:
+            return self.only_root
+        at = os.path.realpath(where or ".")
+        inside = [
+            (len(root), key)
+            for key, view in self.views.items()
+            for root in [os.path.realpath(view.code_root)]
+            if at == root or at.startswith(root.rstrip(os.sep) + os.sep)
+        ]
+        if inside:
+            return self.views[max(inside)[1]]
+        raise ConfigError(
+            "roots.code",
+            f"carries {len(self.views)} named roots -- "
+            f"{', '.join(f'{k!r} at {v.code_root!r}' for k, v in self.views.items())} "
+            f"-- and {at!r} is inside none of them, so which root this call "
+            "addresses has no answer. Stand in one of them, or name the root "
+            "(§ 1).",
+        )
+
     def per_root(self, path: str) -> list[str]:
         """The per-root facts a project-level read of `path` would cross.
 
         Empty for a project whose code is one repository written as one path,
         which is why every consumer written against that shape reads on
-        unchanged. Non-empty only where some entry of § 1's collection states
-        the fact itself -- `host.kind` stated once above two roots is still one
-        answer, and is not refused.
+        unchanged, and empty for a collection of one root, which `answering`
+        reads through its one view. Non-empty only where some entry of § 1's
+        collection of several states the fact itself -- `host.kind` stated once
+        above two roots is still one answer, and is not refused.
         """
-        if self.root_key is not None:
+        if self.root_key is not None or self.answering is not self:
             return []
         return sorted(
             crossed
@@ -3146,6 +3195,8 @@ class Config:
         return values
 
     def get(self, path: str, default=None):
+        if self.answering is not self:
+            return self.answering.get(path, default)
         crossed = self.per_root(path)
         if crossed:
             raise ConfigError(
@@ -3196,7 +3247,7 @@ class Config:
         that grain exists against.
         """
         self.get("host.checks")
-        return mirrored_runs(self.data)
+        return mirrored_runs(self.answering.data)
 
     def command_roots(self) -> dict[str, dict]:
         """§ 1's command roots for this code root, or `{}` where it declares none.
@@ -3207,7 +3258,7 @@ class Config:
         its own is refused rather than answered from the first of them.
         """
         self.get(COMMAND_ROOTS)
-        return command_roots(self.data)
+        return command_roots(self.answering.data)
 
     def command(self, command: str, root: str | None = None) -> dict:
         """One command resolved against § 1: what to run, where, and whether it is there.
@@ -3222,7 +3273,7 @@ class Config:
         # about to run a command, which is the act the flag stops. The facet's
         # own walk does not apply it, for the reason stated at `command_in`.
         stops_at_the_code_root(
-            roots, runs_nothing_at_the_code_root(self.data), root, COMMAND_ROOT_REF
+            roots, runs_nothing_at_the_code_root(self.answering.data), root, COMMAND_ROOT_REF
         )
         resolved = command_in(roots, root, command, COMMAND_ROOT_REF)
         return {**self._where(resolved["path"], resolved["invoke"]), **resolved}
@@ -3278,7 +3329,7 @@ class Config:
         legitimately drops.
         """
         self.get("host.checks")
-        return defined_runs(self.data)
+        return defined_runs(self.answering.data)
 
     def runner(self) -> dict | None:
         """§ 2's `host.runner`, or `None` where this project states none.
@@ -3292,7 +3343,7 @@ class Config:
         template does rather than on this surface.
         """
         self.get("host.runner")
-        return host_runner(self.data)
+        return host_runner(self.answering.data)
 
     def pull_request_title(self) -> dict | None:
         """§ 2's `host.pull_request_title`, or `None` where this project states none.
@@ -3305,7 +3356,7 @@ class Config:
         than a gap.
         """
         self.get("host.pull_request_title")
-        return host_pull_request_title(self.data)
+        return host_pull_request_title(self.answering.data)
 
     def release(self) -> dict | None:
         """§ 34's `release`, or `None` where no file here carries a version.
@@ -15358,6 +15409,81 @@ def self_test() -> int:
             resolved.command("a-command")["runs_at"] == resolved.code_root,
             f"resolved {resolved.command('a-command')!r}",
         )
+        # ⛔ The block at the top level is read, so the report of keys the
+        # surface declares nowhere does not name it: the two answers are one
+        # statement of whether the single form carries it.
+        stray = configure_undeclared(single_form, surface)
+        check(
+            "and the report of undeclared keys does not name the block it read",
+            stray == [],
+            f"reported {stray!r}",
+        )
+
+    # § 1's collection of **one** root, which is the only form stating a root's
+    # command roots under its own entry. ⛔ Every project-level read answers as
+    # that root, because there is no second root a read could mean: refused, it
+    # turned a consumer written against the single form -- the guard, the drift
+    # check -- off on a configuration the reader had accepted.
+    one_root = _a_one_root_collection_with_command_roots()
+    broken = _refused(one_root)
+    check(
+        "a collection of one root stating command roots in its entry loads",
+        broken is None,
+        f"refused {broken!r}",
+    )
+    if broken is None:
+        project = _resolve(one_root, EXAMPLES, surface, False)
+        root = project.only_root
+        named = next(iter(root.command_roots()))
+        read = {}
+        for label, ask in (
+            ("code_root", lambda c: c.code_root),
+            ("command_roots", lambda c: c.command_roots()),
+            ("mirrors", lambda c: [m.get(COMMAND_ROOT_REF) for m in c.mirrors()]),
+            ("command", lambda c: c.command("a-command", named)["runs_at"]),
+            ("host.checks", lambda c: c.get("host.checks")),
+        ):
+            try:
+                read[label] = ask(project) == ask(root)
+            except ConfigError as error:
+                read[label] = f"refused: {error}"
+        check(
+            "and every project-level read answers as its one root",
+            all(answer is True for answer in read.values()),
+            str(read),
+        )
+        check(
+            "and a call standing anywhere addresses that root",
+            project.standing_in(os.sep).root_key == root.root_key,
+            "it stopped or named another root",
+        )
+        stray = configure_undeclared(one_root, surface)
+        check(
+            "and the report of undeclared keys names none of its entry's blocks",
+            stray == [],
+            f"reported {stray!r}",
+        )
+
+    # And several roots answer by where the call stands, never by the first.
+    if len(keys) > 1:
+        several = _resolve(_a_collection_example(), EXAMPLES, surface, False)
+        last = several.root(keys[-1])
+        check(
+            "a collection of several roots resolves a call standing inside one to that root",
+            several.standing_in(os.path.join(last.code_root, "a-subdirectory")).root_key
+            == keys[-1],
+            "it resolved another root or stopped",
+        )
+        try:
+            several.standing_in(os.sep)
+            stopped = None
+        except ConfigError as error:
+            stopped = error.key
+        check(
+            "and a call standing in none of them is a stop naming the roots",
+            stopped == "roots.code",
+            f"stopped on {stopped!r}",
+        )
 
     # ⛔ A command root stated as a path is held to existing, which the plants
     # above cannot reach: every example's code root is a placeholder, so under
@@ -25622,6 +25748,36 @@ def _a_single_form_with_command_roots() -> dict:
     source = _get(_a_collection_example(), f"roots.code.{_a_command_root_root()}")
     data[COMMAND_ROOTS] = copy.deepcopy(source[COMMAND_ROOTS])
     return data
+
+
+def _a_one_root_collection_with_command_roots() -> dict:
+    """§ 1's collection carrying one root, whose entry states its command roots.
+
+    ⛔ Built from `_a_single_form_with_command_roots` by moving its path and its
+    block into one entry, so the two fixtures differ in the form alone. ⚠️ An
+    entry of `host.checks` names one of the command roots through a job, which
+    is the reference a walk of the project's own dict refused: the block it
+    resolves against is inside the entry.
+    """
+    data = _a_single_form_with_command_roots()
+    named = next(iter(data[COMMAND_ROOTS]))
+    data["host"]["checks"] = list(data["host"].get("checks") or []) + [{
+        "workflow": "A per-root workflow",
+        "jobs": [{"job": "a-job", COMMAND_ROOT_REF: named, "mirrors": "a-root-command"}],
+    }]
+    data["roots"] = {
+        **data["roots"],
+        "code": {"a-root": {"path": data["roots"]["code"], COMMAND_ROOTS: data.pop(COMMAND_ROOTS)}},
+    }
+    return data
+
+
+def configure_undeclared(data: dict, facts: dict) -> list[str]:
+    """What the report of keys the surface declares nowhere names for `data`."""
+    import configure  # the inventory's own module; it imports this one
+
+    with open(SURFACE, encoding="utf-8") as handle:
+        return configure.undeclared(handle.read(), data, facts)
 
 
 def _a_collection_carrying(carrier: str, mapping: dict, **keys) -> dict:

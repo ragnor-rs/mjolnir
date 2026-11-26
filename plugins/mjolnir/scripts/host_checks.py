@@ -759,7 +759,7 @@ def _surface_text() -> str:
         return handle.read()
 
 
-def _a_configuration(checks, command_roots=None) -> config.Config:
+def _a_configuration(checks, command_roots=None, *, one_root: bool = False) -> config.Config:
     """A loadable configuration whose `host.checks` is the stated list.
 
     Built from an example rather than written here, so a facet this module reads
@@ -769,6 +769,10 @@ def _a_configuration(checks, command_roots=None) -> config.Config:
     `command_roots` is § 1's block, absent by default: the example states none,
     which is the shape every answer below was written against and the one that
     has to keep answering identically.
+
+    `one_root` writes the same facts as § 1's collection of one root, its path
+    and its command roots inside the one entry -- the only form that states a
+    root's command roots beside its other per-root blocks.
     """
     import yaml
 
@@ -780,6 +784,11 @@ def _a_configuration(checks, command_roots=None) -> config.Config:
     data.setdefault("host", {})["checks"] = checks
     if command_roots is not None:
         data[config.COMMAND_ROOTS] = command_roots
+    if one_root:
+        entry = {"path": data["roots"]["code"]}
+        if config.COMMAND_ROOTS in data:
+            entry[config.COMMAND_ROOTS] = data.pop(config.COMMAND_ROOTS)
+        data["roots"]["code"] = {"a-root": entry}
     # § 17's refusal reads `host.checks` to find a local check the host already
     # runs, so a plant that happens to collide with one would be refused by the
     # reader rather than answered here.
@@ -1533,6 +1542,32 @@ def self_test() -> int:
             for each in facet(rooted)[config.COMMAND_ROOTS].values()
         ),
         f"reported {facet(rooted)[config.COMMAND_ROOTS]!r}",
+    )
+
+    # ⛔ The same facts written as § 1's collection of one root, read through
+    # the project's own object. The block is inside the entry there, and a
+    # project-level read refused it -- so every consumer handed the project
+    # rather than a root stopped on a configuration the reader accepted.
+    one_root = _a_configuration(ONE_NAME_TWO_ROOTS, TWO_ROOTS, one_root=True)
+    answered = {}
+    for name in names:
+        try:
+            answered[name] = mirrors(one_root, "a-mirrored-command", name)["mirrored"]
+        except config.ConfigError as error:
+            answered[name] = f"refused: {error}"
+    check(
+        "a collection of one root answers through its command roots from the project",
+        all(answer is True for answer in answered.values()),
+        f"answered {answered!r}",
+    )
+    try:
+        rendered = set(facet(one_root)[config.COMMAND_ROOTS])
+    except config.ConfigError as error:
+        rendered = f"refused: {error}"
+    check(
+        "and the facet reading renders that root's command roots",
+        rendered == set(names),
+        f"reported {rendered!r}",
     )
 
     # ⛔ Both of the options the top-level parser and every subcommand carry, in

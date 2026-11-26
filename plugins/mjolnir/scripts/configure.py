@@ -2036,6 +2036,14 @@ def undeclared(surface_text: str, data, facts: dict | None = None) -> list[str]:
             return True
         if len(parts) > 3 and parts[:2] == ("roots", "code") and parts[3] in per_root:
             return known(parts[3:])
+        # ⛔ And the other way: a per-root block written at the top level is the
+        # single form's own spelling of it, which the reader resolves as that
+        # root's -- so a block the surface shows only inside § 1's entry is
+        # declared here too. Without this the report called `command_roots` and
+        # `code_root_runs_nothing` undeclared beside the single form while the
+        # reader was resolving every command through them.
+        if parts[0] in per_root and _shape(("roots", "code", "*") + parts, patterns) in head:
+            return True
         if (named_groupings and len(parts) > 3 and parts[:2] == ("work_item", "grouping")
                 and parts[2] not in single_grouping):
             return known(parts[:2] + parts[3:])
