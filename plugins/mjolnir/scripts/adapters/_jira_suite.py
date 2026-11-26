@@ -62,8 +62,10 @@ from adapters.jira import (  # noqa: E402
     create_item,
     item_number,
     link_dependency,
+    link_relation,
     advance_on_merge,
     read_blockers,
+    read_relations,
     read_item,
     read_vocabulary,
     search_items,
@@ -534,10 +536,15 @@ class _Host:
                 )
             self.issues[key]["fields"]["issuelinks"].append({
                 "id": f"link-{len(self.issues[key]['fields']['issuelinks']) + 1}",
+                # ⚠️ The dependency's own wording for its own type, and a
+                # wording of the type's own name for any other: which side an
+                # entry is read from is the fact under test, and a fixture
+                # wording every type as the dependency would let a relation
+                # read back in words that belong to a blocker.
                 "type": {
                     "name": kind,
-                    "inward": under_test.INWARD_READS,
-                    "outward": under_test.OUTWARD_READS,
+                    "inward": under_test.INWARD_READS if kind == BLOCKS else f"is {kind} of",
+                    "outward": under_test.OUTWARD_READS if kind == BLOCKS else str(kind),
                 },
                 # ⚠️ The summary as well as the status, because the host puts both
                 # in a link payload. A fixture carrying only what the code read at
@@ -1958,6 +1965,184 @@ def self_test() -> int:
         "an answer carrying no links field is a failed call, not an item with no blocker",
         reported is not None and "no links field" in reported,
         f"got {reported!r}",
+    )
+
+    # --- a relation that blocks nothing, asserted as a round trip -------------
+    #
+    # ⛔ The names and the types are read off the example rather than written
+    # here: the example is the configuration a project of this kind writes, and a
+    # literal would be a second statement of it. What is asserted is the shape §
+    # 3 states -- a name per wording, a side held from both ends, and no relation
+    # ever reaching the dependency's read.
+    relations = configuration.get("tracker.relations") or {}
+    unsided = sorted(name for name, mapped in relations.items() if not mapped.get("side"))
+    sided = {mapped["side"]: name for name, mapped in relations.items() if mapped.get("side")}
+    check(
+        "the example maps one relation worded the same both ways and one named per side",
+        bool(unsided) and set(sided) == {"inward", "outward"},
+        f"maps {relations!r}",
+    )
+    if unsided and set(sided) == {"inward", "outward"}:
+        for first, then in (("outward", "inward"), ("inward", "outward")):
+            sideways = host()
+
+            def _relate_and_read(named=sided[first]):
+                link_relation(key(1), key(2), named)
+                return read_relations(key(1)), read_relations(key(2))
+
+            answered = with_host(sideways, _relate_and_read)
+            of_first, of_other = answered if isinstance(answered, tuple) else ({}, {})
+            check(
+                f"a relation linked as `{sided[first]}` reads back under it on the item named first",
+                [(entry.get("relation"), entry.get("key"))
+                 for entry in got(of_first, "relations") or []] == [(sided[first], key(2))],
+                f"read {got(of_first, 'relations')!r}",
+            )
+            check(
+                f"and under `{sided[then]}` on the other item, the side held from both ends",
+                [(entry.get("relation"), entry.get("key"))
+                 for entry in got(of_other, "relations") or []] == [(sided[then], key(1))],
+                f"read {got(of_other, 'relations')!r}",
+            )
+        both_same = host()
+
+        def _relate_unsided():
+            link_relation(key(1), key(2), unsided[0])
+            return read_relations(key(1)), read_relations(key(2))
+
+        answered = with_host(both_same, _relate_unsided)
+        of_first, of_other = answered if isinstance(answered, tuple) else ({}, {})
+        check(
+            "a relation worded the same both ways reads back under its one name from either end",
+            [entry.get("relation") for entry in got(of_first, "relations") or []] == [unsided[0]]
+            and [entry.get("relation") for entry in got(of_other, "relations") or []]
+            == [unsided[0]],
+            f"read {got(of_first, 'relations')!r} and {got(of_other, 'relations')!r}",
+        )
+        # ⛔ The readiness separation, on the same link: the other item is open,
+        # so a relation read as a dependency would hold the first one back.
+        held_back = host()
+
+        def _relate_then_blockers():
+            link_relation(key(1), key(2), unsided[0])
+            return read_blockers(key(1)), read_blockers(key(2)), read_item(key(2))
+
+        answered = with_host(held_back, _relate_then_blockers)
+        of_first, of_other, other_item = (
+            answered if isinstance(answered, tuple) else ({}, {}, {})
+        )
+        check(
+            "a relation to an open item is a blocker of neither item",
+            got(other_item, "state") != "done"
+            and keys_of(of_first, "blockers") == []
+            and keys_of(of_other, "blockers") == [],
+            f"read {got(of_first, 'blockers')!r} and {got(of_other, 'blockers')!r}",
+        )
+        dependency_only = host()
+
+        def _depend_then_relations():
+            link_dependency(key(1), key(2))
+            return read_relations(key(1)), read_relations(key(2))
+
+        answered = with_host(dependency_only, _depend_then_relations)
+        of_first, of_other = answered if isinstance(answered, tuple) else ({}, {})
+        check(
+            "and a dependency is a relation of neither item, named or not",
+            all(got(answer, part) == [] for answer in (of_first, of_other)
+                for part in ("relations", "unnamed")),
+            f"read {of_first!r} and {of_other!r}",
+        )
+
+    # ⛔ A name the project does not map is refused before anything is sent, and
+    # so is every name where the project maps none: that is what keeps a project
+    # stating no `relations` filing exactly as it did.
+    unmapped = host()
+    reported = with_host(
+        unmapped, lambda: refused(lambda: link_relation(key(1), key(2), "<no such name>"))
+    )
+    check(
+        "a relation name the project does not map is refused, naming it, and nothing is sent",
+        reported == "tracker.relations.<no such name>" and unmapped.writes() == [],
+        f"reported {reported!r} after {unmapped.writes()}",
+    )
+    stated = configuration.data["tracker"].pop("relations", None)
+    try:
+        for name in sorted(stated or {}):
+            none_mapped = host()
+            reported = with_host(
+                none_mapped, lambda: refused(lambda: link_relation(key(1), key(2), name))
+            )
+            check(
+                f"with no `relations` stated, `{name}` is refused and nothing is sent",
+                reported == f"tracker.relations.{name}" and none_mapped.writes() == [],
+                f"reported {reported!r} after {none_mapped.writes()}",
+            )
+        # ⛔ And the dependency's own type is never a relation, mapped or not.
+        configuration.data["tracker"]["relations"] = {"waits": {"type": BLOCKS}}
+        onto_blocks = host()
+        reported = with_host(
+            onto_blocks, lambda: refused(lambda: link_relation(key(1), key(2), "waits"))
+        )
+        check(
+            "a relation mapped onto the dependency's own type is refused before anything is sent",
+            reported == "tracker.relations.waits.type" and onto_blocks.writes() == [],
+            f"reported {reported!r} after {onto_blocks.writes()}",
+        )
+        read_through = host()
+
+        def _depend_then_read_as_mapped():
+            link_dependency(key(1), key(2))
+            return read_relations(key(1))
+
+        answered = with_host(read_through, _depend_then_read_as_mapped)
+        check(
+            "and a dependency is not read back as one even where a name maps that type",
+            got(answered, "relations") == [] and got(answered, "unnamed") == [],
+            f"read {answered!r}",
+        )
+    finally:
+        configuration.data["tracker"].pop("relations", None)
+        if stated is not None:
+            configuration.data["tracker"]["relations"] = stated
+
+    # ⚠️ A link of a type no name maps is reported, never dropped and never named.
+    unnamed_link = host(issues=None)
+    unnamed_link.issues[key(1)]["fields"]["issuelinks"] = [{
+        "id": "link-9",
+        "type": {"name": "<a type no name maps>", "inward": "is mirrored by",
+                 "outward": "mirrors"},
+        "outwardIssue": {
+            "key": key(2),
+            "fields": {"status": {"name": initial, "statusCategory": {"key": "new"}}},
+        },
+    }]
+    answered = with_host(unnamed_link, lambda: read_relations(key(1)))
+    check(
+        "a link of a type no name maps is reported under `unnamed` with the tracker's wording",
+        got(answered, "relations") == []
+        and [(entry.get("key"), entry.get("reads"))
+             for entry in got(answered, "unnamed") or []] == [(key(2), "this item mirrors it")],
+        f"read {answered!r}",
+    )
+    unread_relations = host(issues=None)
+    unread_relations.issues[key(1)]["fields"].pop("issuelinks", None)
+    reported = with_host(
+        unread_relations, lambda: unavailable(lambda: read_relations(key(1)))
+    )
+    check(
+        "an answer carrying no links field is a failed call, not an item with no relation",
+        reported is not None and "no links field" in reported,
+        f"got {reported!r}",
+    )
+    elsewhere_relations = host()
+    reported = with_host(
+        elsewhere_relations,
+        lambda: refused(lambda: link_relation(foreign(1), key(1), unsided[0] if unsided else "")),
+    )
+    check(
+        "a key from another project is refused before a relation is written",
+        reported == "tracker.project_key" and elsewhere_relations.writes() == [],
+        f"reported {reported!r} after {elsewhere_relations.writes()}",
     )
 
     # --- searching ------------------------------------------------------------

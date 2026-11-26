@@ -1998,9 +1998,17 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # about one grouping, and the endpoint that would do it is the board's settings.
 # ⚠️ So § 3's stated fallback is what the bootstrap gets here: the run names the
 # grouping it would have created and writes nothing anywhere else.
+#
+# `link_relation` and `read_relations` are absent for the plain-issues module's
+# reason, a card being a view over an issue: the host records the dependency and
+# a parent's sub-issues between issues and no link type a project can name, so a
+# relation that blocks nothing stays the prose line a body carries -- § 3's stated
+# fallback, and the same answer that module gives on the same host.
 DELIBERATELY_ABSENT = (
     "mark_grouping_released",
     "create_grouping",
+    "link_relation",
+    "read_relations",
     "checklist_read",
     "checklist_write",
     "checklist_item_delete",

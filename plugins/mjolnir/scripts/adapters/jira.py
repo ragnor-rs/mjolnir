@@ -919,6 +919,10 @@ def _links_of(issue: dict) -> dict:
         elif kind == BLOCKS and outward:
             blocks.append(entry)
         else:
+            # ⚠️ The side is carried as well as the sentence, because the
+            # relation names a project maps (§ 3) are keyed on it: the sentence
+            # is the tracker's wording, and two types may share one.
+            entry["side"] = "inward" if inward else "outward"
             entry["reads"] = (
                 f"this item {(link.get('type') or {}).get('inward')} it"
                 if inward
@@ -1946,6 +1950,108 @@ def read_blockers(key: str) -> dict:
     return {"key": item["key"], "blockers": list(item["blocked_by"])}
 
 
+def _relation(name: str) -> tuple[str, str | None]:
+    """The link type and side the project maps one relation name onto (§ 3).
+
+    ⛔ **A name the project does not map is refused, never defaulted**, so a
+    project stating no `relations` links nothing and files as it did before the
+    key existed. ⛔ **And a name mapped onto the dependency's own type is refused
+    before anything is sent**: that link is `read_blockers`'s, and the same link
+    read as a relation would hand a readiness gate a blocker it cannot see, or a
+    relation it would hold an item back on.
+    """
+    mapped = (_configuration().get("tracker.relations") or {}).get(name)
+    if not isinstance(mapped, dict):
+        raise ConfigError(
+            f"tracker.relations.{name}",
+            "is not a relation this project maps, so nothing is linked. A role "
+            "links only what `tracker.relations` names, and keeps any other "
+            "relation as prose in the body (§ 3).",
+        )
+    if mapped.get("type") == BLOCKS:
+        raise ConfigError(
+            f"tracker.relations.{name}.type",
+            f"is `{BLOCKS}`, the type a dependency is written as. That link is "
+            "`link_dependency`'s, and a relation never answers a readiness check "
+            "(§ 3).",
+        )
+    return mapped["type"], mapped.get("side")
+
+
+def link_relation(item: str, other: str, relation: str) -> dict:
+    """One item recorded as standing in a non-blocking relation to another.
+
+    ⛔ **The side is what `item` reads, and the call's positions run the other
+    way** -- the inversion `link_dependency` documents: the issue a call puts in
+    `outwardIssue` is the one that reads the type's **inward** wording. So an
+    item reading `inward` goes in the outward position, and the suite holds that
+    by reading the link back from both ends rather than by reading this call.
+
+    ⚠️ A type worded the same both ways states no side and is written as
+    `outward`: either position reads the same there, and the read-back answers
+    with the unsided name from either end.
+
+    ⛔ Both keys go through `read_item` first, so the project guard covers the
+    write exactly as it covers the dependency's.
+    """
+    kind, side = _relation(relation)
+    on_item = read_item(item)["key"]
+    on_other = read_item(other)["key"]
+    reads_inward = side == "inward"
+    _call(
+        "POST",
+        "/issueLink",
+        body={
+            "type": {"name": kind},
+            "inwardIssue": {"key": on_other if reads_inward else on_item},
+            "outwardIssue": {"key": on_item if reads_inward else on_other},
+        },
+    )
+    return {"item": on_item, "other": on_other, "relation": relation}
+
+
+def read_relations(key: str) -> dict:
+    """The items this one is related to, each under the project's own name.
+
+    The read half of `link_relation`, and ⛔ **it makes no call of its own**, for
+    `read_blockers`'s reason: the links arrive with the item, and which side an
+    entry is read from is `_links_of`'s reading rather than a second one here.
+
+    ⛔ **The dependency's own type never appears here**: `_links_of` sorts it into
+    the blocker lists before anything reaches `links`, so this answer and
+    `read_blockers`'s cannot both carry one link.
+
+    ⚠️ **A link of a type the project maps no name for is carried under
+    `unnamed`**, with the wording the tracker gave it -- never dropped, which
+    would read as fewer relations than the item has, and never assigned the
+    nearest name, which would read as a relation nobody made.
+
+    ⛔ **An answer that did not carry the links at all is a failed call**, by
+    `read_blockers`'s rule: unread is not none.
+    """
+    item = read_item(key)
+    if "links" not in item:
+        raise HostUnavailable(
+            f"the answer for {key} carried no links field, so what it is related "
+            "to could not be read. An unreadable answer is not the same as an "
+            "item with no recorded relation."
+        )
+    names = {}
+    for name, mapped in (_configuration().get("tracker.relations") or {}).items():
+        if isinstance(mapped, dict) and mapped.get("type") != BLOCKS:
+            for side in ((mapped.get("side"),) if mapped.get("side") else ("inward", "outward")):
+                names[(mapped.get("type"), side)] = name
+    named, unnamed = [], []
+    for link in item["links"]:
+        entry = {name: link.get(name) for name in ("key", "title", "url", "status", "state")}
+        relation = names.get((link.get("type"), link.get("side")))
+        if relation is None:
+            unnamed.append({**entry, "reads": link.get("reads")})
+        else:
+            named.append({**entry, "relation": relation})
+    return {"key": item["key"], "relations": named, "unnamed": unnamed}
+
+
 def advance_on_merge(key: str) -> dict:
     """Whether something other than this credential moved the item.
 
@@ -2177,6 +2283,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "assign": assign,
     "link_dependency": link_dependency,
     "read_blockers": read_blockers,
+    "link_relation": link_relation,
+    "read_relations": read_relations,
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
     # ⛔ The operations this tracker has nothing to implement against are named
