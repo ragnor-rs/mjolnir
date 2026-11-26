@@ -312,6 +312,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which branches besides the integration branch is a local merge into held "
         "to a change's recorded approval?",
     ),
+    "host.landing.bases": ask(
+        "Which branches besides the integration branch does a pull request land on — "
+        "a grouping branch the integration branch reaches only at release?",
+    ),
     "host.landing.unrecorded_merge": ask(
         "Where no recorded approval covers a merge, is it refused, or put to the "
         "person at the harness's own prompt?",

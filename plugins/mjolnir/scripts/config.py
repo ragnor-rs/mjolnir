@@ -3396,6 +3396,12 @@ class Config:
         self.get("host.pull_request_title")
         return host_pull_request_title(self.answering.data)
 
+    def landing_bases(self) -> list[str]:
+        """§ 2's `host.landing.bases`: the branch globs a change lands on beside the
+        integration branch, empty where the project lands on that branch alone."""
+        self.get("host.landing.bases")
+        return host_landing_bases(self.answering.data)
+
     def release(self) -> dict | None:
         """§ 34's `release`, or `None` where no file here carries a version.
 
@@ -10602,6 +10608,35 @@ def host_pull_request_title(data: dict) -> dict | None:
     }
 
 
+def host_landing_bases(data: dict) -> list[str]:
+    """§ 2's `host.landing.bases`, held to its shape: the branches a change lands on.
+
+    ⛔ An empty list where the key is not stated, which is the project landing on the
+    integration branch alone -- the derivation § 10 makes and this key never restates.
+    ⚠️ A single string is refused rather than read as one pattern: this list widens what a
+    reader counts as landed work, so a misspelt shape is reported rather than read as either
+    more or less than the project wrote.
+    """
+    bases = _get(data, "host.landing.bases")
+    if bases is None:
+        return []
+    if not isinstance(bases, list):
+        raise ConfigError(
+            "host.landing.bases",
+            f"is {bases!r}; § 2 states it as a list of the branches a pull request lands "
+            "on beside the integration branch, each a glob matched against the whole "
+            "branch name. Omitted, changes land on the integration branch alone.",
+        )
+    for index, pattern in enumerate(bases):
+        if not isinstance(pattern, str) or not pattern.strip():
+            raise ConfigError(
+                f"host.landing.bases[{index}]",
+                f"is {pattern!r}; each member is one branch pattern, and a blank one "
+                "is the same text as a pattern somebody meant to write.",
+            )
+    return [pattern.strip() for pattern in bases]
+
+
 def _command(mirrors, where: str) -> str:
     """The one command a `mirrors` states, wherever it sits.
 
@@ -12667,6 +12702,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⛔ An adopter writing it wrong otherwise learns about it from a generated
     # gate refusing every title the finishing role writes.
     host_pull_request_title(data)
+    host_landing_bases(data)
 
     # § 17. The verdicts no host run produces, and the one facet on this surface
     # whose entries carry a command the procedure runs for a verdict. Requiredness
@@ -22526,6 +22562,10 @@ def _planted_violations():
          "host.pull_request_title.into", _a_title_form_of(into=[])),
         ("a base ref written blank, which matches nothing",
          "host.pull_request_title.into[0]", _a_title_form_of(into=["   "])),
+        ("landing bases written as one string rather than a list", "host.landing.bases",
+         at("host.landing.bases", "release/*")),
+        ("a landing base written blank, which matches nothing", "host.landing.bases[0]",
+         at("host.landing.bases", ["  "])),
         # § 10's entries. ⚠️ The `claimed_by` and `cap` plants are the two whose
         # refusal direction is the permissive one: each of them leaves a reader
         # reporting the resource as configured while no call ever claims it.
