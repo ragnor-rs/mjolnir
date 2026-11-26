@@ -8161,7 +8161,7 @@ deploy:
       branch:     "<the branch the tree must be on, where the condition is `on_branch`>"
     requires:     "<§ 16's list, cited there and not restated>"
     advances:     "<one of § 4.2's own roles, read there — or `none`>"
-    batch:        "<a command printing one item identifier per line>"
+    batch:        "<a command handed identifiers on its input, printing the ones this deploy carries>"
     grouping:     "<a grouping § 4.8 carries, by the name that facet keys it on — or `none`>"
     requires_role: "<one of § 4.2's own roles, read there — or `none`>"
     publishes:    false
@@ -8326,8 +8326,12 @@ added here would close those. A value needing a space is a word the project's ow
 
 ⛔ **The command and the declaration agree in both directions**: a declared choice the command never
 places would be shown in a go and reach nothing, and a placed name no choice declares would reach
-the shell as written. Each is refused with the name. ⚠️ **A choice reaches `command` and no other
-command of the entry**, so a placement written in any other key is refused too.
+the shell as written. Each is refused with the name. ⚠️ **A choice reaches `command` and `batch` and
+no other command of the entry**, so a placement written in any other key is refused too — and one
+`batch` places is held to the plain words above whatever the target's shape, since
+[the batch](#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against) runs in a
+shell on every shape. `batch` need not place a choice, and a name it places that no choice declares
+is refused.
 
 ⛔ **The go shows every choice with the value taken, whether it was chosen or is the default, and
 every warning declared for a value taken.** A go is for the values it showed: a different selection
@@ -8439,10 +8443,12 @@ a short item holds the whole target —
 states the distinction where it states the key.
 
 ⛔ **`batch` is a command, and the batch is what it returns intersected with what the tracker says
-now.** The command is handed the identifiers and answers which of them this deploy carries; the
-item's role is read from the tracker **where it is advanced** and never from a value read earlier,
-which is [§ 32](#32-a-status-that-moves-backwards)'s rule met by its first caller. An identifier the
-command returns whose role is something else is **named and not advanced**.
+now.** The command is handed the identifiers
+[below](#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against) states and answers
+which of them this deploy carries; the item's role is read from the tracker **where it is
+advanced** and never from a value read earlier, which is
+[§ 32](#32-a-status-that-moves-backwards)'s rule met by its first caller. An identifier the command
+returns whose role is something else is **named and not advanced**.
 
 ⛔ **The command is asked whether an item's code is in what is being deployed, and never what
 changed since the last deploy.** A range answers *no* for an item whose code landed earlier and
@@ -8455,8 +8461,60 @@ answer alone advances an item whose code never reached what was deployed — nam
 card that moved without its code landing. The command's answer alone advances an item the tracker no
 longer holds in that role. ⚠️ **And nothing here checks the command**, which is
 [§ 12](#12-ordering)'s position for its own: what the surface can do is state what the command is
-asked, and what the role does is **say that the command is the batch's only source of candidates**,
-so that *nothing owed* and *nobody looked* are not one sentence.
+asked, and what the role does is **name what the command was handed** — and, where the tracker
+could not be read, **say that the command is the batch's only source of candidates**, so that
+*nothing owed* and *nobody looked* are not one sentence.
+
+### What the batch command is handed, and what its answer is matched against
+
+⛔ **The command is run once per purpose, and the purpose decides which identifiers it is handed.**
+Each run hands it the identifiers on its input, one per line, in the directory `command` runs in on
+a `command` target and at the code root on any other; it prints the identifiers this deploy carries,
+one per line, a leading `#` read as no part of one.
+
+| purpose | run where the entry states | handed | what it returns is |
+|---|---|---|---|
+| `advance` | an `advances` role | every item the tracker holds in the role immediately before `advances` — the role above derives | the batch, before the role is read again where each item is advanced |
+| `precondition` | a `requires_role` role, with `grouping: none` | every item the tracker holds in a role short of `requires_role`, in § 4.2's own order | the items holding the target: short of the bar, and carried by this deploy |
+| `report` | neither | nothing | what the deploy carried, reported and advanced nowhere |
+
+⛔ **A bar over a grouping is never this command's to answer**: the grouping's own items are that
+set ([`Publishing a grouping`](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)),
+and the command is run for the advance alone. ⚠️ **The precondition is handed what is short, and
+never only what the advance draws from** — every item the advance draws from may already have passed
+the bar, and a bar read over those alone holds nothing.
+
+⛔ **Both differences are named, in both directions, for every purpose that handed anything.** An
+item handed and not returned is in the role and not in what this deploy carries — named with its
+title, which is the item with no commit found that would otherwise go unreported where no grouping
+is named. An identifier returned and not handed is named and not acted on, and one the tracker holds
+and the port could not place is named as unplaced, by
+[§ 11](#a-report-names-what-it-could-not-establish).
+
+**What the run hands it beside the identifiers**, each where the command places it:
+
+| placed as | what reaches the command |
+|---|---|
+| `{deploy:target}` | the target's `name` |
+| `{deploy:commit}` | the commit this deploy serves, as the run established it — an object name, seven to sixty-four lowercase hexadecimal characters |
+| `{deploy:purpose}` | `advance`, `precondition` or `report` |
+| `{choose:<name>}` | the value [the run's choice](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target) takes — the one the go shows |
+
+⛔ **Every value is a word a shell reads as itself, for the reason a choice's is**, so nothing is
+quoted at the substitution: a placement § 33 does not state is refused at the load, a
+`{deploy:target}` on a target whose name is not one plain word is refused there too, and a commit
+that is not an object name is refused before anything runs. ⚠️ **A command placing nothing and
+reading nothing on its input is run as written**, and its answer is matched exactly as any other's —
+which is what a project stating nothing new keeps: the items it advances are the ones it advanced
+before, and what is added is the naming.
+
+⛔ **The tracker's half is read through [§ 3](#the-operations-and-what-an-absent-capability-does)'s
+`search_items`, across every state, under a bound the carrier states**, and each item is placed by
+the port against `statuses`. ⚠️ **A read at its bound is reported as possibly short.** Where the
+capability is absent the command is handed nothing, what it returns is the only source of
+candidates, and nothing it left out can be named — said in those words, by the rule above. ⛔ **A
+read that failed is a stop, and so is a command that exited other than zero**: neither is a batch
+that carried nothing.
 
 ### What a deploy verifies, and what it reports
 
