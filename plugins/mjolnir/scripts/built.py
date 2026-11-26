@@ -19,7 +19,7 @@ Usage:
                                     does there (exit 3 where it does not run)
     built.py check --file F         read a finding, refuse a shape § 42 refuses,
                                     and print the verdict and what the role does
-    built.py form                   the finding's fields
+    built.py form                   the finding's format and fields
     built.py --self-test            plant each refused shape and assert the refusal
 
 Exit status: 0 the answer was produced, 1 the finding was refused, 2 the
@@ -238,8 +238,11 @@ def check(finding, resolved, root: str) -> dict:
     missing = [field for field in FORM if field not in finding]
     if missing:
         raise FindingError(f"the finding does not carry {missing} (§ 42).")
-    if not str(finding["item"]).strip():
-        raise FindingError("the finding names no item (§ 42).")
+    item = finding["item"]
+    if isinstance(item, bool) or not isinstance(item, (str, int)) or not str(item).strip():
+        raise FindingError(
+            f"the finding names no item ({item!r}); it is the item's identifier (§ 42)."
+        )
     point = finding["point"]
     decided = decide(resolved, point)
     if not decided["runs"]:
@@ -289,6 +292,16 @@ def check(finding, resolved, root: str) -> dict:
 # --- the command ------------------------------------------------------------
 
 
+def form() -> dict:
+    """What `form` prints: the file's format first, since `check` reads nothing else."""
+    return {
+        "format": "one JSON object carrying exactly these fields",
+        "fields": FORM,
+        "bullet_evidence": BULLET_FORM,
+        "cites": list(CITE_KINDS),
+    }
+
+
 def _load_finding(path: str):
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
@@ -312,8 +325,7 @@ def main(argv: list) -> int:
     if args.self_test:
         return self_test()
     if args.command == "form":
-        print(json.dumps({"fields": FORM, "bullet_evidence": BULLET_FORM,
-                          "cites": list(CITE_KINDS)}, indent=2, ensure_ascii=False))
+        print(json.dumps(form(), indent=2, ensure_ascii=False))
         return 0
     if args.command not in ("decide", "check"):
         parser.print_usage(sys.stderr)
@@ -409,6 +421,11 @@ def self_test() -> int:
             base.update(over)
             return base
 
+        # ⛔ `check` reads JSON and nothing else, so a form that did not say so
+        # would send a role to write YAML and meet a parse error instead.
+        check_that("the form names the format `check` reads",
+                   "JSON" in form()["format"], f"{form()['format']!r}")
+
         print("\nThe green side:")
         answer = check(finding(), report, root)
         check_that("a built bullet citing a real path, commit and change holds",
@@ -451,6 +468,8 @@ def self_test() -> int:
             ("a finding recording an act it performed",
              {**finding(), "performed": ["closed item 7"]}, "closes, reopens and rewrites"),
             ("a field outside the form", {**finding(), "verdict": BUILT}, "the form does not"),
+            ("a finding whose item is null", finding(item=None), "names no item"),
+            ("a finding whose item is blank", finding(item="  "), "names no item"),
             ("a finding reading no bullet", finding(bullets=[]), "no bullet"),
             ("an outcome read as several bullets", finding(condition="outcome", bullets=[
                 {"bullet": "a", "verdict": ABSENT, "read": "x"},
