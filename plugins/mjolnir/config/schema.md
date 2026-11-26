@@ -8687,6 +8687,14 @@ deploy:
     advance_requires:
       tier:       "<a § 31 tier, by the name `test_tiers` keys it on>"
       reading:    "<a reading the project's own verification reports under>"
+    figures:                   # a list; one entry per check whose figures the reply carries
+      check:      "<the check's name, as the verification reports its outcome>"
+      reads:      "<a command printing that check's figures, one `<name> <number>` per line>"
+      names:      "<the figures that check is expected to report, as a list>"
+      bounds:                  # a list; one entry per figure allowed to decide anything
+        figure:   "<one of `names`>"
+        min:      "<the least value that keeps the check's outcome>"
+        max:      "<the greatest value that keeps it>"
 ```
 
 ⛔ **The last of those is a block rather than a value, and what it is read for is
@@ -9123,6 +9131,66 @@ which that is wrong says so by naming the check.
 check, its outcome, whether it was required, and which of them hold the advance. ⚠️ **An outcome
 outside the table above is refused rather than read**, since a word the carrier did not recognise
 and a check that passed must not come out alike.
+
+### A check's figures, and the bound that lets one decide anything
+
+⛔ **An outcome says whether a check passed; the figures behind it say how much it covered**, and a
+deploy reply that carries only the first hands a reader a `passed` over three cases and a `passed`
+over three thousand as the same fact. `figures` states where each check's figures are read from,
+and the reply carries them beside the outcome.
+
+**What the command prints is the one contract a project writes to**, in the form
+[§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) already uses for a
+count: the procedure reads numbers and never output, so no runner or report format enters the
+toolkit, and a project whose verification prints something else states a command ending in
+whatever turns it into this:
+
+```
+<name> <number>
+```
+
+- **One figure per line**, the name a single word of letters, digits, `_`, `.` and `-`, and the
+  number an integer or a decimal. Blank lines are read as nothing.
+- ⛔ **A line this grammar cannot read refuses the whole command's reading**, and so does one name
+  printed twice or a command that exited non-zero: a line nobody can parse may be the figure, and a
+  reader that skipped it would report a number it did not read. Every figure the entry names is then
+  `unread`, with the reason.
+- ⛔ **`names` is what makes a missing figure visible.** A figure the entry names and the command did
+  not print is reported `unread`, never left out — an omission reads exactly like a check with
+  nothing to report. A figure printed and not named is reported and decides nothing.
+- ⚠️ **The command runs at the target's code root, through a shell**, the same trust as the
+  commands `host.checks` already states, and after the deploy rather than beside it — the figures
+  are about what the verification read of the target, which exists only once it has run.
+
+⛔ **No figure decides a verdict unless the entry states a bound for it.** Every figure is reported
+and nothing is judged, which is § 16's rule for every count above its one floor, arriving here; a
+project that wants a figure to hold the advance says so with `bounds`, and the bound is the whole of
+the judgement — `min`, `max` or both, numbers, `min` no greater than `max`, one bound per figure,
+and each naming a figure `names` carries.
+
+| a bounded figure reads | what it does to the outcome handed for its check |
+|---|---|
+| inside its bound | nothing: the outcome is what the verification reported |
+| outside its bound | a `passed` becomes `failed` — a check that passed over too few cases did not pass; any other outcome is kept |
+| `unread` | a `passed` becomes `unread`; any other outcome is kept |
+
+⚠️ **A check handed no outcome is handed none still**, whatever its figures read, which
+`--advance-for` already reads as `unread`.
+
+⛔ **A bound only ever lowers an outcome**, and the lowered outcome is what is handed to `--advance-for`
+([above](#what-an-advance-requires-and-what-holds-it)), whose table then decides whether it holds —
+so a bound on a check the target does not require is reported and still holds nothing under a target
+that names its checks. ⛔ **And `bounds` is refused beside `advances: none`**, by the rule
+[`The three shapes`](#the-three-shapes-a-target-is-reached-by) states for a key the entry never reads:
+a target that moves nothing has no outcome for a bound to lower. `figures` without bounds is accepted
+there, the reply carrying them either way.
+
+⛔ **A target that omits `figures` reads none**, and the reply says it reads none rather than that a
+check reported nothing: every configuration written before the key behaves exactly as it did.
+⚠️ **What reads the figures and applies the bounds is the carrier's**: the role runs
+`figures.py --target <target>` with each outcome it read as `--reading <check>=<outcome>`, and what
+comes back names every figure, its value or why it is unread, its bound, and the outcomes to hand
+on.
 
 ### Publishing a grouping, and the precondition that holds the whole target
 

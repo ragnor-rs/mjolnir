@@ -1355,6 +1355,29 @@ ANSWERED_BY: dict[str, Answer] = {
         "And which of the project's own readings must agree -- an exact served "
         "commit, every service's image?",
     ),
+    "deploy.figures.check": ask(
+        "Does a check this target's verification runs report figures -- case "
+        "counts, scores -- that the deploy's reply should carry? Which check? "
+        "⚠️ Nothing is an answer: the key is then omitted and no figure is read "
+        "(§ 33).",
+    ),
+    "deploy.figures.reads": ask(
+        "Which command prints that check's figures, one `<name> <number>` per line?",
+    ),
+    "deploy.figures.names": ask(
+        "Which figures is it expected to print? A named figure it does not print is "
+        "reported as unread.",
+    ),
+    "deploy.figures.bounds.figure": ask(
+        "Should any of those figures decide whether the check passed? ⛔ Asked "
+        "because no figure decides anything unless it is bounded here (§ 33).",
+    ),
+    "deploy.figures.bounds.min": ask(
+        "What is the least value that keeps the check's outcome?",
+    ),
+    "deploy.figures.bounds.max": ask(
+        "And the greatest?",
+    ),
 
     # --- § 34. The files that carry a version ------------------------------
     "release.carrier": ask(
