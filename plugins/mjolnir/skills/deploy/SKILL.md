@@ -423,11 +423,9 @@ still reported — what the deploy carried is a fact about the deploy — and �
 target writes nothing on an item** rather than leaving a reader to read silence as a failed move.
 
 ⛔ **Otherwise: only the items step 4a put in the batch, only where step 7's `--advance-for`
-verdict holds nothing, and only for an item none of whose `after` steps is holding it.** A verdict
-that holds the advance holds it for every item in the batch, and the reply names each check holding
-it with its outcome. The move goes through the
-port, asked for as a **role** and never as a status word, and this role asks as the writer the
-deploy is:
+verdict holds nothing, and only for an item none of whose `after` steps is holding it.** The move
+goes through the port, asked for as a **role** and never as a status word, and this role asks as the
+writer the deploy is:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \

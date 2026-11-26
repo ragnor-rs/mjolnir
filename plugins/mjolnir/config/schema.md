@@ -8456,6 +8456,9 @@ Each entry names one check, by exactly one of two keys:
 name, or one name written twice, are refused with the entry that already carries it named. An entry
 carrying both keys or neither is refused, and so is a list carrying nothing: an empty list reads
 exactly like a target nobody thought about, which is the reading an omitted key already gives.
+⛔ **And the key is refused beside `advances: none`**, by the rule
+[`The three shapes`](#the-three-shapes-a-target-is-reached-by) states for a key the entry never
+reads: a target that moves nothing has no advance for a check to hold.
 
 **Every check comes back with one outcome, and only one outcome releases the advance:**
 
@@ -8476,9 +8479,9 @@ states for an `after` step: the deploy has already been made, and the move is th
 still be withheld. ⚠️ **A verification covers the target rather than one item**, so it holds the
 whole batch, where an `after` step holds only the items whose change owes it.
 
-⛔ **A check the target does not name is reported with its outcome and holds nothing**, whatever the
-outcome is: the target has said which verifications its advance rests on, and the rest are
-evidence for a reader rather than a gate.
+⛔ **Where the target names its checks, one it does not name is reported with its outcome and holds
+nothing**, whatever the outcome is: the target has said which verifications its advance rests on,
+and the rest are evidence for a reader rather than a gate.
 
 ⛔ **A target that omits the key requires no check by name, and the stated default is that a
 `failed` outcome still holds the advance.** Every other outcome is reported and holds nothing. That

@@ -5407,6 +5407,12 @@ def _validate_advance_requires(where: str, entry: dict, data: dict, facts: dict)
     if ADVANCE_REQUIRES not in entry:
         return
     at = f"{where}.{ADVANCE_REQUIRES}"
+    if entry.get("advances") == "none":
+        raise ConfigError(
+            at,
+            "is stated beside `advances: none`, which never reads it (§ 33). A "
+            "target that moves nothing has no advance for a check to hold.",
+        )
     checks = entry[ADVANCE_REQUIRES]
     if not isinstance(checks, list) or not checks:
         raise ConfigError(
@@ -17041,29 +17047,32 @@ def _planted_violations():
         # ⛔ § 33's `advance_requires`, every arm. ⚠️ The base example states no
         # tier, so the tier plant is the `carrier: none` arm: a project with no
         # tier has none for a check to name.
+        ("checks an advance rests on, beside a target that advances nothing",
+         f"deploy[0].{ADVANCE_REQUIRES}",
+         at("deploy", [_a_deploy_target(advance_requires=[{"reading": "a reading"}])])),
         ("checks an advance rests on written as something that is not a list",
          f"deploy[0].{ADVANCE_REQUIRES}",
-         at("deploy", [_a_deploy_target(advance_requires="a tier")])),
+         at("deploy", [_an_advancing_target(advance_requires="a tier")])),
         ("an advance resting on an empty list of checks",
          f"deploy[0].{ADVANCE_REQUIRES}",
-         at("deploy", [_a_deploy_target(advance_requires=[])])),
+         at("deploy", [_an_advancing_target(advance_requires=[])])),
         ("a check that is not a mapping", f"deploy[0].{ADVANCE_REQUIRES}[0]",
-         at("deploy", [_a_deploy_target(advance_requires=["a tier"])])),
+         at("deploy", [_an_advancing_target(advance_requires=["a tier"])])),
         ("a check carrying a key § 33 does not declare",
          f"deploy[0].{ADVANCE_REQUIRES}[0].suite",
-         at("deploy", [_a_deploy_target(advance_requires=[{"suite": "a suite"}])])),
+         at("deploy", [_an_advancing_target(advance_requires=[{"suite": "a suite"}])])),
         ("a check naming itself as a tier and a reading at once",
          f"deploy[0].{ADVANCE_REQUIRES}[0]",
-         at("deploy", [_a_deploy_target(
+         at("deploy", [_an_advancing_target(
              advance_requires=[{"tier": "a tier", "reading": "a reading"}])])),
         ("a check naming itself by neither key", f"deploy[0].{ADVANCE_REQUIRES}[0]",
-         at("deploy", [_a_deploy_target(advance_requires=[{}])])),
+         at("deploy", [_an_advancing_target(advance_requires=[{}])])),
         ("a reading written blank", f"deploy[0].{ADVANCE_REQUIRES}[0].reading",
-         at("deploy", [_a_deploy_target(advance_requires=[{"reading": "   "}])])),
+         at("deploy", [_an_advancing_target(advance_requires=[{"reading": "   "}])])),
         ("a tier no `test_tiers` states", f"deploy[0].{ADVANCE_REQUIRES}[0].tier",
-         at("deploy", [_a_deploy_target(advance_requires=[{"tier": "a tier"}])])),
+         at("deploy", [_an_advancing_target(advance_requires=[{"tier": "a tier"}])])),
         ("one name carried by two checks", f"deploy[0].{ADVANCE_REQUIRES}[1].reading",
-         at("deploy", [_a_deploy_target(
+         at("deploy", [_an_advancing_target(
              advance_requires=[{"reading": "a reading"}, {"reading": "a reading"}])])),
         # § 35's block, one plant per arm, every one of them on a target this list
         # has already shown loads — so a refusal here is the block's and never the
@@ -20011,7 +20020,7 @@ def _advance_requires_suite(check, facts: dict) -> None:
     print("\n§ 33, what an advance requires -- the load's green side and the verdict:")
     loaded = _a_valid_example()
     loaded["deploy"] = [
-        _a_deploy_target(advance_requires=[{"reading": "the served commit"}])
+        _an_advancing_target(advance_requires=[{"reading": "the served commit"}])
     ]
     refusal = _refused(loaded)
     check("a target naming a reading its advance rests on loads",
@@ -20019,7 +20028,7 @@ def _advance_requires_suite(check, facts: dict) -> None:
     tiered, tier = _an_example_stating_a_tier()
     tiered = copy.deepcopy(tiered)
     tiered["deploy"] = [
-        _a_deploy_target(advance_requires=[{"tier": tier}, {"reading": "every image"}])
+        _an_advancing_target(advance_requires=[{"tier": tier}, {"reading": "every image"}])
     ]
     refusal = _refused(tiered)
     check("a target naming a tier its project states loads",
@@ -20041,7 +20050,7 @@ def _advance_requires_suite(check, facts: dict) -> None:
         return _resolve(data, EXAMPLES, facts, False).advance("a-target", readings)
 
     named = _a_valid_example()
-    named["deploy"] = [_a_deploy_target(
+    named["deploy"] = [_an_advancing_target(
         advance_requires=[{"reading": "the served commit"}, {"reading": "every image"}]
     )]
     released = verdict(named, {"the served commit": "passed", "every image": "passed"})
@@ -20115,6 +20124,19 @@ def _advance_requires_suite(check, facts: dict) -> None:
             check(label, True, "")
         else:
             check(label, False, "parsed")
+
+
+def _an_advancing_target(**overrides) -> dict:
+    """`_a_deploy_target` that moves its items, for § 33's `advance_requires`.
+
+    ⛔ The key is refused beside `advances: none`, the fixture's own default, so
+    every arm about what a stated list has to *be* is written on a target that
+    advances -- otherwise each would be refused for the advance first and read
+    green under the same key while asserting nothing about its own arm.
+    """
+    return _a_deploy_target(
+        advances=_a_role_some_status_maps(), batch="a-batch-command", **overrides
+    )
 
 
 def _a_grouping_the_example_plans_in() -> str:

@@ -1216,8 +1216,8 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "deploy.advance_requires.tier": ask(
         "Which test tiers must have passed over this deploy before its items "
-        "move? ⛔ Asked because a skipped or deselected tier otherwise moves "
-        "them anyway; omitted, only a failed check holds the advance (§ 33).",
+        "move? ⛔ Asked because what an omitted list holds the advance on is "
+        "§ 33's default, and a skipped tier is not among it.",
     ),
     "deploy.advance_requires.reading": ask(
         "And which of the project's own readings must agree -- an exact served "
