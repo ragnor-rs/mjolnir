@@ -553,6 +553,15 @@ ANSWERED_BY: dict[str, Answer] = {
     "work_item.grouping.ref_prefix": ask(
         "What does a ref claiming a whole grouping start with?",
     ),
+    "work_item.grouping.default_from": ask(
+        "Where the grouping is named on each request, does another facet decide "
+        "its usual value -- the priority or the type, say? Leave it unstated to "
+        "keep asking for the grouping on every item.",
+    ),
+    "work_item.grouping.default_map": ask(
+        "For each value of that facet, which grouping does an item carrying it go "
+        "into? A value you leave out is asked for.",
+    ),
     "work_item.template.carrier": ask(
         "Where does the body a new item is written to come from?",
     ),
