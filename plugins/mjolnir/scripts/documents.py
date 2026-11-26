@@ -47,12 +47,15 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 import unicodedata
 from urllib.parse import unquote
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import config as reader  # noqa: E402  -- the one reader, never a second parser
+# The facet this copy holds a tree to, and where that tree's documents are read
+# from relative to the repository this copy sits in. ⛔ `None` in the toolkit's
+# own copy and rendered by the install step, which is what lets a host run this
+# file in a checkout holding neither the toolkit nor the configuration -- and
+# what keeps one project's graph out of every other project's gate.
+STATED = None
 
 FACET = "documents"
 LIST = "list"
@@ -1165,6 +1168,169 @@ def warnings(subject: Subject) -> list:
     ]
 
 
+def hold(subject: Subject) -> int:
+    """Run every check over one subject, print the verdict, and return the status.
+
+    ⛔ One function for both callers -- the toolkit's own `main` below the
+    sentinel and the vendored copy's `vendored_main` above it -- so the two
+    cannot print different verdicts over the same tree.
+    """
+    results = run(subject)
+    for name, kind, _check in CHECKS:
+        found = results[name]
+        print(f"  {'FAIL' if found else 'ok  '}  [{kind:<10}] {name}")
+    said = warnings(subject)
+    if said:
+        print()
+        for warning in said:
+            print(f"  warn  {warning}")
+    problems = [problem for found in results.values() for problem in found]
+    if problems:
+        print(f"\n{len(problems)} problem(s):\n")
+        for problem in problems:
+            print(f"  - {problem}")
+        print(
+            "\n⚠️ When one of these goes red, the assertion is as likely to be wrong as "
+            "the document (§ 38). Read the row and the text against each other before "
+            "editing either."
+        )
+        return 1
+    # ⛔ The summary names what was **held** and nothing more. ⚠️ Measured on
+    # this file's own first form: it said every document names what its row
+    # allows and is reached from an entry point, which is false of a project
+    # whose rows state `may_name: null` -- the three graph checks held nothing
+    # there, and the sentence asserted they had passed.
+    held = [
+        f"all {len(subject.set_now)} governed document(s) have a row",
+        "every relative link reaches a file and a heading the index holds"
+        + (f" or {len(subject.exempt)} exempt glob(s) cover" if subject.exempt else ""),
+        "no forbidden name appears",
+        "and every one keeps its own blocks"
+        + (
+            ", its box diagrams' edges included" if subject.diagrams_held
+            else " -- no box diagram is held, `documents.box_diagrams` "
+            + ("stating `held: false`" if subject.box_diagrams else "being unstated")
+        ),
+    ]
+    if subject.enforced:
+        held.insert(1, (
+            f"{len(subject.enforced)} of them name only what their row allows and all "
+            "of it, and are reached from an entry point"
+        ))
+    print("\n" + "; ".join(held) + ".")
+    return 0
+
+
+def vendored_main(argv: list) -> int:
+    """The rendered copy's entry point: the facet rendered in, the checkout read.
+
+    ⛔ **It reads no configuration and imports nothing of the toolkit's**, which
+    is the whole of what makes it runnable on a host: the checkout holds this
+    file and the documents, and nothing else is assumed to be there.
+    """
+    parser = argparse.ArgumentParser(
+        description="Hold this repository's documents to the facet rendered into this copy.",
+    )
+    # ⛔ Strict: an argument this copy does not take is refused rather than
+    # ignored, so a flag meant for the toolkit's copy is never read as a run.
+    parser.parse_args(argv)
+    if not STATED:
+        # ⛔ Not a verdict, and not green: a copy holding no facet holds nothing,
+        # which the install step never writes -- so meeting one is a copy taken
+        # by hand, and saying so is the answer.
+        print(
+            "This copy holds no facet, so there is nothing to hold a document to. The "
+            "facet is the project's own and is rendered in by the install step.",
+            file=sys.stderr,
+        )
+        return 2
+    repository = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = os.path.normpath(os.path.join(repository, STATED["root"]))
+    return hold(read_subject(root, STATED["facet"]))
+
+
+# ---- the vendored half ends here ------------------------------------------
+#
+# ⛔ The line above is the sentinel `render` splits on, and everything below it
+# is the toolkit's own entry point, the renderer and the suite. Nothing below
+# states a rule about a document: a rule down here would be one the host's own
+# run of the rendered copy never executes.
+
+import tempfile  # noqa: E402
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import config as reader  # noqa: E402  -- the one reader, never a second parser
+
+RENDER_SENTINEL = "# ---- the vendored half ends here "
+
+# What the rendered copy ends with, in place of everything below the sentinel.
+# ⛔ Nothing in it moves between runs, which is the install step's own
+# byte-identical property reaching an artifact whose body is generated.
+RENDER_TAIL = 'if __name__ == "__main__":\n    sys.exit(vendored_main(sys.argv[1:]))\n'
+
+# The line the facet is rendered over. ⛔ Matched whole, so a render is a
+# substitution of one line and never a search through the source.
+PLACEHOLDER = "STATED = None"
+
+
+def render(stated) -> str:
+    """This file's vendored half, with one project's facet rendered in.
+
+    ⛔ The half above the sentinel and not the whole file: the suite below plants
+    documents and names of its own, and a whole-file copy would carry every one
+    of them into an adopting repository.
+    """
+    with open(os.path.abspath(__file__), encoding="utf-8") as handle:
+        source = handle.read()
+    head = source.split(RENDER_SENTINEL)[0]
+    if head.count(PLACEHOLDER) != 1:
+        raise ValueError(
+            f"the vendored half states {head.count(PLACEHOLDER)} {PLACEHOLDER!r} lines "
+            "where a render needs exactly one to substitute"
+        )
+    return head.replace(PLACEHOLDER, rendered_stated(stated), 1) + RENDER_TAIL
+
+
+def rendered_stated(stated) -> str:
+    """The `STATED` line one project's facet renders to, as a Python literal.
+
+    ⛔ Read back before it is returned: a value the literal does not reproduce
+    exactly would be a gate holding a different facet from the one the project
+    states, with nothing reporting the difference.
+    """
+    import ast
+    import pprint
+    text = "STATED = " + pprint.pformat(stated, width=88, sort_dicts=False)
+    if ast.literal_eval(text[len("STATED = "):]) != stated:
+        raise ValueError("the facet does not survive as a Python literal")
+    return text
+
+
+def from_config(configuration) -> dict | None:
+    """What a rendered copy holds for this project, or None where it cannot be held.
+
+    ⛔ `None` where the documents are read from outside the repository the copy
+    sits in: a checkout holds that repository and nothing above it, so a gate
+    rendered for such a root would read a tree the host never has.
+    """
+    facet = configuration.get(FACET)
+    relative = os.path.relpath(
+        os.path.abspath(configuration.skills_root), os.path.abspath(configuration.code_root)
+    )
+    if relative == os.pardir or relative.startswith(os.pardir + os.sep):
+        return None
+    return {"root": relative.replace(os.sep, "/"), "facet": _plain(facet)}
+
+
+def _plain(value):
+    """The facet as the plain types a Python literal carries."""
+    if isinstance(value, dict):
+        return {str(key): _plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(item) for item in value]
+    return value
+
+
 # --- the planted violations -------------------------------------------------
 #
 # ⛔ One per branch that does real work. A branch with no plant is a branch
@@ -2237,51 +2403,7 @@ def main(argv: list) -> int:
         )
         return 2
 
-    subject = read_subject(os.path.abspath(args.skills_root), facet)
-    results = run(subject)
-    for name, kind, _check in CHECKS:
-        found = results[name]
-        print(f"  {'FAIL' if found else 'ok  '}  [{kind:<10}] {name}")
-    said = warnings(subject)
-    if said:
-        print()
-        for warning in said:
-            print(f"  warn  {warning}")
-    problems = [problem for found in results.values() for problem in found]
-    if problems:
-        print(f"\n{len(problems)} problem(s):\n")
-        for problem in problems:
-            print(f"  - {problem}")
-        print(
-            "\n⚠️ When one of these goes red, the assertion is as likely to be wrong as "
-            "the document (§ 38). Read the row and the text against each other before "
-            "editing either."
-        )
-        return 1
-    # ⛔ The summary names what was **held** and nothing more. ⚠️ Measured on
-    # this file's own first form: it said every document names what its row
-    # allows and is reached from an entry point, which is false of a project
-    # whose rows state `may_name: null` -- the three graph checks held nothing
-    # there, and the sentence asserted they had passed.
-    held = [
-        f"all {len(subject.set_now)} governed document(s) have a row",
-        "every relative link reaches a file and a heading the index holds"
-        + (f" or {len(subject.exempt)} exempt glob(s) cover" if subject.exempt else ""),
-        "no forbidden name appears",
-        "and every one keeps its own blocks"
-        + (
-            ", its box diagrams' edges included" if subject.diagrams_held
-            else " -- no box diagram is held, `documents.box_diagrams` "
-            + ("stating `held: false`" if subject.box_diagrams else "being unstated")
-        ),
-    ]
-    if subject.enforced:
-        held.insert(1, (
-            f"{len(subject.enforced)} of them name only what their row allows and all "
-            "of it, and are reached from an entry point"
-        ))
-    print("\n" + "; ".join(held) + ".")
-    return 0
+    return hold(read_subject(os.path.abspath(args.skills_root), facet))
 
 
 if __name__ == "__main__":

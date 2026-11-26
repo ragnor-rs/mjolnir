@@ -3543,6 +3543,25 @@ holding nothing, which is
 [§ 11](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)'s direction
 applied to a suite's own fixture.
 
+**The two facet gates are held as themselves, and the arm that matters is the one run in a bare
+checkout.** Per facet: both files written where the facet is carried and neither where it is stated
+absent, the checker carrying the facet and the workflow none of it, the entry mirroring the command
+the workflow runs, a second run byte-identical, no drift against the drift check, and both files and
+the entry taken out when the facet is dropped. ⛔ **The checker is then rendered into a repository
+holding nothing else and run isolated** — `-I`, from another directory, with an environment of
+`PATH` and `HOME` — and held red and green on that tree. ⚠️ **An import arm alone is not that**: it
+reads the copy's parse tree for a module this toolkit ships, and a copy reaching for a variable the
+event does not state would pass it. ⚠️ **The register's copy is also held refusing a run that states
+no base**, which is the one place the vendored half differs from the toolkit's: the toolkit's copy
+derives a base through the claim carrier, and a copy that derived one of its own would be a second
+derivation free to disagree with it.
+
+⚠️ **The ignored-configuration arm is held against both halves of the bound**: the facet gates
+refused with nothing written, and the body gate keeping the answer it had — the item's own bound
+that a project stating nothing new behaves as it did, asserted rather than assumed. ⚠️ **A
+documents root above the code root has an arm of its own**, the refusal being reachable by no
+configuration the ignored-file arm builds.
+
 ### What this check deliberately does not hold
 
 - **Whether a generated artifact is the artifact somebody wanted.** What each file *says* is its
@@ -3575,7 +3594,13 @@ applied to a suite's own fixture.
   and that floor would still pass. What holds each one is the break written for it, not the count.
 - **Whether the host then runs the workflow that was installed.** That is the facet against the
   host's own definitions, and the drift gate reads it one claim over — but only for a file already
-  in the tree. A workflow written and never pushed is held by neither.
+  in the tree. A workflow written and never pushed is held by neither. ⚠️ **For the register's gate
+  this includes the full-history checkout** its merge base needs: the generated file asks for one,
+  and nothing here runs it on a host to see the base arrive.
+- **A project's own workflow already running the same facet check.** A project that wrote a gate
+  for its documents by hand gets a second, generated one beside it under a different name, and
+  nothing here reads the commands the first one runs. This repository is one: its own `Documents`
+  run reads the toolkit's copy in place.
 - **A project's own file at a path a future artifact will take.** The stop is per artifact and per
   run: a repository is not swept for files the toolkit might one day want to write, so an adopter
   finds out at install time rather than before it.
