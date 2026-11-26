@@ -488,8 +488,18 @@ ANSWERED_BY: dict[str, Answer] = {
     "work_item.estimate.band": ask(
         "Above which value is an item too big to take as one piece?",
     ),
+    "work_item.estimate.writer": ask(
+        "Who writes the estimate? Leave it unstated to have whoever moves an item "
+        "into the committed status write it; state `procedure` to have the gate "
+        "write it even where a person makes that move (§ 4.2).",
+    ),
     "work_item.due_date.carrier": ask(
         "How is the date a gate writes carried on an item here?",
+    ),
+    "work_item.due_date.writer": ask(
+        "Who writes the committed date? Leave it unstated to have whoever moves an "
+        "item into the committed status write it; state `procedure` to have the "
+        "gate write it even where a person makes that move (§ 4.2).",
     ),
     "work_item.due_date.field": skip(
         "the field's name is this facet's own carrier question answered: that "
@@ -1359,6 +1369,29 @@ ANSWERED_BY: dict[str, Answer] = {
         "And which of the project's own readings must agree -- an exact served "
         "commit, every service's image?",
     ),
+    "deploy.figures.check": ask(
+        "Does a check this target's verification runs report figures -- case "
+        "counts, scores -- that the deploy's reply should carry? Which check? "
+        "⚠️ Nothing is an answer: the key is then omitted and no figure is read "
+        "(§ 33).",
+    ),
+    "deploy.figures.reads": ask(
+        "Which command prints that check's figures, one `<name> <number>` per line?",
+    ),
+    "deploy.figures.names": ask(
+        "Which figures is it expected to print? A named figure it does not print is "
+        "reported as unread.",
+    ),
+    "deploy.figures.bounds.figure": ask(
+        "Should any of those figures decide whether the check passed? ⛔ Asked "
+        "because no figure decides anything unless it is bounded here (§ 33).",
+    ),
+    "deploy.figures.bounds.min": ask(
+        "What is the least value that keeps the check's outcome?",
+    ),
+    "deploy.figures.bounds.max": ask(
+        "And the greatest?",
+    ),
 
     # --- § 34. The files that carry a version ------------------------------
     "release.carrier": ask(
@@ -1396,6 +1429,16 @@ ANSWERED_BY: dict[str, Answer] = {
         "because a dump nothing read is a backup on the strength of an exit "
         "status alone, which is the measured failure (§ 35).",
     ),
+    "deploy.live_data_step.preview.run": ask(
+        "Is there a read-only command that prints the writes this deploy would "
+        "make? ⚠️ Its output is shown in the go before the write, and it is never "
+        "reported as a rehearsal: it runs nothing against the store (§ 35).",
+    ),
+    "deploy.live_data_step.preview.at": ask(
+        "Does that command write its preview to a file rather than print it? "
+        "Where it does, the go names that path rather than carrying the listing "
+        "whole (§ 35).",
+    ),
     "deploy.live_data_step.rehearse": ask(
         "Does the write have a dry variant? ⚠️ An omitted one is reported as no "
         "rehearsal rather than as a clean one, so it is asked rather than left "
@@ -1422,6 +1465,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "Does the dump fall on a different side of the invocation from the "
         "write? ⛔ Never after it: a write is not reached before its own "
         "verified backup, and a placement that would is refused (§ 35).",
+    ),
+    "deploy.live_data_step.sides.preview": ask(
+        "Does the preview fall on a different side of the invocation from the "
+        "write? ⛔ Never after it, the go showing its output (§ 35).",
     ),
     "deploy.live_data_step.sides.rehearse": ask(
         "Does the rehearsal fall on a different side of the invocation from the "

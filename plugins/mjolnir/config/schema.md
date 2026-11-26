@@ -2391,6 +2391,42 @@ writer is.
 A status stating `writer` is asked for no path, and one handed over is not read. What a grouping's
 close needs of a classed status is [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s.
 
+#### A commitment written apart from the move
+
+The two values an item is committed with — [§ 4.3](#43-estimate)'s estimate and
+[§ 4.5](#45-due-date)'s date — each take a `writer` of their own, from the set above:
+
+```yaml
+statuses:
+  - { name: "…", role: ready, writer: orderer }
+work_item:
+  estimate: { carrier: field, field: "…", writer: procedure }
+  due_date: { carrier: native, writer: procedure }
+```
+
+⛔ **A value stating no `writer` has the writer of the status whose role is `ready`**, so a project
+that states none behaves as it always did: where a person admits the item, the gating role writes
+neither value. ⚠️ A `ready` status stating `writers` has no one writer before any work exists, so a
+value under it with no `writer` of its own is written by nobody.
+
+⛔ **The gating role writes a value whose writer is `procedure`, and makes the move only where the
+status's writer is `procedure` too.** Where the move is somebody else's, it writes the values, then
+reports the move for that writer and names who it is. ⛔ **Where the move is the procedure's and a
+carried value is somebody else's, the move waits for that value** and the report names it: an item
+admitted without its commitment reads as gated to every role after it. ⚠️ **What a person's move
+costs is an item carrying its commitment and still outside the committed set** until the person
+moves it. A project stating the key has accepted that cost; one that states nothing still gets the
+all-or-nothing rule.
+
+⛔ **A value written `procedure` under a `ready` status written `never` is refused when the
+configuration is read**, naming the value's key. `never` states that the tracker credential acts as
+a person, so any write would read as that person speaking. A field writer cannot override that.
+⛔ So is a `writer` on a value whose carrier is `none`, which names a writer for nothing, and one on
+a project that maps no `ready` status, where no gate commits anything.
+
+What the gating role reads is one answer, not three keys: `config.py --commitment` reports each
+carried value with its writer and where that writer came from, and the move with its own writer.
+
 ### 4.3 Estimate
 
 ```yaml
@@ -2401,12 +2437,14 @@ work_item:
     values: [1, 2, 5, 8, 13]
     label_prefix: "E:"           # when carrier is label
     band: top                    # when each rung is the top of a band
+    writer: "…"
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
 
 Four carriers observed, plus a deliberate absence. `carrier: none` with a stated reason is a
-first-class setting; an unset carrier is a misconfiguration.
+first-class setting; an unset carrier is a misconfiguration. Who writes the estimate is covered in
+[§ 4.2 → A commitment written apart from the move](#a-commitment-written-apart-from-the-move).
 
 ⛔ **One rule here is procedure, not configuration, and holds everywhere:** an estimate is a
 bound written before the work, and a logged hour is a measurement written after. **Never move a
@@ -2514,6 +2552,7 @@ work_item:
   due_date:
     carrier: native | field | none           # required; absent_reason
     field: "…"                   # when carrier is field
+    writer: "…"
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2521,7 +2560,9 @@ work_item:
 The date an item is committed for. **Which role writes it is § The loop's statement and is not
 restated here**; what belongs here is why that role and no other: filing writes the item before
 anyone has committed to it and starting is downstream of the commitment, so a date set in either
-place is a promise made where nobody was asked for one.
+place is a promise made where nobody was asked for one. Whether that role writes it where a person
+makes the move is covered in
+[§ 4.2 → A commitment written apart from the move](#a-commitment-written-apart-from-the-move).
 
 `native` is the tracker's own due date and `field` is a named field where the tracker has none.
 ⚠️ **The carrier says where a date is written, never what the date is.** What computes one is not
@@ -8689,6 +8730,14 @@ deploy:
     advance_requires:
       tier:       "<a § 31 tier, by the name `test_tiers` keys it on>"
       reading:    "<a reading the project's own verification reports under>"
+    figures:                   # a list; one entry per check whose figures the reply carries
+      check:      "<the check's name, as the verification reports its outcome>"
+      reads:      "<a command printing that check's figures, one `<name> <number>` per line>"
+      names:      "<the figures that check is expected to report, as a list>"
+      bounds:                  # a list; one entry per figure allowed to decide anything
+        figure:   "<one of `names`>"
+        min:      "<the least value that keeps the check's outcome>"
+        max:      "<the greatest value that keeps it>"
 ```
 
 ⛔ **The last of those is a block rather than a value, and what it is read for is
@@ -9177,6 +9226,66 @@ check, its outcome, whether it was required, and which of them hold the advance.
 outside the table above is refused rather than read**, since a word the carrier did not recognise
 and a check that passed must not come out alike.
 
+### A check's figures, and the bound that lets one decide anything
+
+⛔ **An outcome says whether a check passed; the figures behind it say how much it covered**, and a
+deploy reply that carries only the first hands a reader a `passed` over three cases and a `passed`
+over three thousand as the same fact. `figures` states where each check's figures are read from,
+and the reply carries them beside the outcome.
+
+**What the command prints is the one contract a project writes to**, in the form
+[§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) already uses for a
+count: the procedure reads numbers and never output, so no runner or report format enters the
+toolkit, and a project whose verification prints something else states a command ending in
+whatever turns it into this:
+
+```
+<name> <number>
+```
+
+- **One figure per line**, the name a single word of letters, digits, `_`, `.` and `-`, and the
+  number an integer or a decimal. Blank lines are read as nothing.
+- ⛔ **A line this grammar cannot read refuses the whole command's reading**, and so does one name
+  printed twice or a command that exited non-zero: a line nobody can parse may be the figure, and a
+  reader that skipped it would report a number it did not read. Every figure the entry names is then
+  `unread`, with the reason.
+- ⛔ **`names` is what makes a missing figure visible.** A figure the entry names and the command did
+  not print is reported `unread`, never left out — an omission reads exactly like a check with
+  nothing to report. A figure printed and not named is reported and decides nothing.
+- ⚠️ **The command runs at the target's code root, through a shell**, the same trust as the
+  commands `host.checks` already states, and after the deploy rather than beside it — the figures
+  are about what the verification read of the target, which exists only once it has run.
+
+⛔ **No figure decides a verdict unless the entry states a bound for it.** Every figure is reported
+and nothing is judged, which is § 16's rule for every count above its one floor, arriving here; a
+project that wants a figure to hold the advance says so with `bounds`, and the bound is the whole of
+the judgement — `min`, `max` or both, numbers, `min` no greater than `max`, one bound per figure,
+and each naming a figure `names` carries.
+
+| a bounded figure reads | what it does to the outcome handed for its check |
+|---|---|
+| inside its bound | nothing: the outcome is what the verification reported |
+| outside its bound | a `passed` becomes `failed` — a check that passed over too few cases did not pass; any other outcome is kept |
+| `unread` | a `passed` becomes `unread`; any other outcome is kept |
+
+⚠️ **A check handed no outcome is handed none still**, whatever its figures read, which
+`--advance-for` already reads as `unread`.
+
+⛔ **A bound only ever lowers an outcome**, and the lowered outcome is what is handed to `--advance-for`
+([above](#what-an-advance-requires-and-what-holds-it)), whose table then decides whether it holds —
+so a bound on a check the target does not require is reported and still holds nothing under a target
+that names its checks. ⛔ **And `bounds` is refused beside `advances: none`**, by the rule
+[`The three shapes`](#the-three-shapes-a-target-is-reached-by) states for a key the entry never reads:
+a target that moves nothing has no outcome for a bound to lower. `figures` without bounds is accepted
+there, the reply carrying them either way.
+
+⛔ **A target that omits `figures` reads none**, and the reply says it reads none rather than that a
+check reported nothing: every configuration written before the key behaves exactly as it did.
+⚠️ **What reads the figures and applies the bounds is the carrier's**: the role runs
+`figures.py --target <target>` with each outcome it read as `--reading <check>=<outcome>`, and what
+comes back names every figure, its value or why it is unread, its bound, and the outcomes to hand
+on.
+
 ### Publishing a grouping, and the precondition that holds the whole target
 
 ⛔ **Marking the grouping released and advancing its items are two acts rather than one, and what
@@ -9561,6 +9670,8 @@ deploy:
       backup:
         run: "<the command that dumps the live store>"
         verify: "<the command that reads the dump back>"
+      preview:
+        run: "<a read-only command printing the writes this deploy would make>"
       rehearse: "<the apply command's own dry variant>"
       apply: "<the command that writes to the live store>"
       apply_by: person
@@ -9581,12 +9692,16 @@ deploy:
       backup:
         run:    "<the command that dumps the live store, stated whole>"
         verify: "<the command that reads the dump back; its exit status is the verdict>"
+      preview:
+        run:    "<a read-only command printing the writes this deploy would make, where the project has one>"
+        at:     "<the file that command writes its preview to, where it prints none>"
       rehearse: "<the apply command's dry variant, where the project has one>"
       apply:    "<the command that writes irreversibly to the live store>"
       apply_by: procedure | person
       order:    before_invoke | after_invoke
       sides:
         backup:   before_invoke | after_invoke
+        preview:  before_invoke | after_invoke
         rehearse: before_invoke | after_invoke
         apply:    before_invoke | after_invoke
       record:   "<a command printing the paths already applied to this store, one per line>"
@@ -9628,10 +9743,10 @@ reads; and `backup`, `apply`, `apply_by`, `order` and `record` are each required
 stated at all. ⚠️ **Four of those five because a step configured without one of them is a step whose
 ordering nothing can perform**, and the fifth for [§ 2](#2-code-host)'s reason instead: a project
 that never looked at what its store already holds and a project that decided nothing is released
-read identically otherwise. ⛔ **`rehearse` is the one command a block may omit**, and the subsection
-below states why; `sides` may be omitted too, being a placement rather than a command, and `name`
-is the list's and not the step's — both are stated under
-[the subsection on several steps](#several-steps-on-one-target-and-the-side-each-phase-falls-on).
+read identically otherwise. ⛔ **`preview` and `rehearse` are the two commands a block may omit**,
+and the subsections below state why; `sides` may be omitted too, being a placement rather than a
+command, and `name` is the list's and not the step's — both are stated under [the subsection on
+several steps](#several-steps-on-one-target-and-the-side-each-phase-falls-on).
 
 ### The backup is verified by a command, and never by the artifact it wrote
 
@@ -9660,8 +9775,8 @@ nothing below it runs.
 ⛔ **`rehearse` is optional, and an omitted one is reported as no rehearsal rather than as a clean
 one.** ⚠️ **One of the two copies has one for every write it performs and the other has none at
 all**, which is what makes this a key rather than a step: the one with none shows the writes it is
-about to make and confirms them instead, and a surface demanding a dry variant would make that
-project unable to state its own step.
+about to make and confirms them instead — which is `preview`'s, below — and a surface demanding a
+dry variant would make that project unable to state its own step.
 
 ⛔ **The rehearsal is run against the same store the apply will reach, and its output is read.** A
 role that ran it and parsed nothing performed a ritual: what the output carries is whether the write
@@ -9673,6 +9788,37 @@ rehearsal whose output could not be read is reported unread rather than clean**,
 ⚠️ **What counts as divergence is the rehearsal's own**, and this surface states no pattern for it:
 the exit status is the verdict, exactly as `backup.verify`'s is, and a project whose dry variant
 reports divergence on standard output while exiting zero states that comparison inside the command.
+
+### A preview of the pending writes, which is never a rehearsal
+
+⛔ **`preview.run` is a read-only command printing the writes this deploy would make, and its output
+is in the go.** ⚠️ **It is a key of its own because a rehearsal is optional**: a target stating none
+had nothing showing what was pending, and the measured workaround was a `rehearse` that only
+printed it — a command stated under the key whose output is read as *the write is still correct
+for this store*, which a listing does not establish.
+
+| what the step states | what the go shows |
+|---|---|
+| `preview.run` alone | the command's output, **whole** |
+| `preview.run` and `preview.at` | the path `at` names, which the command writes its preview to — resolved against the code root where it is relative, cleared before the command runs so an earlier run's listing is never read as this one's, and read back before the go is asked |
+| no `preview` | nothing about the pending writes, and ⛔ **the go says no preview is stated** rather than that nothing is pending |
+
+⛔ **A failed preview stops the step**, by the rule every phase before the write is held to: a
+non-zero exit, a command that could not be run, an output that is empty, and an `at` that names no
+file or an empty one. ⚠️ **Empty is a failure and not a clean answer**, for the reason a silent
+rehearsal is one ([§ 11](#a-report-names-what-it-could-not-establish)): a preview with nothing
+pending says so, and a go given on nothing is given on nothing.
+
+⛔ **A preview is never reported as a rehearsal.** It runs nothing against the store, so it says
+nothing about whether the write is still correct there — and a target stating a preview and no
+`rehearse` is reported as **no rehearsal**, with the preview beside it, exactly as one stating
+neither. ⚠️ **What it reads is the project's**, as the derivation of what is pending is
+([above](#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under)): this
+surface states no format for the output and reads no word of it.
+
+⚠️ **It is a phase of the sequence like the others**, so `sides.preview` places it and the rule
+below holds it: it runs after the verified dump and before the rehearsal, and a write is not
+reached while a stated preview is not on record.
 
 ### Who performs the apply, and the go that is never the command's own prompt
 
@@ -9759,29 +9905,31 @@ cannot state at all.
 | a mapping | one step, exactly as the sections above describe it — ⛔ and **no `name`**, a name on the only step being a fact nothing reads |
 | a list of mappings | several steps, performed in the order listed on each side of the invocation; ⛔ **every one carries a `name`**, unique on the target, because the go, the reading and the report each address one step by it |
 | `sides`, omitted | every phase of the step falls where `order` says, which is the single block as it always was |
-| `sides`, stated | the phases it names — `backup`, `rehearse`, `apply` — fall where it says, and every phase it does not name falls where `order` says |
+| `sides`, stated | the phases it names — `backup`, `preview`, `rehearse`, `apply` — fall where it says, and every phase it does not name falls where `order` says |
 
 ⛔ **The alternation `before_invoke | after_invoke` is written in the order the two sides fall**, and
 the reader ranks the sides by it rather than by a second list of its own.
 
-⛔ **A write is never reached before its own verified backup, nor before its own rehearsal, whatever
-the placement.** The sides a step's phases fall on never run backwards through § 35's sequence —
-backup, then rehearsal, then write — and ⛔ **a step whose placement would is refused at the load
-with the phase named**, not discovered at a deploy that has already invoked the new code. ⚠️ **A
-`sides.rehearse` on a step stating no `rehearse`** is refused with it, being a placement of nothing.
+⛔ **A write is never reached before its own verified backup, nor before its own preview or
+rehearsal, whatever the placement.** The sides a step's phases fall on never run backwards through
+§ 35's sequence — backup, then preview, then rehearsal, then write — and ⛔ **a step whose placement
+would is refused at the load with the phase named**, not discovered at a deploy that has already
+invoked the new code. ⚠️ **A `sides.preview` or `sides.rehearse` on a step stating no such command**
+is refused with it, being a placement of nothing.
 
 ⛔ **The same holds when it is performed and not only when it is loaded.** A step's write is refused
-until its own reading is on record — the dump taken and read back, and the rehearsal run where one
-is stated — so a deploy that took the phases out of order, or a go that overrules `order` into a
-placement that would, reaches no write. ⚠️ **What the go may overrule is the configured side and
-never this rule**, which is the reason it is enforced where the write is made rather than trusted to
-whoever asked.
+until its own reading is on record — the dump taken and read back, and the preview and the rehearsal
+run where each is stated — so a deploy that took the phases out of order, or a go that overrules
+`order` into a placement that would, reaches no write. ⚠️ **What the go may overrule is the
+configured side and never this rule**, which is the reason it is enforced where the write is made
+rather than trusted to whoever asked.
 
 ⛔ **Each write has its own go, given after its own evidence.** A target listing several steps asks
-one go per write, after that step's own dump and rehearsal have been read, and ⛔ **a go on a listed
-step names that step** beside what every go names — a go naming another step, or none, licenses
-nothing. ⚠️ **Several gos inside one deploy is deliberate**, for the reason this section gives for a
-second ask beside § 33's: each write is irreversible, and each one's evidence is its own.
+one go per write, after that step's own dump, preview and rehearsal have been read, and ⛔ **a go on
+a listed step names that step** beside what every go names — a go naming another step, or none,
+licenses nothing. ⚠️ **Several gos inside one deploy is deliberate**, for the reason this section
+gives for a second ask beside § 33's: each write is irreversible, and each one's evidence is its
+own.
 
 ⛔ **A stop names the writes made and the writes not made.** Where a target lists several steps, a
 stop anywhere in them — and above all one after the invocation, where the new code is already
@@ -9825,23 +9973,24 @@ this order:
 |---|---|---|
 | 1 | `backup.run` | stops the deploy; nothing has reached the store |
 | 2 | `backup.verify` | stops the deploy; there is a file and it is not a backup |
-| 3 | `rehearse`, where one is stated | stops the deploy, naming divergence or the exit status |
-| 4 | the rehearsal's output, **read** | stops the deploy where it could not be read |
-| 5 | the go | silence is not a yes: nothing happens and the deploy stays unmade |
-| 6 | `apply`, or the hand-over where `apply_by` is `person` | stops the deploy, naming what the store now holds |
+| 3 | `preview.run`, where one is stated | stops the deploy, naming the exit status or the empty preview |
+| 4 | `rehearse`, where one is stated | stops the deploy, naming divergence or the exit status |
+| 5 | the rehearsal's output, **read** | stops the deploy where it could not be read |
+| 6 | the go, showing the preview whole or at its path | silence is not a yes: nothing happens and the deploy stays unmade |
+| 7 | `apply`, or the hand-over where `apply_by` is `person` | stops the deploy, naming what the store now holds |
 
-⛔ **The order is performed and not documented**: a role free to take step 6 before step 2 is a role
+⛔ **The order is performed and not documented**: a role free to take step 7 before step 2 is a role
 with no rail at all, and the sequence is asserted where the step is performed rather than stated
 here alone.
 
-⛔ **The report names what it could not establish**, which is
-[§ 11](#a-report-names-what-it-could-not-establish)'s rule rather than this section's. ⚠️ **What
-this step adds to it is its own list**: whether the dump was verified and by what, whether a
-rehearsal ran at all, what its output was read as, which order was taken and whether the configured
-one was overruled, whether the apply ran or was handed over, and — where it ran and failed —
-⛔ **what the store is left holding**, which is the one fact a deploy report that stopped here
-cannot omit, and — where the target lists several steps — each of them by name as written, handed
-over or not made.
+⛔ **The report names what it could not establish**, which is [§
+11](#a-report-names-what-it-could-not-establish)'s rule rather than this section's. ⚠️ **What this
+step adds to it is its own list**: whether the dump was verified and by what, whether a preview ran
+and where its output is, whether a rehearsal ran at all, what its output was read as, which order
+was taken and whether the configured one was overruled, whether the apply ran or was handed over,
+and — where it ran and failed — ⛔ **what the store is left holding**, which is the one fact a deploy
+report that stopped here cannot omit, and — where the target lists several steps — each of them by
+name as written, handed over or not made.
 
 ## 36. A skill that is no leg of the loop, and why none is carried here
 
