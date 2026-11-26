@@ -405,15 +405,45 @@ SHOWN = 160
 # outlived one would hold a place on something that is no longer running.
 
 
-def store_for(skills_root: str | Path) -> Path:
-    """Where this project's leases live.
+def store_key(skills_root: str | Path, git=None) -> str:
+    """What one project's leases are counted under, the same from every tree of it.
 
-    Keyed by a digest of the skills root rather than by its path, so two projects
-    on one machine never share a place and nothing about either of them is
-    written into a directory name.
+    ⛔ **The repository and not the tree** (§ 7 → A lease on an exclusive resource):
+    the repository's common git directory, which every work tree of it and every
+    subdirectory resolves to alike, with the skills root's place inside its tree,
+    so two projects living in one repository still count apart. Keyed by the
+    skills root's own path, a session in a sibling tree wrote its leases where
+    this one never read, and `subject: tree` queued nothing against it.
+
+    Where git answers nothing — no repository, no git on the path, a read that
+    timed out — the key is the skills root's resolved path, which is what every
+    project was keyed by before, so a directory with no repository behind it
+    keeps its one place.
     """
     root = str(Path(skills_root).resolve())
-    digest = hashlib.sha256(root.encode("utf-8")).hexdigest()[:16]
+    code, out = (git or _run_git)(root, ["rev-parse", "--git-common-dir", "--show-prefix"])
+    lines = out.split("\n") if code == 0 else []
+    if not lines or not lines[0].strip():
+        return root
+    common = Path(lines[0].strip())
+    if not common.is_absolute():
+        common = Path(root) / common
+    prefix = lines[1].strip().strip("/") if len(lines) > 1 else ""
+    return f"{common.resolve()}\0{prefix}"
+
+
+def store_for(skills_root: str | Path, git=None) -> Path:
+    """Where this project's leases live.
+
+    Keyed by a digest of `store_key` rather than by a path, so two projects on
+    one machine never share a place and nothing about either of them is written
+    into a directory name.
+    """
+    return _store_at(store_key(skills_root, git))
+
+
+def _store_at(key: str) -> Path:
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
     return Path(tempfile.gettempdir()) / "mjolnir-leases" / digest
 
 
@@ -2574,8 +2604,15 @@ def prompts_for(loaded, store: Path | None) -> Path:
 
     Beside this project's leases and not among them: the lease sweep reads the
     files of its own directory, and a note is no place on anything.
+
+    ⚠️ Keyed by the skills root's own path and never by `store_key`: a note is
+    one session's, read back by that session's own exit event, so no sibling
+    tree has a reason to see it — and this is reached on every guarded call, so
+    the repository's key would put a git process on each one in a project that
+    states no exclusive resource at all.
     """
-    return (store if store is not None else store_for(loaded.skills_root)) / "prompts"
+    return (store if store is not None else _store_at(str(Path(loaded.skills_root).resolve()))
+            ) / "prompts"
 
 
 def _note_path(where: Path, payload: dict) -> Path:
@@ -3732,6 +3769,79 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         left = [lease.get("command") for _path, lease in live_leases(where, 1000.0)]
         check("a failed call gives back its own place and not its sibling's",
               left == ["a-claiming-command --two"], repr(left))
+
+        # --- leases counted per repository (§ 7 → A lease) ---------------
+        # ⛔ Real repositories and real work trees, and the store derived rather
+        # than handed in: what is in question is what git resolves from inside a
+        # tree, and a fixture that passed one store to both sessions would assert
+        # the fixture. The machine's temp directory is swapped for this one so
+        # the derived stores are written nowhere a later run reads.
+        out.append("")
+        out.append("Two trees of one repository count their leases in one store:")
+        machine_temp = tempfile.tempdir
+        tempfile.tempdir = str(fresh("a-temp-directory"))
+        try:
+            repository = fresh("one-repository").resolve()
+            _in(repository, "init", "--quiet", "--initial-branch=main")
+            for key, value in (("user.email", "a@repo"), ("user.name", "A Repo")):
+                _in(repository, "config", key, value)
+            _a_commit(repository, "base.txt")
+            (repository / "a-project").mkdir()
+            _a_commit(repository, "a-project/marker.txt")
+            sibling = Path(directory).resolve() / "a-sibling-tree"
+            _in(repository, "worktree", "add", "--quiet", "-b", "a-branch", str(sibling))
+            check("the tree and the main checkout resolve one store",
+                  store_for(repository) == store_for(sibling),
+                  f"{store_for(repository)} vs {store_for(sibling)}")
+            check("and so does the same project inside each of them",
+                  store_for(repository / "a-project") == store_for(sibling / "a-project"))
+            check("while two projects in one repository still count apart",
+                  store_for(repository) != store_for(repository / "a-project"))
+
+            entry = _a_resource(name="a-shared-stack", cap=1, subject="tree")
+            in_a, in_b = _a_config([entry], root=str(repository)), _a_config(
+                [entry], root=str(sibling))
+            held = guard_answer(_call("a-claiming-command", cwd=str(repository)), config=in_a,
+                                now=1000.0, store=store_for(in_a.skills_root))
+            check("a claiming call in one tree takes the place", held == {}, repr(held)[:120])
+            queued = guard_answer(_call("a-claiming-command", session="another",
+                                        cwd=str(sibling)),
+                                  config=in_b, now=1000.0, store=store_for(in_b.skills_root))
+            check("and one in the sibling tree is refused, with no probe to count it",
+                  denied(queued), repr(queued)[:160])
+
+            other = fresh("another-repository").resolve()
+            _in(other, "init", "--quiet", "--initial-branch=main")
+            check("two repositories on one machine never share a store",
+                  store_for(other) != store_for(repository))
+            elsewhere = guard_answer(
+                _call("a-claiming-command", session="a-third", cwd=str(other)),
+                config=_a_config([entry], root=str(other)), now=1000.0,
+                store=store_for(other))
+            check("so the other repository's call takes a place of its own",
+                  elsewhere == {}, repr(elsewhere)[:120])
+
+            bare_directory = fresh("no-repository-here").resolve()
+            check("a directory with no repository is keyed by its own path, as before",
+                  store_key(bare_directory, git=lambda _root, _args: (128, ""))
+                  == str(bare_directory))
+            check("and a git that answers nothing reads the same as no repository",
+                  store_key(repository, git=lambda _root, _args: (1, ""))
+                  == str(repository))
+
+            # ⛔ The note store is reached on every guarded call, so a git
+            # process there is paid by every project, resources or none.
+            asked_git = []
+            real_git = globals()["_run_git"]
+            globals()["_run_git"] = lambda *args: asked_git.append(args) or (1, "")
+            try:
+                prompts_for(_a_config([], root=str(repository)), None)
+            finally:
+                globals()["_run_git"] = real_git
+            check("and the per-call note store asks git nothing", asked_git == [],
+                  repr(asked_git)[:120])
+        finally:
+            tempfile.tempdir = machine_temp
 
         # ⛔ The path the harness publishes no event for. What is asserted is
         # not that an event fires: it is that the sweep at the end of the turn
