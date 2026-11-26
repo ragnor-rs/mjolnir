@@ -1533,6 +1533,7 @@ host:
     method: squash | merge_commit | rebase     # how a pull request lands; required
     delete_branch: host | procedure | never    # which side deletes the remote ref afterwards; required
     approval_covers: commit | content          # what a merge approval covers; default: commit
+    unrecorded_merge: deny | prompt            # what a merge no approval covers gets; default: deny
 ```
 
 **Stated, because the roles that land a change read it and the shape of `main` is not a reading.**
@@ -1589,6 +1590,10 @@ is compared is every line of the diff but the line numbers and blob names. ⛔ *
 not be read whole keeps nothing**: a binary file it does not show, a commit the host no longer
 answers for, or a size the host refuses. ⚠️ **What it does not see is position**: one hunk moved
 between two places whose surrounding lines are identical reads as the same diff.
+
+**`unrecorded_merge` is read by the same guard and by nothing else**, and what each value does is
+[§ 7's](#a-merge-put-to-the-person-at-the-prompt-and-the-record-it-leaves) to state. ⚠️ **Per
+repository, as `approval_covers` is**: a repository the project states nothing about gets `deny`.
 
 ⛔ **A reader of this key reads what to expect, never what it may refuse to handle.** The method is
 the project's convention and not a guarantee about a given ref: a check told `merge_commit` still
@@ -3261,6 +3266,41 @@ project that could turn the guard off is a project whose loop merges unasked. �
 *does* decide is which checks a person answers at all** — [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s
 list — and that is a different question from whether the ask that reaches a person is made.
 
+### A merge put to the person at the prompt, and the record it leaves
+
+⛔ **A project states whether a merge no recorded approval covers is refused or put to the person
+through the harness's own prompt**, by [§ 2's `unrecorded_merge`](#how-a-pull-request-lands).
+`deny` is the default and is the guard above unchanged. ⛔ **`prompt` is another way of obtaining the
+answer and never a way past it**, which is why it is not `waive_review`: the ask is still made, at
+the call rather than in the conversation, and the merge still waits on it.
+
+⛔ **`prompt` reaches one arm: a record that was read and approves nothing this commit carries** — no
+record, another verdict, a record stating none, or an approval given at an earlier commit.
+⛔ **Everything this guard could not establish is refused under either value**, by the table below:
+a change it could not resolve, a record or a head the host did not answer for. A prompt there would
+be asking a person to answer for a fact nobody read.
+
+⛔ **The prompt is made only where a person answers it**, and which modes those are is
+[§ 21's reading](#which-verdict-and-who-would-answer-the-prompt), taken whole and stated nowhere
+else. In a mode the session answers on its own behalf, or one the reader does not recognise, the
+merge is refused as under `deny`, and the refusal says the project's value could not be used there —
+⚠️ **since a prompt the session can clear is not approval**, and an unattended run is exactly where
+`prompt` would otherwise merge unasked.
+
+⛔ **An approval given at the prompt is recorded on the change, or the report says it was not.** The
+guard notes the change and the head it asked about; the event that follows a call that ran writes
+the record from that note, as the merge ask's own: verdict `approved`, at the noted commit.
+⛔ **`answered by` names the route and no person** — whoever answered the harness's permission
+prompt — because the hook sees that the call was allowed and never who allowed it. A record that
+could not be written is reported, naming why. ⛔ **A call that failed records nothing and says so**:
+whether a failed call was ever allowed is not something the hook can establish.
+
+⚠️ **Three things this cannot reach, stated rather than left implied.** The note is keyed by the
+session and the command, so two identical merge calls in flight in one session share one note. A
+hook killed at its budget before it writes reports nothing, which is the residue the subsection
+below names for a guard that failed before it ran. And what is compared is the head when the guard
+read it, as above: a push landing between the prompt and the merge is not seen.
+
 ### Which direction a guard fails in
 
 ⛔ **A guard that could not establish its record says so, and whether it then refuses is decided by
@@ -3699,6 +3739,7 @@ branch_model:
   resource_up: "<the command that prints what a tree started and is still up>"   # may be left unwritten; read only under worktree
   resources_running: "<the command that lists every running resource with its tree>"   # may be left unwritten; read only under worktree
   resource_stop: "<the command that stops a resource whose tree is gone>"   # may be left unwritten; refused without resources_running
+  prune_on_merge: false                      # may be left unwritten; read only under worktree
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
@@ -4468,7 +4509,8 @@ another session, or before this rule existed. ⚠️ **The sweep is not a tidy-u
 not cosmetic**: one project counted **seventeen** landed trees by the time anybody looked, each
 holding a checkout of the repository. ⛔ **Procedure with no key**, the placement § 7's invocation
 rule and the claim above both have: a project that could switch the second carrier off would
-accumulate trees exactly as the project with no rule at all did.
+accumulate trees exactly as the project with no rule at all did. ⚠️ **A third carrier, on a merge
+the session makes with a bare command, is a project's to turn on**, and it is stated below.
 
 ⛔ **The landed reading is [the claim's](#the-claim-on-a-work-item), and nothing here carries a
 second one.** Two oracles for *has this landed* are allowed to disagree, and the reading that ships
@@ -4654,6 +4696,35 @@ bound when it starts. One with too little left is not started, one that outlasts
 either way the tree is kept and the person is told. ⚠️ A teardown that takes the whole bound leaves
 the trees after it unreached, and they are named; a release has no bound and is how such a tree is
 removed.
+
+⛔ **A merge the session makes with a bare command is a third carrier's, and a project turns that
+one on.** The merge carrier above is the finishing role's. A session that types the host's merge
+command never reaches it, so the tree waits for the next session to open. `prune_on_merge` runs the
+sweep on the event after that call, narrowed to the one branch the merge landed.
+
+```yaml
+branch_model:
+  prune_on_merge: true
+```
+
+- **It runs only after the host confirms the merge.** Which call is a merge is the
+  [merge guard's grammar](#what-a-hook-refuses-and-the-record-it-reads), and no second one. ⛔ **The
+  call finishing is not the confirmation**: a merge queued behind the host's automatic merge
+  finishes too, so the carrier reads the host's own record of the change. Only a change the host
+  reports merged has its branch's tree examined. A record that cannot be read, or that names no
+  branch, examines nothing and says so.
+- **The tree is decided by this subsection's rules, unchanged**: the landed reading, the oracle,
+  the occupancy reading and the caller's own tree. ⛔ **So the tree the session stands in is never
+  removed.** That is the stop above, cleared by leaving, and the next sweep takes the tree.
+- **It says what it left.** This event answers an act the person has just taken, so every tree it
+  examined is named, removed or kept, with what kept it. That includes the states the opening
+  event's table keeps out of the message. A merge whose branch no tree holds says nothing, because
+  nothing was left.
+- ⚠️ **Off unless stated.** `false`, or the key unwritten, is the two carriers above and nothing
+  else. The sweep has no key because its absence accumulates trees. This carrier's absence only
+  delays a removal until the next session opens, and turning it on adds a host read after every
+  merge the session makes.
+- ⚠️ **It is read only under `kind: worktree`**, there being no tree to prune under `in_place`.
 
 ```yaml
 branch_model:

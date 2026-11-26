@@ -288,6 +288,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "Does a merge approval cover one commit only, or survive a push that leaves "
         "the change's content the same?",
     ),
+    "host.landing.unrecorded_merge": ask(
+        "Where no recorded approval covers a merge, is it refused, or put to the "
+        "person at the harness's own prompt?",
+    ),
     "host.checks.workflow": detect(
         HOST_CLIENT,
         "the name each of the host's own workflow definitions states, read out of "
@@ -770,6 +774,11 @@ ANSWERED_BY: dict[str, Answer] = {
     "branch_model.resource_stop": ask(
         "Which command stops a resource whose tree is gone? Unstated, the sweep names it "
         "and stops nothing.",
+    ),
+    "branch_model.prune_on_merge": ask(
+        "Should a tree also be cleaned up right after a merge the session makes with a "
+        "bare command, once the host confirms it? Unstated, the next session's sweep "
+        "does it.",
     ),
     "branch_model.regenerable": ask(
         "Which ignored paths does a rebuild write again? ⚠️ A new tree carries "
