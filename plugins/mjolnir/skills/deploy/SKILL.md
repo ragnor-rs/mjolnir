@@ -428,7 +428,7 @@ narrow, and the slug a dispatch is made against is
 project with two repositories, a dispatch naming neither would be made against whichever the port
 answered with.
 
-## 7. Verify, then perform the `after` steps step 4b collected
+## 7. Verify, then perform the `after` steps step 4b collected and the target's own
 
 ⛔ **What came back is not what was delivered.** A command that exited zero, a build the host
 reported successful and a run that concluded green are each a fact about the invocation —
@@ -494,6 +494,24 @@ What a run delivered is read from its **log**, through the port's own operation,
   the deploy having succeeded.** What the record is here is the reply —
   ⚠️ **no guard reads it**, which § 33 states rather than this file, so a reader weighing the
   deploy is reading this role's own report and nothing stronger.
+- **Then the target's own steps after its verification**, where the entry states
+  `after_verified` — ⛔ **planned by the carrier and never composed here**, over the same outcomes
+  handed to `--advance-for`, the run's choices and the commit the deploy serves:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --after-verified-for "<the target>" \
+    --reading "<check>=<outcome>" --choose "<name>=<value>" --deployed-commit "<the commit>"
+  ```
+
+  ⛔ **Where it reports the verification not clean, no step runs**, and the reply names the checks
+  that held it. Otherwise each step runs **in the order it printed**, the command it printed run
+  whole where it printed: `procedure` runs it, and ⛔ **`human` hands the printed command to the
+  person running this and asks whether it was done**. ⛔ **The first step that is not `done` stops
+  the sequence**; then every outcome read is handed back with `--step "<name>=<outcome>"` added to
+  the same call, and what it reports left standing goes in the reply. What those steps are, their
+  outcomes, and why a failed one is not a failed deploy are
+  [`§ 33`](../../config/schema.md#what-runs-after-a-verified-deploy-and-what-a-failed-step-leaves-standing)'s
+  and are not restated here.
 
 ## 8. Advance the batch
 
@@ -629,6 +647,10 @@ the facts, with a table where the content enumerates.
   readings, was answered, or is **unperformed**. ⛔ **Unanswered is reported as unanswered**, never
   as a step nobody needed, and ⛔ **a section the collecting reading reported `unheld` is reported
   as a step this role could not establish either way**;
+- **every step the target runs after its verification** — its name, who performed it, and its
+  outcome, or that it did not run and why: the verification not clean, or an earlier step that
+  stopped the sequence. ⛔ **A step that failed is reported with what it left standing and never as
+  a failed deploy**; where the entry states no `after_verified`, that it states none;
 - ⛔ **what a `before` step stopped, where one did** — the step, the change, and that nothing was
   invoked, which is not a deploy that failed; and ⛔ **which items an `after` step is holding**,
   with what each waits on;

@@ -720,6 +720,20 @@ ANSWERED_BY: dict[str, Answer] = {
         "one -- a skill, a command, or a hook? ⚠️ An absent role is a legitimate "
         "configuration rather than a partial install (§ 7).",
     ),
+    "carrier_routes.label": ask(
+        "Is there a label whose items this project works through a carrier of "
+        "its own rather than the loop's implementing leg?",
+    ),
+    "carrier_routes.type": ask(
+        "Or a type whose items go to a carrier of its own -- one of the types "
+        "this project states?",
+    ),
+    "carrier_routes.carrier": ask(
+        "Which carrier takes those items, by its own invocation name?",
+    ),
+    "carrier_routes.kind": ask(
+        "Is that carrier a skill or a command?",
+    ),
 
     # --- § 8. Language, register, audience ---------------------------------
     "language.work_item": ask(
@@ -1368,6 +1382,18 @@ ANSWERED_BY: dict[str, Answer] = {
     "deploy.advance_requires.reading": ask(
         "And which of the project's own readings must agree -- an exact served "
         "commit, every service's image?",
+    ),
+    "deploy.after_verified.name": ask(
+        "Does anything run once this target's deploy is verified -- a tag, a "
+        "fast-forward, a rebase of the next branch? Name each step. ⚠️ Nothing is "
+        "an answer: the key is then omitted and nothing runs after it (§ 33).",
+    ),
+    "deploy.after_verified.command": ask(
+        "Which whole command is that step? It may place the deployed commit and "
+        "this target's choices (§ 33).",
+    ),
+    "deploy.after_verified.performed_by": ask(
+        "Does the procedure run it, or does a person perform it and say so?",
     ),
     "deploy.figures.check": ask(
         "Does a check this target's verification runs report figures -- case "

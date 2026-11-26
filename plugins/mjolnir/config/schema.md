@@ -3337,6 +3337,53 @@ than skills, so a sweep of skill directories undercounts it by six roles. Config
 independently of the role, or a migration declares that project done with most of it still
 local.
 
+### An item a project routes to a carrier of its own
+
+```yaml
+carrier_routes:                 # absent: every item's work is entered through `carriers.implement`
+  - label: "<a label the tracker holds>"      # or `type`, never both
+    carrier: "<the carrier's own invocation name>"
+    kind: skill
+```
+
+⛔ **A project may hand the work on an item of a stated type or label to a carrier of its own, and
+the toolkit ships no such carrier.** Each entry names one `label` or one `type` — the value
+[§ 4.1](#41-type) reads, which under a `label` carrier is matched with its `label_prefix` — the
+`carrier` by its own invocation name, and its `kind`. ⚠️ **This is a route within the loop and not
+a role beside it**, so [§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
+is not reached: what is configured is which carrier a leg the loop already has is entered through,
+and the carrier itself stays the project's.
+
+⛔ **The starting role is what reads it, and only after the gate and the claim.** An item a route
+matches still runs [§ 5](#5-readiness-gate--an-ordered-predicate-list)'s list whole and is still
+claimed by [§ 10](#the-claim-on-a-work-item)'s ref; what the route changes is the leg entered next,
+which is the routed carrier in place of the implementing one. ⛔ **The starting role hands over and
+reports the hand-over, and absorbs nothing of the carrier** — what that carrier does, and which leg
+it hands to after, is its own.
+
+⛔ **A route that cannot be followed is a stop naming the carrier, never a fall back to the loop's
+own leg**:
+
+| what the route resolves to | what the starting role does |
+|---|---|
+| no entry matches the item | enters `carriers.implement`, as a project stating no route does |
+| one carrier | enters it, and the reply names the carrier and the label or type that routed it |
+| two entries matching, naming different carriers | ⛔ stops, naming both: which one the work belongs to is the project's to state |
+| a carrier whose file is not where its kind puts it under the skills root | ⛔ stops, naming the carrier and the path read |
+| a namespaced carrier, whose install the harness alone knows | **unestablished** rather than present, so the invocation is the test, and a refused invocation is the stop |
+
+⛔ **The reader refuses at load** an entry naming neither a `label` nor a `type`, or both; a `type`
+where [§ 4.1](#41-type) carries none, or one outside its `values`; one with no `carrier`; a `kind`
+with no invocation name; and one label or type routed twice.
+
+```yaml
+carrier_routes:
+    label:   "<a label the tracker holds>"
+    type:    "<one of § 4.1's values>"
+    carrier: "<the carrier's own invocation name>"
+    kind:    skill | command
+```
+
 ### Invocation
 
 A role is addressed **namespaced, with no alias** — `/<plugin>:<name>`, where the name is the
@@ -8729,6 +8776,10 @@ deploy:
     advance_requires:
       tier:       "<a § 31 tier, by the name `test_tiers` keys it on>"
       reading:    "<a reading the project's own verification reports under>"
+    after_verified:            # a list; one entry per step, run in order once the verification is clean
+      name:       "<the name a step's outcome is handed back under>"
+      command:    "<the whole command; it may place {deploy:commit}, {deploy:target} and {choose:<name>}>"
+      performed_by: procedure | human
     figures:                   # a list; one entry per check whose figures the reply carries
       check:      "<the check's name, as the verification reports its outcome>"
       reads:      "<a command printing that check's figures, one `<name> <number>` per line>"
@@ -9188,6 +9239,60 @@ which that is wrong says so by naming the check.
 check, its outcome, whether it was required, and which of them hold the advance. ⚠️ **An outcome
 outside the table above is refused rather than read**, since a word the carrier did not recognise
 and a check that passed must not come out alike.
+
+### What runs after a verified deploy, and what a failed step leaves standing
+
+⛔ **A target may state the steps it runs once its verification is clean, and `after_verified`
+states them** — a tag, a fast-forward of a branch, a rebase of the next one. Without the key such a
+step could only be folded into `command`, where it runs **before** the delivery is read, so a tag
+would name a deploy nobody had verified yet. ⚠️ **These are the target's steps and not a change's**:
+the steps a change in the batch owes are
+[`What a change in the batch owes this target`](#what-a-change-in-the-batch-owes-this-target-and-where-the-step-falls)'s,
+collected per change, and the two keys do not stand in for each other.
+
+| the key | what it states | what is refused where it is written |
+|---|---|---|
+| `name` | the name a step's outcome is handed back under: letters, digits, `_` and `-` | a name another step of the target carries |
+| `command` | the whole command, on one line | a `{deploy:<word>}` other than `commit` and `target`, `{deploy:target}` on a target whose name is not one plain word, and a `{choose:<name>}` no choice of the target declares |
+| `performed_by` | `procedure` runs the command; `human` hands it to the person running the deploy, who answers whether it was done | anything outside the alternation |
+
+⛔ **The steps run in the order the list states them, and none runs unless the verification is
+clean.** *Clean* is the advance verdict
+[`What an advance requires`](#what-an-advance-requires-and-what-holds-it) gives over the same
+outcomes, and not a second reading of them: a verification holding the advance runs no step, and
+the report names the checks that held it. ⚠️ **The key is refused beside `invoke: by_hand`**, where
+this procedure makes no deploy and reads no verification for a step to follow.
+
+⛔ **A step reads the deploy through two placements and the run's choices.** `{deploy:commit}` is
+the commit the deploy serves, as the run established it, and a step placing it with no commit
+handed over is a stop; `{deploy:target}` is the target's name. `{choose:<name>}` is the value the
+go showed for that choice, and ⛔ **a choice a step places is held to the plain words a `command`
+target's are**, whatever the target's shape, since a step's command reaches a shell on every one. A
+step runs where the target's own act runs, which is the rule its `batch` already has.
+
+**Every performed step comes back with one outcome, and only one lets the next step run:**
+
+| outcome | what it means |
+|---|---|
+| `done` | the step finished, and its effect stands |
+| `failed` | it ran and did not finish what it states |
+| `running` | it was started and has not finished |
+| `unanswered` | no outcome was read for it, which a step nothing reported is |
+
+⛔ **The first step that is not `done` is where the sequence stops, and every step after it is
+reported not run.** ⛔ **A step that failed is reported with what it left standing, and the deploy is
+not reported failed**: the target already serves the commit, the steps done before it have taken
+effect, and the steps after it did not run. Each of the three is named. ⚠️ **A failed step holds
+neither the advance nor the grouping's mark**, the verification those rest on having been read
+before any step ran.
+
+⛔ **The plan and the report are the carrier's.** The role hands over the verification's outcomes,
+the run's choices and the commit, with `config.py --after-verified-for <target> --reading
+<name>=<outcome> --choose <name>=<value> --deployed-commit <commit>`. What comes back is each step
+resolved, where it runs, who performs it, and whether any runs. Handed each performed step's outcome
+with `--step <name>=<outcome>`, it names where the sequence stopped and what was left standing.
+⚠️ **A target that omits the key runs nothing after its verification**, which is what every
+target did before the key existed.
 
 ### A check's figures, and the bound that lets one decide anything
 
