@@ -7031,7 +7031,9 @@ personal names, handles and tracker member ids, and none of that may enter a too
 projects share: an identity is a fact about somebody who did not agree to be named in it —
 [§ 14](#nothing-credential-shaped-leaves-for-a-surface-outside-the-project)'s reason arriving at a
 different class of value. So `source` addresses the file the project already keeps its map in,
-`key` says how to read an entry out of it, and nothing on this surface holds a name.
+`key` says how to read an entry out of it, and nothing on this surface holds a name. A tree that
+does not carry the file reads it from the main checkout, by
+[§ 28's rule for an untracked file](#an-untracked-file-read-from-a-tree-that-does-not-carry-it).
 
 Two places a person's name legitimately appears in a toolkit, and neither is this facet: a licence
 names its copyright holder and a plugin manifest names its author, because the format requires it.
@@ -7153,7 +7155,7 @@ measured from no chats at all, which under-reports the work and looks like it wo
 
 | what is wrong | what the reader does |
 |---|---|
-| `source` does not open | refuses, naming the path and the keys it was to supply |
+| `source` does not open | refuses, naming the keys it was to supply and every path tried: in a tree, its own and the main checkout's |
 | `source` is blank under `carrier: file` | refuses; a pointer addressing nothing is reported here rather than at the first read |
 | it reads as anything but a mapping, the empty one included | refuses; a document is not parsed here, for § 27's reason one facet over |
 | a listed key is absent from it | refuses, naming the key — never an empty list and never a default |
@@ -7219,6 +7221,21 @@ statement as having no values of that class — a project may hold chat names it
 so `revisit_when` is where the condition that would change it is written, a client's organisation
 or a second collaborator being the two measured.
 
+### An untracked file, read from a tree that does not carry it
+
+⛔ **`source` is resolved against the tree first and against the main checkout second.** The file
+is untracked by design, and a tree the procedure cuts is a fresh checkout, so it carries none. Where
+`source` resolves to no file under a tree's skills root, the reader resolves the same path, relative
+to the top of the tree, against the main checkout: the parent of the repository's common directory,
+which every tree of one repository shares. A tree's own copy is read where one exists. The main
+checkout itself, a skills root in no repository and a `source` outside the tree each read the one
+path they resolve to, with no second one tried.
+
+One copy per machine is held this way. Nothing is linked or copied into a tree, so nothing there
+goes stale or is swept with it, and a tree reaches the file however it was entered.
+[§ 27](#27-the-role-to-person-map)'s `source` is resolved by the same rule. A file neither place
+holds is refused by the first row of the table above, which names both paths tried.
+
 ### A block every key of which is a rule, and which a repository still may not hold
 
 The bound above is a value's, and one project is barred by its own rules from more than values. Its
@@ -7274,7 +7291,8 @@ blocks rather than reading as a configuration with no day log. A listed key keep
 a hook that is an unreadable configuration, and what a guard does then is
 [§ 7](#a-hook-in-a-project-that-states-no-configuration)'s — with the file moved away, every guard
 announced itself inert. So a project naming a block makes the file reachable from every tree it
-works in, a fresh one included.
+works in, which a fresh one does through the main checkout's copy, by the rule for an untracked
+file above.
 
 What is reported is still never a value: the configuration a role prints shows each named block as
 the marker it shows a listed key as.
