@@ -1081,6 +1081,15 @@ ANSWERED_BY: dict[str, Answer] = {
         "what makes the list a statement of this project rather than of the "
         "surface",
     ),
+    "private.blocks.block": ask(
+        "Does a rule of this repository bar a whole block from it, although every "
+        "key in it is a rule -- the day log's own facet, say? Which block? ⛔ Only "
+        "one the surface marks `# private_block` (§ 28).",
+    ),
+    "private.blocks.reason": ask(
+        "And why may this repository not hold it? ⛔ Stated in the tracked file, so "
+        "a reviewer reads what they are not being shown (§ 28).",
+    ),
 
     # --- § 29's runs are asked with § 2's host; § 30 -----------------------
     "loop_exempt.classes.name": ask(
@@ -2447,9 +2456,14 @@ def _answered_in(facts: dict, answers: dict):
     per_root = facts["per_root"]
     roots = _at(answers, "roots.code")
     resolved_elsewhere = set(_at(answers, "private.keys") or [])
+    # ⛔ And every key under a block § 28's `blocks` names, which the private
+    # file supplies whole -- the block's absence here is the facet working too.
+    blocks = _named_blocks(answers)
 
     def answered(path: str) -> bool:
         if path in resolved_elsewhere:
+            return True
+        if any(path == block or path.startswith(f"{block}.") for block in blocks):
             return True
         if _at(answers, path) is not None:
             return True
@@ -2567,7 +2581,12 @@ def routed(surface_text: str, answers: dict) -> tuple[dict, dict]:
     facts = config.surface_facts(surface_text)
     tracked = json.loads(json.dumps(answers))  # a deep copy through plain data
     private: dict[str, object] = {}
+    blocks = _named_blocks(answers)
     for path in sorted(facts["private"]):
+        # ⛔ A marked key inside a named block travels with the block, below, and
+        # never as an entry of its own: two entries would state one fact twice.
+        if any(path.startswith(f"{block}.") for block in blocks):
+            continue
         value = _at(answers, path)
         # ⛔ A key **stated empty** is not a key carrying a value, and it stays in
         # the tracked file. The surface's own rule -- a value stated empty is a
@@ -2601,7 +2620,25 @@ def routed(surface_text: str, answers: dict) -> tuple[dict, dict]:
             continue
         private[path] = value
         _unset(tracked, path)
+    # ⛔ A block § 28's `blocks` names moves whole, keyed by its own path, and
+    # nothing at or under it stays in the tracked file -- the reader refuses a
+    # block stated in both halves.
+    for block in blocks:
+        value = _at(answers, block)
+        if value is None:
+            continue
+        private[block] = value
+        _unset(tracked, block)
     return tracked, private
+
+
+def _named_blocks(answers: dict) -> list[str]:
+    """The block paths § 28's `blocks` names in these answers, as written."""
+    rows = _at(answers, "private.blocks") or []
+    return [
+        str(row.get("block")).strip()
+        for row in rows if isinstance(row, dict) and row.get("block")
+    ] if isinstance(rows, list) else []
 
 
 def _unset(data: dict, path: str) -> None:
@@ -2945,7 +2982,10 @@ def write(skills_root: str, answers: dict, *, dry_run: bool = False) -> dict:
     # can run in.
     rendered_whole = render(surface_text, tracked, mark=False)
     try:
-        config.load_text(rendered_whole, skills_root, check_paths=False)
+        config.load_text(
+            rendered_whole, skills_root, check_paths=False,
+            private_layer=private if _named_blocks(tracked) else None,
+        )
     except (ConfigError, OSError) as refused:
         answer["report"].append(
             f"the answers do not resolve through the reader every role runs on: "
@@ -2997,7 +3037,12 @@ def write(skills_root: str, answers: dict, *, dry_run: bool = False) -> dict:
     # than after writing it: a refusal then costs nothing, where a refusal after
     # the write costs a restore.
     try:
-        loaded = config.load_text(composed, skills_root, check_paths=False)
+        # ⚠️ A named block is read at load, from a file this step has not
+        # written yet, so the layer about to be written is handed in.
+        loaded = config.load_text(
+            composed, skills_root, check_paths=False,
+            private_layer=private if _named_blocks(tracked) else None,
+        )
     except (ConfigError, OSError) as refused:
         answer["report"].append(
             f"the edit would leave a file the reader refuses: {refused}. Nothing "
@@ -3012,9 +3057,12 @@ def write(skills_root: str, answers: dict, *, dry_run: bool = False) -> dict:
     # unread rather than as wrong -- § 11's rule, and the write proceeds because
     # it is an act that can be made again.
     resolved_elsewhere = set(_at(tracked, "private.keys") or [])
+    blocks = _named_blocks(tracked)
     missing, unread = [], []
     for key in answer["changed"]:
-        if key in resolved_elsewhere:
+        if key in resolved_elsewhere or any(
+            key == block or key.startswith(f"{block}.") for block in blocks
+        ):
             continue
         try:
             got = loaded.get(key)
@@ -3596,6 +3644,46 @@ def self_test() -> int:
     check("with nothing written at all",
           not os.path.exists(os.path.join(root, config.CONFIG_PATH)),
           "a file was written")
+
+    # ⛔ § 28's named block: the whole block moves to the untracked file, and the
+    # write holds -- read back against the layer it is about to write, since a
+    # named block is read at load. ⚠️ Measured before this arm existed: the
+    # block stayed in the tracked answers and the read-back refused the write.
+    answers = _an_example("none.yaml")
+    answers["private"] = {
+        "carrier": config.PRIVATE_FILE,
+        "source": "private.yaml",
+        "keys": [],
+        "blocks": [{"block": "day_log", "reason": "a repository rule bars this tooling"}],
+    }
+    tracked, private = routed(surface_text, answers)
+    check("a named block is out of what the tracked file carries",
+          "day_log" not in tracked, f"the tracked file still carries {tracked.get('day_log')!r}")
+    check("and it is in what the untracked file carries, whole and under its own path",
+          private.get("day_log") == answers["day_log"], f"routed {sorted(private)!r}")
+    # ⛔ A private-marked value inside the named block travels with the block and
+    # is never a second entry of its own. ⚠️ Reproduced before the skip existed:
+    # the file carried `day_log.attribute_to` beside the block holding it.
+    inside = json.loads(json.dumps(answers))
+    inside["day_log"]["attribute_to"] = "a person"
+    _tracked, private = routed(surface_text, inside)
+    check("a marked value inside a named block is routed with the block, not beside it",
+          sorted(private) == ["day_log"]
+          and private["day_log"].get("attribute_to") == "a person",
+          f"routed {sorted(private)!r}")
+    root = _a_tree({})
+    written = write(root, answers)
+    check("a project naming a block is written, and the reader accepts both files",
+          written["holds"] and "private.yaml" in written["written"],
+          f"said {written['report']!r}")
+    if written["holds"]:
+        with open(os.path.join(root, config.CONFIG_PATH), encoding="utf-8") as handle:
+            text = handle.read()
+        loaded = config.load_text(text, root, check_paths=False)
+        check("the written tracked file states no day_log block, and the reader resolves one",
+              not any(line.startswith("day_log:") for line in text.splitlines())
+              and loaded.get("day_log.round_to") == answers["day_log"]["round_to"],
+              "the block is in the tracked file or did not resolve")
 
     print("\nA project that has never seen the toolkit, once per tracker:")
     for name in _examples():

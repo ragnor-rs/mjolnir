@@ -3024,7 +3024,7 @@ in an old copy that contradicted them survived.
 
 ```yaml
 carriers:                                    # required
-  day_log: skill             # skill | command | hook
+  day_log: skill | command | hook   # private_block
   start: command
 ```
 
@@ -3419,7 +3419,7 @@ language:
   repo: en                                   # required
   prose_width: 100           # columns, for files in the repository; absent means no wrapping
   artifacts:
-    day_log:         { language: en, register: business,  audience: "…" }
+    day_log:         { language: en, register: business,  audience: "…" }   # private_block
     session_summary: { language: ru, register: business,  audience: "…" }
     billing_report:  { language: ru, register: technical, audience: "…" }
     hours_breakdown: { language: ru, register: business,  audience: "…" }
@@ -3561,7 +3561,7 @@ with it in
 ## 9. Day log
 
 ```yaml
-day_log:
+day_log:                       # private_block
   day_start: "05:00"           # default
   round_to: 0.5                # default
   round_ties: down | up        # default: down
@@ -7208,6 +7208,7 @@ private:
   carrier: file | none         # required; absent_reason
   source: "<a path, relative to the skills root>"   # required_when: private.carrier = file
   keys: []                     # required_when: private.carrier = file
+  blocks: []                   # default
   absent_reason: "…"           # required when carrier is none
   revisit_when: "…"
 ```
@@ -7268,7 +7269,7 @@ worked:
 | a listed key is marked by no `# private` | refuses, naming the key |
 | a key is listed twice | refuses; one statement per key, a path listed twice reading as two facts the file answers once |
 | a listed key carries a value in the tracked file as well | refuses; two statements of one fact are free to disagree |
-| `keys` is empty under `carrier: file`, or carries one under any other carrier | refuses; a pointer supplying nothing, and a list nothing answers, are each half a statement |
+| `keys` is empty under `carrier: file` while `blocks` names nothing, or carries one under any other carrier | refuses; a pointer supplying nothing, and a list nothing answers, are each half a statement |
 
 ⛔ **Listing a key is the statement that the layer *answers* it, so carrying it is not enough.** A
 listed key the private file holds with null or an empty list under it is refused by the row above
@@ -7334,6 +7335,69 @@ all of whose values may be committed carries no private file, states why, and is
 absent list. ⚠️ **It is not the same statement as having no values of that class** — a project may
 hold chat names it is simply free to commit — so `revisit_when` is where the condition that would
 change it is written, a client's organisation or a second collaborator being the two measured.
+
+### A block every key of which is a rule, and which a repository still may not hold
+
+⛔ **The bound above is a value's, and one project is barred by its own rules from more than
+values.** Its repository's instructions keep the developer's own tooling out of the codebase
+entirely, and [§ 9](#9-day-log)'s facet *is* that tooling: the rounding, the billable exclusions,
+the sections and the audience are each a rule by this section's test, so not one of them may carry
+`# private`, and together they are an hours-and-billing arrangement in a repository being
+published. ⚠️ **Measured**: the project's configuration was ignored whole for that reason after
+every value had moved out, which is the state this facet was written to end.
+
+**So `blocks` names a block the file supplies whole, and says why it is outside review:**
+
+```yaml
+private:
+  blocks:
+    - block: day_log
+      reason: "…"
+```
+
+```yaml
+# the same untracked file `source` addresses, one entry per named block
+day_log:
+  day_start: "05:00"
+  sections: billed_only
+```
+
+⛔ **A block may be named only where this surface marks it `# private_block`**, a mark distinct
+from `# private` and never implied by it, and refused where that one is. ⚠️ **What carries it is the
+day log's own facet, the carrier mapping its role and the language of its artifact** — the three
+places that tooling is stated — and ⛔ **no facet of the loop carries it**: statuses, the readiness
+list, the exemption classes and the host's checks are the rules a migration exists to make
+reviewable, so the *declare the whole configuration private* reading stays rejected one level up.
+
+⛔ **The reason is required and sits in the tracked file**, so a reviewer reads what they are not
+being shown rather than finding a facet missing. ⚠️ **It is the one statement about a named block
+the tracked file carries**: the block itself is in the private file alone.
+
+| what is wrong | what the reader does |
+|---|---|
+| a row names a block the surface does not mark | refuses, naming the block |
+| a row has no reason, or anything beside `block` and `reason` | refuses, naming the row |
+| two rows name one block | refuses; one statement per block |
+| a key in `keys` sits inside a named block | refuses; the block already supplies it |
+| the tracked file states anything at or under a named block | refuses, naming the block; two statements of one block, and the one in review |
+| the file carries no entry for a named block, or one with nothing under it | refuses, naming the block |
+| `blocks` names a block under any carrier but `file` | refuses; a list nothing answers |
+
+⛔ **A named block is read at load, which is the opposite of a listed key, and the cost is stated
+rather than discovered.** A block holds rules this reader validates and every role reads, so one
+left out until a read asked for it would be a facet nothing ever checked — and an accessor reading
+the tracked half would answer without it, silently. The block is put in place before any rule here
+runs, so it is held exactly as the same block written in the tracked file would be: its defaults,
+its requiredness and its cross-key rules, by the one resolver. ⚠️ **So a project naming a block does
+not load where the file is absent**, and the refusal names the file and the blocks rather than
+reading as a configuration with no day log. A listed key keeps its lazy read, the reason given above
+for it being unchanged. ⛔ **To a hook that is an unreadable configuration**, and what a guard does
+then is [§ 7](#a-hook-in-a-project-that-states-no-configuration)'s — measured with the file moved
+away from a project naming a block: every guard announced itself inert. So a project naming a block
+makes the file reachable from every tree it works in, a fresh one included.
+
+⚠️ **What is reported is still never a value**: the configuration a role prints shows each named
+block as the marker it shows a listed key as.
 
 ## 29. The host's run operations
 
