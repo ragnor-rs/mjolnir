@@ -180,6 +180,13 @@ host:
     # the only hand-written configuration in reach of a test. ⛔ No reading of what the registry
     # currently holds is written here: that is one line of the module, and a copy of it in this
     # comment goes stale the day an artifact is registered.
+    # ⚠️ What this run holds is the two arms the role rests on — a given total distributed so the
+    # parts sum back to it with no store asked, and no total answered by an offer and a stop — over
+    # repositories and day logs the suite stands up itself. ⛔ This project maps no
+    # `hours_breakdown` carrier, so there is no real period here for a run to read.
+    - workflow: "Hours breakdown carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/hours_breakdown.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Installer"
       mirrors: "python3 plugins/mjolnir/scripts/install.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -1020,6 +1027,9 @@ documents:
       may_name:
         - "plugins/mjolnir/config/schema.md"
         - "plugins/mjolnir/skills/day-report/SKILL.md"
+      derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/hours-breakdown/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
       derived_from: ["plugins/mjolnir/config/schema.md"]
     - document: "plugins/mjolnir/skills/accept/SKILL.md"
       may_name: ["plugins/mjolnir/config/schema.md"]
