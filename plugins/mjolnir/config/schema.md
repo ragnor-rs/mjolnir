@@ -3133,9 +3133,25 @@ event, breaks this rule.
 
 The configuration is resolved under the directory the event names — the one the hook is running
 in, where the event names none — and through the reader every role runs on, at
-[§ 1](#1-roots)'s skills root. ⚠️ No walk up the tree: a hook that searched upwards would act on
-another project's facts in a directory stating none of its own, which a checkout with trees beside
-it makes routine.
+[§ 1](#1-roots)'s skills root.
+
+⛔ **Where that directory states none, the session's project directory bounds a search for the
+one that does.** The event's directory is the shell's and follows every `cd` the session makes;
+the project directory is the one the harness says it opened the session on (`CLAUDE_PROJECT_DIR`),
+handed to every hook in its environment and fixed for the session — a fact the harness states, not
+one a hook infers. So a directory at or under it that states nothing resolves to the **nearest**
+directory between the two that states one: a package of the project to the project, and a
+subdirectory of a tree under the managed root to that tree, which states its own. Without the
+search, one `cd` into a package holds every guard to nothing, the merge guard included: a project
+read from a subdirectory reads as one that states none, and that silence is not a fail direction
+anybody chose. ⚠️ Within the project a tree that states none — a branch cut before its
+adoption — is held to the nearest directory above it that does, which holds more and never less.
+
+⚠️ No walk above it: a hook that searched past the project directory would act on another
+project's facts in a directory stating none of its own, which a checkout with trees beside it makes
+routine. A directory outside the project directory, and any event where the harness states none,
+is resolved under its own directory alone. A role never passes through this: its skills root is
+§ 1's, and a command a role runs is not handed the project directory.
 
 Absent and unreadable are different answers, and only the first is silent. A configuration that is
 there and does not resolve is the project's own statement, badly written, so a carrier that reads

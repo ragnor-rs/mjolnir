@@ -418,7 +418,7 @@ def answer(payload: dict) -> dict:
         # neither of the two answers below is safe to give without knowing.
         return {}
     where = str(payload.get("cwd") or ".")
-    if not reader.configured(where):
+    if not reader.configured(reader.hook_root(where)):
         # ⛔ The invitation belongs to the event the exception is scoped to and
         # to no other: a project that states no configuration is told once when
         # a session opens, not again every time one enters a tree.
