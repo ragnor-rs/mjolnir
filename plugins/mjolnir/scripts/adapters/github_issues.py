@@ -167,6 +167,16 @@ def _repo() -> str:
             "first; a direct call bypasses the one place the project is stated.",
         )
     repo = _bound.get("host.repo")
+    # ⛔ An absent slug is refused as the configuration's own error and never
+    # reached as `None.count`: a view bound before every required key is written
+    # -- setup's provisional one -- can carry none, and an `AttributeError` is
+    # the one failure no caller of the port catches.
+    if not isinstance(repo, str) or not repo:
+        raise port.ConfigError(
+            "host.repo",
+            "is not stated, and plain issues are addressed by nothing else: the "
+            "repository's `owner/name` is the whole address of this tracker",
+        )
     if repo.count("/") != 1:
         raise port.ConfigError(
             "host.repo",
@@ -1107,7 +1117,15 @@ def read_vocabulary() -> dict:
 
     ⚠️ **The types are the repository's own answer**, and stating them is not a
     project carrying its type in them: that is § 4.1's question and stays asked.
+
+    ⛔ **No repository at all refuses the whole read**, by `_repo`'s own refusal
+    naming `host.repo`. The status pair is this module's constant rather than
+    anything the tracker said, so returning it beside two unestablished parts
+    would report a tracker interrogated when nothing was addressed. ⚠️ A slug in
+    the wrong shape is a different case and stays per vocabulary, below.
     """
+    if _bound is None or not _bound.get("host.repo"):
+        _repo()
     reading = {
         "statuses": {
             "answer": port.VOCABULARY_READ,
