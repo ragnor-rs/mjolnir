@@ -10588,7 +10588,9 @@ and reported everywhere else.** Verifiable means the file's text states the pare
 child, the parsed file holds a mapping there with no such child, and the parent's own line opens a
 block rather than a flow mapping or a scalar. The child then goes at the end of that block, at the
 indent its existing children use, and a top-level block the file does not have at all goes at the
-end of the file. ⚠️ **This is what lets a person come back to setup** to answer a question the first
+end of the file — ⛔ **provided the file it leaves parses to the old document with that one key
+added and nothing else moved**, since the read-back above compares only the keys that changed.
+⚠️ **This is what lets a person come back to setup** to answer a question the first
 run left open, without editing the generated file by hand. ⛔ **Every other shape is reported and
 never appended** — a parent in flow style, a parent stating a scalar or a list, a parent with no
 child to read an indent from: a key appended blind is a key stated twice, and the reader resolves

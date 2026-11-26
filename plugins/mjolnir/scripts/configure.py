@@ -71,6 +71,7 @@ answer is not the same thing as a write that would have been wrong.
 from __future__ import annotations
 
 import argparse
+import copy
 import fnmatch
 import json
 import os
@@ -2551,6 +2552,13 @@ def _inserted(lines: list[str], path: str, wanted) -> list[str] | None:
 
     ⚠️ A top-level block absent from the file is appended at its end, which is
     where a block nothing states can go without splitting another.
+
+    ⛔ **And the insertion is held to what it was for before it is returned**:
+    the new text has to parse to the old document with this one path added and
+    nothing else moved. The caller's read-back compares only the keys it
+    changed, so a sibling the placement disturbed -- a keep-chomped block
+    scalar losing its trailing lines, a block landing after a document's end
+    marker -- would otherwise pass in silence or fail as the wrong refusal.
     """
     want = path.split(".")
     matched, parent = _deepest(lines, path)
@@ -2573,10 +2581,22 @@ def _inserted(lines: list[str], path: str, wanted) -> list[str] | None:
     ends = "\r\n" if sample.endswith("\r\n") else "\n"
     grown = list(lines)
 
+    expected = copy.deepcopy(now)
+    place = expected
+    for segment in want[:-1]:
+        place = place.setdefault(segment, {})
+    place[want[-1]] = wanted
+
+    def held_to(candidate: list[str]) -> list[str] | None:
+        try:
+            return candidate if yaml.safe_load("".join(candidate)) == expected else None
+        except yaml.YAMLError:
+            return None
+
     if parent is None:
         if grown and not grown[-1].endswith("\n"):
             grown[-1] += ends
-        return grown + [one + ends for one in rendered]
+        return held_to(grown + [one + ends for one in rendered])
 
     opener = KEY_LINE.match(grown[parent])
     after = grown[parent][opener.end():].strip()
@@ -2600,7 +2620,7 @@ def _inserted(lines: list[str], path: str, wanted) -> list[str] | None:
     if not grown[ends_at - 1].endswith("\n"):
         grown[ends_at - 1] += ends
     grown[ends_at:ends_at] = [" " * indent + one + ends for one in rendered]
-    return grown
+    return held_to(grown)
 
 
 def _end_of(lines: list[str], at: int, indent: int) -> int:
@@ -3364,6 +3384,23 @@ def self_test() -> int:
         out, changed, unplaced = edited(text, {"host": {"repo": "an/repo"}})
         check(f"{shape} is still reported, never edited",
               unplaced == ["host.repo"] and not changed and out == text,
+              f"changed {changed!r}, left {out!r}")
+
+    # ⛔ A placement that would move anything but its own key is reported, the
+    # caller's read-back reading only the keys it changed. Both found by review
+    # rather than by a failing case: a keep-chomped scalar ending the parent's
+    # block loses its trailing lines to the insertion, and a block appended
+    # after a document's end marker is a file that no longer parses.
+    for shape, text, answers, path in (
+        ("a placement that would change a sibling's value",
+         "host:\n  note: |+\n    kept\n\n\ntracker:\n  kind: x\n",
+         {"host": {"repo": "an/repo"}}, "host.repo"),
+        ("a placement after a document's end marker",
+         "host:\n  kind: github\n...\n", {"tracker": {"kind": "x"}}, "tracker.kind"),
+    ):
+        out, changed, unplaced = edited(text, answers)
+        check(f"{shape} is reported, never edited",
+              unplaced == [path] and not changed and out == text,
               f"changed {changed!r}, left {out!r}")
 
     # ⚠️ The one thing an edit does **not** keep, stated as a bound rather than
