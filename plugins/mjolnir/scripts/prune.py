@@ -612,6 +612,7 @@ def sweep(
                     standing=standing,
                     remove=remove,
                     listing=listing,
+                    ahead=_ahead(root, teardown, resource_up, lambda: budget - (clock() - started)),
                 )
             )
         except Exception as error:  # noqa: BLE001 -- one tree's failure is not the sweep's
@@ -650,6 +651,7 @@ def _decide(
     standing,
     remove,
     listing: bool = False,
+    ahead=None,
 ) -> Verdict:
     """One tree, in the order § 10 states -- and the order is part of the rule.
 
@@ -756,13 +758,18 @@ def _decide(
         return kept(f"another session is working at or below it: {who}")
 
     if listing:
-        # ⛔ Every reading above was taken, so this is the verdict a removing run acts on; the
-        # removal, the teardown it runs and the ref it may delete are what a list-only run skips.
+        # ⛔ Every reading above was taken. What the removal still asks inside the release -- the
+        # teardown, then whether a resource is up -- is `ahead`'s, so a tree the removal would keep
+        # on those is kept here too rather than listed.
+        kept_for, proviso = ahead(tree.path) if ahead is not None else ("", "")
+        if kept_for:
+            return kept(kept_for, attention=True)
         return Verdict(
             tree.path,
             tree.branch,
             False,
-            "its branch has landed and nothing keeps it; a removing sweep removes it",
+            "its branch has landed and nothing keeps it; a removing sweep removes it"
+            + (f", {proviso}" if proviso else ""),
             listed=True,
         )
     done, failed = remove(tree.branch, tree.path)
@@ -784,6 +791,39 @@ def _decide(
             attention=True,
         )
     return Verdict(tree.path, tree.branch, True, done)
+
+
+def _ahead(root: str | Path, teardown: str | None, resource_up: str | None, left):
+    """What the release asks before it removes, taken without removing: `(kept for, proviso)`.
+
+    ⛔ **The release runs the teardown and then reads `resource_up`**, and a list-only run may run
+    neither the teardown nor anything after it. So where a teardown is stated the verdict rests on
+    it, and is said with that proviso; where only `resource_up` is stated the check is read, since
+    it writes nothing, and a tree it would keep is kept here with the release's own reason.
+    """
+
+    def run(tree: str) -> tuple[str, str]:
+        if teardown:
+            return "", (
+                "once the teardown it runs first succeeds and leaves nothing up; a list runs no "
+                "teardown, so that part is not established"
+            )
+        if not resource_up:
+            return "", ""
+        up, unanswered = claim.read_resource_up(root, tree, resource_up, left())
+        if unanswered is not None:
+            return (
+                "its branch has landed and whether a resource started from it is still up went "
+                f"unanswered, so a removing sweep keeps it: {unanswered}"
+            ), ""
+        if up:
+            return (
+                "its branch has landed and a resource started from it is still up, so a removing "
+                f"sweep keeps it: {up}"
+            ), ""
+        return "", ""
+
+    return run
 
 
 def _remover(
@@ -1368,6 +1408,22 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             "⛔ what is up keeps the landed tree, and the person is told its name",
             Path(tree).exists() and not report.removed and "stack-a" in report.message(),
             report.report(),
+        )
+        listed = asked("echo stack-a", listing=True)
+        suite.ok(
+            "⛔ and a list-only run keeps it on the same reading, rather than listing it",
+            Path(tree).exists() and not listed.listed and len(listed.kept) == 1
+            and "stack-a" in listed.message(),
+            listed.report(),
+        )
+        listed = sweep(work, [], "procedure", tree_dir=_trees(tmp), teardown=f"touch '{ran}'",
+                       resource_up="echo stack-a", occupants=lambda _p: [], listing=True)
+        suite.ok(
+            "⛔ where a teardown runs first, a list-only run runs neither it nor the check, and "
+            "lists the tree with that stated",
+            Path(tree).exists() and not ran.exists() and len(listed.listed) == 1
+            and "teardown" in listed.report(),
+            listed.report(),
         )
         report = asked("echo away >&2; exit 1")
         suite.ok(

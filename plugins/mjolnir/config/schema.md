@@ -4772,7 +4772,10 @@ this rule in a project that already holds trees needs the verdicts before the fi
 the sweep run by hand gives them on request. The list-only run takes every reading a removing run
 takes, so each tree gets the verdict a removing run would act on. Only the removal is skipped, with
 what it carries: the teardown, the branch, the published ref, and the clearing of a registration
-whose directory is gone.
+whose directory is gone. ⚠️ **The resource check the release asks is read, since it writes
+nothing**, and a tree it would keep is kept in the list. ⛔ **Where a teardown runs first, that
+check reads what the teardown left**, so a list that runs no teardown cannot read it: the tree is
+listed with that proviso stated, and never listed as certain.
 
 ```yaml
 branch_model:
