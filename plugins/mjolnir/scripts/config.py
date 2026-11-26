@@ -3031,6 +3031,14 @@ class Config:
             "graph": [dict(entry) for entry in self.get("documents.graph") or ()],
             "forbidden": [dict(entry) for entry in self.get("documents.forbidden") or ()],
             "quoted": [dict(entry) for entry in self.get("documents.quoted") or ()],
+            # ⛔ The one key under `documents` that may be absent, and absence comes
+            # back as `None` rather than as a block reading `held: false`: the
+            # carrier reports *no diagram is held* either way, and a reader
+            # handed a fabricated block could not say which the project wrote.
+            "box_diagrams": (
+                dict(self.get("documents.box_diagrams"))
+                if self.get("documents.box_diagrams") is not None else None
+            ),
         }
 
     @property
@@ -3138,6 +3146,9 @@ class Config:
             "reached_by": entry["invoke"],
             DEPLOY_CODE_ROOT: entry.get(DEPLOY_CODE_ROOT),
             "choices": shown,
+            # ⚠️ Empty where the entry states none, which is a stated absence the
+            # carrier reading it reports rather than a list of conditions all met.
+            "tree": [dict(one) for one in entry.get("tree") or ()],
         }
         if entry["invoke"] != "command":
             # ⚠️ The two halves cannot meet: a name in both is refused at the load.
@@ -5177,6 +5188,7 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
                     )
         _validate_choices(where, entry, facts)
         _validate_batch_placements(where, entry)
+        _validate_tree(where, entry, facts)
         # ⛔ § 16's list, cited rather than given a second grammar here -- the
         # division § 17 already has with the same section. What this facet does
         # with it is hold its shape and name it; evaluating a precondition is
@@ -5601,6 +5613,93 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                 path,
                 f"places the choice {name!r}, which is read in a `command` target's "
                 "`command` and in a `batch`, and nowhere else (§ 33).",
+            )
+
+
+def _validate_tree(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `tree` on one entry, which no marker on the surface can reach.
+
+    ⚠️ An entry that omits the key is held to nothing here: a target stating no
+    condition reports what is uncommitted and holds nothing on it, as before.
+    """
+    if "tree" not in entry:
+        return
+    at = f"{where}.tree"
+    # ⛔ The shape before the list, for the reason `command` and `ref` are refused
+    # in both directions above: a dispatch is built by the host from `ref`, so a
+    # condition on a local tree beside one is a fact nothing reads.
+    if entry.get("invoke") != "command":
+        raise ConfigError(
+            at,
+            f"is stated beside `invoke: {entry.get('invoke')}`, which builds from "
+            "`ref` on the host and runs from no local tree (§ 33). Only a `command` "
+            "target states one.",
+        )
+    conditions = entry["tree"]
+    if not isinstance(conditions, list) or not conditions:
+        raise ConfigError(
+            at,
+            "must be a non-empty list of the conditions the tree is held to (§ 33); "
+            "omit it where nothing is required of the tree.",
+        )
+    prefix = "deploy.tree."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a condition could be "
+            "held to nothing; § 33 states a condition's keys in the entry's own fence.",
+        )
+    kinds = vocabulary(facts, "deploy.tree.condition", "a deploy tree condition")
+    holds = vocabulary(facts, "deploy.tree.holds", "what a tree condition holds")
+    seen: list[str] = []
+    for index, stated in enumerate(conditions):
+        here = f"{at}[{index}]"
+        if not isinstance(stated, dict):
+            raise ConfigError(
+                here, "must be a mapping stating a condition and what it holds (§ 33)."
+            )
+        for key in stated:
+            if key not in declared:
+                raise ConfigError(
+                    f"{here}.{key}",
+                    "is a key § 33 does not declare on a tree condition, so nothing "
+                    f"reads it. The keys it declares are: {', '.join(sorted(declared))}.",
+                )
+        kind = stated.get("condition")
+        if kind not in kinds:
+            raise ConfigError(
+                f"{here}.condition",
+                f"is {kind!r}; the surface states {' | '.join(kinds)} (§ 33).",
+            )
+        if kind in seen:
+            raise ConfigError(
+                f"{here}.condition",
+                f"states {kind!r} a second time (§ 33), so one reading would hold two "
+                "things and the list would say which only by its order.",
+            )
+        seen.append(kind)
+        if stated.get("holds") not in holds:
+            raise ConfigError(
+                f"{here}.holds",
+                f"is {stated.get('holds')!r}; the surface states {' | '.join(holds)} "
+                "(§ 33). What a condition not met stops is the entry's to state.",
+            )
+        if kind == "on_branch":
+            branch = stated.get("branch")
+            if not isinstance(branch, str) or not branch.strip():
+                raise ConfigError(
+                    f"{here}.branch",
+                    "required, and a non-empty branch name, where the condition is "
+                    "`on_branch` (§ 33).",
+                )
+        elif "branch" in stated:
+            raise ConfigError(
+                f"{here}.branch",
+                f"is stated beside the condition {kind!r}, which never reads it "
+                "(§ 33). It is read where the condition is `on_branch`.",
             )
 
 
@@ -6223,7 +6322,9 @@ def _validate_documents(data: dict, facts: dict) -> None:
         # governed and nothing holds.
         stated = [
             key
-            for key in ("files", "entry_points", "graph", "forbidden", "quoted")
+            for key in (
+                "files", "entry_points", "graph", "forbidden", "quoted", "box_diagrams",
+            )
             if key in _absent_as(_get(data, "documents"), {})
         ]
         if stated:
@@ -6461,6 +6562,107 @@ def _validate_documents(data: dict, facts: dict) -> None:
                         "A sentence quoted against a document outside the governed "
                         "set is a check over a file nothing else here reads.",
                     )
+
+    _validate_box_diagrams(data, facts, rows)
+
+
+def _validate_box_diagrams(data: dict, facts: dict, rows: dict) -> None:
+    """§ 38's `box_diagrams`, the one key under `documents` that may go unstated.
+
+    ⛔ **Absent is admitted and every stated form is held**: the key arrived after
+    every configuration had been written, so requiring it would refuse each of
+    them for a check none asked for -- while a block that *is* stated and could
+    not be read is a diagram rule somebody turned on and nothing performs.
+    """
+    block = _get(data, "documents.box_diagrams")
+    if block is None:
+        return
+    if not isinstance(block, dict):
+        raise ConfigError(
+            "documents.box_diagrams",
+            "must be a mapping stating `held` and `exempt` (§ 38), or be left out "
+            "where no diagram is held.",
+        )
+    declared = _documents_entries(_get(data, "documents"), "box_diagrams", facts)
+    # The surface's two fences both reach under this key: the block's own two
+    # keys, and the exemption entry's keys one level further down.
+    own = {key for key in declared if "." not in key}
+    for stated_key in block:
+        if stated_key not in own:
+            raise ConfigError(
+                f"documents.box_diagrams.{stated_key}",
+                "is a key § 38 does not declare on this block, so it is a fact "
+                "about the diagrams that nothing reads. The keys it declares are: "
+                f"{', '.join(sorted(own))}.",
+            )
+    for needed in ("held", "exempt"):
+        if needed not in block:
+            raise ConfigError(
+                f"documents.box_diagrams.{needed}",
+                "required once the block is stated (§ 38). The block may be left "
+                "out whole; stated, it says whether diagrams are held and which "
+                "block is exempt, `[]` where none is.",
+            )
+    if not isinstance(block["held"], bool):
+        raise ConfigError(
+            "documents.box_diagrams.held",
+            f"is {block['held']!r}, where § 38 states `true` or `false`. A string "
+            "here would read as turned on whatever it says.",
+        )
+    exempt = block["exempt"]
+    if not isinstance(exempt, list):
+        raise ConfigError(
+            "documents.box_diagrams.exempt",
+            "must be a list, `[]` where no block is exempt (§ 38).",
+        )
+    entry_keys = {
+        key[len("exempt."):] for key in declared if key.startswith("exempt.")
+    }
+    for index, entry in enumerate(exempt):
+        where = f"documents.box_diagrams.exempt[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(where, "must be a mapping (§ 38).")
+        for stated_key in entry:
+            if stated_key not in entry_keys:
+                raise ConfigError(
+                    f"{where}.{stated_key}",
+                    "is a key § 38 does not declare on an exemption. The keys it "
+                    f"declares are: {', '.join(sorted(entry_keys))}.",
+                )
+        for needed in sorted(entry_keys):
+            if needed not in entry:
+                raise ConfigError(
+                    f"{where}.{needed}",
+                    "required (§ 38). An exemption names its document, the block "
+                    "by its own text, and why -- one whose reason nobody wrote down "
+                    "cannot be told from a misaligned diagram somebody silenced.",
+                )
+            stated = entry[needed]
+            if not isinstance(stated, str) or not stated.strip():
+                raise ConfigError(
+                    f"{where}.{needed}",
+                    "must be non-empty text (§ 38); a blank value reads as stated "
+                    "and says nothing.",
+                )
+        document = _a_document(
+            entry["document"], f"{where}.document", "the document the block is in"
+        )
+        if document not in rows:
+            raise ConfigError(
+                f"{where}.document",
+                f"is {document!r}, which no row of `graph` declares (§ 38). A block "
+                "exempted in a document outside the governed set is an exemption "
+                "over a file this check never reads.",
+            )
+        try:
+            re.compile(entry["block"])
+        except re.error as exc:
+            raise ConfigError(
+                f"{where}.block",
+                f"is not a usable expression ({exc}) (§ 38). An exemption that "
+                "cannot be evaluated is refused here rather than read as matching "
+                "nothing.",
+            ) from None
 
 
 def _validate_spec_corpus(data: dict) -> None:
@@ -14596,6 +14798,21 @@ def self_test() -> int:
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
 
+    # ⛔ § 38's `box_diagrams`, the green side of the arms planted above: the
+    # block stated with an exemption loads, and so does a facet stating no block
+    # at all -- which is every configuration written before the key, and which
+    # § 38 makes the one absence in this facet that is not refused.
+    for label, block in (
+        ("a diagram block held, with an exemption", _a_box_diagrams(
+            exempt=[_a_diagram_exemption()])),
+        ("a diagram block stated as not held", _a_box_diagrams(held=False)),
+        ("no diagram block at all", _ABSENT),
+    ):
+        tree = _a_valid_example()
+        tree["documents"] = _a_documents_of(box_diagrams=block)
+        broken = _refused(tree)
+        check(f"{label} loads", broken is None, f"refused {broken!r}")
+
     # ⛔ § 37 against § 28's list, both directions. ⚠️ The list is how a project
     # states a key without writing it, and this facet read that rule in one
     # direction only -- so the arm below is the green side and the one under it
@@ -15541,6 +15758,44 @@ def self_test() -> int:
     check(
         "a surface that has lost a choice's keys is refused, with the key named",
         said == "deploy[0].choices", f"reported {said!r}",
+    )
+
+    print("\n§ 33's tree conditions, the green side:")
+    every = [
+        _a_tree_condition(),
+        _a_tree_condition(condition="on_branch", branch="main", holds="both"),
+        _a_tree_condition(condition="at_remote_tip", holds="advance"),
+        _a_tree_condition(condition="primary_checkout"),
+        _a_tree_condition(condition="at_commit", holds="advance"),
+    ]
+    loaded = _a_valid_example()
+    loaded["deploy"] = [_a_deploy_target(tree=every)]
+    refusal = _refused(loaded)
+    check(
+        "a target stating every condition, each holding one of the three, loads",
+        refusal is None, f"refused on {refusal!r}",
+    )
+    got = choosing(tree=every)
+    check(
+        "and the resolved target carries its conditions as stated",
+        isinstance(got, dict) and got["tree"] == every, f"answered {got!r}",
+    )
+    got = choosing()
+    check(
+        "a target stating no condition answers an empty list rather than omitting it",
+        isinstance(got, dict) and got["tree"] == [], f"answered {got!r}",
+    )
+    said = ""
+    try:
+        _validate_tree(
+            "deploy[0]", {"invoke": "command", "tree": [_a_tree_condition()]},
+            {"declared": set()},
+        )
+    except ConfigError as refused:
+        said = refused.key
+    check(
+        "a surface that has lost a tree condition's keys is refused, with the key named",
+        said == "deploy[0].tree", f"reported {said!r}",
     )
 
     # ⛔ The one arm the plant list above cannot hold, and it is held on the
@@ -16965,6 +17220,41 @@ def _planted_violations():
                  {"warnings": {"all": " "}}),
             )
         ),
+        # § 33's tree conditions, one plant per arm.
+        *(
+            (label, f"deploy[0].{key}", at("deploy", [_a_deploy_target(**changed)]))
+            for label, key, changed in (
+                ("tree conditions that are not a list", "tree",
+                 {"tree": {"condition": "clean"}}),
+                ("a tree list carrying nothing", "tree", {"tree": []}),
+                ("a tree condition that is not a block", "tree[0]", {"tree": ["clean"]}),
+                ("a tree condition with a key § 33 does not declare", "tree[0].when",
+                 {"tree": [_a_tree_condition(when="always")]}),
+                ("a tree condition outside the vocabulary", "tree[0].condition",
+                 {"tree": [_a_tree_condition(condition="tidy")]}),
+                ("a tree condition with no condition", "tree[0].condition",
+                 {"tree": [_a_tree_condition(condition=_ABSENT)]}),
+                ("a tree condition stated twice", "tree[1].condition",
+                 {"tree": [_a_tree_condition(), _a_tree_condition(holds="advance")]}),
+                ("a tree condition holding something outside the vocabulary",
+                 "tree[0].holds", {"tree": [_a_tree_condition(holds="release")]}),
+                ("a tree condition holding nothing stated", "tree[0].holds",
+                 {"tree": [_a_tree_condition(holds=_ABSENT)]}),
+                ("a branch condition naming no branch", "tree[0].branch",
+                 {"tree": [_a_tree_condition(condition="on_branch")]}),
+                ("a branch condition naming an empty branch", "tree[0].branch",
+                 {"tree": [_a_tree_condition(condition="on_branch", branch=" ")]}),
+                ("a branch beside a condition that never reads it", "tree[0].branch",
+                 {"tree": [_a_tree_condition(branch="main")]}),
+                *(
+                    (f"a tree on a {shape} target, which runs from no local tree", "tree",
+                     {"invoke": shape, "command": _ABSENT, "ref": "a-ref",
+                      "workflow": _a_workflow_the_example_states(),
+                      "tree": [_a_tree_condition()]})
+                    for shape in ("dispatch", "by_hand")
+                ),
+            )
+        ),
         ("choices that are not a list", "deploy[0].choices",
          at("deploy", [_a_deploy_target(choices={"scope": "all"})])),
         ("a choices list carrying nothing", "deploy[0].choices",
@@ -17478,6 +17768,50 @@ def _planted_violations():
          "documents.quoted[0].document",
          at("documents", _a_documents_of(
              quoted=[{"sentence": "a claim", "document": "b-document.md"}]))),
+        # § 38's `box_diagrams`, the one key under `documents` a project may leave
+        # unstated. ⛔ Every arm below is a block somebody **did** state: a
+        # diagram rule turned on and read by nothing is the failure, while the
+        # block left out is admitted and asserted below the list.
+        ("a diagram block stated beside a carrier that reads none",
+         "documents.box_diagrams",
+         at("documents", {"carrier": "none", "absent_reason": "nothing is governed",
+                          "box_diagrams": _a_box_diagrams()})),
+        ("a diagram block that is not a block", "documents.box_diagrams",
+         at("documents", _a_documents_of(box_diagrams=True))),
+        ("a key § 38 declares on no diagram block", "documents.box_diagrams.width",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(width=2)))),
+        ("a diagram block not saying whether it is held",
+         "documents.box_diagrams.held",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(held=_ABSENT)))),
+        # ⚠️ A string is its own arm: `"false"` is truthy, so a reader that
+        # coerced it would turn the check on for a project that wrote it off.
+        ("a diagram block held as a string", "documents.box_diagrams.held",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(held="false")))),
+        ("a diagram block omitting its exemptions", "documents.box_diagrams.exempt",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(exempt=_ABSENT)))),
+        ("an exemption list that is not a list", "documents.box_diagrams.exempt",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(exempt="all")))),
+        ("an exemption that is not a block", "documents.box_diagrams.exempt[0]",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=["a-document.md"])))),
+        ("a key § 38 declares on no exemption",
+         "documents.box_diagrams.exempt[0].line",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(line=12)])))),
+        ("an exemption with no reason", "documents.box_diagrams.exempt[0].reason",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(reason=_ABSENT)])))),
+        ("an exemption whose block is blank", "documents.box_diagrams.exempt[0].block",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(block="  ")])))),
+        ("an exemption in a document no row declares",
+         "documents.box_diagrams.exempt[0].document",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(
+             exempt=[_a_diagram_exemption(document="b-document.md")])))),
+        ("an exemption whose block is not a usable expression",
+         "documents.box_diagrams.exempt[0].block",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(block="(ab")])))),
         # § 39, and every arm no marker reaches. ⛔ They fail in one direction:
         # a corpus read at the wrong ref, or at no ref, is a confident wrong
         # answer in the step whose whole value is confidence, and nothing
@@ -19927,6 +20261,13 @@ def _a_choice(**overrides) -> dict:
     return {key: value for key, value in choice.items() if value is not _ABSENT}
 
 
+def _a_tree_condition(**overrides) -> dict:
+    """One § 33 tree condition, minimal and correct."""
+    condition = {"condition": "clean", "holds": "deploy"}
+    condition.update(overrides)
+    return {key: value for key, value in condition.items() if value is not _ABSENT}
+
+
 def _a_deploy_target(**overrides) -> dict:
     """§ 33's smallest valid target, to break one key of at a time.
 
@@ -20235,6 +20576,24 @@ def _two_groupings(data: dict, *, names=("one-scope", "another-scope")) -> dict:
     node = data.setdefault("work_item", {})
     node[ONE_GROUPING] = {name: _a_grouping_carrying_a_ref(name) for name in names}
     return data
+
+
+def _a_box_diagrams(**overrides) -> dict:
+    """§ 38's smallest stated diagram block, held and exempting nothing."""
+    block = {"held": True, "exempt": []}
+    block.update(overrides)
+    return {key: value for key, value in block.items() if value is not _ABSENT}
+
+
+def _a_diagram_exemption(**overrides) -> dict:
+    """§ 38's smallest valid exemption, every key of which is stated."""
+    entry = {
+        "document": "a-document.md",
+        "block": "a diagram drawn this way on purpose",
+        "reason": "it reproduces a terminal's own output",
+    }
+    entry.update(overrides)
+    return {key: value for key, value in entry.items() if value is not _ABSENT}
 
 
 def _a_forbidden_name(**overrides) -> dict:

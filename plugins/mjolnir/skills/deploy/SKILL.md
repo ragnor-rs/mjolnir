@@ -110,11 +110,28 @@ what this step does is run it.
   [`§ 10`](../../config/schema.md#which-tree-a-verdict-belongs-to)'s rule decides what a verdict
   taken here is about. ⚠️ **Several sessions may share one checkout**, so a preflight that staged
   anything would be staging somebody else's work.
-- **The commit this deploy serves is established, written whole**, read where the act itself reads
-  it: the commit the entry's `ref` names on the host for a `dispatch` or a `by_hand` target, and the
-  commit the code root is checked out at for a `command` target. It is what step 5 shows as what is
-  being deployed and what step 4a hands the batch. ⛔ **One nothing could establish is reported
-  unestablished, never guessed.**
+- **And held to what the entry's `tree` states**, which is
+  [`§ 33 → What the tree must be`](../../config/schema.md#what-the-tree-must-be-for-the-deploy-and-for-the-advance)
+  and is read by its own carrier rather than by eye:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/deploy_tree.py" --target "<the entry's name>" \
+    --at-commit "<the commit this invocation names>"
+  ```
+
+  ⚠️ **`--at-commit` is passed only where the invocation names a commit**, and is never filled in
+  with the tree's own. Exit 1 is a **stop before the go**, every condition not met named with what
+  the tree held; exit 4 lets the deploy run and holds every advance, which step 5 shows and step 8
+  reads again; exit 3 is a target stating no condition, reported as that and never as conditions
+  met; exit 2 is a configuration that could not answer, and a stop before the go naming it.
+  ⛔ **Nothing is fetched or pulled to meet a condition** — that is the project's own command,
+  run before the deploy is asked for.
+- **The commit this deploy serves is established, written whole**: the one the invocation names,
+  where it names one, and otherwise read where the act itself reads it — the commit the entry's
+  `ref` names on the host for a `dispatch` or a `by_hand` target, and the commit the code root is
+  checked out at for a `command` target. It is what step 5 shows as what is being deployed and
+  what step 4a hands the batch. ⛔ **One nothing could establish is reported unestablished, never
+  guessed.**
 - ⚠️ **A command target may contend on something the project declared exclusive**
   ([`§ 10`](../../config/schema.md#exclusive-resources)). A refusal there is a place to come back
   for rather than a failure: the deploy is retried once one frees, and the reply says it waited.
@@ -283,10 +300,10 @@ another batch is not one for this.
 
 **Show, in the question:** the target and that the entry states it live, what is being deployed,
 every choice with the value taken and whether it was chosen or is the default, ⛔ **every warning
-step 3's answer carries**, every item in the batch, every candidate step 4a could
-not place, and ⛔ **every `after` step the deploy will still owe once it has run** — the `before` ones
-having been performed or stopped on in step 4b, so a go reached at all is a go over a target nothing
-is holding.
+step 3's answer carries**, ⛔ **every tree condition step 3 found holding the advance**, every item
+in the batch, every candidate step 4a could not place, and ⛔ **every `after` step the deploy will
+still owe once it has run** — the `before` ones having been performed or stopped on in step 4b, so a
+go reached at all is a go over a target nothing is holding.
 
 ⛔ **A go is for the values it showed.** Anybody asking for another value is asking for another
 deploy: step 3 resolves it and this question is put again.
@@ -432,6 +449,13 @@ What a run delivered is read from its **log**, through the port's own operation,
 still reported — what the deploy carried is a fact about the deploy — and ⛔ **the reply says the
 target writes nothing on an item** rather than leaving a reader to read silence as a failed move.
 
+⛔ **Where the entry states a tree condition holding the advance, step 3's command is run again
+here, before any move**, by
+[`§ 33`](../../config/schema.md#what-the-tree-must-be-for-the-deploy-and-for-the-advance)'s rule
+that a command which changed the tree changes the answer. A condition not met now holds **every**
+item and the grouping's mark in step 9; the reply names it and what the tree held, and nothing is
+moved.
+
 ⛔ **Otherwise: only the items step 4a put in the batch, and only once step 7 came out clean for
 each** — which includes every `after` step that item's own change owes. The move goes through the
 port, asked for as a **role** and never as a status word, and this role asks as the writer the
@@ -531,6 +555,8 @@ the facts, with a table where the content enumerates.
   for it** — ⚠️ which on a target asked for no go is the only place they are shown;
 - **how the delivery was established** — what was read, and from where. ⛔ Never an exit status
   standing in for it;
+- **every tree condition the entry states, whether it was met, what the tree held and what it
+  stopped** — or that the entry states none;
 - **every item advanced**, and **every item in the batch that was not**, with what held it —
   ⛔ including every item left alone because the tracker already held it at or past that role;
 - **every candidate the batch command named that the tracker answered differently about**, every

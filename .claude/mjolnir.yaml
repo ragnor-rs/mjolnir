@@ -200,6 +200,11 @@ host:
     - workflow: "Live data carrier"
       mirrors: "python3 plugins/mjolnir/scripts/live_data.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ And on § 33's tree conditions: no target here states one, so this run holds the carrier's
+    # readings against repositories its suite builds.
+    - workflow: "Deploy tree carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/deploy_tree.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Live data record"
       mirrors: "python3 plugins/mjolnir/scripts/check_live_data_record.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
