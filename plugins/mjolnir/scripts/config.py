@@ -3192,11 +3192,17 @@ class Config:
         # time any caller is handed this object, so the call here cannot raise
         # and reads one shape either way.
         grouping = self.grouping(self.get(SPEC_CORPUS_GROUPING))
+        working = self.get(f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}") or {}
         return {
             "files": list(self.get(f"{SPEC_CORPUS_KEY}.files") or ()),
             "load_bearing": list(self.get(f"{SPEC_CORPUS_KEY}.load_bearing") or ()),
             "grouping": grouping["name"],
             "ref_prefix": grouping.get("ref_prefix"),
+            # ⛔ The filing role first and always: § 39 has it read wherever a
+            # corpus is carried, so a caller asks this list rather than knowing
+            # that rule a second time.
+            "readers": [FILING_READER, *working.get("roles", ())],
+            "narrowed_to": list(working["files"]) if "files" in working else None,
         }
 
     def deploy_target(self, target: str, chosen: list[str] | None = None) -> dict:
@@ -4463,6 +4469,9 @@ SPEC_CORPUS_KEY = "spec_corpus"
 SPEC_CORPUS_CARRIER = f"{SPEC_CORPUS_KEY}.carrier"
 SPEC_CORPUS_REPOSITORY = "repository"
 SPEC_CORPUS_GROUPING = f"{SPEC_CORPUS_KEY}.{GROUPING_ENTRY_KEY}"
+WHILE_WORKING = "while_working"
+FILING_READER = "file"
+WORKING_READERS = ("start", "implement")
 
 # § 40's role key in `carriers`. ⛔ The only role key this module names, and it is
 # named because this is the one role whose whole subject is a facet the reader
@@ -7293,7 +7302,7 @@ def _validate_spec_corpus(data: dict) -> None:
         # corpus somebody configured and nothing opens.
         stated = [
             key
-            for key in ("files", "load_bearing", GROUPING_ENTRY_KEY)
+            for key in ("files", "load_bearing", GROUPING_ENTRY_KEY, WHILE_WORKING)
             if key in _absent_as(_get(data, SPEC_CORPUS_KEY), {})
         ]
         if stated:
@@ -7336,6 +7345,70 @@ def _validate_spec_corpus(data: dict) -> None:
             "contradiction* for a reason that has nothing to do with the "
             "specification. A project with no corpus states `carrier: none` "
             "with its reason instead.",
+        )
+    _validate_while_working(data)
+
+
+def _validate_while_working(data: dict) -> None:
+    """§ 39's `while_working`: which working roles read the corpus, and what narrows it.
+
+    ⛔ **Absent is the filing role alone**, which is how a project stating
+    nothing new reads its corpus as it did. What is refused is every shape that
+    would read as a narrowing or a role while being neither.
+    """
+    where = f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}"
+    block = _get(data, where)
+    if block is None:
+        return
+    if not isinstance(block, dict):
+        raise ConfigError(
+            where,
+            "must be a block carrying `roles` and, optionally, `files` (§ 39).",
+        )
+    unknown = sorted(set(block) - {"roles", "files"})
+    if unknown:
+        raise ConfigError(
+            f"{where}.{unknown[0]}",
+            "is not a key of this block, which carries `roles` and `files` (§ 39).",
+        )
+    roles = block.get("roles")
+    if not isinstance(roles, list) or not roles:
+        raise ConfigError(
+            f"{where}.roles",
+            "must be a non-empty list of the working roles that read the corpus "
+            f"-- {', '.join(repr(role) for role in WORKING_READERS)} (§ 39). A "
+            "block naming none is a project that reads at filing alone, which "
+            "is said by leaving the block out.",
+        )
+    for index, role in enumerate(roles):
+        # ⛔ The filing role is refused here too: it reads wherever a corpus is
+        # carried, so naming it would be an entry that changes nothing (§ 39).
+        if role not in WORKING_READERS:
+            raise ConfigError(
+                f"{where}.roles[{index}]",
+                f"is {role!r}, and the roles that read the corpus while the "
+                f"work is done are {', '.join(repr(r) for r in WORKING_READERS)} "
+                "(§ 39). The filing role is not one of them: it reads wherever "
+                "a corpus is carried.",
+            )
+    if len(set(roles)) != len(roles):
+        raise ConfigError(f"{where}.roles", "names one role twice (§ 39).")
+    if "files" not in block:
+        return
+    narrowing = block["files"]
+    if not isinstance(narrowing, list) or not narrowing:
+        raise ConfigError(
+            f"{where}.files",
+            "must be a non-empty list of globs (§ 39). A narrowing to nothing "
+            "is a read that opens nothing while reading as one that opens "
+            "something; a role that should read nothing is left out of `roles`.",
+        )
+    for index, glob in enumerate(narrowing):
+        _a_document(
+            glob,
+            f"{where}.files[{index}]",
+            "a glob narrowing what the working roles load",
+            "§ 39",
         )
 
 
@@ -16060,6 +16133,33 @@ def self_test() -> int:
         broken = _refused(scoped)
         check(f"{label} loads", broken is None, f"refused {broken!r}")
 
+    # ⛔ § 39's `while_working` from the green side, and what the reader hands a
+    # caller for it: the filing role first and always, the working roles after
+    # it, and the narrowing as written -- or `None` where none is stated, which
+    # is not the same as a narrowing to nothing.
+    with open(SURFACE, encoding="utf-8") as handle:
+        corpus_facts = surface_facts(handle.read())
+    for label, block, readers, narrowed in (
+        ("a corpus with no working roles is read at filing alone", _ABSENT,
+         ["file"], None),
+        ("a corpus both working roles read, narrowed",
+         {"roles": ["start", "implement"], "files": ["spec/requirements/**/*.md"]},
+         ["file", "start", "implement"], ["spec/requirements/**/*.md"]),
+        ("a corpus the implementing role reads unnarrowed", {"roles": ["implement"]},
+         ["file", "implement"], None),
+    ):
+        corpus = _a_valid_example()
+        corpus[SPEC_CORPUS_KEY] = _a_spec_corpus_of(while_working=block)
+        try:
+            facet = _resolve(corpus, EXAMPLES, corpus_facts, False).spec_corpus
+        except ConfigError as error:
+            facet = {"refused": error.key}
+        check(
+            f"{label}, and the reader says so",
+            facet.get("readers") == readers and facet.get("narrowed_to") == narrowed,
+            f"answered {facet!r}",
+        )
+
     # ⛔ And the surface that has lost the scope keys from its entry fence: this
     # reader names them optional, so a fence without them is refused rather than
     # left to make every other key read as the whole of an entry.
@@ -19352,6 +19452,39 @@ def _planted_violations():
          f"{SPEC_CORPUS_KEY}.load_bearing[0]",
          at(SPEC_CORPUS_KEY,
             _a_spec_corpus_of(load_bearing=["/spec/requirements.md"]))),
+        # ⛔ `while_working`: every shape that reads as a role or a narrowing
+        # while being neither (§ 39).
+        ("the working roles stated beside a corpus carrier that reads none",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}",
+         at(SPEC_CORPUS_KEY, {"carrier": "none", "absent_reason": "no corpus here",
+                              WHILE_WORKING: {"roles": ["start"]}})),
+        ("the working roles written as one string", f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(while_working="start"))),
+        ("a working-roles block naming no role",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.roles",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(while_working={"roles": []}))),
+        ("a working-roles block naming the filing role, which changes nothing",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.roles[0]",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(while_working={"roles": ["file"]}))),
+        ("a working-roles block naming a role that does not read the corpus",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.roles[1]",
+         at(SPEC_CORPUS_KEY,
+            _a_spec_corpus_of(while_working={"roles": ["start", "review"]}))),
+        ("a working-roles block naming one role twice",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.roles",
+         at(SPEC_CORPUS_KEY,
+            _a_spec_corpus_of(while_working={"roles": ["start", "start"]}))),
+        ("a working-roles block carrying a key it does not have",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.load_bearing",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(
+             while_working={"roles": ["start"], "load_bearing": ["spec/**/*.md"]}))),
+        ("a narrowing to nothing", f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.files",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(
+             while_working={"roles": ["implement"], "files": []}))),
+        ("a narrowing glob written absolutely",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.files[0]",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(
+             while_working={"roles": ["implement"], "files": ["/spec/one.md"]}))),
         # ⛔ The grouping arms, which are the ones about *which ref* rather than
         # about a key being present. ⚠️ The first names § 4.8's own carrier and
         # not this facet's key, which is § 5's rule for the same pair: the remedy

@@ -44,8 +44,17 @@ step further on -- so a project whose corpus is large names this command in
 § 22's own list, where a bound is a project's statement rather than a carrier's
 guess.
 
+⛔ **Which role is reading is stated on the invocation** (`--role`, the filing
+role where none is named). The filing role reads wherever a corpus is carried;
+the starting and implementing roles read only where the project names them in
+`spec_corpus.while_working.roles`, and a role it does not name is answered with
+a fourth statement -- ⛔ **not asked**, which is neither *no corpus is
+configured* nor a verdict about one (§ 39). For those two roles the corpus is
+narrowed to `while_working.files` where the project states it: a document is
+loaded only where it matches both lists, so the narrowing never widens.
+
 Usage:
-    spec_corpus.py --version V [--keyword W ...]
+    spec_corpus.py --version V [--keyword W ...] [--role file|start|implement]
                                   the corpus that governs V, and what it says
     spec_corpus.py --self-test    assert each outcome against repositories built
                                   for it, then stop
@@ -71,6 +80,10 @@ import config as reader  # noqa: E402 -- the one reader, never a second parser
 from documents import glob_regex  # noqa: E402 -- § 38's glob semantics, stated once
 
 AT_THE_VERSION, FALLBACK, UNREAD = "at_the_version", "fallback", "unread"
+# ⛔ Not an outcome of the read but the absence of one: the project carries a
+# corpus and does not have this role read it (§ 39).
+NOT_ASKED = "not_asked"
+FILING, ROLES = "file", ("file", "start", "implement")
 
 REMOTE = "origin"
 
@@ -166,7 +179,8 @@ def _term(word: str) -> re.Pattern:
     return re.compile(re.escape(word), re.I)
 
 
-def read_corpus(root, facet: dict, version: str | None, keywords=()) -> dict:
+def read_corpus(root, facet: dict, version: str | None, keywords=(),
+                role: str = FILING) -> dict:
     """The corpus that governs `version`, and which of the three outcomes it is.
 
     `facet` is the block `config.Config.spec_corpus` hands back, or `None` where
@@ -190,13 +204,30 @@ def read_corpus(root, facet: dict, version: str | None, keywords=()) -> dict:
             "contradiction": None,
         }
 
+    if role not in facet.get("readers", [FILING]):
+        # ⛔ The project carries a corpus and does not have this role read it.
+        # Nothing was opened, so -- like the absent subject above -- there is no
+        # verdict here and `contradiction` stays `None`.
+        return {
+            "carried": True,
+            "outcome": NOT_ASKED,
+            "role": role,
+            "ref": None,
+            "asked_for": None,
+            "load_bearing": [],
+            "matched": [],
+            "corpus": [],
+            "contradiction": None,
+        }
+
     if not version:
         raise CorpusError(
             "no version was named, and the corpus is read at the ref the item's "
             "version maps to (§ 39). Under § 4.8 the grouping's value arrives on "
-            "the invocation, so a run with none has no ref to read at -- and the "
-            "copy it would fall back to is the one that reads as current while "
-            "governing nothing."
+            "the invocation -- and, for the starting and implementing roles, is "
+            "the value the item carries -- so a run with none has no ref to read "
+            "at, and the copy it would fall back to is the one that reads as "
+            "current while governing nothing."
         )
 
     prefix = facet.get("ref_prefix") or ""
@@ -227,7 +258,14 @@ def read_corpus(root, facet: dict, version: str | None, keywords=()) -> dict:
                 "either, so there is no copy of the corpus to read (§ 39)."
             )
 
-    corpus = [path for path in _paths_at(root, ref) if governed(path, facet["files"])]
+    # ⛔ The narrowing is an intersection with the corpus and never a second
+    # corpus: a glob reaching outside `files` loads nothing outside it (§ 39).
+    narrowed_to = facet.get("narrowed_to") if role != FILING else None
+    corpus = [
+        path for path in _paths_at(root, ref)
+        if governed(path, facet["files"])
+        and (narrowed_to is None or governed(path, narrowed_to))
+    ]
     whole, rest = [], []
     for path in corpus:
         (whole if governed(path, facet["load_bearing"]) else rest).append(path)
@@ -246,6 +284,8 @@ def read_corpus(root, facet: dict, version: str | None, keywords=()) -> dict:
     return {
         "carried": True,
         "outcome": outcome,
+        "role": role,
+        "narrowed_to": narrowed_to,
         "ref": ref,
         "asked_for": asked_for,
         "grouping": facet.get("grouping"),
@@ -272,6 +312,16 @@ def render(answer: dict, reason: str | None = None) -> str:
         if reason:
             out.append("")
             out.append(f"The project's own stated reason: {' '.join(reason.split())}")
+        return "\n".join(out)
+
+    if answer["outcome"] == NOT_ASKED:
+        out.append(
+            f"⛔ This project does not have the `{answer['role']}` role read its "
+            "specification corpus (`spec_corpus.while_working.roles`), so none "
+            "was read. ⚠️ A corpus is configured and was not opened: whether the "
+            "item agrees with it is **unanswered**, and nothing here is a verdict "
+            "about it (§ 39)."
+        )
         return "\n".join(out)
 
     if answer["outcome"] == UNREAD:
@@ -303,9 +353,12 @@ def render(answer: dict, reason: str | None = None) -> str:
         )
 
     out.append("")
+    narrowed = answer.get("narrowed_to")
     out.append(
-        f"The corpus at that ref carries {len(answer['corpus'])} document(s): "
-        f"{len(answer['load_bearing'])} read whole, "
+        f"The corpus at that ref carries {len(answer['corpus'])} document(s)"
+        + (f", narrowed for the `{answer['role']}` role to "
+           f"{', '.join(f'`{glob}`' for glob in narrowed)}" if narrowed else "")
+        + f": {len(answer['load_bearing'])} read whole, "
         f"{len(answer['matched'])} matched on the request's keywords."
     )
     if not answer["corpus"]:
@@ -325,8 +378,8 @@ def render(answer: dict, reason: str | None = None) -> str:
     out.append("")
     out.append(
         "⛔ Whether the request contradicts any of this is **unanswered here**: "
-        "it is a reading of prose and the filing role's to make, against the "
-        "text above and the ref it came from."
+        f"it is a reading of prose and the `{answer.get('role', FILING)}` role's "
+        "to make, against the text above and the ref it came from."
     )
     return "\n".join(out)
 
@@ -562,6 +615,69 @@ def self_test() -> int:
               "No document of the corpus is at that ref" in said
               and "no contradiction" not in said.lower(), said)
 
+        # ⛔ § 39's working roles. A role the project does not name reads
+        # nothing and says so -- in words that are neither the absent subject's
+        # nor a verdict's.
+        answer = answered(read_corpus(root, _a_facet(), "9.0", role="start"))
+        check("a working role the project does not name reads nothing",
+              answer["outcome"] == NOT_ASKED and answer["corpus"] == [],
+              f"{answer['outcome']}")
+        said = render(answer)
+        check("and the report says the role is not asked, naming the key",
+              "does not have the `start` role read" in said
+              and "while_working.roles" in said, said)
+        check("⛔ and says neither that no corpus is configured nor that nothing contradicts",
+              "No specification corpus is configured" not in said
+              and "no contradiction" not in said.lower(), said)
+        # ⛔ An item carrying no version, in a project that has this role read
+        # nothing: answered as before, and never the missing-version stop --
+        # which would stop every start of a project that never opted in.
+        try:
+            answer = answered(read_corpus(root, _a_facet(), None, role="start"))
+        except CorpusError as error:
+            answer = {"outcome": f"stopped: {error}"}
+        check("a role the project does not name, asked with no version, is not asked "
+              "rather than stopped", answer["outcome"] == NOT_ASKED, f"{answer['outcome']}")
+
+        named = _a_facet(readers=["file", "start", "implement"])
+        answer = answered(read_corpus(root, named, "9.0", keywords=["passkey"],
+                                      role="implement"))
+        check("a working role the project names reads the version's own copy",
+              answer["outcome"] == AT_THE_VERSION and answer["ref"] == "release/9.0"
+              and answer["role"] == "implement",
+              f"{answer['outcome']} at {answer['ref']!r}")
+        check("and the report names which copy it read",
+              "release/9.0" in render(answer), render(answer))
+
+        # The narrowing: an intersection with the corpus, never a widening.
+        narrowed = _a_facet(readers=["file", "start"],
+                            narrowed_to=["spec/requirements/**/*.md", "elsewhere/**"])
+        _write(root, "elsewhere/outside.md", "# Outside\n\npasskey\n")
+        _commit(root, "a document outside the corpus")
+        answer = answered(read_corpus(root, narrowed, "9.0", keywords=["passkey"],
+                                      role="start"))
+        check("a narrowed role loads only what both lists match",
+              answer["corpus"] == ["spec/requirements/one.md"]
+              and answer["matched"] == [],
+              f"{answer['corpus']} / {[e['path'] for e in answer['matched']]}")
+        check("⛔ and a narrowing glob reaching outside the corpus loads nothing outside it",
+              not any(path.startswith("elsewhere/") for path in answer["corpus"]),
+              f"{answer['corpus']}")
+        check("and the report says the read was narrowed",
+              "narrowed for the `start` role" in render(answer), render(answer))
+        answer = answered(read_corpus(root, narrowed, "9.0", keywords=["passkey"]))
+        check("the filing role is not narrowed by the working roles' list",
+              [entry["path"] for entry in answer["matched"]] == ["spec/screens/login.md"]
+              and answer["narrowed_to"] is None,
+              f"{answer['corpus']}")
+        answer = answered(read_corpus(
+            root, _a_facet(readers=["file", "start"], narrowed_to=["elsewhere/**"]),
+            "9.0", role="start"))
+        said = render(answer)
+        check("⛔ a narrowing matching nothing at the ref is an empty corpus, not agreement",
+              answer["corpus"] == [] and "No document of the corpus is at that ref" in said
+              and "no contradiction" not in said.lower(), said)
+
         # No version under a live carrier is a stop and not a fallback.
         try:
             read_corpus(root, _a_facet(), None)
@@ -605,7 +721,7 @@ def self_test() -> int:
     reached = {outcome for outcome, _ in verdicts}
     check(
         "every outcome this module gives is reached by the arms above",
-        reached == {None, AT_THE_VERSION, FALLBACK, UNREAD},
+        reached == {None, AT_THE_VERSION, FALLBACK, UNREAD, NOT_ASKED},
         f"reached {sorted(str(name) for name in reached)}",
     )
     check(
@@ -642,6 +758,12 @@ def main(argv: list) -> int:
         dest="keywords",
         help="one term from the request; repeatable",
     )
+    parser.add_argument(
+        "--role",
+        choices=ROLES,
+        default=FILING,
+        help="the role reading the corpus; the filing role where none is named (§ 39)",
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args(argv)
 
@@ -652,7 +774,8 @@ def main(argv: list) -> int:
         resolved = reader.load(args.skills_root)
         facet = resolved.spec_corpus
         reason = resolved.get(f"{reader.SPEC_CORPUS_KEY}.absent_reason")
-        answer = read_corpus(resolved.code_root, facet, args.version, args.keywords)
+        answer = read_corpus(resolved.code_root, facet, args.version, args.keywords,
+                             role=args.role)
     except reader.ConfigError as error:
         # ⛔ `str(error)` and not the key beside it: that exception already opens
         # its message with its own key, so a caller composing the pair prints

@@ -10225,6 +10225,9 @@ spec_corpus:
   files: ["<a glob the corpus matches>"]  # required_when: spec_corpus.carrier = repository
   load_bearing: ["<a glob read whole>"]   # required_when: spec_corpus.carrier = repository
   grouping: "<the release scope>"         # where the project carries several groupings
+  while_working:                          # optional; absent, the filing role alone reads the corpus
+    roles: ["start | implement"]          # required in the block; a non-empty list of those two
+    files: ["<a glob the corpus matches>"] # optional; narrows what those roles load
   absent_reason: "…"                      # required where the carrier is none
   revisit_when: "…"
 ```
@@ -10239,7 +10242,8 @@ way.
 
 ⛔ **This is a facet and no further leg of [§ The loop](#the-loop)**, which is § 38's own rule
 beside it: nothing is added to that list, no `carriers` key answers for it and no role enters it.
-What is carried is a block of configuration and the read the filing role performs with it.
+What is carried is a block of configuration and the read the filing role performs with it — and,
+where the project names them, the same read performed by the starting and implementing roles.
 
 ### Which copy governs, and why the working tree is never it
 
@@ -10322,6 +10326,56 @@ a marker's question and a shape rule's. An empty corpus is a step that reads not
 as one that reads something, and `carrier: none` is how a project says that instead; an empty
 load-bearing list is a project stating that every document in its corpus is reached by keyword,
 which is a decision rather than an omission.
+
+### The roles that read it while the work is done, and what narrows their read
+
+**The filing role reads the governing copy wherever a corpus is carried; `while_working.roles`
+names which of the starting and implementing roles read it too**, for the item they hold.
+⛔ **An absent block is neither of them**, so a project stating nothing new reads its corpus at
+filing alone. The read is the filing role's own — the same command, the same three outcomes, the
+same ref — with the item's version in place of the request's. ⚠️ **It is opted into rather than
+defaulted** because it costs the window on every item a role takes, and a corpus written for filing
+decisions is not necessarily one the work is held to; the project is what knows which.
+
+- ⛔ **The filing role is not a value of the list.** It reads whenever the carrier is `repository`,
+  so naming it would be a key that changes nothing, and it is refused.
+- ⛔ **The version is the value the item carries for this facet's grouping, read off the item by
+  the role and never worked out** — [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s
+  field whose wrong value is invisible on the item. ⛔ **An item carrying no value is a stop
+  reported as unanswered, and never the fallback**: that arm is for a version with no branch, and
+  taking it here would read *the item names no version* as *the version has no branch yet*.
+- **The starting role reads after its gate and before its claim.** ⛔ **A contradiction between the
+  item and the governing copy stops the start**, reported with the ref it was read at: either the
+  item or the specification is wrong, and which one is a person's decision rather than a claim the
+  session then holds. ⚠️ **The unread outcome is not yet a stop there**: the report names the one
+  fetch that would read it, a fetch is the role's own call, and a second unread answer is the stop.
+- **The implementing role reads with the item, before the work.** ⛔ **A contradiction met there is
+  a decision and is asked**, by [§ Nothing is deferred](#nothing-is-deferred): the work is held to
+  the copy that governs it, and a pass that chose between the two silently has decided the question
+  the stop at the start exists to put.
+- ⛔ **Every run reports which copy it read** — the outcome and the ref — so a fallback read is
+  never mistaken for the version's own, which is this facet's fallback rule arriving at two more
+  roles.
+- ⛔ **What the contradiction is stays the role's reading and not the carrier's**, exactly as it is
+  at filing.
+
+⛔ **Three statements a role at either leg keeps apart**: *no corpus is configured*
+(`carrier: none`, the subsection below); *this project does not have this role read its corpus* (a
+corpus carried, the role not in `roles`); and a verdict about a corpus actually read. ⚠️ **The
+middle one is new to these two roles and is the one most easily printed as the third** — a role
+not asked to read anything has found nothing to disagree with for a reason that says nothing about
+the specification.
+
+**`while_working.files` narrows what those roles load, so the window is not filled.** ⛔ **A
+document is loaded only where it matches both this list and `files`**, so the list can narrow the
+corpus and never widen it — a glob reaching outside the corpus loads nothing outside it.
+`load_bearing` then divides what is left, as it divides the whole corpus at filing. ⚠️ **No size
+cap is offered in its place**, for the carrier's own reason: a truncated specification is the wrong
+copy one step further on, so what is loaded is a project's statement rather than a cut a carrier
+makes. ⛔ **`files: []` here is refused**, by the corpus's own rule: a narrowing to nothing is a read
+that opens nothing while reading as one that opens something, and leaving a role out of `roles` is
+how a project says that instead. ⛔ **A narrowing that matches nothing at the ref is reported as an
+empty corpus**, never as a specification that agrees.
 
 ### `carrier: none`, and the two answers it must not collapse into one
 
