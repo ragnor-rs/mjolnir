@@ -2353,6 +2353,72 @@ class Config:
             "report": report,
         }
 
+    def commitment(self) -> dict:
+        """§ 4.2's commitment: who writes each carried value, and who makes the move.
+
+        ⛔ A value stating no writer takes the `ready` status's, so a project
+        stating nothing answers exactly as the all-or-nothing rule did -- and a
+        status stating `writers` gives it nobody, there being no one writer before
+        any work exists. The gating role writes what comes back `procedure` and
+        reports every other writer by name; this answer is the one place that
+        reads the three keys.
+        """
+        status = _committed_status(self.get("statuses"))
+        if status is None:
+            return {
+                "status": None,
+                "values": [],
+                "move": None,
+                "report": [
+                    f"No status maps the `{COMMITTED_ROLE}` role, so nothing gates an "
+                    "item here and no commitment is written (§ 4.2)."
+                ],
+            }
+        if STATUS_WRITERS in status:
+            mover, why = None, (
+                "the status states a writer per class, and no item has a class "
+                "before its work exists"
+            )
+        else:
+            mover, why = status.get("writer") or "procedure", "the status's own"
+        values, report = [], []
+        for value in COMMITMENT_VALUES:
+            carrier = self.get(f"work_item.{value}.carrier")
+            if carrier in (None, "none"):
+                values.append({"value": value, "carried": False})
+                continue
+            stated = self.get(f"work_item.{value}.writer")
+            writer = stated if stated is not None else mover
+            values.append({
+                "value": value,
+                "carried": True,
+                "carrier": carrier,
+                "writer": writer,
+                "from": "stated" if stated is not None else f"the `{COMMITTED_ROLE}` status",
+                "gate_writes": writer == "procedure",
+            })
+            if writer != "procedure":
+                report.append(
+                    f"The {value} is written by {f'`{writer}`' if writer else 'nobody'} "
+                    "here, so the gating role reports it rather than writing it."
+                )
+        if mover != "procedure":
+            report.append(
+                f"The move into `{status.get('name')}` is made by "
+                f"{f'`{mover}`' if mover else 'nobody named'} ({why}), so the gating "
+                "role reports it as still to be made, naming that writer."
+            )
+        return {
+            "status": status.get("name"),
+            "values": values,
+            "move": {
+                "writer": mover,
+                "from": why,
+                "gate_moves": mover == "procedure",
+            },
+            "report": report,
+        }
+
     def person_for(self, role: str) -> dict:
         """§ 27's identity for one role, looked up in the project's own map.
 
@@ -7370,6 +7436,60 @@ def _validate_create_fields(data: dict) -> None:
 RELATION_SIDES = ("outward", "inward")
 
 
+# § 4.2 → A commitment written apart from the move: the values an item is
+# committed with, each of which may state a writer of its own.
+COMMITMENT_VALUES = ("estimate", "due_date")
+COMMITTED_ROLE = "ready"
+
+
+def _committed_status(statuses) -> dict | None:
+    """The one status whose role is § 4.2's `ready`, or None where none maps it."""
+    for status in statuses or []:
+        if isinstance(status, dict) and status.get("role") == COMMITTED_ROLE:
+            return status
+    return None
+
+
+def _validate_commitment_writers(data: dict, facts: dict) -> None:
+    """§ 4.2's writer per commitment value, held where the configuration is read.
+
+    ⛔ Each refusal here is a write that would otherwise happen at the gate: a
+    procedure write through a credential `never` says acts as a person, a writer
+    for a value nothing carries, and a writer where nothing commits an item.
+    """
+    for value in COMMITMENT_VALUES:
+        at = f"work_item.{value}.writer"
+        stated = _get(data, at)
+        if stated is None:
+            continue
+        allowed = vocabulary(facts, "writer", "a commitment value's writer")
+        if stated not in allowed:
+            raise ConfigError(
+                at,
+                f"is {stated!r}; § 4.2 takes one of {', '.join(allowed)}.",
+            )
+        if _get(data, f"work_item.{value}.carrier") == "none":
+            raise ConfigError(
+                at,
+                "names a writer for a value this project carries nowhere "
+                "(`carrier: none`), so nothing is written whoever writes it (§ 4.2).",
+            )
+        status = _committed_status(data.get("statuses"))
+        if status is None:
+            raise ConfigError(
+                at,
+                f"names a writer where no status maps the `{COMMITTED_ROLE}` role: "
+                "nothing gates an item here, so no commitment is written (§ 4.2).",
+            )
+        if stated == "procedure" and (status or {}).get("writer") == "never":
+            raise ConfigError(
+                at,
+                f"is `procedure` while the `{COMMITTED_ROLE}` status is written "
+                "`never`: the tracker credential acts as a person's own account, so "
+                "the procedure writes nothing on it, the commitment included (§ 4.2).",
+            )
+
+
 def _validate_relations(data: dict) -> None:
     """§ 3's non-blocking relations, held to a shape a read-back can name.
 
@@ -10361,6 +10481,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     _validate_billing(data)
     _validate_create_fields(data)
     _validate_relations(data)
+    _validate_commitment_writers(data, facts)
     # § 38's lists, in the same position and for the same reason. ⛔ The two rules
     # no marker reaches are the ones about the row set rather than a row: that
     # every edge names a declared document, and that the derivation record stays
@@ -15784,6 +15905,57 @@ def self_test() -> int:
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
 
+    # § 4.2 → A commitment written apart from the move, read through the one
+    # answer the gating role acts on.
+    estimate = {"carrier": "label", "label_prefix": "E:"}
+    date = {"carrier": "native"}
+
+    def gate(answer):
+        return {v["value"]: v.get("gate_writes") for v in answer["values"] if v["carried"]}
+
+    plain = _commitment_of("orderer", estimate=estimate, due_date=date)
+    check(
+        "a commitment stating no writer under a person's move is written by nobody here",
+        gate(plain) == {"estimate": False, "due_date": False}
+        and plain["move"]["gate_moves"] is False,
+        f"answered {plain!r}",
+    )
+    split = _commitment_of(
+        "orderer", estimate={**estimate, "writer": "procedure"},
+        due_date={**date, "writer": "procedure"},
+    )
+    check(
+        "a commitment written by the procedure is written while a person makes the move",
+        gate(split) == {"estimate": True, "due_date": True}
+        and split["move"]["gate_moves"] is False,
+        f"answered {split!r}",
+    )
+    check(
+        "the move still to be made is reported with its writer named",
+        any("<committed>" in line and "`orderer`" in line for line in split["report"]),
+        f"reported {split['report']!r}",
+    )
+    held = _commitment_of("never", estimate=estimate, due_date=date)
+    check(
+        "a credential that may write nothing gets nothing written",
+        gate(held) == {"estimate": False, "due_date": False}
+        and held["move"]["gate_moves"] is False,
+        f"answered {held!r}",
+    )
+    whole = _commitment_of("procedure", estimate=estimate, due_date=date)
+    check(
+        "a procedure-written status commits the values and makes the move",
+        gate(whole) == {"estimate": True, "due_date": True}
+        and whole["move"]["gate_moves"] is True and not whole["report"],
+        f"answered {whole!r}",
+    )
+    none = _commitment_of(None)
+    check(
+        "a project mapping no ready status commits nothing",
+        none["status"] is None and not none["values"] and none["move"] is None,
+        f"answered {none!r}",
+    )
+
     # ⛔ § 38's scope keys from the green side: an entry stating both loads, and
     # one stating neither loads too -- the scope keys being the only keys of an
     # entry this reader holds as optional, which a refusal of either would undo.
@@ -17903,6 +18075,19 @@ def _planted_violations():
         ("an unsided relation beside a sided one on its type", "tracker.relations.also",
          at("tracker.relations", {"related": {"type": "a", "side": "outward"},
                                   "also": {"type": "a"}})),
+        # § 4.2's writer per commitment value, one plant per arm.
+        ("a commitment value's writer outside the set", "work_item.estimate.writer",
+         _committed("orderer", estimate={"carrier": "label", "label_prefix": "E:",
+                                         "writer": "somebody"})),
+        ("a writer on a value carried nowhere", "work_item.due_date.writer",
+         _committed("orderer", due_date={"carrier": "none", "absent_reason": "a",
+                                         "writer": "procedure"})),
+        ("a commitment writer where nothing maps ready", "work_item.estimate.writer",
+         _committed(None, estimate={"carrier": "label", "label_prefix": "E:",
+                                    "writer": "procedure"})),
+        ("a procedure commitment under a never-written ready status",
+         "work_item.due_date.writer",
+         _committed("never", due_date={"carrier": "native", "writer": "procedure"})),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
@@ -21414,6 +21599,38 @@ def _refused_or_reported(data: dict) -> list[str]:
         return [f"refused {error.key}"]
 
 
+def _committed(ready_writer, **values):
+    """A mutation giving an example a `ready` status written `ready_writer`, and
+    the commitment value blocks named -- or no `ready` status where it is None.
+
+    ⛔ The status word is a placeholder rather than any example's, so the
+    fixture names no tracker's vocabulary.
+    """
+
+    def mutate(data: dict) -> dict:
+        statuses = [
+            s for s in data.get("statuses") or [] if s.get("role") != COMMITTED_ROLE
+        ]
+        if ready_writer is not None:
+            statuses.insert(
+                1, {"name": "<committed>", "role": COMMITTED_ROLE, "writer": ready_writer}
+            )
+        data["statuses"] = statuses
+        for value, block in values.items():
+            data.setdefault("work_item", {})[value] = block
+        return data
+
+    return mutate
+
+
+def _commitment_of(ready_writer, **values) -> dict:
+    """What `--commitment` answers for an example `_committed` reshaped."""
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    data = _committed(ready_writer, **values)(_a_valid_example())
+    return _resolve(data, EXAMPLES, facts, False).commitment()
+
+
 def _a_valid_example() -> dict:
     """Any complete example, to break in a stated way.
 
@@ -22795,6 +23012,14 @@ def main(argv: list[str]) -> int:
         "running this",
     )
     parser.add_argument(
+        "--commitment",
+        action="store_true",
+        help="§ 4.2's commitment: each carried value the gate commits an item "
+        "with, its writer and where that writer came from, and the move into the "
+        "`ready` status with its own writer. The gating role writes what reads "
+        "`procedure` and reports every other writer by name",
+    )
+    parser.add_argument(
         "--exempt-for",
         nargs="+",
         metavar="PATH",
@@ -22901,6 +23126,10 @@ def main(argv: list[str]) -> int:
         # project's rather than a root's, so either form resolves it, and a role
         # that has narrowed to a root still asks the same question.
         answer = config.person_for(args.person_for) if args.person_for else None
+        # The project's, for § 27's reason above: statuses and the work-item
+        # facets are not stated per root.
+        if args.commitment:
+            answer = config.commitment()
         # ⛔ After the root narrowing for § 27's reason one argument up: § 31's
         # facet is the project's rather than a root's, so either form resolves
         # it and a role that has narrowed to a root asks the same question.
