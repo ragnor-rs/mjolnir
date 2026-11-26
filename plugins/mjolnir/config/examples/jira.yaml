@@ -820,6 +820,9 @@ built_check:
   points: []
   on_finding: report
 
+approach_ask:
+  asked: never
+
 # § 40's absent case. Two environments and no accepted role: a release branch is verified on the
 # first and shipped from the second, and both moves write the finished state — so there is no
 # state a verdict could be recorded into, and ⛔ nothing here reads one as a precondition either.

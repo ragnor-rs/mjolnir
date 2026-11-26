@@ -619,6 +619,9 @@ built_check:
   points: []
   on_finding: report
 
+approach_ask:
+  asked: never
+
 # § 40's absent case, and the shape worth showing: this project **deploys** and still judges
 # nothing through the procedure, because its ladder maps no `accepted` role at all — an item goes
 # from code landed to finished and there is no state between them for a verdict to be written

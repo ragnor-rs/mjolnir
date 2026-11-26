@@ -98,6 +98,11 @@ host:
     - workflow: "Built check carrier"
       mirrors: "python3 plugins/mjolnir/scripts/built.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ `approach_ask` below is at its default, so no leg here asks. What this run holds is every
+    # shape § 43 refuses, against a tracker the suite fakes.
+    - workflow: "Approach ask carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/approach.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Claim carrier"
       mirrors: "python3 plugins/mjolnir/scripts/claim.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
@@ -1137,6 +1142,11 @@ built_check:
   # day, so the reading would be paid on every item to catch a case nobody has measured here.
   points: []
   on_finding: report
+
+approach_ask:
+  # § 43 at its default. One person files, orders and merges here, and the merge ask is where
+  # they read the work; a second stop per item would ask them about a plan they wrote.
+  asked: never
 
 verify:
   # § 40's absent case, and it holds here for the first of that section's two shapes: `deploy: []`
