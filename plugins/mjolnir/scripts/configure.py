@@ -2466,12 +2466,15 @@ def edited(text: str, answers: dict) -> tuple[str, list[str], list[str]]:
     change nothing it was not asked to. Everything else -- comments, blank lines,
     key order, the terminator -- is the file's own and is not rewritten.
 
-    ⛔ **A path this cannot place is reported rather than appended.** A key whose
-    block is written in a shape this editor does not reach is a key a blind
-    append would state **twice**, and a reader resolving the first copy would then
-    read a configuration nobody wrote. ⚠️ Which is why the caller reads the edit
-    back: a file that loads and does not carry the change is the second condition,
-    and it exists because this one cannot be made total.
+    ⛔ **A key the file does not state yet is inserted where it is verifiably
+    absent, and reported where it is not.** `_inserted` places it inside the
+    deepest block the file already has, or at the end of the file where even
+    its top-level block is absent. A key whose block is written in a shape
+    this editor does not reach -- flow style, a scalar, a list -- is a key a
+    blind append would state **twice**, and a reader resolving the first copy
+    would then read a configuration nobody wrote. ⚠️ Which is why the caller
+    reads the edit back: a file that loads and does not carry the change is
+    the second condition, and it exists because this one cannot be made total.
     """
     current = yaml.safe_load(text) or {}
     changed: list[str] = []
@@ -2483,7 +2486,12 @@ def edited(text: str, answers: dict) -> tuple[str, list[str], list[str]]:
             continue
         at = _line_of(lines, path)
         if at is None:
-            unplaced.append(path)
+            grown = _inserted(lines, path, wanted)
+            if grown is None:
+                unplaced.append(path)
+            else:
+                lines = grown
+                changed.append(path)
             continue
         indent = len(lines[at]) - len(lines[at].lstrip())
         ends = "\r\n" if lines[at].endswith("\r\n") else "\n"
@@ -2529,11 +2537,21 @@ def _line_of(lines: list[str], path: str) -> int | None:
     in, and is therefore the kind of defect that holds on one file and not on the
     next.
     """
+    matched, found = _deepest(lines, path)
+    return found if matched == len(path.split(".")) else None
+
+
+def _deepest(lines: list[str], path: str) -> tuple[int, int | None]:
+    """`(how many leading segments of the path the file states, the line of the last)`.
+
+    The second is `None` where not even the first segment is stated. The bounds
+    are `_line_of`'s, which this is the whole of.
+    """
     want = path.split(".")
     found = None
     at, outer = 0, -1
     for depth, segment in enumerate(want):
-        found = None
+        here = None
         for index in range(at, len(lines)):
             match = KEY_LINE.match(lines[index])
             if not match:
@@ -2542,15 +2560,100 @@ def _line_of(lines: list[str], path: str) -> int | None:
             if depth and indent <= outer:
                 break
             if depth and indent > outer and match.group("key") == segment:
-                found, outer = index, indent
+                here, outer = index, indent
                 break
             if not depth and indent == 0 and match.group("key") == segment:
-                found, outer = index, indent
+                here, outer = index, indent
                 break
-        if found is None:
+        if here is None:
+            return depth, found
+        found, at = here, here + 1
+    return len(want), found
+
+
+def _inserted(lines: list[str], path: str, wanted) -> list[str] | None:
+    """The lines with this path added, or `None` where adding it could state a key twice.
+
+    ⛔ **Placed only where the absence is verifiable on both readings of the
+    file**: the text states the parent and not the child, the parsed file holds
+    a mapping at the parent and no such child in it, and the parent's own line
+    opens a block -- nothing after its colon but a comment. A parent in flow
+    style (`host: {kind: github}`) parses as a mapping and fails the third, so
+    it stays reported. The child goes at the end of the parent's block, at the
+    indent its existing children use; a parent with no children to read that
+    indent from is reported rather than given one.
+
+    ⚠️ A top-level block absent from the file is appended at its end, which is
+    where a block nothing states can go without splitting another.
+
+    ⛔ **And the insertion is held to what it was for before it is returned**:
+    the new text has to parse to the old document with this one path added and
+    nothing else moved. The caller's read-back compares only the keys it
+    changed, so a sibling the placement disturbed -- a keep-chomped block
+    scalar losing its trailing lines, a block landing after a document's end
+    marker -- would otherwise pass in silence or fail as the wrong refusal.
+    """
+    want = path.split(".")
+    matched, parent = _deepest(lines, path)
+    if matched == len(want):  # pragma: no cover -- the caller found the line
+        return None
+    now = yaml.safe_load("".join(lines)) or {}
+    held = now
+    for segment in want[:matched]:
+        held = held.get(segment) if isinstance(held, dict) else None
+    if not isinstance(held, dict) or want[matched] in held:
+        return None
+
+    value = wanted
+    for segment in reversed(want[matched + 1:]):
+        value = {segment: value}
+    rendered = yaml.safe_dump(
+        {want[matched]: value}, sort_keys=False, allow_unicode=True, width=10 ** 6,
+    ).rstrip("\n").splitlines()
+    sample = lines[parent] if parent is not None else (lines[0] if lines else "\n")
+    ends = "\r\n" if sample.endswith("\r\n") else "\n"
+    grown = list(lines)
+
+    expected = copy.deepcopy(now)
+    place = expected
+    for segment in want[:-1]:
+        place = place.setdefault(segment, {})
+    place[want[-1]] = wanted
+
+    def held_to(candidate: list[str]) -> list[str] | None:
+        try:
+            return candidate if yaml.safe_load("".join(candidate)) == expected else None
+        except yaml.YAMLError:
             return None
-        at = found + 1
-    return found
+
+    if parent is None:
+        if grown and not grown[-1].endswith("\n"):
+            grown[-1] += ends
+        return held_to(grown + [one + ends for one in rendered])
+
+    opener = KEY_LINE.match(grown[parent])
+    after = grown[parent][opener.end():].strip()
+    if after and not after.startswith("#"):
+        return None
+    outer = len(opener.group("indent"))
+    ends_at = _end_of(grown, parent, outer)
+    indent = None
+    for index in range(parent + 1, ends_at):
+        stripped = grown[index].strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("-"):
+            return None
+        indent = len(grown[index]) - len(grown[index].lstrip())
+        break
+    if indent is None:
+        return None
+    while ends_at > parent + 1 and not grown[ends_at - 1].strip():
+        ends_at -= 1
+    if not grown[ends_at - 1].endswith("\n"):
+        grown[ends_at - 1] += ends
+    grown[ends_at:ends_at] = [" " * indent + one + ends for one in rendered]
+    return held_to(grown)
 
 
 def _end_of(lines: list[str], at: int, indent: int) -> int:
@@ -3259,12 +3362,104 @@ def self_test() -> int:
     out, changed, unplaced = edited(
         siblings, {"host": {"landing": {"kind": "a-kind"}}})
     check("a key one block does not have is not found in the block beside it",
-          unplaced == ["host.landing.kind"] and not changed and out == siblings,
-          f"changed {changed!r}, left {out!r}")
+          changed == ["host.landing.kind"] and not unplaced
+          and out == siblings.replace(
+              "    method: squash\n",
+              "    method: squash\n    kind: a-kind\n")
+          and yaml.safe_load(out)["host"]["runs"] == {"kind": "github"},
+          f"changed {changed!r}, unplaced {unplaced!r}, left {out!r}")
     check("while the key the block does have is still reached",
           edited(siblings, {"host": {"runs": {"kind": "a-kind"}}})[1]
           == ["host.runs.kind"],
           f"changed {edited(siblings, {'host': {'runs': {'kind': 'x'}}})[1]!r}")
+
+    # ⛔ A key new to a block the file already has, which is how a person comes
+    # back to setup to answer what the first run left open. The block is found,
+    # the child is verifiably absent from it, and the block is in the shape the
+    # renderer writes -- so the child goes in, and nothing is stated twice.
+    root = _a_tree({})
+    answers = _an_example("github-issues.yaml")
+    assert "pull_request_title" not in answers["host"], (
+        "the example states the key, so this arm would assert nothing"
+    )
+    write(root, answers)
+    path = os.path.join(root, config.CONFIG_PATH)
+    with open(path, encoding="utf-8") as handle:
+        first = handle.read()
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(first.replace("host:\n", "host:  # argued out with the team\n", 1))
+    answers["host"]["pull_request_title"] = {
+        "reference": "#<number>", "repeated": False, "into": ["*"]}
+    written = write(root, answers)
+    with open(path, encoding="utf-8") as handle:
+        grown = handle.read()
+    check("a key new to a block the file has is placed and the read-back holds",
+          written["holds"] and sorted(written["changed"]) == [
+              "host.pull_request_title.into", "host.pull_request_title.reference",
+              "host.pull_request_title.repeated"],
+          f"held {written['holds']!r}, said {written['report']!r}")
+    resolved = config.load_text(grown, root, check_paths=False)
+    check("and the reader resolves it inside that block",
+          resolved.get("host.pull_request_title.reference") == "#<number>"
+          and resolved.get("host.kind") == answers["host"]["kind"]
+          and grown.count("\nhost:") == 1 and grown.count("pull_request_title:") == 1,
+          f"left {grown!r}")
+    check("with the file's own comment still there",
+          "argued out with the team" in grown, "the comment was taken out")
+    again = write(root, answers)
+    with open(path, encoding="utf-8") as handle:
+        after = handle.read()
+    check("and a second run leaves the file byte-identical",
+          again["holds"] and not again["changed"] and after == grown,
+          f"changed {again.get('changed')!r}")
+
+    # ⛔ A top-level block the file does not have at all goes at its end, which
+    # is where a block nothing states can go without splitting another.
+    out, changed, unplaced = edited(
+        "host:\n  kind: github\n", {"tracker": {"kind": "a-kind"}})
+    check("a top-level block absent from the file is placed at its end",
+          out == "host:\n  kind: github\ntracker:\n  kind: a-kind\n"
+          and changed == ["tracker.kind"] and not unplaced,
+          f"left {out!r}, unplaced {unplaced!r}")
+    out, changed, unplaced = edited(
+        "host:\n  kind: github", {"tracker": {"kind": "a-kind"}})
+    check("even where the file carries no terminator",
+          yaml.safe_load(out) == {"host": {"kind": "github"},
+                                  "tracker": {"kind": "a-kind"}},
+          f"left {out!r}")
+
+    # ⛔ The case the refusal is for, which stands: a parent in flow style
+    # parses as a mapping, so only its own line says it is not a block.
+    for shape, text in (
+        ("a parent written in flow style", "host: {kind: github}\n"),
+        # ⚠️ Across lines, so the continuation reads like a child indent and
+        # the opener's own line is the only thing saying this is not a block.
+        ("a parent in flow style across lines",
+         "host: {kind: github,\n  runs: {kind: github}}\n"),
+        ("a parent stating a scalar", "host: github\n"),
+        ("a parent stating nothing to read a child indent from", "host:\nother: 1\n"),
+    ):
+        out, changed, unplaced = edited(text, {"host": {"repo": "an/repo"}})
+        check(f"{shape} is still reported, never edited",
+              unplaced == ["host.repo"] and not changed and out == text,
+              f"changed {changed!r}, left {out!r}")
+
+    # ⛔ A placement that would move anything but its own key is reported, the
+    # caller's read-back reading only the keys it changed. Both found by review
+    # rather than by a failing case: a keep-chomped scalar ending the parent's
+    # block loses its trailing lines to the insertion, and a block appended
+    # after a document's end marker is a file that no longer parses.
+    for shape, text, answers, path in (
+        ("a placement that would change a sibling's value",
+         "host:\n  note: |+\n    kept\n\n\ntracker:\n  kind: x\n",
+         {"host": {"repo": "an/repo"}}, "host.repo"),
+        ("a placement after a document's end marker",
+         "host:\n  kind: github\n...\n", {"tracker": {"kind": "x"}}, "tracker.kind"),
+    ):
+        out, changed, unplaced = edited(text, answers)
+        check(f"{shape} is reported, never edited",
+              unplaced == [path] and not changed and out == text,
+              f"changed {changed!r}, left {out!r}")
 
     # ⚠️ The one thing an edit does **not** keep, stated as a bound rather than
     # found later: a key whose value is a list is replaced whole -- an entry's

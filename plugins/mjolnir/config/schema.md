@@ -10583,9 +10583,19 @@ neither is one that loads and **does not carry the change**. ⚠️ **A key the 
 this step has not written yet — and a key the reader cannot resolve at all is reported as unread
 rather than as wrong, the write being an act that can be made again.
 
-⛔ **A key this step cannot place in a file that already exists is reported and never appended.** A
-key appended blind is a key stated twice, and the reader resolves one of the two copies — so what
-comes back names the keys for whoever edits the file, with nothing written.
+⛔ **A key a file that already exists does not state yet is placed where its absence is verifiable,
+and reported everywhere else.** Verifiable means the file's text states the parent block and not the
+child, the parsed file holds a mapping there with no such child, and the parent's own line opens a
+block rather than a flow mapping or a scalar. The child then goes at the end of that block, at the
+indent its existing children use, and a top-level block the file does not have at all goes at the
+end of the file — ⛔ **provided the file it leaves parses to the old document with that one key
+added and nothing else moved**, since the read-back above compares only the keys that changed.
+⚠️ **This is what lets a person come back to setup** to answer a question the first
+run left open, without editing the generated file by hand. ⛔ **Every other shape is reported and
+never appended** — a parent in flow style, a parent stating a scalar or a list, a parent with no
+child to read an indent from: a key appended blind is a key stated twice, and the reader resolves
+one of the two copies, so what comes back names the keys for whoever edits the file, with nothing
+written.
 
 **The marker is the generation's and not the file's.** A file this step rendered carries a
 generated-by marker at its head, so the generation is discoverable later and so it can be unpicked
