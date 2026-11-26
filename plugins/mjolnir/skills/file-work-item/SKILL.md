@@ -93,6 +93,25 @@ reported as **unused** rather than silently dropped. ⛔ **And no tier is ever d
 the request's urgency, not from what the item blocks — which is the facet's own rule and the reason
 an argument that carries none leaves the item unranked.
 
+**Which grouping the item goes into is read through one command, never decided here.**
+[`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into) states the
+order: a value given on the request wins, then the project's stated map from another facet, and
+otherwise the grouping is asked for.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --grouping-default [--grouping <name>] \
+  [--from-value <the item's value of the mapped facet>] [--given <the grouping on the request>]
+```
+
+- ⛔ **`--from-value` is the value handed or already on the item**, never one worked out — a map
+  from the tier is not a licence to rank the work, which is the paragraph above.
+- **`map`** ⇒ the item goes into that grouping, and ⛔ **the report names the rule** the answer
+  carries, so the reader of the item can see the value was the project's map and not a choice.
+- **`ask`** ⇒ the grouping is asked for, with the answer's reason, before anything is written.
+- **`discoverable`** ⇒ the tracker names the current grouping, and it is read there.
+- ⚠️ **A project carrying no grouping is a refusal naming the facet**, and the item is filed with
+  none.
+
 ## 0a. The specification that governs, read before anything is judged against it
 
 **Where the project keeps a specification corpus of its own, it is read here** —
@@ -114,11 +133,11 @@ parent or new, and the contradiction outcome stops the write — so a corpus rea
 corpus read after the decisions it was for. ⚠️ **Once per request and not once per unit**: the copy
 is a fact about the version, so the split does not multiply the read.
 
-- ⛔ **The version arrives on the invocation and is never worked out.**
+- ⛔ **The version is the grouping § 0 resolved, and is never worked out here.**
   [`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into) makes which
   grouping an item is in the one field whose wrong value is invisible on the item itself, so a
-  version this role picked is a corpus read at a branch nobody chose. Where the request does not
-  say which version, **ask**.
+  version this role picked is a corpus read at a branch nobody chose. It is the value given on the
+  request or the project's stated map; where neither answers, **ask**.
 - ⚠️ **Three outcomes, and the report carries whichever one it was.** The version's own copy; the
   **fallback** to the integration branch, which is correct and is said out loud; and a branch the
   remote advertises that this clone does not hold, which is reported **unread**. ⛔ **The second and
@@ -488,6 +507,8 @@ Then report, in the register
   ```
 
 - the type and the template used, or that the project carries neither;
+- **the grouping each item went into, and where it came from**: given on the request, the
+  project's map with the rule it named, or asked for and answered;
 - **which code repository each item was written against**, where the project carries several — and
   where its carrier is `none`, that the item states none and the root reaches a later role on its
   invocation ([`§ 4.7`](../../config/schema.md#47-code-root));

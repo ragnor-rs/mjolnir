@@ -412,6 +412,16 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.transitions.resolve": ask(
         "How is a transition resolved -- by the status it reaches, or by its own id?",
     ),
+    "tracker.transitions.fields.status": ask(
+        "Which statuses does this tracker refuse to move an item into without a "
+        "field set as part of the move -- a resolution, for instance?",
+    ),
+    "tracker.transitions.fields.field": ask(
+        "Which field does a move to that status need, by the name the site gives it?",
+    ),
+    "tracker.transitions.fields.value": ask(
+        "What value does every move to that status send in that field?",
+    ),
     "tracker.create_fields.field": ask(
         "Which fields does this tracker refuse to create an item without, beyond "
         "its project, type, title and body?",
@@ -542,6 +552,15 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "work_item.grouping.ref_prefix": ask(
         "What does a ref claiming a whole grouping start with?",
+    ),
+    "work_item.grouping.default_from": ask(
+        "Where the grouping is named on each request, does another facet decide "
+        "its usual value -- the priority or the type, say? Leave it unstated to "
+        "keep asking for the grouping on every item.",
+    ),
+    "work_item.grouping.default_map": ask(
+        "For each value of that facet, which grouping does an item carrying it go "
+        "into? A value you leave out is asked for.",
     ),
     "work_item.template.carrier": ask(
         "Where does the body a new item is written to come from?",

@@ -1593,6 +1593,81 @@ def _gate_entries(data: dict, *checks: str) -> list[tuple[int, dict]]:
     ]
 
 
+def _mappable_facets(facts: dict) -> list[str]:
+    """§ 4's facets a grouping default may be mapped from: those listing `values`.
+
+    Read off the surface's fences rather than listed here, so a facet that gains
+    a value list there becomes a source with no edit in this module.
+    """
+    return sorted(
+        parts[1]
+        for path in facts.get("declared") or ()
+        if len(parts := path.split(".")) == 3
+        and parts[0] == "work_item"
+        and parts[2] == "values"
+        and f"work_item.{parts[1]}" != GROUPING_KEY
+    )
+
+
+def _grouping_default(data: dict, facts: dict, entry: dict, at: str) -> None:
+    """§ 4.8's stated default: `default_from` and `default_map`, held together."""
+    source, mapping = entry.get(DEFAULT_FROM_KEY), entry.get(DEFAULT_MAP_KEY)
+    if source is None and mapping is None:
+        return
+    if source is None or mapping is None:
+        missing = DEFAULT_FROM_KEY if source is None else DEFAULT_MAP_KEY
+        raise ConfigError(
+            f"{at}.{missing}",
+            f"required with `{DEFAULT_MAP_KEY if source is None else DEFAULT_FROM_KEY}`: "
+            "a stated default names the facet it is read from and the map from "
+            "that facet's values, and one without the other decides nothing "
+            "(§ 4.8).",
+        )
+    if entry.get("current") != "stated":
+        raise ConfigError(
+            f"{at}.{DEFAULT_FROM_KEY}",
+            f"is stated while `current` is {entry.get('current')!r}. A default is "
+            "only for a grouping that arrives on the invocation (`stated`); a "
+            "`discoverable` one is named by the tracker, and a map beside it "
+            "would be a second answer free to disagree with it (§ 4.8).",
+        )
+    sources = _mappable_facets(facts)
+    if source not in sources:
+        raise ConfigError(
+            f"{at}.{DEFAULT_FROM_KEY}",
+            f"is {source!r}; a default is mapped from a § 4 facet that lists its "
+            f"values, which the surface makes {' | '.join(sources)} (§ 4.8).",
+        )
+    facet = _get(data, f"work_item.{source}") or {}
+    if not isinstance(facet, dict) or facet.get("carrier") in (None, "none"):
+        raise ConfigError(
+            f"{at}.{DEFAULT_FROM_KEY}",
+            f"names `work_item.{source}`, which this project does not carry. A "
+            "facet with no carrier has no value on an item to map from (§ 4.8).",
+        )
+    if not isinstance(mapping, dict) or not mapping:
+        raise ConfigError(
+            f"{at}.{DEFAULT_MAP_KEY}",
+            f"is {mapping!r}; it is a map from each `{source}` value to this "
+            "grouping's value, with at least one entry (§ 4.8).",
+        )
+    values = facet.get("values")
+    for key, value in mapping.items():
+        if isinstance(values, list) and values and key not in values:
+            raise ConfigError(
+                f"{at}.{DEFAULT_MAP_KEY}",
+                f"carries the key {key!r}, which is not one of `work_item.{source}."
+                f"values` ({', '.join(map(str, values))}). No item can carry it, "
+                "so the entry would never be reached (§ 4.8).",
+            )
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(
+                f"{at}.{DEFAULT_MAP_KEY}",
+                f"maps {key!r} to {value!r}; each entry names the grouping an item "
+                "with that value goes into, as a non-empty string (§ 4.8).",
+            )
+
+
 def _grouping_facet(data: dict, facts: dict) -> dict[str, dict]:
     """§ 4.8: what a set of items is planned into, and the gate that reads it.
 
@@ -1749,6 +1824,7 @@ def _grouping_facet(data: dict, facts: dict) -> dict[str, dict]:
                     "open in it, whatever its class, so its writer has to be the "
                     "status's only one (§ 4.8, § 4.2).",
                 )
+        _grouping_default(data, facts, entry, at)
 
     # ⛔ The gate's own two checks, each refused where the facet has nothing for
     # it to read -- § 4.6's direction rather than § 4.7's, the answer not being
@@ -2166,6 +2242,48 @@ class Config:
                 f"{', '.join(repr(k) for k in sorted(self.groupings))} (§ 4.8).",
             )
         return {"name": name, **self.groupings[name]}
+
+    def grouping_default(
+        self,
+        name: str | None = None,
+        *,
+        from_value: str | None = None,
+        given: str | None = None,
+    ) -> dict:
+        """§ 4.8's value for one item's grouping: given, mapped, or asked for.
+
+        ⛔ The source value is the one handed over or already on the item, and
+        this method never works it out -- § 4.6's rule for a tier, which a map
+        from the tier does not lift. Where nothing answers, the answer is `ask`
+        and never the first grouping, the map's commonest value, or a blank.
+        """
+        block = self.grouping(name)
+        at = GROUPING_KEY if block["name"] == ONE_GROUPING else f"{GROUPING_KEY}.{block['name']}"
+        answer = {"grouping": block["name"], "value": None}
+        if given is not None and str(given).strip():
+            return {**answer, "value": given, "source": "given",
+                    "report": "the value given on the request, which wins over any map (§ 4.8)"}
+        source, mapping = block.get(DEFAULT_FROM_KEY), block.get(DEFAULT_MAP_KEY)
+        if source is None:
+            if block.get("current") == "discoverable":
+                return {**answer, "source": "discoverable",
+                        "report": "the tracker names the current grouping; read it there (§ 4.8)"}
+            return {**answer, "source": "ask",
+                    "report": f"`{at}` states no default, so the grouping is asked for (§ 4.8)"}
+        if from_value is None or not str(from_value).strip():
+            return {**answer, "source": "ask",
+                    "report": f"`{at}.{DEFAULT_FROM_KEY}` maps from `{source}`, and no "
+                    f"`{source}` value was handed or is on the item; it is never "
+                    "derived (§ 4.6), so the grouping is asked for (§ 4.8)"}
+        if from_value not in mapping:
+            return {**answer, "source": "ask",
+                    "report": f"`{at}.{DEFAULT_MAP_KEY}` carries no entry for `{source}` "
+                    f"{from_value!r}, so the grouping is asked for (§ 4.8)"}
+        value = mapping[from_value]
+        return {**answer, "value": value, "source": "map",
+                "rule": {"from": source, "value": from_value, "entry": f"{at}.{DEFAULT_MAP_KEY}"},
+                "report": f"mapped from `{source}` {from_value!r} to {value!r} by "
+                f"`{at}.{DEFAULT_MAP_KEY}` (§ 4.8)"}
 
     def tier(self, name: str, against_target: str | None = None) -> dict:
         """§ 31's suites classified under one tier, and what each needs.
@@ -4322,6 +4440,10 @@ GROUPING_KEY = "work_item.grouping"
 ONE_GROUPING = GROUPING_KEY.rpartition(".")[2]
 IN_GROUPING_CHECK = "in_grouping"
 GROUPING_REF_CHECK = "grouping_ref_exists"
+# § 4.8's stated default: the facet it is read from, and the map from that
+# facet's values to the grouping's.
+DEFAULT_FROM_KEY = "default_from"
+DEFAULT_MAP_KEY = "default_map"
 
 # The key an entry of either gate check names a grouping by, and the key a
 # `field_present` entry names its field by. ⛔ Spelled here rather than at each
@@ -7361,6 +7483,61 @@ def _validate_create_fields(data: dict) -> None:
                 "for one field have no reading of which a filing sends (§ 3).",
             )
         seen.add(name)
+
+
+def _validate_transition_fields(data: dict) -> None:
+    """§ 3's fields a move to a status carries, held to a shape a move can send.
+
+    ⛔ Refused at load: each of these otherwise surfaces at the first move to that
+    status, which is a role holding a finished change and an item it cannot move.
+    """
+    key = "tracker.transitions.fields"
+    entries = _get(data, key)
+    if entries is None:
+        return
+    if not isinstance(entries, list):
+        raise ConfigError(
+            key,
+            f"is {entries!r}; § 3 states it as a list of entries, each naming a "
+            "`status`, a `field` and the `value` a move to that status sends in it.",
+        )
+    statuses = {
+        str(status.get("name"))
+        for status in data.get("statuses") or []
+        if isinstance(status, dict)
+    }
+    seen = set()
+    for index, entry in enumerate(entries):
+        where = f"{key}[{index}]"
+        entry = entry if isinstance(entry, dict) else {}
+        status, name = entry.get("status"), entry.get("field")
+        for part, said in (("status", status), ("field", name)):
+            if not isinstance(said, str) or not said.strip():
+                raise ConfigError(
+                    where,
+                    f"names no `{part}`. A move carries a field to one status, so "
+                    "an entry missing either half is one nothing can send (§ 3).",
+                )
+        if status not in statuses:
+            raise ConfigError(
+                where,
+                f"names the status `{status}`, which no entry of `statuses` names. "
+                "A move is to one of § 4.2's status words, so a field stated for "
+                "another one is never sent (§ 3).",
+            )
+        if entry.get("value") is None:
+            raise ConfigError(
+                where,
+                f"states no `value` for `{name}`. Nothing else supplies one: a move "
+                "is asked for by role and carries what this list states (§ 3).",
+            )
+        if (status, name) in seen:
+            raise ConfigError(
+                where,
+                f"states `{name}` for `{status}` a second time. Two values for one "
+                "field have no reading of which a move sends (§ 3).",
+            )
+        seen.add((status, name))
 
 
 # The two wordings a link type may be read from, as § 3's `tracker.relations`
@@ -10525,6 +10702,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # marker for it, and it is the one arm whose permissive reading is money.
     _validate_billing(data)
     _validate_create_fields(data)
+    _validate_transition_fields(data)
     _validate_relations(data)
     _validate_search(data, facts)
     # § 38's lists, in the same position and for the same reason. ⛔ The two rules
@@ -15951,6 +16129,42 @@ def self_test() -> int:
         broken = _refused(mutate(_a_valid_example()))
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
+    # And § 3's move fields from the green side, so the arms above refuse what
+    # they name rather than every entry.
+    stated = _refused(_with_move_fields(
+        _a_valid_example(), [{"field": "a", "value": "b"}, {"field": "c", "value": ["d"]}]
+    ))
+    check("a move stating two fields for one status loads", stated is None,
+          f"refused {stated!r}")
+
+    # § 4.8's stated default from the green side: it loads, the map answers with
+    # the rule named, a value given wins, and what the map does not cover is
+    # asked for -- never the map's other value, never a blank written as one.
+    with open(SURFACE, encoding="utf-8") as handle:
+        default_facts = surface_facts(handle.read())
+    stated = _resolve(_a_stated_default(_a_valid_example()), EXAMPLES, default_facts, False)
+    for label, kwargs, source, value in (
+        ("a mapped tier fills the grouping", {"from_value": "High"}, "map", "a-scope"),
+        ("a grouping given on the request wins over the map",
+         {"from_value": "High", "given": "another-scope"}, "given", "another-scope"),
+        ("a tier the map does not cover is asked for", {"from_value": "Low"}, "ask", None),
+        ("an item carrying no tier is asked for", {"from_value": None}, "ask", None),
+    ):
+        answer = stated.grouping_default(**kwargs)
+        check(f"{label}", (answer["source"], answer["value"]) == (source, value),
+              f"answered {answer!r}")
+    mapped = stated.grouping_default(from_value="Highest")
+    check("a mapped value names the rule it came from",
+          mapped.get("rule") == {"from": "priority", "value": "Highest",
+                                 "entry": f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}"}
+          and "a-hotfix-scope" in mapped["report"],
+          f"answered {mapped!r}")
+    unmapped = _a_stated_default(_a_valid_example(), default_from=_ABSENT,
+                                 default_map=_ABSENT)
+    plain = _resolve(unmapped, EXAMPLES, default_facts, False).grouping_default(
+        from_value="High")
+    check("a stated grouping with no default is asked for, as before",
+          (plain["source"], plain["value"]) == ("ask", None), f"answered {plain!r}")
 
     # ⛔ § 38's scope keys from the green side: an entry stating both loads, and
     # one stating neither loads too -- the scope keys being the only keys of an
@@ -18078,6 +18292,23 @@ def _planted_violations():
          at("tracker.create_fields", [{"value": ["a"]}])),
         ("a creation field stated twice", "tracker.create_fields[1]",
          at("tracker.create_fields", [{"field": "a"}, {"field": "a"}])),
+        # § 3's fields a move carries, one plant per arm. ⚠️ The status each
+        # names is read off the example rather than written, so the arms below
+        # the one about an unknown status are reached rather than refused by it.
+        ("move fields that are not a list", "tracker.transitions.fields",
+         at("tracker.transitions.fields", "Resolution")),
+        ("a move field with no status", "tracker.transitions.fields[0]",
+         at("tracker.transitions.fields", [{"field": "a", "value": "b"}])),
+        ("a move field with no field", "tracker.transitions.fields[0]",
+         lambda data: _with_move_fields(data, [{"value": "b"}])),
+        ("a move field to a status nothing names", "tracker.transitions.fields[0]",
+         at("tracker.transitions.fields",
+            [{"status": "<no status>", "field": "a", "value": "b"}])),
+        ("a move field with no value", "tracker.transitions.fields[0]",
+         lambda data: _with_move_fields(data, [{"field": "a"}])),
+        ("a move field stated twice for one status", "tracker.transitions.fields[1]",
+         lambda data: _with_move_fields(
+             data, [{"field": "a", "value": "b"}, {"field": "a", "value": "c"}])),
         # § 3's non-blocking relations, one plant per arm.
         ("relations that are not a mapping", "tracker.relations",
          at("tracker.relations", ["related"])),
@@ -18104,6 +18335,28 @@ def _planted_violations():
          at("tracker.search.fields", ["Area", ""])),
         ("a searched field stated twice", "tracker.search.fields",
          at("tracker.search.fields", ["Area", "Area"])),
+        # § 4.8's stated default, one plant per arm.
+        ("a grouping map with no facet to read it from", f"{GROUPING_KEY}.{DEFAULT_FROM_KEY}",
+         lambda data: _a_stated_default(data, default_from=_ABSENT)),
+        ("a grouping default's facet with no map", f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
+         lambda data: _a_stated_default(data, default_map=_ABSENT)),
+        ("a grouping default on a grouping the tracker names",
+         f"{GROUPING_KEY}.{DEFAULT_FROM_KEY}",
+         lambda data: _a_stated_default(data, current="discoverable")),
+        ("a grouping default read from a facet that lists no values",
+         f"{GROUPING_KEY}.{DEFAULT_FROM_KEY}",
+         lambda data: _a_stated_default(data, default_from="code_root")),
+        ("a grouping default read from a facet the project does not carry",
+         f"{GROUPING_KEY}.{DEFAULT_FROM_KEY}",
+         lambda data: _a_stated_default(data, priority={"carrier": "none",
+                                                        "absent_reason": "unranked"})),
+        ("a grouping map keyed by a value the facet does not list",
+         f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
+         lambda data: _a_stated_default(data, default_map={"Low": "a-scope"})),
+        ("a grouping map naming a blank grouping", f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
+         lambda data: _a_stated_default(data, default_map={"High": "  "})),
+        ("a grouping map with no entries", f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
+         lambda data: _a_stated_default(data, default_map={})),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
@@ -22265,6 +22518,27 @@ def _a_grouping_carrying_a_ref(name: str) -> dict:
     }
 
 
+def _a_stated_default(data: dict, *, priority=None, **overrides) -> dict:
+    """`data` with § 4.8's single form carrying a default mapped from § 4.6.
+
+    ⛔ The tier is carried with listed values unless a plant replaces it, so a
+    plant about the map is not refused by an uncarried source first.
+    """
+    node = data.setdefault("work_item", {})
+    node["priority"] = priority or {
+        "carrier": "label", "label_prefix": "P: ", "values": ["Highest", "High"],
+        "writer": "orderer",
+    }
+    entry = {
+        **_a_grouping_carrying_a_ref("a-scope"),
+        DEFAULT_FROM_KEY: "priority",
+        DEFAULT_MAP_KEY: {"Highest": "a-hotfix-scope", "High": "a-scope"},
+        **overrides,
+    }
+    node[ONE_GROUPING] = {key: value for key, value in entry.items() if value is not _ABSENT}
+    return data
+
+
 def _two_groupings(data: dict, *, names=("one-scope", "another-scope")) -> dict:
     """`data` with § 4.8 written as a collection of two, both carrying a ref.
 
@@ -22422,6 +22696,15 @@ def _with(data: dict, path: str, value) -> dict:
         node = node.setdefault(part, {})
     node[parts[-1]] = value
     return data
+
+
+def _with_move_fields(data: dict, entries: list) -> dict:
+    """§ 3's move fields written in, each entry to the example's first status."""
+    first = str(((data.get("statuses") or [{}])[0]).get("name"))
+    return _with(
+        data, "tracker.transitions.fields",
+        [{"status": first, **entry} for entry in entries],
+    )
 
 
 def _said(data: dict) -> str:
@@ -23058,6 +23341,30 @@ def main(argv: list[str]) -> int:
         "running this",
     )
     parser.add_argument(
+        "--grouping-default",
+        action="store_true",
+        help="the grouping one item goes into under § 4.8: the value given, else "
+        "the project's stated map from `--from-value`, else `ask`. Prints which "
+        "of the three it was and the rule where a map answered",
+    )
+    parser.add_argument(
+        "--grouping",
+        metavar="NAME",
+        help="which grouping `--grouping-default` asks about, where the project "
+        "carries several",
+    )
+    parser.add_argument(
+        "--from-value",
+        metavar="VALUE",
+        help="the item's value of the facet the grouping's default is mapped from, "
+        "as handed or as already on the item -- never derived (§ 4.6)",
+    )
+    parser.add_argument(
+        "--given",
+        metavar="VALUE",
+        help="the grouping given on the request, which wins over the map",
+    )
+    parser.add_argument(
         "--exempt-for",
         nargs="+",
         metavar="PATH",
@@ -23164,6 +23471,16 @@ def main(argv: list[str]) -> int:
         # project's rather than a root's, so either form resolves it, and a role
         # that has narrowed to a root still asks the same question.
         answer = config.person_for(args.person_for) if args.person_for else None
+        if args.grouping_default:
+            answer = config.grouping_default(
+                args.grouping, from_value=args.from_value, given=args.given
+            )
+        elif args.grouping or args.from_value or args.given:
+            raise ConfigError(
+                f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
+                "cannot be asked about with no `--grouping-default`: `--grouping`, "
+                "`--from-value` and `--given` are that question's inputs (§ 4.8).",
+            )
         # ⛔ After the root narrowing for § 27's reason one argument up: § 31's
         # facet is the project's rather than a root's, so either form resolves
         # it and a role that has narrowed to a root asks the same question.
