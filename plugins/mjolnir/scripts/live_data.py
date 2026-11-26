@@ -36,18 +36,24 @@ which of the two it took.
 
 Usage:
     live_data.py [--skills-root DIR] --target NAME   what the target states
-    live_data.py plan --target NAME                  the ordering, nothing run
-    live_data.py prepare --target NAME               the dump, its reading, the
+    live_data.py plan --target NAME [--step S]       the ordering, nothing run
+    live_data.py prepare --target NAME [--step S] [--side SIDE]
+                                                     the dump, its reading, the
                                                      rehearsal — and then a stop
-    live_data.py apply --target NAME --given TEXT    the write, under that go
+    live_data.py apply --target NAME [--step S] --given TEXT
+                                                     the write, under that go
     live_data.py --self-test                         assert every answer against
                                                      planted trees and commands
 
+⚠️ `--step` names one step of a target that lists several, and is refused on a
+target with one; `--side` prepares only the phases `sides` and `order` place on
+that side of the invocation (§ 35).
+
 Exit status, and ⛔ **four values rather than two**: 0 the answer was produced,
-1 the step stopped and names where, 2 the configuration could not be read, 3 this
-target states no live data step. ⚠️ The last is § 11's rule at a command line —
-*no step* collapsed into 0 reads as a step that ran, and into 1 as a deploy that
-failed.
+1 the step stopped and names where, 2 the configuration could not be read or does
+not answer to the step named, 3 this target states no live data step. ⚠️ The last
+is § 11's rule at a command line — *no step* collapsed into 0 reads as a step that
+ran, and into 1 as a deploy that failed.
 """
 
 from __future__ import annotations
@@ -93,8 +99,17 @@ GO_MUST_NAME = ("the target", "the rehearsal's verdict")
 # directory § 11 states artifacts crossing a role boundary live in.
 # ⛔ **A name per target**, because a project with two stepped targets prepares
 # each separately and a shared file would let a reading taken against one license
-# a write against the other.
+# a write against the other -- ⛔ **and per step where the target lists several**,
+# for the same reason one level down: each write has its own go after its own
+# evidence (§ 35), so one step's reading may never license another's write.
 RECORD = "live-data-step-{target}.json"
+RECORD_OF_STEP = "live-data-step-{target}--{step}.json"
+
+# Which phase of § 35's sequence each prepared command belongs to, and so which
+# side of the invocation it falls on. ⛔ The dump's reading-back belongs to the
+# backup and falls where it does: a verification on the other side of the deploy
+# from its dump would be reading a store the new code may already have written.
+PHASE_OF = {"backup.run": "backup", "backup.verify": "backup", "rehearse": "rehearse"}
 
 # ⚠️ What a rehearsal that said nothing is reported as. A stand-in and never a
 # default: every arm that would compare against it is dropped instead, which is
@@ -116,6 +131,14 @@ _UNREAD = "<the rehearsal's output could not be read>"
 # command, and nothing in this module can make it.
 
 
+class _Unaddressed(Exception):
+    """A step asked for that the target does not answer to, said out loud.
+
+    ⛔ Never resolved to the first step: a target listing several is addressed by
+    name or not at all, and one with a single step is addressed without one.
+    """
+
+
 def _slug(target: str) -> str:
     """A target's name as a file name, with nothing of the name invented.
 
@@ -126,9 +149,37 @@ def _slug(target: str) -> str:
     return "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in target)
 
 
-def _record_path(configuration: config.Config, target: str) -> str:
+def _record_path(configuration: config.Config, target: str, step: str | None = None) -> str:
     where = configuration.get("context.artifacts.dir") or tempfile.gettempdir()
-    return os.path.join(os.path.expandvars(where), RECORD.format(target=_slug(target)))
+    name = (
+        RECORD.format(target=_slug(target))
+        if step is None
+        else RECORD_OF_STEP.format(target=_slug(target), step=_slug(step))
+    )
+    return os.path.join(os.path.expandvars(where), name)
+
+
+def _held(path: str) -> dict | None:
+    """A record on disk, or `None` where there is none or it does not parse."""
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as handle:
+        try:
+            held = json.load(handle)
+        except ValueError:
+            return None
+    return held if isinstance(held, dict) else None
+
+
+def _keep(path: str, record: dict) -> None:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(record, handle)
+
+
+def _the_sides() -> list[str]:
+    """§ 35's sides, earlier first -- the order its alternation is written in."""
+    return config.facts_for("deploy.live_data_step.order")
 
 
 def _run(command: str, root: str) -> dict:
@@ -199,24 +250,60 @@ def _dump(answer: dict) -> str:
     return "<the plan carries no dump>"
 
 
-def plan(configuration: config.Config, target: str) -> dict | None:
-    """The whole ordering, with nothing run and nothing written, or `None`.
+def _which(read: dict, step: str | None) -> dict:
+    """The one step of a target an invocation addresses, or `_Unaddressed`."""
+    names = [block.get("name") for block in read["steps"]]
+    if not read.get("listed"):
+        if step is not None:
+            raise _Unaddressed(
+                f"The target states one live data step and no names, so --step "
+                f"{step!r} addresses nothing; a single step is addressed without "
+                "one (§ 35)."
+            )
+        return read["steps"][0]
+    if step is None:
+        raise _Unaddressed(
+            "The target lists several live data steps, so the one meant is named "
+            f"with --step: {', '.join(names)}. ⛔ Never the first by default — each "
+            "write has its own go after its own evidence (§ 35)."
+        )
+    for block in read["steps"]:
+        if block.get("name") == step:
+            return block
+    raise _Unaddressed(
+        f"The target lists no live data step named {step!r}; it lists "
+        f"{', '.join(names)} (§ 35)."
+    )
 
-    `None` is the target's stated absence (§ 35) and never an empty plan: this
-    target writes no live data, so there is no step rather than a step with
-    nothing in it.
-    """
-    read = configuration.live_data_step(target)
-    if read["found"] is None:
-        return None
-    block, entry = read["found"], read["target"]
+
+def _sides_of(block: dict) -> dict:
+    """The side every phase of one step falls on: the accessor's, or derived."""
+    sides = block.get("sides")
+    if isinstance(sides, dict) and set(sides) >= {"backup", "rehearse", "apply"}:
+        return dict(sides)
+    return config.live_data_sides(block)
+
+
+def _plan_of(configuration: config.Config, target: str, read: dict, block: dict) -> dict:
+    """The whole ordering of one step, with nothing run and nothing written."""
+    entry = read["target"]
+    sides = _sides_of(block)
     report = list(read["report"])
+    split = len({side for side in sides.values() if side is not None}) > 1
     report.append(
         f"The order stated is {block['order']!r}, which is where this step falls "
-        "against § 33's invocation. ⛔ The configured value is what this role "
-        "proposes and the go is where it is settled: whether the write belongs "
-        "before the image depends on what is pending, and detecting that is the "
-        "project's own (§ 35)."
+        "against § 33's invocation"
+        + (
+            "; `sides` places its phases apart — "
+            + ", ".join(f"{phase} {side}" for phase, side in sides.items() if side)
+            if split
+            else ""
+        )
+        + ". ⛔ The configured value is what this role proposes and the go is "
+        "where it is settled: whether the write belongs before the image depends "
+        "on what is pending, and detecting that is the project's own (§ 35). ⚠️ "
+        "What the go may not settle is a write ahead of its own dump or "
+        "rehearsal, which the write refuses whatever was asked."
     )
     if block["apply_by"] == "person":
         report.append(
@@ -231,11 +318,16 @@ def plan(configuration: config.Config, target: str) -> dict | None:
             "omit. ⛔ Reported as **no rehearsal** rather than as a clean one, and "
             "the go is asked with that said."
         )
+    go_must_name = list(GO_MUST_NAME)
+    if block.get("name") is not None:
+        go_must_name.append(f"the step's name ({block['name']})")
     return {
         "target": target,
+        "step": block.get("name"),
         "not_live": entry.get("not_live"),
-        "code_root": configuration.code_root(),
+        "code_root": configuration.code_root,
         "order": block["order"],
+        "sides": sides,
         "apply_by": block["apply_by"],
         "steps": _steps(block),
         "apply": block["apply"],
@@ -243,12 +335,121 @@ def plan(configuration: config.Config, target: str) -> dict | None:
         # ⛔ Read from live targets only, which is § 35's liveness pairing and is
         # the accessor's answer rather than a second reading here.
         "reads_record": read["reads_record"],
-        "go_must_name": list(GO_MUST_NAME),
+        "go_must_name": go_must_name,
         "report": report,
     }
 
 
-def prepare(configuration: config.Config, target: str) -> dict | None:
+def plan(configuration: config.Config, target: str, step: str | None = None) -> dict | None:
+    """The whole ordering, with nothing run and nothing written, or `None`.
+
+    `None` is the target's stated absence (§ 35) and never an empty plan: this
+    target writes no live data, so there is no step rather than a step with
+    nothing in it.
+
+    ⚠️ **A target listing several steps, asked about without one, answers every
+    step's plan in the order listed** — the preflight's reading, taken before the
+    deploy is confirmed — while the commands that run something are addressed to
+    one step by name (§ 35).
+    """
+    read = configuration.live_data_step(target)
+    if read["found"] is None:
+        return None
+    if read.get("listed") and step is None:
+        plans = [_plan_of(configuration, target, read, block) for block in read["steps"]]
+        return {
+            "target": target,
+            "listed": True,
+            "plans": plans,
+            "report": [
+                "This target lists "
+                f"{len(plans)} live data steps — "
+                + ", ".join(str(each["step"]) for each in plans)
+                + " — performed in that order on each side of the invocation, "
+                "each with its own dump, its own reading and its own go (§ 35)."
+            ],
+        }
+    return _plan_of(configuration, target, read, _which(read, step))
+
+
+def _position(block: dict, index: int, sides: list[str]) -> tuple[int, int]:
+    """Where a step's own sequence starts in a deploy: its backup's side, then its place.
+
+    ⛔ The derivation the reset below rests on. A deploy performs, on each side of
+    the invocation in turn, the steps of the list in the order stated, and a
+    step's sequence starts at its dump -- so a step whose start falls later than
+    this one's has not started in this deploy, and a reading on disk for it is an
+    earlier deploy's.
+    """
+    return sides.index(_sides_of(block)["backup"]), index
+
+
+def _clear_later(configuration: config.Config, target: str, read: dict, block: dict) -> None:
+    """Drop the readings of every step whose sequence starts after this one's.
+
+    ⛔ **So a report of the writes made reads this deploy rather than the last
+    one** (§ 35): a record left by an earlier deploy for a step that has not yet
+    started here would otherwise read as a write already made.
+    """
+    if not read.get("listed"):
+        return
+    sides = _the_sides()
+    blocks = read["steps"]
+    here = _position(block, blocks.index(block), sides)
+    for index, other in enumerate(blocks):
+        if _position(other, index, sides) > here:
+            path = _record_path(configuration, target, other.get("name"))
+            if os.path.exists(path):
+                os.remove(path)
+
+
+def _writes(configuration: config.Config, target: str, read: dict) -> list[dict]:
+    """Every step of the target by name, as written, handed over or not made.
+
+    ⛔ Read from what this deploy performed, which the reset in `prepare` keeps
+    the records to (§ 35).
+    """
+    out = []
+    for block in read["steps"]:
+        name = block.get("name")
+        held = _held(_record_path(configuration, target, name))
+        if held is None or held.get("target") != target or held.get("step") != name:
+            held = {}
+        state = (
+            "written" if held.get("written")
+            else "handed over" if held.get("handed_over")
+            else "not made"
+        )
+        out.append({
+            "step": name,
+            "state": state,
+            "prepared": list(held.get("verified") or []),
+        })
+    return out
+
+
+def _writes_line(writes: list[dict]) -> str:
+    """The writes made and not made, in one sentence a report can carry."""
+    parts = []
+    for state in ("written", "handed over", "not made"):
+        named = [str(each["step"]) for each in writes if each["state"] == state]
+        parts.append(f"{state}: {', '.join(named) if named else 'none'}")
+    return "Of this target's live data steps — " + "; ".join(parts) + " (§ 35)."
+
+
+def _on_this_side(phases: list[dict], sides: dict, side: str | None) -> list[dict]:
+    """The prepared commands that fall on the side asked for, or all of them."""
+    if side is None:
+        return phases
+    return [each for each in phases if sides[PHASE_OF[each["step"]]] == side]
+
+
+def prepare(
+    configuration: config.Config,
+    target: str,
+    step: str | None = None,
+    side: str | None = None,
+) -> dict | None:
     """The dump, the dump read back, the rehearsal — and then a stop.
 
     ⛔ **The stop is the outcome rather than a failure**: the go is the person's
@@ -258,26 +459,84 @@ def prepare(configuration: config.Config, target: str) -> dict | None:
     ⛔ **And the dump runs whether or not anything is pending.** What a deploy
     turns out to write against a store is not fully known until it has run, and a
     dump taken afterwards records the damage rather than the state before it.
+
+    ⚠️ **`side` runs only the phases placed on that side of the invocation**,
+    which is how a step whose dump falls before the deploy and whose rehearsal
+    falls after it is prepared in two calls. Omitted, every phase runs — which is
+    the single block exactly as it always was, and is refused for a step whose
+    phases fall on both sides.
     """
-    answer = plan(configuration, target)
-    if answer is None:
+    read = configuration.live_data_step(target)
+    if read["found"] is None:
         return None
+    block = _which(read, step)
+    answer = _plan_of(configuration, target, read, block)
     root = answer["code_root"]
+    sides = answer["sides"]
+    name = block.get("name")
+    path = _record_path(configuration, target, name)
     answer["ran"] = []
     answer["stopped_at"] = None
     answer["rehearsal"] = None
-    for step in answer["steps"]:
-        if not step["stated"]:
-            # The rehearsal nobody stated. Already reported by `plan`; nothing is
-            # run and nothing is treated as having passed.
-            continue
-        outcome = _run(step["command"], root)
-        answer["ran"].append(dict(outcome, step=step["step"]))
-        if not outcome["ran"] or outcome["status"] != 0:
-            answer["stopped_at"] = step["step"]
+    answer["side"] = side
+    stated = [each for each in answer["steps"] if each["stated"]]
+    if side is None and len({sides[PHASE_OF[each["step"]]] for each in stated}) > 1:
+        answer["stopped_at"] = stated[0]["step"]
+        answer["report"].insert(
+            0,
+            "Nothing ran: this step's phases fall on both sides of the invocation, "
+            "so it is prepared one side at a time with --side, never all at once — "
+            "running them together would take the later phases on the wrong side "
+            "of the deploy (§ 35).",
+        )
+        return answer
+    here = _on_this_side(stated, sides, side)
+    if not here:
+        answer["nothing_on_side"] = True
+        answer["report"].insert(
+            0,
+            f"No prepared phase of this step falls {side}, so nothing ran and the "
+            "reading on record is untouched (§ 35).",
+        )
+        return answer
+    starts_here = any(PHASE_OF[each["step"]] == "backup" for each in here)
+    if starts_here:
+        # ⛔ A fresh reading: whatever an earlier deploy left for this step, or for
+        # a step that starts after it, is not this deploy's evidence.
+        if os.path.exists(path):
+            os.remove(path)
+        _clear_later(configuration, target, read, block)
+        record = {"target": target, "step": name, "order": answer["order"],
+                  "sides": sides, "rehearsal": None, "verified": []}
+    else:
+        # ⛔ A later side of a sequence that began earlier: what it follows has to
+        # be on record, or this side would be a rehearsal with no dump behind it.
+        record = _held(path)
+        if (
+            record is None
+            or record.get("target") != target
+            or record.get("step") != name
+            or not {"backup.run", "backup.verify"} <= set(record.get("verified") or [])
+        ):
+            answer["stopped_at"] = here[0]["step"]
+            answer["writes"] = _writes(configuration, target, read)
             answer["report"].insert(
                 0,
-                f"The deploy stops: {step['step']} "
+                f"The deploy stops: {here[0]['step']} falls {side}, after a dump that "
+                "is not on record for this step, so it would follow nothing. ⛔ The "
+                "dump is taken and read back first, on its own side (§ 35). "
+                + _writes_line(answer["writes"]),
+            )
+            return answer
+    for each in here:
+        outcome = _run(each["command"], root)
+        answer["ran"].append(dict(outcome, step=each["step"]))
+        if not outcome["ran"] or outcome["status"] != 0:
+            answer["stopped_at"] = each["step"]
+            answer["writes"] = _writes(configuration, target, read)
+            answer["report"].insert(
+                0,
+                f"The deploy stops: {each['step']} "
                 + (
                     "could not be run at all, so it is reported unestablished "
                     "rather than failed"
@@ -285,60 +544,81 @@ def prepare(configuration: config.Config, target: str) -> dict | None:
                     else f"exited {outcome['status']}"
                 )
                 + ". ⛔ The deploy and not the step (§ 35), and nothing after "
-                "this ran.",
+                "this ran."
+                + (" " + _writes_line(answer["writes"]) if read.get("listed") else ""),
             )
             return answer
-        if step["step"] == "rehearse":
+        if each["step"] == "rehearse":
             answer["rehearsal"] = outcome["output"] or _UNREAD
             if not outcome["output"]:
-                answer["stopped_at"] = step["step"]
+                answer["stopped_at"] = each["step"]
+                answer["writes"] = _writes(configuration, target, read)
                 answer["report"].insert(
                     0,
                     "The deploy stops: the rehearsal produced no output, so there "
                     "is nothing for a person to read and the go would be given on "
-                    "nothing. ⛔ Reported unread rather than clean (§ 11).",
+                    "nothing. ⛔ Reported unread rather than clean (§ 11)."
+                    + (" " + _writes_line(answer["writes"]) if read.get("listed") else ""),
                 )
                 return answer
-    # ⛔ Written only once every step above came back, so a record on disk is
-    # evidence that the sequence completed rather than that it was started.
-    path = _record_path(configuration, target)
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(
-            {
-                "target": target,
-                "order": answer["order"],
-                "rehearsal": answer["rehearsal"],
-                "verified": [outcome["step"] for outcome in answer["ran"]],
-            },
-            handle,
-        )
+    # ⛔ Written only once every command on this side came back, so a record on
+    # disk is evidence that what it lists completed rather than that it started.
+    record["verified"] = list(record.get("verified") or []) + [
+        outcome["step"] for outcome in answer["ran"]
+    ]
+    if answer["rehearsal"] is not None:
+        record["rehearsal"] = answer["rehearsal"]
+    else:
+        answer["rehearsal"] = record.get("rehearsal")
+    _keep(path, record)
     answer["record_at"] = path
+    rehearsal_stated = any(each["step"] == "rehearse" for each in stated)
+    owed = [each["step"] for each in stated if each["step"] not in record["verified"]]
     answer["report"].insert(
         0,
-        "The dump is taken and read back"
-        + (
-            ", the rehearsal ran and its output is above"
-            if answer["rehearsal"]
-            else " and this target states no rehearsal"
+        (
+            "The dump is taken and read back"
+            + (
+                ", the rehearsal ran and its output is above"
+                if answer["rehearsal"]
+                else " and this target states no rehearsal"
+            )
+            + ". ⛔ The step stops here: the write is the person's act, and the go is "
+            "asked on what is above rather than before any of it existed (§ 35)."
         )
-        + ". ⛔ The step stops here: the write is the person's act, and the go is "
-        "asked on what is above rather than before any of it existed (§ 35).",
+        if not owed
+        else (
+            "The dump is taken and read back; "
+            + ", ".join(owed)
+            + " falls on the other side of the invocation and is still owed, so no go "
+            "is asked yet — a write is never reached before its own rehearsal (§ 35)."
+            if rehearsal_stated
+            else "The dump is taken and read back (§ 35)."
+        ),
     )
     return answer
 
 
-def apply(configuration: config.Config, target: str, go: str) -> dict | None:
+def apply(
+    configuration: config.Config,
+    target: str,
+    go: str,
+    step: str | None = None,
+) -> dict | None:
     """The write, under a go that names what it is a go for. `None` where none.
 
     ⛔ **Four refusals before anything runs**, and each is a stop rather than a
-    warning: no record from `prepare`, a record for another target, a go that
-    names neither the target nor the reading it was given, and a target whose
-    configuration states that a person performs the write.
+    warning: no record from `prepare`, a record for another target or step or
+    one missing a phase this write follows, a go that names neither the target
+    nor the reading it was given (nor the step, on a listed one), and a target
+    whose configuration states that a person performs the write.
     """
-    answer = plan(configuration, target)
-    if answer is None:
+    read = configuration.live_data_step(target)
+    if read["found"] is None:
         return None
+    block = _which(read, step)
+    answer = _plan_of(configuration, target, read, block)
+    name = block.get("name")
     answer["written"] = False
     # ⛔ A field of its own, because `written: False` is **two** outcomes and the
     # invocation has to tell them apart: a write that was refused or failed, and a
@@ -347,27 +627,50 @@ def apply(configuration: config.Config, target: str, go: str) -> dict | None:
     # firing on exactly the shape § 35 writes the key for.
     answer["handed_over"] = False
     answer["ran"] = []
-    path = _record_path(configuration, target)
-    held = None
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as handle:
-            try:
-                held = json.load(handle)
-            except ValueError:
-                held = None
-    if not isinstance(held, dict) or held.get("target") != target:
+    path = _record_path(configuration, target, name)
+    held = _held(path)
+    # ⛔ **What this write follows has to be on record, whatever the placement**:
+    # the dump taken and read back, and the rehearsal where one is stated. A
+    # deploy that took the phases out of order, or a go that overruled `order`
+    # into a placement that would, reaches no write (§ 35).
+    owed = [
+        each["step"] for each in answer["steps"]
+        if each["stated"]
+        and each["step"] not in set((held or {}).get("verified") or [])
+    ]
+    if (
+        held is None
+        or held.get("target") != target
+        or held.get("step") != name
+        or owed
+    ):
+        answer["writes"] = _writes(configuration, target, read)
         answer["report"].insert(
             0,
             "Nothing was written: no completed preparation is on record for "
-            f"{target!r}, so the dump is unverified and the rehearsal unread. "
-            "⛔ The step cannot be entered at the write (§ 35).",
+            f"{target!r}"
+            + (f", step {name!r}" if name is not None else "")
+            + (
+                f" — {', '.join(owed)} is not on record"
+                if held is not None and held.get("target") == target
+                and held.get("step") == name
+                else ""
+            )
+            + ", so the dump is unverified or the rehearsal unread. "
+            "⛔ The step cannot be entered at the write (§ 35)."
+            + (" " + _writes_line(answer["writes"]) if read.get("listed") else ""),
         )
         return answer
     # ⛔ The go held to what it is a go for, which is § 29's binding for a
     # dispatch met one facet over. ⚠️ The words are never composed to satisfy
     # this: a role that filled in the form would have a form rather than an
     # approval, so a go that is short is refused and reported, never rewritten.
-    missing = [what for what in GO_MUST_NAME if what not in (go or "").lower()]
+    said = (go or "").lower()
+    missing = [what for what in GO_MUST_NAME if what not in said]
+    # ⛔ On a listed step the go names that step too: each write has its own go,
+    # and one naming another step, or none, licenses nothing (§ 35).
+    if name is not None and name.lower() not in said:
+        missing.append(f"step {name!r}")
     if missing:
         answer["report"].insert(
             0,
@@ -382,6 +685,8 @@ def apply(configuration: config.Config, target: str, go: str) -> dict | None:
     answer["rehearsal_read_as"] = held.get("rehearsal")
     if answer["apply_by"] == "person":
         answer["handed_over"] = True
+        _keep(path, dict(held, handed_over=True))
+        answer["writes"] = _writes(configuration, target, read)
         answer["report"].insert(
             0,
             "⛔ **No write was made.** This target states that a person performs "
@@ -394,6 +699,9 @@ def apply(configuration: config.Config, target: str, go: str) -> dict | None:
     outcome = _run(answer["apply"], answer["code_root"])
     answer["ran"].append(dict(outcome, step="apply"))
     answer["written"] = outcome["ran"] and outcome["status"] == 0
+    if answer["written"]:
+        _keep(path, dict(held, written=True))
+    answer["writes"] = _writes(configuration, target, read)
     if not answer["written"]:
         answer["report"].insert(
             0,
@@ -407,7 +715,8 @@ def apply(configuration: config.Config, target: str, go: str) -> dict | None:
             "module** and is named rather than omitted: the command may have "
             "written part of what it was asked for, and the verified dump is "
             f"what a recovery reads. The dump was taken by: {_dump(answer)} "
-            "(§ 35).",
+            "(§ 35)."
+            + (" " + _writes_line(answer["writes"]) if read.get("listed") else ""),
         )
         return answer
     answer["report"].insert(
@@ -430,11 +739,20 @@ def _report(configuration: config.Config, target: str) -> dict:
             "report": read["report"],
         }
     answer = plan(configuration, target)
+    if answer.get("listed"):
+        return {
+            "target": target,
+            "live_data_step": read["found"],
+            "names": read["names"],
+            "plans": answer["plans"],
+            "report": answer["report"],
+        }
     return {
         "target": target,
         "live_data_step": read["found"],
         "names": read["names"],
         "order": answer["order"],
+        "sides": answer["sides"],
         "apply_by": answer["apply_by"],
         "reads_record": answer["reads_record"],
         "steps": answer["steps"],
@@ -461,6 +779,10 @@ class _Stated:
         self._name = name
         self._artifacts = artifacts
 
+    # ⛔ A property, because the reader's is one: a fake answering a call where
+    # the reader answers an attribute let every arm here pass while the
+    # invocation raised on the first real configuration it was given.
+    @property
     def code_root(self):
         return self._root
 
@@ -472,18 +794,29 @@ class _Stated:
     def live_data_step(self, target):
         if target != self._name:
             return {
-                "target": None, "found": None, "reads_record": False,
+                "target": None, "found": None, "steps": [], "reads_record": False,
                 "names": [self._name], "report": ["a planted absence of the target"],
             }
         if self._block is None:
             return {
                 "target": {"name": self._name, "not_live": self._not_live},
-                "found": None, "reads_record": False, "names": [self._name],
+                "found": None, "steps": [], "reads_record": False,
+                "names": [self._name],
                 "report": ["a planted target carrying no block"],
             }
+        # ⛔ The steps are the accessor's own derivation, called rather than
+        # restated: a fake that placed the phases itself would let the arms below
+        # assert its placement instead of the one the loader holds.
+        listed = isinstance(self._block, list)
+        blocks = self._block if listed else [self._block]
         return {
             "target": {"name": self._name, "not_live": self._not_live},
-            "found": dict(self._block),
+            "found": self._block,
+            "steps": [
+                dict(block, name=block.get("name"), sides=config.live_data_sides(block))
+                for block in blocks
+            ],
+            "listed": listed,
             "reads_record": self._not_live is False,
             "names": [self._name],
             "report": [],
@@ -832,6 +1165,184 @@ def self_test() -> int:
         is False,
     )
 
+    print("\nA step whose phases fall on both sides of the invocation:")
+    before, after = _the_sides()
+    split_block = _a_block(order=before, sides={"rehearse": after, "apply": after})
+    split = _Stated(split_block, _a_tree(_scripts()), artifacts=_a_tree({}))
+    answer = prepare(split, "a-target")
+    check(
+        "prepared with no side named, nothing runs — the later phases would land on "
+        "the wrong side of the deploy",
+        answer["ran"] == [] and answer["stopped_at"] is not None
+        and answer.get("record_at") is None,
+        f"ran {[outcome['step'] for outcome in answer['ran']]!r}",
+    )
+    answer = prepare(split, "a-target", side=before)
+    check(
+        "the earlier side takes the dump and reads it back, and runs no rehearsal",
+        [outcome["step"] for outcome in answer["ran"]] == ["backup.run", "backup.verify"],
+        f"ran {[outcome['step'] for outcome in answer['ran']]!r}",
+    )
+    # ⛔ The rule § 35 states for every placement: the write follows its own
+    # rehearsal, so with the rehearsal still owed on the later side the write is
+    # refused however good the go.
+    answer = apply(split, "a-target", _a_go())
+    check(
+        "the write is refused while its rehearsal is still owed",
+        answer["written"] is False and answer["ran"] == []
+        and "rehearse is not on record" in " ".join(answer["report"]),
+        f"reported {answer['report'][:1]!r}",
+    )
+    answer = prepare(split, "a-target", side=after)
+    check(
+        "the later side runs the rehearsal alone, after the dump on record",
+        [outcome["step"] for outcome in answer["ran"]] == ["rehearse"]
+        and "no divergence" in (answer["rehearsal"] or ""),
+        f"ran {[outcome['step'] for outcome in answer['ran']]!r}",
+    )
+    answer = apply(split, "a-target", _a_go())
+    check(
+        "and then the write is made, under its go",
+        answer["written"] is True,
+        f"reported {answer['report'][:1]!r}",
+    )
+    # ⚠️ The later side reached with no dump on record — a deploy that skipped
+    # the earlier side, or an earlier deploy's reading for another target.
+    orphan = _Stated(split_block, _a_tree(_scripts()), artifacts=_a_tree({}))
+    answer = prepare(orphan, "a-target", side=after)
+    check(
+        "a later side with no dump on record stops before running anything",
+        answer["ran"] == [] and answer["stopped_at"] == "rehearse"
+        and "not on record" in " ".join(answer["report"]),
+        f"reported {answer['report'][:1]!r}",
+    )
+    # ⚠️ And a record that is this step's but carries no dump on it — what a
+    # hand-edited or truncated file reads as. Planted directly, there being no
+    # sequence of this module's own calls that writes one.
+    _keep(_record_path(orphan, "a-target"),
+          {"target": "a-target", "step": None, "verified": [], "rehearsal": None})
+    answer = prepare(orphan, "a-target", side=after)
+    check(
+        "a record of this step with no dump on it stops the later side as well",
+        answer["ran"] == [] and answer["stopped_at"] == "rehearse",
+        f"ran {[outcome['step'] for outcome in answer['ran']]!r}",
+    )
+    answer = prepare(_Stated(_a_block(order=before), _a_tree(_scripts()),
+                             artifacts=_a_tree({})), "a-target", side=after)
+    check(
+        "a side no phase of the step falls on runs nothing and is no stop",
+        answer.get("nothing_on_side") is True and answer["stopped_at"] is None,
+        f"answered {answer.get('nothing_on_side')!r}",
+    )
+
+    print("\nSeveral steps on one target, each addressed by name:")
+    listed_tree = _a_tree(dict(
+        _scripts(), **{"write-fails": "#!/bin/sh\necho 'half of it ran'\nexit 1\n"}
+    ))
+    listed_artifacts = _a_tree({})
+    listed = _Stated(
+        [
+            dict(_a_block(order=before), name="first"),
+            dict(_a_block(order=after), name="second"),
+            dict(_a_block(order=after, apply="./write-fails"), name="third"),
+        ],
+        listed_tree, artifacts=listed_artifacts,
+    )
+    answer = plan(listed, "a-target")
+    check(
+        "the preflight's plan names every step in the order listed",
+        [each["step"] for each in answer["plans"]] == ["first", "second", "third"],
+        f"planned {answer.get('plans')!r}",
+    )
+    for label, call in (
+        ("a step asked for by no name on a listed target is refused",
+         lambda: prepare(listed, "a-target")),
+        ("a step the target does not list is refused",
+         lambda: prepare(listed, "a-target", step="fourth")),
+        ("a name on a target with one step is refused",
+         lambda: prepare(ready, "a-target", step="first")),
+    ):
+        try:
+            call()
+            refused = False
+        except _Unaddressed:
+            refused = True
+        check(label, refused)
+
+    def a_go_for(step: str) -> str:
+        return _a_go() + f" This is the go for {step}."
+
+    prepare(listed, "a-target", step="first", side=before)
+    # ⛔ One step's reading may never license another's write: each write has its
+    # own go after its own evidence (§ 35).
+    answer = apply(listed, "a-target", a_go_for("second"), step="second")
+    check(
+        "one step's preparation does not license another step's write",
+        answer["written"] is False and answer["ran"] == []
+        and "no completed preparation" in " ".join(answer["report"]),
+        f"reported {answer['report'][:1]!r}",
+    )
+    # ⚠️ The arm above is refused by the record's path alone, the two names
+    # slugging apart. What reaches the comparison of the step written *inside*
+    # the record is a pair the slug cannot tell apart, which is the per-target
+    # arm's own lesson one level down.
+    twins = _Stated(
+        [dict(_a_block(), name="a step"), dict(_a_block(), name="a-step")],
+        _a_tree(_scripts()), artifacts=_a_tree({}),
+    )
+    prepared_twin = prepare(twins, "a-target", step="a step")
+    check(
+        "two step names collide on one record path, which is what makes the arm below reach",
+        prepared_twin["record_at"] == _record_path(twins, "a-target", "a-step"),
+        f"prepared at {prepared_twin['record_at']!r}",
+    )
+    answer = apply(twins, "a-target", a_go_for("a-step"), step="a-step")
+    check(
+        "and the reading taken for one is refused for the other",
+        answer["written"] is False and answer["ran"] == [],
+        f"reported {answer['report'][:1]!r}",
+    )
+    answer = apply(listed, "a-target", _a_go(), step="first")
+    check(
+        "a go that does not name its step is refused, on a listed target",
+        answer["written"] is False and "step 'first'" in " ".join(answer["report"]),
+        f"reported {answer['report'][:1]!r}",
+    )
+    answer = apply(listed, "a-target", a_go_for("second"), step="first")
+    check(
+        "and so is a go naming another step",
+        answer["written"] is False and "step 'first'" in " ".join(answer["report"]),
+        f"reported {answer['report'][:1]!r}",
+    )
+    answer = apply(listed, "a-target", a_go_for("first"), step="first")
+    check("a go naming its own step writes", answer["written"] is True,
+          f"reported {answer['report'][:1]!r}")
+    # The invocation, then the later side.
+    prepare(listed, "a-target", step="second", side=after)
+    apply(listed, "a-target", a_go_for("second"), step="second")
+    prepare(listed, "a-target", step="third", side=after)
+    answer = apply(listed, "a-target", a_go_for("third"), step="third")
+    states = {each["step"]: each["state"] for each in answer.get("writes") or []}
+    check(
+        "a write failing after the invocation names the writes made and not made",
+        answer["written"] is False
+        and states == {"first": "written", "second": "written", "third": "not made"}
+        and "written: first, second" in " ".join(answer["report"])
+        and "not made: third" in " ".join(answer["report"]),
+        f"reported {states!r} / {answer['report'][:1]!r}",
+    )
+    # ⛔ And what the next deploy reads is its own: the first step's fresh dump
+    # drops the readings every later-starting step left, so they read not made
+    # rather than as the last deploy's writes.
+    prepare(listed, "a-target", step="first", side=before)
+    states = {each["step"]: each["state"] for each in _writes(
+        listed, "a-target", listed.live_data_step("a-target"))}
+    check(
+        "a new deploy's first dump drops the readings an earlier deploy left",
+        states == {"first": "not made", "second": "not made", "third": "not made"},
+        f"read {states!r}",
+    )
+
     print("\nAnd this project's own configuration:")
     try:
         resolved = config.load(config.REPO_ROOT)
@@ -861,6 +1372,14 @@ def main(argv: list[str] | None = None) -> int:
     # tool of the same name and refuses the command, which is a false refusal the
     # flag is renamed around rather than argued with.
     parser.add_argument("--given", help="the answer licensing the write, in their words")
+    parser.add_argument(
+        "--step", default=None,
+        help="the step's name, where the target lists several (§ 35)",
+    )
+    parser.add_argument(
+        "--side", default=None,
+        help="prepare only the phases placed on this side of the invocation (§ 35)",
+    )
     parser.add_argument("--skills-root", default=None)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args(argv)
@@ -869,6 +1388,10 @@ def main(argv: list[str] | None = None) -> int:
         return self_test()
     if not args.target:
         parser.error("--target is required: a step belongs to one § 33 target")
+    if args.side is not None and args.side not in _the_sides():
+        parser.error(f"--side is one of {' | '.join(_the_sides())} (§ 35)")
+    if args.side is not None and args.action != "prepare":
+        parser.error("--side is read by prepare alone: the write's side is the go's (§ 35)")
     try:
         resolved = config.load(args.skills_root or os.getcwd())
     except config.ConfigError as error:
@@ -886,13 +1409,21 @@ def main(argv: list[str] | None = None) -> int:
         }, indent=2, ensure_ascii=False))
         return 1
 
-    if args.action == "plan":
-        answer = plan(resolved, args.target)
-    elif args.action == "prepare":
-        answer = prepare(resolved, args.target)
-    elif args.action == "apply":
-        answer = apply(resolved, args.target, args.given)
-    else:
+    try:
+        if args.action == "plan":
+            answer = plan(resolved, args.target, args.step)
+        elif args.action == "prepare":
+            answer = prepare(resolved, args.target, args.step, args.side)
+        elif args.action == "apply":
+            answer = apply(resolved, args.target, args.given, args.step)
+        else:
+            answer = None
+    except _Unaddressed as error:
+        # ⛔ The configuration does not answer to the step named, which is a
+        # reading that could not be taken rather than a step that stopped.
+        print(json.dumps({"error": str(error)}, indent=2, ensure_ascii=False))
+        return 2
+    if args.action is None:
         answer = _report(resolved, args.target)
         print(json.dumps(answer, indent=2, ensure_ascii=False))
         return NO_STEP if answer["live_data_step"] is None else 0

@@ -8385,6 +8385,7 @@ member of a list sits at no path a marker can reach:
 ```yaml
 deploy:
     live_data_step:
+      name:     "<this step's own name, stated on each step of a list and on no single block>"
       backup:
         run:    "<the command that dumps the live store, stated whole>"
         verify: "<the command that reads the dump back; its exit status is the verdict>"
@@ -8392,6 +8393,10 @@ deploy:
       apply:    "<the command that writes irreversibly to the live store>"
       apply_by: procedure | person
       order:    before_invoke | after_invoke
+      sides:
+        backup:   before_invoke | after_invoke
+        rehearse: before_invoke | after_invoke
+        apply:    before_invoke | after_invoke
       record:   "<a command printing the paths already applied to this store, one per line>"
 ```
 
@@ -8431,8 +8436,10 @@ reads; and `backup`, `apply`, `apply_by`, `order` and `record` are each required
 stated at all. ⚠️ **Four of those five because a step configured without one of them is a step whose
 ordering nothing can perform**, and the fifth for [§ 2](#2-code-host)'s reason instead: a project
 that never looked at what its store already holds and a project that decided nothing is released
-read identically otherwise. ⛔ **`rehearse` is the one key a block may omit**, and the subsection
-below states why.
+read identically otherwise. ⛔ **`rehearse` is the one command a block may omit**, and the subsection
+below states why; `sides` may be omitted too, being a placement rather than a command, and `name`
+is the list's and not the step's — both are stated under
+[the subsection on several steps](#several-steps-on-one-target-and-the-side-each-phase-falls-on).
 
 ### The backup is verified by a command, and never by the artifact it wrote
 
@@ -8523,12 +8530,14 @@ would have turned off the one rail this section is for.
 
 ### Where the step falls against the invocation, which the go names
 
-⛔ **`order` is required and states which side of § 33's invocation the step runs on.**
+⛔ **`order` is required and states which side of § 33's invocation the step runs on** — the whole
+of it, unless `sides` places a phase of it elsewhere
+([below](#several-steps-on-one-target-and-the-side-each-phase-falls-on)).
 
 | `order` | when the step runs |
 |---|---|
-| `before_invoke` | the whole step, ending at the apply, then § 33's invocation |
-| `after_invoke` | § 33's invocation, then the whole step |
+| `before_invoke` | every phase `sides` does not place elsewhere, ending at the apply, then § 33's invocation |
+| `after_invoke` | § 33's invocation, then every phase `sides` does not place elsewhere |
 
 ⛔ **It is a configured default and the go names it, so a person may overrule it for this deploy.**
 ⚠️ **Both halves are measured, from opposite ends**: one copy holds the order constant and always
@@ -8543,6 +8552,53 @@ a shortcoming: judging whether new code hard-requires a schema is knowledge of t
 which is [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle
 column. What the role owes is to state the order it is taking, and to say that it took the
 configured one rather than a judgement of its own.
+
+### Several steps on one target, and the side each phase falls on
+
+⛔ **`live_data_step` is one block or a list of them, and each block's phases may fall on different
+sides of the invocation.** ⚠️ **Both halves are adopters' reports, read against the block as it
+stood rather than run**: one has to take its dump before the deploy and make its write after it,
+which a block whose `order` moves the backup with the write cannot state; the other runs several
+writes against its store, some owed before the new code and some after it, which one `apply`
+cannot state at all.
+
+| what the block states | what it means |
+|---|---|
+| a mapping | one step, exactly as the sections above describe it — ⛔ and **no `name`**, a name on the only step being a fact nothing reads |
+| a list of mappings | several steps, performed in the order listed on each side of the invocation; ⛔ **every one carries a `name`**, unique on the target, because the go, the reading and the report each address one step by it |
+| `sides`, omitted | every phase of the step falls where `order` says, which is the single block as it always was |
+| `sides`, stated | the phases it names — `backup`, `rehearse`, `apply` — fall where it says, and every phase it does not name falls where `order` says |
+
+⛔ **The alternation `before_invoke | after_invoke` is written in the order the two sides fall**, and
+the reader ranks the sides by it rather than by a second list of its own.
+
+⛔ **A write is never reached before its own verified backup, nor before its own rehearsal, whatever
+the placement.** The sides a step's phases fall on never run backwards through § 35's sequence —
+backup, then rehearsal, then write — and ⛔ **a step whose placement would is refused at the load
+with the phase named**, not discovered at a deploy that has already invoked the new code. ⚠️ **A
+`sides.rehearse` on a step stating no `rehearse`** is refused with it, being a placement of nothing.
+
+⛔ **The same holds when it is performed and not only when it is loaded.** A step's write is refused
+until its own reading is on record — the dump taken and read back, and the rehearsal run where one
+is stated — so a deploy that took the phases out of order, or a go that overrules `order` into a
+placement that would, reaches no write. ⚠️ **What the go may overrule is the configured side and
+never this rule**, which is the reason it is enforced where the write is made rather than trusted to
+whoever asked.
+
+⛔ **Each write has its own go, given after its own evidence.** A target listing several steps asks
+one go per write, after that step's own dump and rehearsal have been read, and ⛔ **a go on a listed
+step names that step** beside what every go names — a go naming another step, or none, licenses
+nothing. ⚠️ **Several gos inside one deploy is deliberate**, for the reason this section gives for a
+second ask beside § 33's: each write is irreversible, and each one's evidence is its own.
+
+⛔ **A stop names the writes made and the writes not made.** Where a target lists several steps, a
+stop anywhere in them — and above all one after the invocation, where the new code is already
+serving — reports each step by name as written, handed over or not made, ⚠️ **read from what was
+performed in this deploy rather than from what an earlier one left behind**. A report naming only
+the step that stopped leaves a reader not knowing which of the others the store already holds.
+
+⚠️ **A project that states neither a list nor `sides` gets exactly the step the sections above
+describe**, and nothing about it is reported differently.
 
 ### A record of the store's state is never rewritten
 
@@ -8569,7 +8625,9 @@ its three review classes that came from no copy at all.**
 
 ### The ordering, and what the role reports
 
-⛔ **The step is one ordered sequence and every stop in it stops the deploy rather than the step:**
+⛔ **Each step is one ordered sequence and every stop in it stops the deploy rather than the step**
+— the rows falling on whichever side of the invocation `order` and `sides` place them, never out of
+this order:
 
 | | what runs | what a failure does |
 |---|---|---|
@@ -8590,7 +8648,8 @@ this step adds to it is its own list**: whether the dump was verified and by wha
 rehearsal ran at all, what its output was read as, which order was taken and whether the configured
 one was overruled, whether the apply ran or was handed over, and — where it ran and failed —
 ⛔ **what the store is left holding**, which is the one fact a deploy report that stopped here
-cannot omit.
+cannot omit, and — where the target lists several steps — each of them by name as written, handed
+over or not made.
 
 ## 36. A skill that is no leg of the loop, and why none is carried here
 
