@@ -10635,13 +10635,19 @@ def _label_owner(data: dict, label: str) -> str | None:
     there to refuse.
     """
     for facet in CLASSIFICATION_PREFIXED:
+        if _get(data, f"{facet}.carrier") != "label":
+            continue
         prefix = _get(data, f"{facet}.label_prefix")
-        if (
-            _get(data, f"{facet}.carrier") == "label"
-            and isinstance(prefix, str) and prefix
-            and label.startswith(prefix)
-        ):
+        prefix = prefix if isinstance(prefix, str) else ""
+        if prefix and label.startswith(prefix):
             return f"{facet}.label_prefix"
+        # ⚠️ A prefix is not required of every facet on labels -- § 4.1's type may
+        # be carried on bare labels, which `route_for` reads the same way -- so the
+        # facet's own values, each under whatever prefix it states, are its labels
+        # too. Without this the item's type label reads as a stray.
+        values = _get(data, f"{facet}.values")
+        if isinstance(values, list) and label in {f"{prefix}{one}" for one in values}:
+            return f"{facet}.values"
     prefix = _get(data, f"{PEOPLE_KEY}.label_prefix")
     if (
         _get(data, f"{PEOPLE_KEY}.key") == "label"
@@ -18688,6 +18694,15 @@ def self_test() -> int:
     answer = classification_for(routed, ["frontend", "design"])
     check("§ 4.9 names the key that accounts for a label outside its set",
           answer["accounted_elsewhere"] == {"design": f"{ROUTES_KEY}[0]"},
+          f"answered {answer!r}")
+    bare_type = {"work_item": {
+        "type": {"carrier": "label", "values": ["bug", "feature"]},
+        "classification": _a_classification(),
+    }}
+    answer = classification_for(bare_type, ["bug", "backend"])
+    check("§ 4.9 reads a type carried on bare labels as the type's, not a stray",
+          answer["verdict"] == "holds"
+          and answer["accounted_elsewhere"] == {"bug": "work_item.type.values"},
           f"answered {answer!r}")
     answer = classification_for(routed, ["backend", "wontfix"])
     check("§ 4.9 names the stray label in its refusal",

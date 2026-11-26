@@ -2788,8 +2788,9 @@ operation is added to [§ 3](#3-tracker-port) for it: the labels are written thr
 read back through `read_item`, as § 4.6's `label` carrier is.
 
 **A label the item carries is accounted for by this set or by the key that owns it, and by nothing
-else.** The keys that own a label are the `label_prefix` of every other facet whose carrier is
-`label` (§ 4.1, § 4.3, § 4.6, § 4.7, § 4.8, and § 27's `people`), the label a
+else.** The keys that own a label are every other facet whose carrier is `label` (§ 4.1, § 4.3,
+§ 4.6, § 4.7, § 4.8), through its `label_prefix` or, where it states none, its own `values`; § 27's
+`people` under `key: label`, through its `label_prefix`; the label a
 [§ 5](#5-readiness-gate--an-ordered-predicate-list) `label_absent` entry names, and the label a
 [§ 7](#an-item-a-project-routes-to-a-carrier-of-its-own) route names. A label none of those accounts
 for is refused, which is what keeps a host default out of the place a classification goes. A value
