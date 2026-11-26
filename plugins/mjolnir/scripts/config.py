@@ -7471,6 +7471,54 @@ def _validate_relations(data: dict) -> None:
             claimed[(kind, wording)] = str(name)
 
 
+def _validate_search(data: dict, facts: dict) -> None:
+    """§ 3's `tracker.search`, held to what a search can read.
+
+    ⛔ Refused at load rather than at the first search: a text outside the list the
+    surface shows is one no implementation matches in, and a malformed field list
+    is one whose fields every query would refuse -- each a duplicate check that
+    would otherwise fail at the moment a filing depends on it.
+    """
+    texts = _get(data, "tracker.search.texts")
+    if texts is not None:
+        if not isinstance(texts, list) or not texts:
+            raise ConfigError(
+                "tracker.search.texts",
+                f"is {texts!r}; § 3 states it as a non-empty list of the texts a "
+                "query's terms are matched in. Leave the key out to keep each "
+                "implementation's own.",
+            )
+        allowed = vocabulary_list(facts, "tracker.search.texts", "a searched text")
+        for text in texts:
+            if text not in allowed:
+                raise ConfigError(
+                    "tracker.search.texts",
+                    f"names {text!r}; the surface allows {' | '.join(allowed)} (§ 3).",
+                )
+        repeated = sorted({str(t) for t in texts if texts.count(t) > 1})
+        if repeated:
+            raise ConfigError(
+                "tracker.search.texts",
+                f"names {', '.join(repeated)} more than once. It is a set (§ 3).",
+            )
+    fields = _get(data, "tracker.search.fields")
+    if fields is not None:
+        if not isinstance(fields, list) or not all(
+            isinstance(name, str) and name.strip() for name in fields
+        ):
+            raise ConfigError(
+                "tracker.search.fields",
+                f"is {fields!r}; § 3 states it as a list of field names, each as "
+                "the tracker names it.",
+            )
+        repeated = sorted({name for name in fields if fields.count(name) > 1})
+        if repeated:
+            raise ConfigError(
+                "tracker.search.fields",
+                f"names {', '.join(repeated)} more than once. It is a set (§ 3).",
+            )
+
+
 def _validate_billing(data: dict) -> None:
     """§ 37's roots, and the one rule about them no marker can state.
 
@@ -10417,6 +10465,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     _validate_create_fields(data)
     _validate_transition_fields(data)
     _validate_relations(data)
+    _validate_search(data, facts)
     # § 38's lists, in the same position and for the same reason. ⛔ The two rules
     # no marker reaches are the ones about the row set rather than a row: that
     # every edge names a declared document, and that the derivation record stays
@@ -17983,6 +18032,19 @@ def _planted_violations():
         ("an unsided relation beside a sided one on its type", "tracker.relations.also",
          at("tracker.relations", {"related": {"type": "a", "side": "outward"},
                                   "also": {"type": "a"}})),
+        # § 3's search coverage, one plant per arm.
+        ("searched texts that are not a list", "tracker.search.texts",
+         at("tracker.search.texts", "title")),
+        ("searched texts stated empty", "tracker.search.texts",
+         at("tracker.search.texts", [])),
+        ("a searched text outside the list the surface shows", "tracker.search.texts",
+         at("tracker.search.texts", ["title", "comments"])),
+        ("a searched text stated twice", "tracker.search.texts",
+         at("tracker.search.texts", ["body", "body"])),
+        ("searched fields that are not a list of names", "tracker.search.fields",
+         at("tracker.search.fields", ["Area", ""])),
+        ("a searched field stated twice", "tracker.search.fields",
+         at("tracker.search.fields", ["Area", "Area"])),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
