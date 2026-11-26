@@ -71,6 +71,7 @@ answer is not the same thing as a write that would have been wrong.
 from __future__ import annotations
 
 import argparse
+import copy
 import fnmatch
 import json
 import os
@@ -2520,12 +2521,26 @@ def _line_of(lines: list[str], path: str) -> int | None:
 
 
 def _end_of(lines: list[str], at: int, indent: int) -> int:
-    """One past the last line belonging to the key stated at `at`."""
+    """One past the last line belonging to the key stated at `at`.
+
+    ⛔ **A sequence entry at the key's own indent belongs to the key**, and that
+    is the shape `render` itself writes: `yaml.safe_dump` puts a block
+    sequence's `- ` at its parent key's column. Judged by indent alone, the block
+    of such a list is its key line and nothing else, so an edit replaced that one
+    line and left the old entries under it for the reader to append to the new
+    ones -- every top-level list in a file this module rendered then refused its
+    own second run. ⚠️ No other line at that column can continue the key, since
+    a mapping's next key there is a sibling and a `- ` there under a scalar is
+    not YAML.
+    """
     for index in range(at + 1, len(lines)):
         stripped = lines[index].strip()
         if not stripped:
             continue
-        if len(lines[index]) - len(lines[index].lstrip()) <= indent:
+        column = len(lines[index]) - len(lines[index].lstrip())
+        if column == indent and (stripped == "-" or stripped.startswith("- ")):
+            continue
+        if column <= indent:
             return index
     return len(lines)
 
@@ -3225,6 +3240,67 @@ def self_test() -> int:
           f"left {out!r}")
     check("while the keys beside the list are untouched",
           "kind: github" in out, f"left {out!r}")
+
+    # ⛔ A list in the shape `render` itself writes, edited by a second run on
+    # the file the first run wrote: `yaml.safe_dump` puts a block sequence's
+    # entries at the parent key's own column, and an editor judging the block by
+    # indent alone replaced the key line and left the old entries under it. Every
+    # top-level list the renderer emits, plus two nested ones, each changed alone
+    # and held to the read-back, to one statement of the key, and to a second run
+    # that leaves the bytes alone. ⚠️ The change per key is one the reader
+    # accepts -- an order a facet may hold, or an entry fewer -- so a refusal
+    # here is the editor's and not the answers'.
+    print("\nA list in the shape the renderer writes, edited by a second run:")
+    rendered_lists = _an_example("jira.yaml")
+    rendered_lists.setdefault("already_run", {})["never_guard"] = [
+        "a-mirrored-command", "another-mirrored-command"]
+    rendered_lists["tracker"].setdefault("policy", {})["forbid_on_item"] = [
+        "credentials", "file_paths"]
+    changes = {
+        "statuses": lambda entries: entries[::-1],
+        "readiness": lambda entries: entries[:-1],
+        "done": lambda entries: entries[:-1],
+        "reversals": lambda entries: entries[:-1],
+        "deploy": lambda entries: entries[::-1],
+        "checks_local": lambda entries: entries[::-1],
+        "body_sections": lambda entries: entries[:-1],
+        "already_run.never_guard": lambda entries: entries[:-1],
+        "tracker.policy.forbid_on_item": lambda entries: entries[::-1],
+    }
+    for key, change in changes.items():
+        root = _a_tree({})
+        first = write(root, rendered_lists)
+        path = os.path.join(root, config.CONFIG_PATH)
+        before_text = open(path, encoding="utf-8").read()
+        leaf = key.rpartition(".")[2]
+        column = "  " * key.count(".")
+        assert first["holds"] and re.search(
+            rf"^{column}{leaf}:\n{column}- ", before_text, re.M), (
+            f"the first run did not render `{key}` with its entries at the key's "
+            "own column, so this arm would assert nothing"
+        )
+        answers = copy.deepcopy(rendered_lists)
+        parent, _, _ = key.rpartition(".")
+        holder = _at(answers, parent) if parent else answers
+        holder[leaf] = change(holder[leaf])
+        assert holder[leaf] != _at(rendered_lists, key), (
+            f"the change to `{key}` changed nothing, so this arm would assert nothing"
+        )
+        second = write(root, answers)
+        after = open(path, encoding="utf-8").read()
+        check(f"`{key}` changed alone in a rendered file is written and read back",
+              second["holds"] and second["changed"] == [key],
+              f"held {second['holds']}, changed {second['changed']!r}, "
+              f"said {second['report'][-1:]!r}")
+        check(f"and the file states `{key}` once, carrying the new list",
+              len(re.findall(rf"^{column}{leaf}:", after, re.M)) == 1
+              and _at(yaml.safe_load(after), key) == holder[leaf],
+              f"left {_at(yaml.safe_load(after) or {}, key)!r}")
+        third = write(root, answers)
+        check(f"and a run after the edit of `{key}` leaves the bytes alone",
+              third["holds"] and not third["changed"]
+              and open(path, encoding="utf-8").read() == after,
+              f"changed {third['changed']!r}")
 
     print("\nWhat the interrogation reads, and what it reports it could not:")
     root = _a_tree({})
