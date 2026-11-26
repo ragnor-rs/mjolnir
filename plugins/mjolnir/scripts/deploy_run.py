@@ -141,6 +141,41 @@ def follow_command(log: str) -> str:
     return f"tail -f {shlex.quote(log)}"
 
 
+def _status_of(record: dict) -> int | None:
+    """The status the run's wrapper wrote, or `None` where none is written yet."""
+    try:
+        with open(record.get("status_file") or "", encoding="utf-8") as handle:
+            text = handle.read().strip()
+    except OSError:
+        return None
+    try:
+        return int(text)
+    except ValueError:
+        return None
+
+
+def _settle(pid: int, status_file: str, up_to: float = 5.0) -> None:
+    """Return once the wrapper has replaced the forked copy of this process.
+
+    ⛔ Between the fork and the exec the child's command line is this module's,
+    so a reading taken in that window would find a live process that is not the
+    run's wrapper and call the run lost. The record is written after this.
+    """
+    deadline = time.monotonic() + up_to
+    record = {"pid": pid, "status_file": status_file}
+    while time.monotonic() < deadline:
+        if _status_of(record) is not None or not _alive(pid):
+            return
+        try:
+            done = subprocess.run(["ps", "-p", str(pid), "-o", "args="],
+                                  capture_output=True, text=True, check=False)
+        except OSError:
+            return
+        if done.returncode != 0 or status_file in done.stdout:
+            return
+        time.sleep(0.02)
+
+
 def reading(record: dict) -> dict:
     """What a record says about its run now: running, ended, or lost.
 
@@ -148,19 +183,9 @@ def reading(record: dict) -> dict:
     whatever its process looks like. Only then is the process asked about, and a
     process gone with no status written is `lost` rather than either outcome.
     """
-    status_file = record.get("status_file") or ""
-    try:
-        with open(status_file, encoding="utf-8") as handle:
-            text = handle.read().strip()
-    except OSError:
-        text = None
-    if text:
-        try:
-            status = int(text)
-        except ValueError:
-            status = None
-        if status is not None:
-            return {"state": "ended", "status": status, "advance_held": False}
+    status = _status_of(record)
+    if status is not None:
+        return {"state": "ended", "status": status, "advance_held": False}
     started_on = record.get("host")
     if started_on and started_on != os.uname().nodename:
         # ⛔ A process number means nothing on another machine, and one that
@@ -174,6 +199,11 @@ def reading(record: dict) -> dict:
         }
     if _alive(record.get("pid")) and _ours(record):
         return {"state": "running", "status": None, "advance_held": True}
+    # ⛔ Read once more: a run that wrote its status and exited between the
+    # first read and the process check is ended, not lost.
+    status = _status_of(record)
+    if status is not None:
+        return {"state": "ended", "status": status, "advance_held": False}
     return {
         "state": "lost",
         "status": None,
@@ -233,6 +263,7 @@ def start(target: dict, store: str) -> tuple[int, dict]:
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
+    _settle(process.pid, status_file)
     record = {
         "target": target["target"],
         "command": target["command"],
@@ -407,6 +438,14 @@ def self_test() -> int:
         code, got = wait("a-target", store, 10)
         check("an `exit` inside the command does not stop the status being written",
               code == 0 and got["status"] == 0, (code, got))
+        readings = []
+        for _ in range(30):
+            start(target("exit 0", name="quick"), store)
+            readings.append(reading(_held(_record_path(store, "quick")))["state"])
+            wait("quick", store, 10)
+        check("a run read the moment it starts is running or ended, never lost",
+              "lost" not in readings, readings)
+        os.remove(_record_path(store, "quick"))
         lost = {
             "target": "gone",
             "pid": 2 ** 22 + 12345,
