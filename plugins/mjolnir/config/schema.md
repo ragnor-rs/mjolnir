@@ -8155,6 +8155,10 @@ deploy:
       default:    "<the value a run that chooses nothing takes>"
       joined_by:  "<what joins several values, where a run may choose more than one>"
       warnings:   "<a value, mapped to what the go says about choosing it>"
+    tree:                      # a list; one entry per condition the tree is held to
+      condition:  clean | on_branch | at_remote_tip | primary_checkout | at_commit
+      holds:      deploy | advance | both
+      branch:     "<the branch the tree must be on, where the condition is `on_branch`>"
     requires:     "<§ 16's list, cited there and not restated>"
     advances:     "<one of § 4.2's own roles, read there — or `none`>"
     batch:        "<a command printing one item identifier per line>"
@@ -8335,10 +8339,12 @@ go**, and the values and their warnings are in the reply.
 
 ### What runs before the target is confirmed, and what it may not do
 
-⛔ **The preflight writes nothing.** It reads the tree, the target's stated preconditions and
-whatever the project's own command checks for itself, and it stages nothing, checks nothing out and
-touches no machine — ⚠️ **which one copy states as a rule about a shared workspace** rather than as
-caution: several sessions stand in one checkout, and a deploy needs no working tree of its own.
+⛔ **The preflight writes nothing.** It reads the tree and holds it to what the entry's
+[`tree`](#what-the-tree-must-be-for-the-deploy-and-for-the-advance) states, it reads the target's
+stated preconditions and whatever the project's own command checks for itself, and it stages
+nothing, checks nothing out and touches no machine — ⚠️ **which one copy states as a rule about a
+shared workspace** rather than as caution: several sessions stand in one checkout, and a deploy
+needs no working tree of its own.
 
 ⛔ **`requires` is [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s
 list and this facet writes no second grammar for it**, which is the division § 17 already has with
@@ -8362,6 +8368,51 @@ is about to start asserts the released commit is contained in that branch and re
 with the version already spent. ⛔ **That write is the project's step and not the preflight**, and
 what the surface asks of it is what that copy already does: the window it opens is named, and a
 failed deploy is not repaired by moving the branch back.
+
+### What the tree must be, for the deploy and for the advance
+
+⛔ **`tree` states what the tree a deploy runs from must be, and each condition says what it holds.**
+The key is omitted where nothing is required of the tree, and such a target reports what is
+uncommitted and holds nothing on it — the behaviour every target had before the key existed.
+
+| `condition` | met where |
+|---|---|
+| `clean` | git reports no change in the tree — staged, unstaged or untracked; what the tree ignores is not read |
+| `on_branch` | the branch checked out is the one `branch` names |
+| `at_remote_tip` | the tree's commit is its branch's upstream as last fetched; a branch with no upstream does not meet it |
+| `primary_checkout` | the tree is the repository's primary checkout rather than a linked tree |
+| `at_commit` | the tree's commit is the one the invocation names; an invocation naming none does not meet it |
+
+| `holds` | a condition not met |
+|---|---|
+| `deploy` | stops the deploy in the preflight, before any go is asked for, and nothing is invoked |
+| `advance` | lets the deploy run and holds every item's advance, the grouping's mark included |
+| `both` | does both |
+
+⛔ **The vocabulary is closed, and a condition outside it is refused where it is written.** Every
+condition was measured as a requirement of some adopter's deploy, and one of them stops its deploy
+on these readings where another lets the deploy run and holds the advance — so what a condition
+holds is the entry's to state, and neither is derived from liveness. ⛔ `branch` is stated where the
+condition is `on_branch` and refused beside any other, and one condition stated twice is refused.
+
+⛔ **The tree is the directory the target's command runs in, and only a `command` target states
+one.** A `dispatch` or a `by_hand` target is built by the host from `ref`, so a deploy that uses no
+local tree has no tree to hold, and `tree` beside either is refused with the shape named.
+
+⛔ **The reading writes nothing, and that includes git's own bookkeeping.** No fetch, no pull, and
+the index is not refreshed as a side effect of reading it. ⚠️ **So `at_remote_tip` is read against
+the upstream as last fetched**, and the report says so: bringing the tree up to date stays the
+project's own command, run before the deploy is asked for.
+
+⛔ **A condition not met names itself and what it held** — the condition, what the tree held
+instead, and whether the deploy or the advance is what it stops. ⛔ **A condition that could not be
+read is not met**, by [§ 11](#a-report-names-what-it-could-not-establish): a tree nothing could read
+reads exactly like a tree that met everything otherwise.
+
+⛔ **A condition that holds the advance is read twice**: in the preflight, so the go shows that no
+item will move, and again where the advance is made, for the reason
+[`The batch`](#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong) reads an item's role
+there: a command that changed the tree changes the answer.
 
 ### The batch, and the two ways of assembling one that are wrong
 
@@ -9347,6 +9398,9 @@ documents:
       derived_from: ["docs/requirements.md"] # recorded and held acyclic, never read against the text
   forbidden: []                    # required_when: documents.carrier = list
   quoted: []                       # required_when: documents.carrier = list
+  box_diagrams:                    # optional: absent holds no diagram, as today
+    held: true                     # a boolean; `false` holds no diagram
+    exempt: []                     # `[]` where no block is exempt
   absent_reason: "…"               # required where the carrier is none
 ```
 
@@ -9369,6 +9423,11 @@ documents:
   quoted:
     sentence: "<the sentence quoted back at the document it came from>"
     document: "<the document it is quoted against>"
+  box_diagrams:
+    exempt:
+      document: "<the document the block is in>"
+      block:    "<an expression the fenced block's own text matches>"
+      reason:   "<why this block is not held to the alignment rule>"
 ```
 
 **This states what a project's prose documents are held to, so that something other than a reader's
@@ -9493,6 +9552,49 @@ answered `<p>| 32 | … |</p>` by the host's own renderer while every check over
 green, each of them holding a **line** or holding the document against this surface and none holding
 its blocks.
 
+### A box diagram's edges, held where a project turns the check on
+
+⛔ **A diagram drawn in box characters is held to its own alignment, and it is held as a
+**computed** check.** The defect is a corner or a junction whose arm meets nothing — a box's right
+edge one column off from the corner above it, a horizontal run that stops short of the corner it
+was drawn to — and it is no name and no pattern, so no forbidding entry can express it.
+
+| what is held | what is not read |
+|---|---|
+| every **junction** — a character carrying both a horizontal and a vertical arm: a corner, a tee, a cross — is red where an arm lands on a space, past the block's edge, on either column of a wide character, or on a line that does not reach back | a straight run (`─`, `│` and their dashed and heavy forms) and a half line, either of which may end where the drawing does; and an arm landing on text, which is a line drawn to a label — `tree`'s own output puts each nested `└` under the first letter of its parent's name |
+| inside a fenced block that carries a box-drawing character at all | a block drawn only in ASCII (`+`, `-`, `\|`), and a box character written in running prose |
+| columns measured by **display width**: a wide character counts two, a combining mark or a format character counts none, and a tab advances to the next multiple of eight | a character's code point count, which is what a misaligned box is usually drawn against; and an ambiguous-width character's East Asian rendering — `→`, `▶` and the box characters themselves count one, as a terminal outside an East Asian locale draws them |
+
+⛔ **The red names the line and the column of the junction**, and what its arm met: that is the
+corner the eye has to go to, and the edge it was meant to join is one row or one column from it.
+⚠️ **Measured on twelve diagram blocks in other repositories, before this rule landed**: three were
+red, two of them a vertical line one column to the right of the tee or corner it hangs from and the
+third a bracket's end pointing at the gap between two words — and none of the twelve, `tree`-shaped
+listings among them, was red for a reason its author would not call a misalignment.
+
+⛔ **Which character is a junction is read off the character's own Unicode name** and never listed:
+the box-drawing block names each character by its arms — `UP`, `DOWN`, `LEFT`, `RIGHT`, and
+`VERTICAL` and `HORIZONTAL` for the pairs — so a light, heavy, double, arc or mixed form is read by
+the same rule and no table of them can drift from the block.
+
+⛔ **The check is the project's to turn on**, by `box_diagrams.held: true`, and a project that states
+no `box_diagrams` block holds no diagram — which makes it the one key directly under `documents`
+that is not required, and the exception is stated rather than slipped in: the key arrived after
+every configuration in § 1's sense had been written, and a required key would refuse each of them
+for a check none of them asked for. ⚠️ **`held: false` and the block absent are the same answer**,
+and the run says no diagram is held rather than reporting the diagrams as aligned.
+
+⛔ **A block is exempted by a row of `exempt`, and the row names the block by its own text** — an
+expression searched in the fenced block's content, inside the document the row names — ⚠️ **never
+by a line number**, which every edit above the block moves. `reason` is required, for `forbidden`'s
+reason one key over: an exemption whose reason nobody wrote down is one nobody can tell from a
+misaligned diagram somebody silenced.
+
+⛔ **An exemption that matches no block is a red, and so is one whose expression does not compile.**
+The first is an exemption outliving the diagram it was written for, which then silently covers
+whatever is drawn there next; the second is an exemption that can never be evaluated, which is
+never *matches nothing*.
+
 ### Every check carries a violation it reddens on
 
 ⛔ **A check ships with a recorded violation, and the suite asserts the red rather than claiming
@@ -9517,12 +9619,12 @@ this is what happened.
 
 ⛔ **A project's own domain-specific computed checks stay in that project's own script, and this
 facet neither carries them nor names them.** What a shared mechanism can hold is the graph, the file
-set, the forbidden names and a document's block structure; whether a project's five request shapes
-each have a home in its layout is a property of that project's subject matter, and a key pointing at
-a command that answers it would satisfy
+set, the forbidden names, a document's block structure and its box diagrams' alignment; whether a
+project's five request shapes each have a home in its layout is a property of that project's
+subject matter, and a key pointing at a command that answers it would satisfy
 [§ 36](#why-a-utility-has-no-home-on-this-surface-from-either-direction)'s letter and deliver
 nothing. ⚠️ **So the facet's coverage is a boundary and not a claim of completeness**: a project's
-document rules are expressible here to the extent that they are the four things above.
+document rules are expressible here to the extent that they are the five things above.
 
 ### `carrier: none`, and the configurations this key refuses
 
@@ -9535,10 +9637,10 @@ asked what holds a document answers *nothing is stated* rather than *the documen
 and has not written its rows yet, which is this facet at its most drifted and the state it most
 needs to tell apart from the other.
 
-⛔ **Stated as a list, the block states every key and none is defaulted.** `forbidden: []` and
-`quoted: []` are a project forbidding and quoting nothing, written; `files`, `entry_points` and
-`graph` carry no empty form, a governed set with nothing in it being a check that never fires while
-reading as one that does.
+⛔ **Stated as a list, the block states every key and none is defaulted**, `box_diagrams` alone
+excepted for the reason its own subsection states. `forbidden: []` and `quoted: []` are a project
+forbidding and quoting nothing, written; `files`, `entry_points` and `graph` carry no empty form, a
+governed set with nothing in it being a check that never fires while reading as one that does.
 
 ⛔ **This key is required of every project, so it invalidates every configuration written before
 it** — [§ 1](#the-surface-is-resolved-beside-the-configuration)'s own

@@ -205,6 +205,13 @@ deploy:
     invoke: command
     command: "<the whole command, with its project and configuration arguments>"
     requires: ["<a credential this repository may not hold>"]
+    # § 33's tree conditions, in both of the shapes measured: a tree that is not clean or not on
+    # the release branch stops the deploy, and one behind its remote tip lets it run and holds the
+    # advance. ⚠️ The tip is read as last fetched, so the fetch stays this project's own command.
+    tree:
+      - { condition: clean, holds: deploy }
+      - { condition: on_branch, branch: "<the release branch>", holds: deploy }
+      - { condition: at_remote_tip, holds: advance }
     advances: terminal
     batch: "<a command answering which of the identifiers handed to it this release carries>"
     grouping: release_scope
