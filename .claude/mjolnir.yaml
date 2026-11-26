@@ -1063,6 +1063,9 @@ documents:
     - document: "plugins/mjolnir/skills/save/SKILL.md"
       may_name: ["plugins/mjolnir/config/schema.md"]
       derived_from: ["plugins/mjolnir/config/schema.md"]
+    - document: "plugins/mjolnir/skills/session-summary/SKILL.md"
+      may_name: ["plugins/mjolnir/config/schema.md"]
+      derived_from: ["plugins/mjolnir/config/schema.md"]
     - document: "plugins/mjolnir/skills/setup/SKILL.md"
       may_name: ["plugins/mjolnir/config/schema.md"]
       derived_from: ["plugins/mjolnir/config/schema.md"]
