@@ -99,7 +99,14 @@ def parse(output: str) -> dict[str, float]:
         name, value = match.group(1), match.group(2)
         if name in figures:
             raise Unreadable(f"line {number} prints {name!r} a second time")
-        figures[name] = float(value) if "." in value else int(value)
+        # ⚠️ An interpreter that limits integer conversion raises on a figure
+        # longer than its limit; that is a figure nobody could read, and it is
+        # reported as one rather than as a traceback.
+        try:
+            figures[name] = float(value) if "." in value else int(value)
+        except ValueError as exc:
+            raise Unreadable(f"line {number} carries a number this interpreter "
+                             f"cannot convert: {exc}") from exc
     return figures
 
 
@@ -253,6 +260,17 @@ def _self_test() -> int:
             check(label, True)
         else:
             check(label, False, "read")
+    # ⚠️ Answered both ways on purpose: an interpreter with no conversion limit
+    # reads the figure, and one with a limit must refuse it rather than raise.
+    huge = "9" * 5000
+    try:
+        read_huge = parse(f"cases {huge}\n") == {"cases": int(huge)}
+    except Unreadable:
+        read_huge = True
+    except ValueError:
+        read_huge = False
+    check("a figure longer than the interpreter converts is unread, never a crash",
+          read_huge, "raised ValueError")
 
     print("\n§ 33, what a figure does to an outcome:")
     plain = judge(entry(), {"smoke": "passed"}, {"smoke": {"cases": 0, "score": 0.1}})
