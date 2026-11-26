@@ -3431,8 +3431,19 @@ A wait inside the hook is ended by the hook's own time limit, and a guard ended 
 through unheld. Where the resource states a `wait_up_to` ([§ 10](#exclusive-resources)) the refusal
 names the command that waits, which rests until a place is free or the bound is reached, and never
 past the time its caller says it has. A wait that runs out refuses and names who holds the places.
-⚠️ The wait holds nothing: the call is made again afterwards and its own guard takes the place, so
-another holder may be ahead of it.
+
+**Where the resource states `wait_holds_for`, its waits are served in arrival order, and a wait
+ends holding the place it waited for.** The wait takes a place in line, keyed by the session the
+refusal names, and keeps it as long as it reads the resource within `wait_holds_for` seconds. That
+place outlives the wait itself, so a wait run again after its call's own time limit waits from where
+it stood rather than from the back. A place coming free goes to the first in line. The wait ends
+holding it, and the session's next claiming call takes that place rather than a second; with no
+such call within `wait_holds_for`, it is given back. Everyone in line ahead of a call counts against
+the cap, so a call that never waited is refused while a waiter is owed the place. A refused call
+that never waits takes no place in line.
+
+⚠️ Where it states none, the wait holds nothing: the call is made again afterwards and its own guard
+takes the place, so another holder may be ahead of it.
 
 So `ttl` bounds what a leak costs. Measured on the same project: two leases left behind by calls
 refused before they ran pinned a cap of two with nothing running, after which every call queued and
@@ -4312,9 +4323,9 @@ unless the tree it came from is named.
 A resource the trees cannot all help themselves to — a local service stack, a build daemon's slots,
 a machine-wide lock. How many may be held at once is `cap`, and what holds a place is `subject`, so
 neither "one" nor "a tree" is built into the facet. **Every key of an entry but `never_claims`,
-`grace`, `probe_timeout`, `wait_up_to` and the `background_` keys is stated and none of them is
-defaulted**: each is a measurement of the resource, and a default here would be the procedure
-describing somebody else's machine:
+`grace`, `probe_timeout`, `wait_up_to`, `wait_holds_for` and the `background_` keys is stated and
+none of them is defaulted**: each is a measurement of the resource, and a default here would be the
+procedure describing somebody else's machine:
 
 ```yaml
 branch_model:
@@ -4328,6 +4339,7 @@ branch_model:
       grace:      60             # seconds; may be left unwritten
       probe_timeout: 5           # seconds; may be left unwritten
       wait_up_to: 300            # seconds, or null; may be left unwritten
+      wait_holds_for: 30         # seconds; may be left unwritten
       background_end: process | probe | expiry   # may be left unwritten
       background_probe: "<prints `running` or `ended` for one call's work>"   # under `probe` only
       background_grace: 30       # seconds; under `probe` only
@@ -4359,6 +4371,12 @@ branch_model:
   Unwritten, the guard's own limit applies. Refused beside `probe: null`, for the same reason.
 - **`wait_up_to`** — the seconds a role may wait for a place that is not free. `null`, and the key
   left unwritten, each say refuse.
+- **`wait_holds_for`** — the seconds a waiter's place is kept with nobody asking for it: its place
+  in line between two waits, and a place its wait ended holding before a call takes it. Stated, the
+  waits for the resource are served in arrival order and each one ends holding its place
+  ([§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)); unwritten, a wait
+  holds nothing. From ten to that entry's `ttl` — below ten a waiter gives up its place between two
+  of its own readings — and refused where `wait_up_to` is not stated.
 - **`background_end`** — what establishes that work a call put in the background has ended. Unwritten
   is `expiry`: nothing is read and the lease counts until its `ttl`.
 - **`background_probe`** — the command `probe` asks, run from the skills root with the place's key

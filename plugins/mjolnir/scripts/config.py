@@ -135,6 +135,12 @@ PLUGIN_IN_REPO = os.path.relpath(PLUGIN_ROOT, REPO_ROOT)
 # does not get to move it, or a role would have to be told where to look.
 CONFIG_PATH = os.path.join(".claude", "mjolnir.yaml")
 
+# § 10's least `wait_holds_for`: the longest a waiter goes between two of its own
+# readings -- the wait's rest plus the longest probe the reader admits -- so a
+# place in line is never given up while its waiter is still waiting.
+# `enforce.py --self-test` holds this to its own figures.
+WAIT_HOLDS_LEAST = 10
+
 # The markers that make the surface machine-readable. These are read as one
 # semicolon-separated clause of a key's trailing comment; every clause of a
 # comment is scanned, not just the last one, so a key that states prose and a
@@ -11618,6 +11624,23 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                     f"is {wait!r}; it is a whole number of seconds of at least one, or `null` "
                     "where a call over the cap is refused and nothing waits (§ 10).",
                 )
+            holds = entry.get("wait_holds_for")
+            if holds is not None:
+                if not wait:
+                    raise ConfigError(
+                        f"{at}.wait_holds_for",
+                        "is stated and `wait_up_to` is not, so nothing waits and no line is "
+                        "kept for it to hold a place in (§ 10).",
+                    )
+                if (isinstance(holds, bool) or not isinstance(holds, int)
+                        or not WAIT_HOLDS_LEAST <= holds <= entry["ttl"]):
+                    raise ConfigError(
+                        f"{at}.wait_holds_for",
+                        f"is {holds!r}; it is a whole number of seconds from "
+                        f"{WAIT_HOLDS_LEAST} to {entry['ttl']} (§ 10). Below that a waiter "
+                        "loses its place between two of its own readings, and past the "
+                        "lease's lifetime a place handed over outlives the place it stands for.",
+                    )
             for key, most in (("grace", entry["ttl"]), ("probe_timeout", 8)):
                 value = entry.get(key)
                 if value is None:
@@ -21698,6 +21721,18 @@ def _planted_violations():
          "branch_model.exclusive_resources[0].wait_up_to", _a_resource_of(wait_up_to=True)),
         ("a wait with no bound", "branch_model.exclusive_resources[0].wait_up_to",
          _a_resource_of(wait_up_to="wait")),
+        ("a line kept for a resource nothing waits on",
+         "branch_model.exclusive_resources[0].wait_holds_for",
+         _a_resource_of(wait_holds_for=30)),
+        ("a place in line given up between two of its waiter's readings",
+         "branch_model.exclusive_resources[0].wait_holds_for",
+         _a_resource_of(wait_up_to=60, wait_holds_for=WAIT_HOLDS_LEAST - 1)),
+        ("a place in line outliving the lease it stands for",
+         "branch_model.exclusive_resources[0].wait_holds_for",
+         _a_resource_of(wait_up_to=60, wait_holds_for=100000)),
+        ("a place in line held for a flag's worth of seconds",
+         "branch_model.exclusive_resources[0].wait_holds_for",
+         _a_resource_of(wait_up_to=60, wait_holds_for=True)),
         ("an end of background work outside its alternation",
          "branch_model.exclusive_resources[0].background_end",
          _a_resource_of(background_end="whenever")),
