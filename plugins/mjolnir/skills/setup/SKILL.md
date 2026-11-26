@@ -123,9 +123,13 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/configure.py" write --skills-root <skills
 
 - ⛔ **A refusal is a refusal.** The report names every key that is short, and all of them at once
   rather than one per round trip. Answer them and run again; nothing is written in between.
-- ⛔ **A key the carrier could not place in a file that already exists is named rather than
-  appended**, and the report says which. That is a key for a person to put in by hand — appending it
-  blind would state it twice, and the reader resolves one of the two copies.
+- **A key new to a file that already exists is placed inside the block it belongs to**, or at the
+  end of the file where its whole block is absent — which is how a question left open on the first
+  run is answered on a later one. ⛔ **A key the carrier could not place is named rather than
+  appended**, and the report says which: the shapes are
+  [`§ What a project is asked`](../../config/schema.md#what-a-project-is-asked-and-the-one-file-the-answers-are-written-into)'s,
+  and that is a key for a person to put in by hand — appending it blind would state it twice, and
+  the reader resolves one of the two copies.
 - ⛔ **Read what it says it changed.** A configured project whose answers are already in the file is
   reported as unchanged, with nothing written at all; a file that is not there is rendered whole and
   carries the generation's own marker.

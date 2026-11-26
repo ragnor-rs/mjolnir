@@ -5115,8 +5115,11 @@ exist.** Driving a deployed system needs a stack, a credential, indexed material
 the diff. One is a project's own command and may be a `checks_local` entry under
 [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts), read by a `local` check of
 [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check); the other is
-mirrored as a host check like any other (§ 2). Measured in one project, where the two comparisons
-run in a workflow beside a suite the same workflow cannot start
+mirrored as a host check like any other (§ 2), and the install step writes it as a gate wherever
+this facet is carried
+([§ What the toolkit installs](#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)).
+Measured in one project, where the two comparisons run in a workflow beside a suite the same
+workflow cannot start
 ([the measurement](../../../docs/configuration-surface.md#the-register-nothing-compared-to-the-suite)).
 
 ⛔ **Both directions of the first comparison are held, and the failure that motivated it is the one
@@ -9538,6 +9541,10 @@ documents:
     pattern:        "<the name or pattern that may not appear in a governed document>"
     reason:         "<what its appearance would mean>"
     stable_because: "<what keeps the forbidden thing from being reworded into something else>"
+    covers:         ["<a glob of governed documents the entry holds>"]  # omitted where it holds every one
+    exempt:                                                             # omitted where none is exempt
+      glob:   "<a glob of governed documents the entry does not hold>"
+      reason: "<why a document it matches may carry the forbidden thing>"
   quoted:
     sentence: "<the sentence quoted back at the document it came from>"
     document: "<the document it is quoted against>"
@@ -9592,6 +9599,28 @@ of that check would move back out of the facet into a script nobody compares aga
 ⛔ **The kind is stated and never derived from what the entry looks like.** A pattern and a quoted
 sentence are the same string to a reader, so a facet guessing between them would warn about the
 wrong half of a project's list.
+
+### Which documents a forbidding entry holds
+
+⛔ **A forbidding entry holds every governed document unless it states otherwise, and it may state
+otherwise in two ways.** `covers` narrows it to the governed documents its globs match; `exempt`
+lists globs the entry does not hold, each with the `reason` a document it matches may carry the
+forbidden thing. ⚠️ **The case that needs this is the one the kind creates**: a document that
+defines a ban names the banned thing, so an entry with no scope fails the very document that states
+it.
+
+⛔ **An entry stating neither key holds every governed document**, and that is the whole of the
+default. The globs are the governed set's own (`*` stops at a separator, `**` crosses one), and a
+document an entry holds is one `covers` matches, or any governed document where `covers` is omitted,
+and no `exempt` glob matches.
+
+⛔ **A scope matching nothing is a red, not a scope that holds nothing.** A `covers` glob that
+matches no governed document, an `exempt` glob that matches no document the entry would otherwise
+hold, and exemptions that together take out every document the entry covers are each reported by
+the check, so a scope that went stale when a file moved is not read as the entry having nothing to
+find. ⛔ **An exemption carries its reason, and `covers: []` and
+`exempt: []` are refused at load**: an empty `covers` would hold no document while reading as
+holding some, and the absent key is how an entry says it holds every one or exempts none.
 
 ### The two edges, and which of them is enforced
 
@@ -9767,6 +9796,10 @@ project's subject matter, and a key pointing at a command that answers it would 
 [§ 36](#why-a-utility-has-no-home-on-this-surface-from-either-direction)'s letter and deliver
 nothing. ⚠️ **So the facet's coverage is a boundary and not a claim of completeness**: a project's
 document rules are expressible here to the extent that they are the things above.
+
+⚠️ **How the shared check reaches a project's host is the install step's**, which writes it as a
+gate wherever this facet is carried
+([§ What the toolkit installs](#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)).
 
 ### `carrier: none`, and the configurations this key refuses
 
@@ -10413,6 +10446,36 @@ does with it: the block is written where the project states one, and nothing abo
 here. A value that block states and the project does not is the `needs` rule above rather than a
 second mechanism.
 
+**A facet whose check this toolkit ships gets that check as a gate wherever the facet is carried.**
+The checks are [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property)'s over the
+governed documents and [§ 15](#15-end-to-end-coverage-recorded)'s over the register and the change,
+beside [§ 20](#20-the-sections-a-pull-request-body-must-carry)'s over a body. Each is written as three things: a copy
+of its carrier with the project's facet rendered into it, the workflow that runs the copy, and the
+`host.checks` entry that registers the run. ⛔ **The copy runs with what a checkout holds and
+nothing else** — no toolkit, no configuration, no credential — which is why the facet is rendered in
+rather than read: a checkout carries neither the plugin nor, where a project withholds it, the
+configuration. ⚠️ **What the run reads beyond the tree is the event's own statement**: a change's
+base arrives with a pull-request event, so a gate whose check reads a base runs on that event and
+refuses where none is stated, rather than deriving one. ⚠️ **And § 38's documents are read from
+the skills root**, so where that root sits above the code root the gate would sit in, a checkout of
+that repository does not hold them, and the gate is refused as the next paragraph refuses one.
+⛔ **A facet stated absent gets no gate**,
+and a project that stops carrying one has the gate taken out, file and entry, which is the removable
+property above with nothing added.
+
+⛔ **A facet the repository does not commit is not committed by this step on the project's
+behalf.** The gate of § 38 or § 15 is refused, with the reason named and nothing written, where the
+facet it would render is withheld: a key under it
+[§ 28](#28-a-configured-value-a-repository-may-not-hold) routes to the untracked layer, or a
+configuration file the repository ignores. Written anyway, such a gate either commits what the
+project withheld or, reading the configuration instead, holds nothing on every run — the first a
+leak and the second a green over nothing. ⚠️ **Ignored and not untracked**: a configuration written
+and not yet added is one the project can commit, and refusing it would refuse every adoption on its
+first day. ⚠️ **And a gate already standing is left and reported**, which is the refusing
+property's *no partial install* rather than a removal nobody asked for. ⚠️ **The body gate of
+§ 20 and the title gate of [§ 2](#2-code-host) are not held to this**: a project stating nothing new
+keeps what those two write for it, and holding them here would change that.
+
 ⛔ **An artifact a mechanism will not act on unless it carries a mode is written with it.** The
 measured case is a hook: git treats a non-executable one as absent, so a rail installed without the
 bit is a rail that is not installed while the step reports it written. ⚠️ **And where the mechanism
@@ -10520,9 +10583,19 @@ neither is one that loads and **does not carry the change**. ⚠️ **A key the 
 this step has not written yet — and a key the reader cannot resolve at all is reported as unread
 rather than as wrong, the write being an act that can be made again.
 
-⛔ **A key this step cannot place in a file that already exists is reported and never appended.** A
-key appended blind is a key stated twice, and the reader resolves one of the two copies — so what
-comes back names the keys for whoever edits the file, with nothing written.
+⛔ **A key a file that already exists does not state yet is placed where its absence is verifiable,
+and reported everywhere else.** Verifiable means the file's text states the parent block and not the
+child, the parsed file holds a mapping there with no such child, and the parent's own line opens a
+block rather than a flow mapping or a scalar. The child then goes at the end of that block, at the
+indent its existing children use, and a top-level block the file does not have at all goes at the
+end of the file — ⛔ **provided the file it leaves parses to the old document with that one key
+added and nothing else moved**, since the read-back above compares only the keys that changed.
+⚠️ **This is what lets a person come back to setup** to answer a question the first
+run left open, without editing the generated file by hand. ⛔ **Every other shape is reported and
+never appended** — a parent in flow style, a parent stating a scalar or a list, a parent with no
+child to read an indent from: a key appended blind is a key stated twice, and the reader resolves
+one of the two copies, so what comes back names the keys for whoever edits the file, with nothing
+written.
 
 **The marker is the generation's and not the file's.** A file this step rendered carries a
 generated-by marker at its head, so the generation is discoverable later and so it can be unpicked
