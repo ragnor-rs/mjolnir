@@ -412,6 +412,16 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.transitions.resolve": ask(
         "How is a transition resolved -- by the status it reaches, or by its own id?",
     ),
+    "tracker.transitions.fields.status": ask(
+        "Which statuses does this tracker refuse to move an item into without a "
+        "field set as part of the move -- a resolution, for instance?",
+    ),
+    "tracker.transitions.fields.field": ask(
+        "Which field does a move to that status need, by the name the site gives it?",
+    ),
+    "tracker.transitions.fields.value": ask(
+        "What value does every move to that status send in that field?",
+    ),
     "tracker.create_fields.field": ask(
         "Which fields does this tracker refuse to create an item without, beyond "
         "its project, type, title and body?",
@@ -428,6 +438,14 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.relations.*.side": ask(
         "Where that link type is worded differently each way, which wording does "
         "the item named first read -- outward or inward?",
+    ),
+    "tracker.search.texts": ask(
+        "Which texts should a duplicate search match its terms in -- the title, the "
+        "body, or both? Leave it unstated to keep what this tracker searches today.",
+    ),
+    "tracker.search.fields": ask(
+        "Which fields record an item's area well enough that a duplicate search "
+        "should be able to filter on them?",
     ),
     "tracker.policy.forbid_on_item": ask(
         "Which classes of content may not be written onto an item here?",

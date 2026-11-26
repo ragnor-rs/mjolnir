@@ -7396,6 +7396,61 @@ def _validate_create_fields(data: dict) -> None:
         seen.add(name)
 
 
+def _validate_transition_fields(data: dict) -> None:
+    """§ 3's fields a move to a status carries, held to a shape a move can send.
+
+    ⛔ Refused at load: each of these otherwise surfaces at the first move to that
+    status, which is a role holding a finished change and an item it cannot move.
+    """
+    key = "tracker.transitions.fields"
+    entries = _get(data, key)
+    if entries is None:
+        return
+    if not isinstance(entries, list):
+        raise ConfigError(
+            key,
+            f"is {entries!r}; § 3 states it as a list of entries, each naming a "
+            "`status`, a `field` and the `value` a move to that status sends in it.",
+        )
+    statuses = {
+        str(status.get("name"))
+        for status in data.get("statuses") or []
+        if isinstance(status, dict)
+    }
+    seen = set()
+    for index, entry in enumerate(entries):
+        where = f"{key}[{index}]"
+        entry = entry if isinstance(entry, dict) else {}
+        status, name = entry.get("status"), entry.get("field")
+        for part, said in (("status", status), ("field", name)):
+            if not isinstance(said, str) or not said.strip():
+                raise ConfigError(
+                    where,
+                    f"names no `{part}`. A move carries a field to one status, so "
+                    "an entry missing either half is one nothing can send (§ 3).",
+                )
+        if status not in statuses:
+            raise ConfigError(
+                where,
+                f"names the status `{status}`, which no entry of `statuses` names. "
+                "A move is to one of § 4.2's status words, so a field stated for "
+                "another one is never sent (§ 3).",
+            )
+        if entry.get("value") is None:
+            raise ConfigError(
+                where,
+                f"states no `value` for `{name}`. Nothing else supplies one: a move "
+                "is asked for by role and carries what this list states (§ 3).",
+            )
+        if (status, name) in seen:
+            raise ConfigError(
+                where,
+                f"states `{name}` for `{status}` a second time. Two values for one "
+                "field have no reading of which a move sends (§ 3).",
+            )
+        seen.add((status, name))
+
+
 # The two wordings a link type may be read from, as § 3's `tracker.relations`
 # names them. ⛔ A side is which wording the item named first reads, never which
 # position a call puts it in -- the two run opposite ways on the tracker this was
@@ -7447,6 +7502,54 @@ def _validate_relations(data: dict) -> None:
                     "The read-back would have two names for one link (§ 3).",
                 )
             claimed[(kind, wording)] = str(name)
+
+
+def _validate_search(data: dict, facts: dict) -> None:
+    """§ 3's `tracker.search`, held to what a search can read.
+
+    ⛔ Refused at load rather than at the first search: a text outside the list the
+    surface shows is one no implementation matches in, and a malformed field list
+    is one whose fields every query would refuse -- each a duplicate check that
+    would otherwise fail at the moment a filing depends on it.
+    """
+    texts = _get(data, "tracker.search.texts")
+    if texts is not None:
+        if not isinstance(texts, list) or not texts:
+            raise ConfigError(
+                "tracker.search.texts",
+                f"is {texts!r}; § 3 states it as a non-empty list of the texts a "
+                "query's terms are matched in. Leave the key out to keep each "
+                "implementation's own.",
+            )
+        allowed = vocabulary_list(facts, "tracker.search.texts", "a searched text")
+        for text in texts:
+            if text not in allowed:
+                raise ConfigError(
+                    "tracker.search.texts",
+                    f"names {text!r}; the surface allows {' | '.join(allowed)} (§ 3).",
+                )
+        repeated = sorted({str(t) for t in texts if texts.count(t) > 1})
+        if repeated:
+            raise ConfigError(
+                "tracker.search.texts",
+                f"names {', '.join(repeated)} more than once. It is a set (§ 3).",
+            )
+    fields = _get(data, "tracker.search.fields")
+    if fields is not None:
+        if not isinstance(fields, list) or not all(
+            isinstance(name, str) and name.strip() for name in fields
+        ):
+            raise ConfigError(
+                "tracker.search.fields",
+                f"is {fields!r}; § 3 states it as a list of field names, each as "
+                "the tracker names it.",
+            )
+        repeated = sorted({name for name in fields if fields.count(name) > 1})
+        if repeated:
+            raise ConfigError(
+                "tracker.search.fields",
+                f"names {', '.join(repeated)} more than once. It is a set (§ 3).",
+            )
 
 
 def _validate_billing(data: dict) -> None:
@@ -10393,7 +10496,9 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # marker for it, and it is the one arm whose permissive reading is money.
     _validate_billing(data)
     _validate_create_fields(data)
+    _validate_transition_fields(data)
     _validate_relations(data)
+    _validate_search(data, facts)
     # § 38's lists, in the same position and for the same reason. ⛔ The two rules
     # no marker reaches are the ones about the row set rather than a row: that
     # every edge names a declared document, and that the derivation record stays
@@ -15819,6 +15924,13 @@ def self_test() -> int:
         broken = _refused(mutate(_a_valid_example()))
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
+    # And § 3's move fields from the green side, so the arms above refuse what
+    # they name rather than every entry.
+    stated = _refused(_with_move_fields(
+        _a_valid_example(), [{"field": "a", "value": "b"}, {"field": "c", "value": ["d"]}]
+    ))
+    check("a move stating two fields for one status loads", stated is None,
+          f"refused {stated!r}")
 
     # ⛔ § 38's scope keys from the green side: an entry stating both loads, and
     # one stating neither loads too -- the scope keys being the only keys of an
@@ -17926,6 +18038,23 @@ def _planted_violations():
          at("tracker.create_fields", [{"value": ["a"]}])),
         ("a creation field stated twice", "tracker.create_fields[1]",
          at("tracker.create_fields", [{"field": "a"}, {"field": "a"}])),
+        # § 3's fields a move carries, one plant per arm. ⚠️ The status each
+        # names is read off the example rather than written, so the arms below
+        # the one about an unknown status are reached rather than refused by it.
+        ("move fields that are not a list", "tracker.transitions.fields",
+         at("tracker.transitions.fields", "Resolution")),
+        ("a move field with no status", "tracker.transitions.fields[0]",
+         at("tracker.transitions.fields", [{"field": "a", "value": "b"}])),
+        ("a move field with no field", "tracker.transitions.fields[0]",
+         lambda data: _with_move_fields(data, [{"value": "b"}])),
+        ("a move field to a status nothing names", "tracker.transitions.fields[0]",
+         at("tracker.transitions.fields",
+            [{"status": "<no status>", "field": "a", "value": "b"}])),
+        ("a move field with no value", "tracker.transitions.fields[0]",
+         lambda data: _with_move_fields(data, [{"field": "a"}])),
+        ("a move field stated twice for one status", "tracker.transitions.fields[1]",
+         lambda data: _with_move_fields(
+             data, [{"field": "a", "value": "b"}, {"field": "a", "value": "c"}])),
         # § 3's non-blocking relations, one plant per arm.
         ("relations that are not a mapping", "tracker.relations",
          at("tracker.relations", ["related"])),
@@ -17939,6 +18068,19 @@ def _planted_violations():
         ("an unsided relation beside a sided one on its type", "tracker.relations.also",
          at("tracker.relations", {"related": {"type": "a", "side": "outward"},
                                   "also": {"type": "a"}})),
+        # § 3's search coverage, one plant per arm.
+        ("searched texts that are not a list", "tracker.search.texts",
+         at("tracker.search.texts", "title")),
+        ("searched texts stated empty", "tracker.search.texts",
+         at("tracker.search.texts", [])),
+        ("a searched text outside the list the surface shows", "tracker.search.texts",
+         at("tracker.search.texts", ["title", "comments"])),
+        ("a searched text stated twice", "tracker.search.texts",
+         at("tracker.search.texts", ["body", "body"])),
+        ("searched fields that are not a list of names", "tracker.search.fields",
+         at("tracker.search.fields", ["Area", ""])),
+        ("a searched field stated twice", "tracker.search.fields",
+         at("tracker.search.fields", ["Area", "Area"])),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
@@ -22209,6 +22351,15 @@ def _with(data: dict, path: str, value) -> dict:
         node = node.setdefault(part, {})
     node[parts[-1]] = value
     return data
+
+
+def _with_move_fields(data: dict, entries: list) -> dict:
+    """§ 3's move fields written in, each entry to the example's first status."""
+    first = str(((data.get("statuses") or [{}])[0]).get("name"))
+    return _with(
+        data, "tracker.transitions.fields",
+        [{"status": first, **entry} for entry in entries],
+    )
 
 
 def _said(data: dict) -> str:
