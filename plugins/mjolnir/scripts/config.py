@@ -3031,6 +3031,14 @@ class Config:
             "graph": [dict(entry) for entry in self.get("documents.graph") or ()],
             "forbidden": [dict(entry) for entry in self.get("documents.forbidden") or ()],
             "quoted": [dict(entry) for entry in self.get("documents.quoted") or ()],
+            # ⛔ The one key under `documents` that may be absent, and absence comes
+            # back as `None` rather than as a block reading `held: false`: the
+            # carrier reports *no diagram is held* either way, and a reader
+            # handed a fabricated block could not say which the project wrote.
+            "box_diagrams": (
+                dict(self.get("documents.box_diagrams"))
+                if self.get("documents.box_diagrams") is not None else None
+            ),
         }
 
     @property
@@ -6094,7 +6102,9 @@ def _validate_documents(data: dict, facts: dict) -> None:
         # governed and nothing holds.
         stated = [
             key
-            for key in ("files", "entry_points", "graph", "forbidden", "quoted")
+            for key in (
+                "files", "entry_points", "graph", "forbidden", "quoted", "box_diagrams",
+            )
             if key in _absent_as(_get(data, "documents"), {})
         ]
         if stated:
@@ -6332,6 +6342,107 @@ def _validate_documents(data: dict, facts: dict) -> None:
                         "A sentence quoted against a document outside the governed "
                         "set is a check over a file nothing else here reads.",
                     )
+
+    _validate_box_diagrams(data, facts, rows)
+
+
+def _validate_box_diagrams(data: dict, facts: dict, rows: dict) -> None:
+    """§ 38's `box_diagrams`, the one key under `documents` that may go unstated.
+
+    ⛔ **Absent is admitted and every stated form is held**: the key arrived after
+    every configuration had been written, so requiring it would refuse each of
+    them for a check none asked for -- while a block that *is* stated and could
+    not be read is a diagram rule somebody turned on and nothing performs.
+    """
+    block = _get(data, "documents.box_diagrams")
+    if block is None:
+        return
+    if not isinstance(block, dict):
+        raise ConfigError(
+            "documents.box_diagrams",
+            "must be a mapping stating `held` and `exempt` (§ 38), or be left out "
+            "where no diagram is held.",
+        )
+    declared = _documents_entries(_get(data, "documents"), "box_diagrams", facts)
+    # The surface's two fences both reach under this key: the block's own two
+    # keys, and the exemption entry's keys one level further down.
+    own = {key for key in declared if "." not in key}
+    for stated_key in block:
+        if stated_key not in own:
+            raise ConfigError(
+                f"documents.box_diagrams.{stated_key}",
+                "is a key § 38 does not declare on this block, so it is a fact "
+                "about the diagrams that nothing reads. The keys it declares are: "
+                f"{', '.join(sorted(own))}.",
+            )
+    for needed in ("held", "exempt"):
+        if needed not in block:
+            raise ConfigError(
+                f"documents.box_diagrams.{needed}",
+                "required once the block is stated (§ 38). The block may be left "
+                "out whole; stated, it says whether diagrams are held and which "
+                "block is exempt, `[]` where none is.",
+            )
+    if not isinstance(block["held"], bool):
+        raise ConfigError(
+            "documents.box_diagrams.held",
+            f"is {block['held']!r}, where § 38 states `true` or `false`. A string "
+            "here would read as turned on whatever it says.",
+        )
+    exempt = block["exempt"]
+    if not isinstance(exempt, list):
+        raise ConfigError(
+            "documents.box_diagrams.exempt",
+            "must be a list, `[]` where no block is exempt (§ 38).",
+        )
+    entry_keys = {
+        key[len("exempt."):] for key in declared if key.startswith("exempt.")
+    }
+    for index, entry in enumerate(exempt):
+        where = f"documents.box_diagrams.exempt[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(where, "must be a mapping (§ 38).")
+        for stated_key in entry:
+            if stated_key not in entry_keys:
+                raise ConfigError(
+                    f"{where}.{stated_key}",
+                    "is a key § 38 does not declare on an exemption. The keys it "
+                    f"declares are: {', '.join(sorted(entry_keys))}.",
+                )
+        for needed in sorted(entry_keys):
+            if needed not in entry:
+                raise ConfigError(
+                    f"{where}.{needed}",
+                    "required (§ 38). An exemption names its document, the block "
+                    "by its own text, and why -- one whose reason nobody wrote down "
+                    "cannot be told from a misaligned diagram somebody silenced.",
+                )
+            stated = entry[needed]
+            if not isinstance(stated, str) or not stated.strip():
+                raise ConfigError(
+                    f"{where}.{needed}",
+                    "must be non-empty text (§ 38); a blank value reads as stated "
+                    "and says nothing.",
+                )
+        document = _a_document(
+            entry["document"], f"{where}.document", "the document the block is in"
+        )
+        if document not in rows:
+            raise ConfigError(
+                f"{where}.document",
+                f"is {document!r}, which no row of `graph` declares (§ 38). A block "
+                "exempted in a document outside the governed set is an exemption "
+                "over a file this check never reads.",
+            )
+        try:
+            re.compile(entry["block"])
+        except re.error as exc:
+            raise ConfigError(
+                f"{where}.block",
+                f"is not a usable expression ({exc}) (§ 38). An exemption that "
+                "cannot be evaluated is refused here rather than read as matching "
+                "nothing.",
+            ) from None
 
 
 def _validate_spec_corpus(data: dict) -> None:
@@ -14467,6 +14578,21 @@ def self_test() -> int:
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
 
+    # ⛔ § 38's `box_diagrams`, the green side of the arms planted above: the
+    # block stated with an exemption loads, and so does a facet stating no block
+    # at all -- which is every configuration written before the key, and which
+    # § 38 makes the one absence in this facet that is not refused.
+    for label, block in (
+        ("a diagram block held, with an exemption", _a_box_diagrams(
+            exempt=[_a_diagram_exemption()])),
+        ("a diagram block stated as not held", _a_box_diagrams(held=False)),
+        ("no diagram block at all", _ABSENT),
+    ):
+        tree = _a_valid_example()
+        tree["documents"] = _a_documents_of(box_diagrams=block)
+        broken = _refused(tree)
+        check(f"{label} loads", broken is None, f"refused {broken!r}")
+
     # ⛔ § 37 against § 28's list, both directions. ⚠️ The list is how a project
     # states a key without writing it, and this facet read that rule in one
     # direction only -- so the arm below is the green side and the one under it
@@ -17242,6 +17368,50 @@ def _planted_violations():
          "documents.quoted[0].document",
          at("documents", _a_documents_of(
              quoted=[{"sentence": "a claim", "document": "b-document.md"}]))),
+        # § 38's `box_diagrams`, the one key under `documents` a project may leave
+        # unstated. ⛔ Every arm below is a block somebody **did** state: a
+        # diagram rule turned on and read by nothing is the failure, while the
+        # block left out is admitted and asserted below the list.
+        ("a diagram block stated beside a carrier that reads none",
+         "documents.box_diagrams",
+         at("documents", {"carrier": "none", "absent_reason": "nothing is governed",
+                          "box_diagrams": _a_box_diagrams()})),
+        ("a diagram block that is not a block", "documents.box_diagrams",
+         at("documents", _a_documents_of(box_diagrams=True))),
+        ("a key § 38 declares on no diagram block", "documents.box_diagrams.width",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(width=2)))),
+        ("a diagram block not saying whether it is held",
+         "documents.box_diagrams.held",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(held=_ABSENT)))),
+        # ⚠️ A string is its own arm: `"false"` is truthy, so a reader that
+        # coerced it would turn the check on for a project that wrote it off.
+        ("a diagram block held as a string", "documents.box_diagrams.held",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(held="false")))),
+        ("a diagram block omitting its exemptions", "documents.box_diagrams.exempt",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(exempt=_ABSENT)))),
+        ("an exemption list that is not a list", "documents.box_diagrams.exempt",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(exempt="all")))),
+        ("an exemption that is not a block", "documents.box_diagrams.exempt[0]",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=["a-document.md"])))),
+        ("a key § 38 declares on no exemption",
+         "documents.box_diagrams.exempt[0].line",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(line=12)])))),
+        ("an exemption with no reason", "documents.box_diagrams.exempt[0].reason",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(reason=_ABSENT)])))),
+        ("an exemption whose block is blank", "documents.box_diagrams.exempt[0].block",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(block="  ")])))),
+        ("an exemption in a document no row declares",
+         "documents.box_diagrams.exempt[0].document",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(
+             exempt=[_a_diagram_exemption(document="b-document.md")])))),
+        ("an exemption whose block is not a usable expression",
+         "documents.box_diagrams.exempt[0].block",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(block="(ab")])))),
         # § 39, and every arm no marker reaches. ⛔ They fail in one direction:
         # a corpus read at the wrong ref, or at no ref, is a confident wrong
         # answer in the step whose whole value is confidence, and nothing
@@ -19999,6 +20169,24 @@ def _two_groupings(data: dict, *, names=("one-scope", "another-scope")) -> dict:
     node = data.setdefault("work_item", {})
     node[ONE_GROUPING] = {name: _a_grouping_carrying_a_ref(name) for name in names}
     return data
+
+
+def _a_box_diagrams(**overrides) -> dict:
+    """§ 38's smallest stated diagram block, held and exempting nothing."""
+    block = {"held": True, "exempt": []}
+    block.update(overrides)
+    return {key: value for key, value in block.items() if value is not _ABSENT}
+
+
+def _a_diagram_exemption(**overrides) -> dict:
+    """§ 38's smallest valid exemption, every key of which is stated."""
+    entry = {
+        "document": "a-document.md",
+        "block": "a diagram drawn this way on purpose",
+        "reason": "it reproduces a terminal's own output",
+    }
+    entry.update(overrides)
+    return {key: value for key, value in entry.items() if value is not _ABSENT}
 
 
 def _a_forbidden_name(**overrides) -> dict:
