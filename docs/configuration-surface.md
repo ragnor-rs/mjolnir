@@ -121,6 +121,24 @@ title; a skill injects a preamble naming its directory. Anything matching on tho
 breaks silently when a role's carrier changes, which is why the day log's test file asserts both
 directions.
 
+### A carrier of the project's own, reached by route rather than carried
+
+One adopter sends its design items to a design skill of its own rather than through the loop's
+implementing leg. That was reported by the adopter's audit and is not re-verified here. Three
+answers were weighed:
+
+- a map from a label or type to a carrier the project names;
+- an exemption through [`schema.md § 30`](../plugins/mjolnir/config/schema.md#30-the-changes-that-do-not-go-through-the-loop);
+- leaving the hand-over to the person.
+
+The map was ruled for. § 30 classifies a change by the paths it touches, so it has no reading of
+an item before any path exists. Leaving it to the person makes every such item start the wrong
+leg first.
+
+The map does not contradict [`schema.md § 36`](../plugins/mjolnir/config/schema.md#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here),
+because what it configures is which carrier a leg the loop already has is entered through, and
+the toolkit still ships no such carrier.
+
 ### Name and role diverge in both directions
 
 One role under several names is the expected direction, and it happens: the bookkeeping role
