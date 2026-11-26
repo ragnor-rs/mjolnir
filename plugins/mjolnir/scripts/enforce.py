@@ -2552,11 +2552,16 @@ def release_answer(payload: dict, *, config=None, now: float | None = None,
     if config is None and not _states_a_configuration(payload.get("cwd")):
         return {}
     loaded = config if config is not None else _config(payload.get("cwd"))
+    # ⛔ The root the call stood in, resolved as the guard resolved it, so the
+    # resources a background process is recorded against are the ones the guard
+    # leased. `None` where the call stood in none of several roots: the guard
+    # held nothing there, so there is no process to record.
+    rooted = _standing_in(loaded, payload.get("cwd"))[0] if loaded is not None else None
     said = [
         # ⛔ First, so that a hook killed at its budget has written the record
         # before it reaches the reads that may hang.
         _prompt_recorded(loaded, payload, event, now=now, store=store, host=host),
-        _process_recorded(loaded, payload, event, now=now, store=store),
+        _process_recorded(rooted, payload, event, now=now, store=store),
         _places_given_back(loaded, payload, scope, now=now, store=store),
         behind_answer(payload, event=event, load=load, read=read),
     ]
@@ -2665,10 +2670,29 @@ def _process_recorded(loaded, payload: dict, event: str, *, now: float | None,
     )
 
 
+def _states_resources(loaded) -> bool:
+    """Whether any root of this configuration states an exclusive resource.
+
+    A stand-in carrying no roots answers for itself, as `_standing_in` does.
+    """
+    views = getattr(loaded, "views", None) or {}
+    if views:
+        return any(resources(view) for view in views.values())
+    return bool(resources(loaded))
+
+
 def _places_given_back(loaded, payload: dict, scope: str, *, now: float | None,
                        store: Path | None) -> str:
-    """What the sweep released, in words, or `""` where it released nothing."""
-    if loaded is None or not resources(loaded):
+    """What the sweep released, in words, or `""` where it released nothing.
+
+    ⛔ Whether to sweep is asked of **every** root, and never of the project
+    alone: the guard leases a resource the root a call stands in states, so under
+    § 1's collection of several a project-level read of the key is refused, and
+    the sweep then gave back nothing while the lease held its place until its
+    `ttl`. The release itself is keyed on the session and the call, so it needs
+    no root.
+    """
+    if loaded is None or not _states_resources(loaded):
         return ""
     where = store if store is not None else store_for(loaded.skills_root)
     command = str((payload.get("tool_input") or {}).get("command") or "")
@@ -5463,6 +5487,37 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and a merge made there is refused naming the same cause",
               denied(merged) and "roots.code" in reason and DIRECTION_CITATION in reason,
               reason[:240])
+
+        # ⛔ A place the guard takes on a resource one of several roots states is
+        # given back, by the exit event and by the sweep from outside every root.
+        # The guard leases off the root it resolved, so a release reading the key
+        # off the project was refused and the place held until its `ttl`. ⚠️ The
+        # configuration is handed in: loading it from inside a root is a separate
+        # question from which root a loaded configuration addresses.
+        rooted = reader._a_collection_example()
+        names = list(rooted["roots"]["code"])
+        for name in names:
+            rooted["roots"]["code"][name]["path"] = name
+        rooted["roots"]["code"][names[0]].setdefault("branch_model", {})[
+            "exclusive_resources"] = [_a_resource(cap=1)]
+        nested = Path(_a_root(Path(directory) / "states-a-rooted-resource",
+                              yaml.safe_dump(rooted)))
+        for name in names:
+            (nested / name).mkdir(exist_ok=True)
+        project = reader.load(str(nested), check_paths=False)
+        for event, cwd in (("PostToolUse", nested / names[0]), ("Stop", nested)):
+            at = fresh(f"rooted-{event}")
+            leased = _call("a-claiming-command", session=f"a-rooted-{event}",
+                           cwd=str(nested / names[0]))
+            guard_answer(leased, config=project, now=1000.0, store=at)
+            held = len(live_leases(at, 1000.0))
+            ended = dict(leased, hook_event_name=event, cwd=str(cwd))
+            release_answer(ended, config=project, now=1001.0, store=at,
+                           load=lambda: None)
+            check(f"a place a root's own resource was leased on is given back by `{event}`"
+                  + (" from outside every root" if cwd == nested else ""),
+                  held == 1 and not live_leases(at, 1001.0),
+                  f"held {held}, then {len(live_leases(at, 1001.0))}")
 
         out.append("")
         out.append("A payload neither arm can read interrupts nothing:")
