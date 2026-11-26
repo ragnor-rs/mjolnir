@@ -1897,6 +1897,45 @@ def self_test() -> int:
                 "a release", grouping=IN_A_MILESTONE)),
         )
         check(said, reported == "work_item.grouping", f"reported {reported!r}")
+    # § 3's `open_groupings` on the milestone: every page read, the open ones by
+    # due date (an order no sort of the titles gives here), a closed one left out
+    # and an undated one listed apart. ⛔ A field's option carries no order this
+    # board states, so a grouping held in one is refused with the key named.
+    _boards.clear()
+    dated = with_host(
+        _Host({}, pages={"Milestones": lambda after: {"repository": {"milestones": (
+            _page_of([
+                {"number": 40, "title": "b later", "state": "OPEN",
+                 "dueOn": "2027-03-01T00:00:00Z"},
+                {"number": 41, "title": "a shipped", "state": "CLOSED",
+                 "dueOn": "2026-01-01T00:00:00Z"},
+            ], more=True, cursor="m-2") if after is None
+            else _page_of([
+                {"number": 42, "title": "z sooner", "state": "OPEN",
+                 "dueOn": "2027-01-01T00:00:00Z"},
+                {"number": 43, "title": "c someday", "state": "OPEN", "dueOn": None},
+            ])
+        )}}}),
+        lambda: under_test.open_groupings(grouping=IN_A_MILESTONE),
+    )
+    check(
+        "the open milestones are read over every page and come back by due date, "
+        "the undated one apart",
+        [one["value"] for one in at(dated, "open") or []] == ["z sooner", "b later"]
+        and [one["value"] for one in at(dated, "unplaced") or []] == ["c someday"],
+        f"answered {dated!r}",
+    )
+    check(
+        "the milestone listing asks for each milestone's due date",
+        "dueOn" in under_test.MILESTONES_QUERY,
+    )
+    reported = with_host(_Host({}), lambda: refused(
+        lambda: under_test.open_groupings(grouping={"carrier": "field", "field": "Release"})))
+    check(
+        "`open_groupings` on a field's option is refused, naming the carrier",
+        reported == "work_item.grouping.carrier",
+        f"reported {reported!r}",
+    )
     _boards.clear()
     gone = milestone_pages([])
     gone["MilestoneItems"] = lambda after: {"repository": {"milestone": None}}

@@ -585,6 +585,12 @@ ANSWERED_BY: dict[str, Answer] = {
         "For each value of that facet, which grouping does an item carrying it go "
         "into? A value you leave out is asked for.",
     ),
+    "work_item.grouping.default_by": ask(
+        "Does each of those name a grouping, or a position among the open ones "
+        "(first, second ... last) counted in the tracker's own order when the item "
+        "is filed? A position keeps meaning the nearest unreleased one after every "
+        "release.",
+    ),
     "work_item.template.carrier": ask(
         "Where does the body a new item is written to come from?",
     ),
