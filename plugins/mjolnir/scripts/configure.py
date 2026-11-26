@@ -1079,6 +1079,15 @@ ANSWERED_BY: dict[str, Answer] = {
         "what makes the list a statement of this project rather than of the "
         "surface",
     ),
+    "private.blocks.block": ask(
+        "Does a rule of this repository bar a whole block from it, although every "
+        "key in it is a rule -- the day log's own facet, say? Which block? ⛔ Only "
+        "one the surface marks `# private_block` (§ 28).",
+    ),
+    "private.blocks.reason": ask(
+        "And why may this repository not hold it? ⛔ Stated in the tracked file, so "
+        "a reviewer reads what they are not being shown (§ 28).",
+    ),
 
     # --- § 29's runs are asked with § 2's host; § 30 -----------------------
     "loop_exempt.classes.name": ask(
