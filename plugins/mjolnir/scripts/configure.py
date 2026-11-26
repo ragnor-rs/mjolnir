@@ -288,6 +288,14 @@ ANSWERED_BY: dict[str, Answer] = {
         "Does a merge approval cover one commit only, or survive a push that leaves "
         "the change's content the same?",
     ),
+    "host.landing.admin_override": ask(
+        "May a merge here override what the host protects the integration branch "
+        "with, once the change's own approval is recorded?",
+    ),
+    "host.landing.protected": ask(
+        "Which branches besides the integration branch is a local merge into held "
+        "to a change's recorded approval?",
+    ),
     "host.landing.unrecorded_merge": ask(
         "Where no recorded approval covers a merge, is it refused, or put to the "
         "person at the harness's own prompt?",
@@ -312,6 +320,10 @@ ANSWERED_BY: dict[str, Answer] = {
     "host.checks.command_root": ask(
         "Which command root does this check's mirrored command run in?",
     ),
+    "host.checks.parts": ask(
+        "Which commands does this check's mirrored command run, each of which its run "
+        "also answers for when run on its own?",
+    ),
     "host.checks.paths.excluding": ask(
         "Which paths under this check's own does it not run for?",
     ),
@@ -327,6 +339,10 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "host.checks.jobs.command_root": ask(
         "Which command root does this job's mirrored command run in?",
+    ),
+    "host.checks.jobs.parts": ask(
+        "Which commands does this job's mirrored command run, each of which its run "
+        "also answers for when run on its own?",
     ),
     "host.checks.jobs.paths": ask(
         "Which paths does this job of the workflow run for?",
@@ -947,6 +963,10 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "already_run.escape": ask(
         "Which variable lets a person run one anyway?",
+    ),
+    "already_run.unguarded_when_set": ask(
+        "Which variables, set by a call, make it a different run from the host's -- "
+        "a database or an account of this project's own?",
     ),
 
     # --- § 19. A command that spends ---------------------------------------

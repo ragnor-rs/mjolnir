@@ -1076,6 +1076,8 @@ host:
     - workflow: "…"
       mirrors: "<local command>"   # the local command whose verdict this run duplicates
       command_root: "<name>"       # § 1's root it runs in; omitted where that is the code root
+      parts: ["<local command>"]   # the commands it runs, each answered for by this run; omitted
+                                   # where no part of it is run on its own
       triggers: "<event>(<types>) -> <ref>"  # what starts it; a list when there is more than one
       paths: ["…"]                 # the paths it watches, or the other sense below; omitted where
                                    # the workflow runs on every change
@@ -1233,6 +1235,7 @@ host:
         - job: "<the job's id, as the workflow file spells it>"
           mirrors: "<local command>"
           command_root: "<name>"   # § 1's root this job's command runs in
+          parts: ["<local command>"]  # this job's command's own parts, as above
           paths: ["…"]         # this job's own filter, in either sense; omitted where it carries none
 ```
 
@@ -1301,6 +1304,28 @@ can tell its own artifact from the project's, while an appended job is a surgica
 the project edits too. The cost is the one ruled acceptable above — a checkout per command. ⚠️
 **Where the file it would write already exists, the installer stops and names it**, rather than
 appending to it or writing over it.
+
+### A command that runs other commands, and the parts its run answers for
+
+**A mirrored command that runs several tasks answers for each of them, and the facet cannot see
+that from its text.** A task runner's whole suite and one of its tasks are two strings, and the
+second is not a flagged form of the first, so a consumer matching the command alone reads a local
+run of one task as a command nothing mirrors. ⛔ **`parts` is where a project states which of them
+the run answers for**, beside the `mirrors` whose parts they are — on the entry, or on the job
+member that states it — and a consumer reads a part as that command: the same run, the same
+triggers, the same filter.
+
+- ⛔ **A part the list does not state is not one**, whatever it shares with the command. Which
+  tasks a runner's whole suite covers is the project's fact and not a derivation from a name, and
+  a task outside the list is run here because no run answers for it.
+- ⛔ **Each part runs in the command's root and is matched as that root runs it**, by the
+  resolution [§ 1](#a-command-root-is-not-a-code-root) states for the command itself — a part matched
+  in its written form would never recognise a call made through a root's `invoke` form.
+- ⛔ **`parts` stands beside a `mirrors` and nowhere else.** On an entry whose commands are its
+  jobs, each member states its own, for the reason `command_root` sits on the member; and on an
+  entry mirroring nothing it names parts of no command, which is refused rather than read.
+- ⚠️ **Omitted is the stated absence, and `parts: []` is refused**, for the reason every key of this
+  facet written with nothing after it is: the same text as a list somebody meant to fill in.
 
 ### The two senses a path filter states, and why they are one key
 
@@ -1533,6 +1558,8 @@ host:
     method: squash | merge_commit | rebase     # how a pull request lands; required
     delete_branch: host | procedure | never    # which side deletes the remote ref afterwards; required
     approval_covers: commit | content          # what a merge approval covers; default: commit
+    admin_override: refused | allowed          # whether a merge may override the host's protections; default: refused
+    protected: ["release/*"]                   # branches a local merge into is held, beside the integration branch; default: []
     unrecorded_merge: deny | prompt            # what a merge no approval covers gets; default: deny
 ```
 
@@ -1590,6 +1617,14 @@ is compared is every line of the diff but the line numbers and blob names. ⛔ *
 not be read whole keeps nothing**: a binary file it does not show, a commit the host no longer
 answers for, or a size the host refuses. ⚠️ **What it does not see is position**: one hunk moved
 between two places whose surrounding lines are identical reads as the same diff.
+
+**`admin_override` and `protected` are read by the same guard and by nothing else**, and each
+widens or narrows one route [§ 7 → Every route to a merge](#every-route-to-a-merge-is-held-to-the-one-record)
+names. `refused` is the value a project stating nothing gets: an override of what the host holds the
+integration branch to is a merge the host's own protections did not admit, so it is one the project
+says it allows rather than one the guard assumes. `protected` adds branches to the integration
+branch, which is derived and never stated here, ⚠️ and a glob in it is matched against the whole
+branch name.
 
 **`unrecorded_merge` is read by the same guard and by nothing else**, and what each value does is
 [§ 7's](#a-merge-put-to-the-person-at-the-prompt-and-the-record-it-leaves) to state. ⚠️ **Per
@@ -3265,6 +3300,41 @@ that cannot exist: § The loop makes the ask procedure for the reason § 6 gives
 project that could turn the guard off is a project whose loop merges unasked. ⚠️ **What a project
 *does* decide is which checks a person answers at all** — [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check)'s
 list — and that is a different question from whether the ask that reaches a person is made.
+
+### Every route to a merge is held to the one record
+
+⛔ **Every route by which a session lands a change is a merge, and each is held to the record
+above** — the host client's merge subcommand is one of them and not the definition. The others:
+
+| the route | what makes it one | which change's record holds it |
+|---|---|---|
+| the host's merge endpoint, written to by any client | its address or its API path in the call, a program the call runs included, with no read method stated | the change the address names |
+| a local merge into a held branch | a merge or a pull while the branch checked out where it runs is the integration branch or one [§ 2's `protected`](#how-a-pull-request-lands) names | the one open change whose head branch is the ref merged, and ⛔ **the commit merged has to be that change's head** on the host |
+
+⛔ **A request naming the endpoint and stating no read method is a write**, whichever client makes
+it and whatever that client's own default is. The guard cannot know every client's default, and the
+direction for an act that cannot be undone is the one [below](#which-direction-a-guard-fails-in)
+states.
+
+⛔ **A local merge is held where it lands and nowhere else.** Merging the base into a work branch is
+free, and so is bringing a held branch level with its own remote — its upstream, or the same name on
+a remote — since neither lands a change. A merge or pull already begun and then continued or
+abandoned is free too, having been held when it began. ⛔ **A ref that is the head of no open change,
+or of several, is refused rather than merged**, and so is a merge of more than one change at once:
+each would need its own record. The directory the branch is read in is where the call runs, moved by
+`-C` and by a `cd` before it in the same call, and a branch the call checks out before merging is
+the one merged into. A lone `-` names no change and is refused. ⚠️ **The integration branch is what
+a remote records as its default**, read locally; a clone recording none holds only what `protected`
+names.
+
+⛔ **The administrator override is refused unless the project states
+[`admin_override: allowed`](#how-a-pull-request-lands)**, whatever is recorded; where it is allowed
+the merge is still held to the record.
+
+⚠️ **What these routes do not reach**: a push of commits to a held branch that no merge made, a
+merge made by a program the call does not name, and an address assembled at run time from pieces.
+They are stated rather than claimed covered, for the reason the section above gives about what a
+guard establishes.
 
 ### A merge put to the person at the prompt, and the record it leaves
 
@@ -5605,6 +5675,7 @@ already_run:                 # the guard on a local run the host's own runs have
   never_guard: ["<a command this guard never refuses, whatever the host has run>"]  # required
   escape: "<the environment variable that stands one refusal down>"  # absent where there is none
   operational_when: "<a command printing `operational` where the host can run these jobs>"
+  unguarded_when_set: ["<a variable a call sets, which takes it out of this guard>"]  # absent where none
 ```
 
 **The act is a local run of a command [§ 2](#2-code-host)'s facet says the host mirrors**, and the
@@ -5691,6 +5762,28 @@ is § 17's**, the command as both sides wrote it with only its runs of whitespac
 where in the call it has to appear is
 [§ 19's](#the-command-position-and-why-the-whole-call-is-not-one), read at the outermost position of
 each segment: a command behind a wrapper is not read as the mirrored one.
+
+⛔ **A compound command is matched as the commands it runs, in order and with nothing between
+them.** Cut at its separators it is several segments, and a call running the same ones one after
+another is that compound whichever separator joins them — while compared as one position it
+matched nothing, its own call included. ⚠️ **The prefix rule reaches the last of them only**: a
+flag after the chain's last command is that command's flagged form, and a flag on one before it is
+a different chain. ⚠️ **A part of a compound is not the compound**; a part the run answers for on
+its own is [§ 2's `parts`](#a-command-that-runs-other-commands-and-the-parts-its-run-answers-for),
+which this guard reads as the command.
+
+⛔ **`unguarded_when_set` takes out a call that sets one of the variables it names.** A run against
+a project's own billing or test database is a different run from the host's, and the call says so
+in the variable it sets rather than in the command it runs — so the command matches, and the
+verdict it would duplicate is not the one the host produced. ⛔ **The entry is a name and never a
+value** ([§ 14](#what-the-shell-inherits-is-a-list-of-names)), and the answer names the variable
+and not what it was set to. ⚠️ **What counts is what the call itself sets for the mirrored
+command** — an assignment standing before that command in its own segment, or an `export` of it
+earlier in the same call. An assignment before another command reaches only that one, one standing
+alone sets a shell variable no command is handed, an assignment after the command is an argument
+like any other, and a value the shell already holds from an earlier call is a fact about the shell
+rather than about this call. ⚠️ **A command behind `env` is not named here** because it is behind a
+runner, which the rule above already leaves unguarded.
 
 ⛔ **`escape` is a variable's name and never a value** ([§ 14](#what-the-shell-inherits-is-a-list-of-names)),
 and what stands the refusal down is the person setting it to a reason. A blank value is not an
