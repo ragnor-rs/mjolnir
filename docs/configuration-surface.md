@@ -3331,7 +3331,10 @@ forecloses. Length did not decide it either: the skill with nothing per-project 
 
 One project holds a skill that builds a client's invoice for a period from that period's hours and
 deliverables and renders it with every value checked, and it covers more than one client — so it
-reads other projects' outputs. It is the only role surveyed with that shape.
+reads other projects' outputs. It is the only role surveyed with that shape. Its deliverables half
+is not carried: pricing hours per deliverable is a project's own carrier, by
+[`schema.md § 37 → An invoice priced per
+deliverable`](../plugins/mjolnir/config/schema.md#an-invoice-priced-per-deliverable-and-why-neither-role-carries-it).
 
 ### Why it reads as not belonging, which is the position that had to be overridden
 
@@ -3891,8 +3894,11 @@ The closing-change read is implemented on both GitHub kinds, where an item *is* 
 host that holds the change, and absent on the other two: a Trello card holds no reference to a
 change in either direction, and what a Jira item shows is written by a code-host integration
 somebody installed. The grouping create is implemented on plain issues alone, the milestone being
-an object; everywhere else the grouping is a field's value, which nothing creates — the same
-argument `mark_grouping_released` is absent on for those kinds.
+an object; everywhere else the grouping is a field's value, which nothing creates. The release mark
+is not absent on that argument everywhere: where a Jira grouping's field holds versions, the value
+names a version object, which `mark_grouping_released` marks by
+[`schema.md § 3`](../plugins/mjolnir/config/schema.md#the-operations-and-what-an-absent-capability-does)'s
+rule for it.
 
 ### The prototype's own rule the promotion kept, and the one it had to make general
 

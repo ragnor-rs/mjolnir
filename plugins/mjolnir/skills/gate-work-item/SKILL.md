@@ -290,7 +290,7 @@ is a field or a label rather than an assignee, the write goes through that carri
 A repair rewrites the author's text, and the test is the work rather than the prose: a constraint,
 a condition or a dependency the body already carried is still true unless the new material replaced
 it — the discipline
-[`§ 3`](../../config/schema.md#a-duplicate-is-the-item-rewritten-never-a-second-item-filed) states
+[`§ 3`](../../config/schema.md#a-duplicate-is-folded-into-the-item-never-a-second-item-filed) states
 for a rewritten item.
 
 The repair is subject to the gate it is trying to pass, 4f included: the sentence explaining why
@@ -329,6 +329,13 @@ that operation and not for this role.
 
 **6c. Clear the mark**, where the item carries one from an earlier run, and remove that run's
 verdict from the body. An item that passed must not still read as sent back.
+
+⛔ **Except where the mark holds questions the filing role filed open.** Where
+`config.py --open-questions` answers `file_marked` and the item still carries an unanswered
+question where that answer's `written_on` puts them, the mark stays, nothing in 6a to 6d is
+written, and the reply says the item is waiting on those answers.
+[`§ 5 → An item filed with its questions open`](../../config/schema.md#an-item-filed-with-its-questions-open)
+states why: the filing role takes the mark off once they are answered, and nothing else does.
 
 6a and 6b write only a value step 2's answer reports as `gate_writes`; every other carried value
 goes in the reply with the writer that answer named.

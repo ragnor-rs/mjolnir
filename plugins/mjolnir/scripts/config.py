@@ -2695,6 +2695,25 @@ class Config:
             "identity": str(identity),
         }
 
+    def open_questions(self) -> dict:
+        """§ 5's open questions, with the mark resolved off the gate.
+
+        ⛔ The label is read off the one `label_absent` entry and never stated
+        here: the load has already refused `file_marked` with none or several,
+        so the answer carries the gate's own label and its stop. ⚠️ Null under
+        `ask`, where the filing role sets no mark.
+        """
+        mode = self.get(f"{OPEN_QUESTIONS_KEY}.mode")
+        marks = _gate_entries({"readiness": self.get("readiness")}, MARK_CHECK)
+        marked = mode == OPEN_QUESTIONS_MARKED
+        return {
+            "mode": mode,
+            "label": marks[0][1].get("label") if marked else None,
+            "stop": marks[0][1].get("stop") if marked else None,
+            "written_on": self.get(f"{OPEN_QUESTIONS_KEY}.written_on") if marked else None,
+            "heading": self.get(f"{OPEN_QUESTIONS_KEY}.heading") if marked else None,
+        }
+
     def route_for(self, values: list[str]) -> dict:
         """§ 7's route for an item, from every label it carries and its type.
 
@@ -5075,6 +5094,12 @@ FIELD_PRESENT_CHECK = "field_present"
 SPEC_CORPUS_KEY = "spec_corpus"
 BUILT_CHECK_KEY = "built_check"
 BUILT_CHECK_POINTS_PATH = f"{BUILT_CHECK_KEY}.points"
+# § 5's open questions, and the one readiness check whose label is the mark the
+# filing role sets under `file_marked`.
+OPEN_QUESTIONS_KEY = "open_questions"
+OPEN_QUESTIONS_MARKED = "file_marked"
+OPEN_QUESTIONS_SECTION = "section"
+MARK_CHECK = "label_absent"
 SPEC_CORPUS_CARRIER = f"{SPEC_CORPUS_KEY}.carrier"
 SPEC_CORPUS_REPOSITORY = "repository"
 SPEC_CORPUS_GROUPING = f"{SPEC_CORPUS_KEY}.{GROUPING_ENTRY_KEY}"
@@ -8787,6 +8812,49 @@ def _validate_built_check(data: dict, facts: dict) -> None:
         seen.add(point)
 
 
+def _validate_open_questions(data: dict) -> None:
+    """§ 5's open questions: the mark it sets, and the heading it writes under.
+
+    The alternations and defaults are marked and answered before this runs.
+    What is here is the two rules no marker can state: that `file_marked` has
+    exactly one `label_absent` to take its mark from, and that `heading` is
+    stated under `section` and only there.
+    """
+    mode = _get(data, f"{OPEN_QUESTIONS_KEY}.mode")
+    written_on = _get(data, f"{OPEN_QUESTIONS_KEY}.written_on")
+    heading = _get(data, f"{OPEN_QUESTIONS_KEY}.heading")
+    if mode == OPEN_QUESTIONS_MARKED:
+        marks = _gate_entries(data, MARK_CHECK)
+        if len(marks) != 1:
+            held = (
+                "configures none" if not marks else
+                f"configures {len(marks)} -- "
+                + ", ".join(f"readiness[{index}]" for index, _ in marks)
+            )
+            raise ConfigError(
+                f"{OPEN_QUESTIONS_KEY}.mode",
+                f"is `{OPEN_QUESTIONS_MARKED}` while `readiness` {held} "
+                f"`{MARK_CHECK}`. The item is filed carrying that check's label, "
+                "which is the one mark the gate refuses (§ 5): with none there is "
+                "no mark that holds the item back, and with several the filing "
+                "role would be choosing which one it carries.",
+            )
+    blank = heading is None or (isinstance(heading, str) and not heading.strip())
+    if written_on == OPEN_QUESTIONS_SECTION and blank:
+        raise ConfigError(
+            f"{OPEN_QUESTIONS_KEY}.heading",
+            f"required when `written_on` is `{OPEN_QUESTIONS_SECTION}`: it is the "
+            "heading the open questions are written under in the item's body, in "
+            "the item's own language (§ 5).",
+        )
+    if written_on != OPEN_QUESTIONS_SECTION and not blank:
+        raise ConfigError(
+            f"{OPEN_QUESTIONS_KEY}.heading",
+            f"is stated while `written_on` is {written_on!r}, under which the "
+            "questions go in a comment and nothing reads a heading (§ 5).",
+        )
+
+
 def _validate_spec_corpus(data: dict) -> None:
     """§ 39's two glob lists, and the keys stated beside a carrier that reads none.
 
@@ -11664,6 +11732,35 @@ def _a_named_call(entry, where: str) -> None:
             ) from None
 
 
+ADDENDUM = "work_item.template.sections.addendum"
+DATE_SLOT = "{date}"
+
+
+def _validate_addendum_heading(data: dict) -> None:
+    """§ 4.4's `sections.addendum`: the dated heading § 3's `append` writes.
+
+    Whether it must be stated is the surface's `required_when` marker; what it
+    has to *be* is here. ⛔ `{date}` exactly once: a heading with no slot writes
+    an undated section, and one with two writes a date nobody can tell apart.
+    """
+    heading = _get(data, ADDENDUM)
+    if heading is None:
+        return
+    if not isinstance(heading, str) or not heading.strip():
+        raise ConfigError(
+            ADDENDUM,
+            f"is {heading!r}, and § 4.4 states it as the heading text a confirmed "
+            "duplicate's dated section is written under.",
+        )
+    if heading.count(DATE_SLOT) != 1:
+        raise ConfigError(
+            ADDENDUM,
+            f"is {heading!r}, which carries `{DATE_SLOT}` {heading.count(DATE_SLOT)} "
+            "times. § 4.4 states it once, where the filing's date is written, so the "
+            "section § 3's `append` adds is dated and its date reads one way.",
+        )
+
+
 DECLARED = "work_item.template.declared"
 
 
@@ -12329,6 +12426,33 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 "is `true` where no tree is ever cut, so no merge has a tree to prune (§ 10).",
             )
 
+    # § 10 → The resource a merged change's tree holds. ⛔ Absent is `false`;
+    # `true` needs a tree and both commands, one to ask what the tree holds and
+    # one to stop it, since either missing makes the key a stop that stops nothing.
+    stop_on_merge = _get(data, "branch_model.stop_on_merge")
+    if stop_on_merge is not None:
+        if not isinstance(stop_on_merge, bool):
+            raise ConfigError(
+                "branch_model.stop_on_merge",
+                f"is {stop_on_merge!r}; it is `true` or `false` (§ 10), and a string "
+                "would read as `true` to anything that tested it.",
+            )
+        if stop_on_merge and _get(data, "branch_model.kind") != "worktree":
+            raise ConfigError(
+                "branch_model.stop_on_merge",
+                "is `true` where no tree is ever cut, so no merge has a tree whose "
+                "resource it could stop (§ 10).",
+            )
+        for needed, why in (
+            ("branch_model.resource_up", "nothing asks what the merged change's tree holds"),
+            ("branch_model.resource_stop", "nothing stops what the merged change's tree holds"),
+        ):
+            if stop_on_merge and _get(data, needed) is None:
+                raise ConfigError(
+                    "branch_model.stop_on_merge",
+                    f"is `true` with no `{needed}`, so {why} (§ 10).",
+                )
+
     # § 10. Whether the sweep on the event that opens a session removes or only
     # lists. ⚠️ The two values are the surface's enumeration, which the reader
     # already holds every key to; what is held here is the kind it is read under.
@@ -12883,6 +13007,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # block, so it runs in `_grouping_facet` where the set exists.
     _validate_spec_corpus(data)
     _validate_built_check(data, facts)
+    _validate_open_questions(data)
     # § 41's block, and ⛔ **after § 33's rather than beside it**: the names its
     # `identity` is keyed on are a target's own, so this reads a list the arm
     # above has already held to being a list of targets at all.
@@ -13185,6 +13310,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
         seen_headings[folded] = index
 
     _validate_declared_sections(data, facts)
+    _validate_addendum_heading(data)
 
     # § 18. The guard on a command the host has already run. Requiredness is the
     # surface's marker and answers whether `never_guard` is written; what these
@@ -14682,6 +14808,9 @@ MARKED_REQUIRED_WHEN = [
     # and a rule of its own -- that refusal names what the role was left unable
     # to do, which a marker's message cannot say.
     ("branch_model.regenerable", "branch_model.kind", "worktree"),
+    # § 4.4's one: the heading § 3's `append` writes its dated section under,
+    # meaningless where a confirmed duplicate is rewritten instead.
+    ("work_item.template.sections.addendum", "tracker.duplicate", "append"),
     # § 9's one: the archive's address, needed by the kind that reads an archive
     # and meaningless under the kind that says there is no chat evidence at all.
     ("day_log.evidence.chat.path", CHAT_KIND_PATH, "telegram_export"),
@@ -19647,6 +19776,7 @@ def self_test() -> int:
 
     _undeclared_suite(check)
     _untracked_in_tree_suite(check)
+    _open_questions_suite(check)
 
     print("\n§ 33's choices, resolved for one run:")
 
@@ -23107,6 +23237,17 @@ def _planted_violations():
          _a_declared_section_of(second={"name": "another", "heading": "implementation PLAN"})),
         ("a declared section under a heading `sections` maps", f"{DECLARED}[0].heading",
          _a_declared_section_of(heading="What Is Wanted", mapped="What is wanted")),
+        # § 3's duplicate mode and § 4.4's dated heading it writes under, one plant per arm.
+        ("a duplicate mode outside the surface's alternation", "tracker.duplicate",
+         at("tracker.duplicate", "merge")),
+        ("an append mode stating no heading for its dated section", ADDENDUM,
+         _an_append_mode(_ABSENT)),
+        ("a dated-section heading with no date slot", ADDENDUM,
+         _an_append_mode("Addendum")),
+        ("a dated-section heading with two date slots", ADDENDUM,
+         _an_append_mode("Addendum {date} ({date})")),
+        ("a dated-section heading that is blank", ADDENDUM,
+         _an_append_mode("   ")),
         ("a local check list that is not a list", "checks_local",
          at("checks_local", "a-local-command")),
         ("a local check entry that is not a block", "checks_local[0]",
@@ -26627,6 +26768,22 @@ def _without(data: dict, path: str) -> dict:
     return data
 
 
+def _an_append_mode(heading):
+    """§ 3's `append` stated, with § 4.4's dated heading written as `heading`."""
+
+    def mutate(data: dict) -> dict:
+        _with(data, "tracker.duplicate", "append")
+        sections = data.setdefault("work_item", {}).setdefault("template", {}).setdefault(
+            "sections", {})
+        if heading is _ABSENT:
+            sections.pop("addendum", None)
+        else:
+            sections["addendum"] = heading
+        return data
+
+    return mutate
+
+
 def _with(data: dict, path: str, value) -> dict:
     """The same configuration with one key written back into it."""
     node, parts = data, path.split(".")
@@ -26729,6 +26886,84 @@ def _example_without(path: str, _loaded) -> str | None:
 PLANTED_ROLE = "the role the work is for"
 PLANTED_IDENTITY = "an-identity-no-tracker-resolves"
 PLANTED_MAP_FILE = "a-role-to-person-map.yaml"
+
+
+PLANTED_MARK = "a-mark-the-gate-refuses"
+
+
+def _with_marks(data: dict, count: int, **stated) -> dict:
+    """The example with exactly `count` `label_absent` entries and § 5's block.
+
+    Every entry the example already carries for the check is taken out first,
+    so the count is the arm's and not the example's.
+    """
+    gate = [entry for entry in (data.get("readiness") or [])
+            if not (isinstance(entry, dict) and entry.get("check") == MARK_CHECK)]
+    for n in range(count):
+        gate.append({"check": MARK_CHECK, "label": f"{PLANTED_MARK}-{n}",
+                     "stop": f"The item carries mark {n}."})
+    data["readiness"] = gate
+    if stated:
+        data[OPEN_QUESTIONS_KEY] = stated
+    else:
+        data.pop(OPEN_QUESTIONS_KEY, None)
+    return data
+
+
+def _open_questions_suite(check) -> None:
+    """§ 5's open questions: the default, the mark resolved off the gate, the refusals."""
+    print("\n§ 5's open questions, filed under the gate's own mark:")
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+
+    def answered(data: dict) -> dict:
+        return _resolve(data, EXAMPLES, facts, False).open_questions()
+
+    nothing = answered(_with_marks(_a_valid_example(), 0))
+    check("a project stating nothing asks, and sets no mark",
+          nothing == {"mode": "ask", "label": None, "stop": None,
+                      "written_on": None, "heading": None},
+          f"answered {nothing!r}")
+    marked = answered(_with_marks(_a_valid_example(), 1, mode="file_marked"))
+    check("file_marked takes the one label_absent entry's label and stop, in a comment",
+          marked == {"mode": "file_marked", "label": f"{PLANTED_MARK}-0",
+                     "stop": "The item carries mark 0.", "written_on": "comment",
+                     "heading": None},
+          f"answered {marked!r}")
+    sectioned = answered(_with_marks(_a_valid_example(), 1, mode="file_marked",
+                                     written_on="section", heading="Open questions"))
+    check("under section the heading is answered with the mark",
+          (sectioned["written_on"], sectioned["heading"], sectioned["label"])
+          == ("section", "Open questions", f"{PLANTED_MARK}-0"),
+          f"answered {sectioned!r}")
+    asking = _with_marks(_a_valid_example(), 2, mode="ask")
+    check("ask loads beside any number of label_absent entries",
+          _refused(asking) is None, f"refused on {_refused(asking)!r}")
+    for count, label in ((0, "no"), (2, "two")):
+        data = _with_marks(_a_valid_example(), count, mode="file_marked")
+        said = _refusal_said(data)
+        check(f"file_marked with {label} label_absent entries is refused on the mode",
+              _refused(data) == f"{OPEN_QUESTIONS_KEY}.mode" and MARK_CHECK in said,
+              f"refused on {_refused(data)!r}: {said!r}")
+    bare = _with_marks(_a_valid_example(), 1, mode="file_marked", written_on="section")
+    check("section with no heading is refused on the heading",
+          _refused(bare) == f"{OPEN_QUESTIONS_KEY}.heading"
+          and "required" in _refusal_said(bare),
+          f"refused on {_refused(bare)!r}")
+    idle = _with_marks(_a_valid_example(), 1, mode="file_marked", heading="Open questions")
+    check("a heading under comment is refused, nothing reading it",
+          _refused(idle) == f"{OPEN_QUESTIONS_KEY}.heading"
+          and "is stated" in _refusal_said(idle),
+          f"refused on {_refused(idle)!r}")
+    wrong = _with_marks(_a_valid_example(), 1, mode="file_open")
+    check("a mode outside the alternation is refused",
+          _refused(wrong) == f"{OPEN_QUESTIONS_KEY}.mode",
+          f"refused on {_refused(wrong)!r}")
+    stated = _resolve(_with_marks(_a_valid_example(), 1, mode="file_marked"),
+                      EXAMPLES, facts, False).unavailable()
+    check("the block is declared, so the reader reports none of it as undeclared",
+          not any(OPEN_QUESTIONS_KEY in line for line in stated),
+          f"reported {[line for line in stated if OPEN_QUESTIONS_KEY in line]!r}")
 
 
 def _untracked_in_tree_suite(check) -> None:
@@ -27557,6 +27792,13 @@ def main(argv: list[str]) -> int:
         "no set, or unstated where it writes no facet",
     )
     parser.add_argument(
+        "--open-questions",
+        action="store_true",
+        help="§ 5's open questions: whether the filing role asks or files an item "
+        "marked, and under `file_marked` the label it sets -- the one "
+        "`label_absent` entry's -- with where the questions are written",
+    )
+    parser.add_argument(
         "--commitment",
         action="store_true",
         help="§ 4.2's commitment: each carried value the gate commits an item "
@@ -27749,6 +27991,9 @@ def main(argv: list[str]) -> int:
         # facets are not stated per root.
         if args.commitment:
             answer = config.commitment()
+        # The project's, for § 27's reason above: the gate is not stated per root.
+        if args.open_questions:
+            answer = config.open_questions()
         if args.grouping_default:
             answer = config.grouping_default(
                 args.grouping, from_value=args.from_value, given=args.given

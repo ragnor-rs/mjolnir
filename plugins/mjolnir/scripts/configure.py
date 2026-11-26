@@ -467,6 +467,12 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.policy.forbid_on_item": ask(
         "Which classes of content may not be written onto an item here?",
     ),
+    "tracker.duplicate": ask(
+        "When a request turns out to duplicate an open item, should that item's body be "
+        "rewritten to what the work now is, or kept exactly as it is with the new "
+        "material added in a dated section after it -- because somebody outside the "
+        "build has already accepted its text?",
+    ),
 
     # --- § 4. Work-item facets ---------------------------------------------
     "work_item.type.carrier": detect(
@@ -634,6 +640,10 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "work_item.template.sections.reproduction": ask(
         "Which heading does a body state a reproduction under?",
+    ),
+    "work_item.template.sections.addendum": ask(
+        "Which heading does a duplicate's dated section go under, with {date} where the "
+        "date is written?",
     ),
     "work_item.template.declared.name": ask(
         "Which section must an item carry beyond the outcome, the acceptance check "
@@ -933,6 +943,11 @@ ANSWERED_BY: dict[str, Answer] = {
         "Should a tree also be cleaned up right after a merge the session makes with a "
         "bare command, once the host confirms it? Unstated, the next session's sweep "
         "does it.",
+    ),
+    "branch_model.stop_on_merge": ask(
+        "Should what a change's tree started be stopped right after a merge the session "
+        "makes, once the host confirms it, keeping the tree? Unstated, it runs until the "
+        "tree is released or swept.",
     ),
     "branch_model.prune_on_open": ask(
         "Should the sweep as a session opens remove landed trees, or only say which it "
@@ -1776,6 +1791,25 @@ ANSWERED_BY: dict[str, Answer] = {
         "When that reading finds the work built or partly built, should the role report "
         "it and carry on, or stop and ask you? Unstated, it reports. It never closes, "
         "reopens or rewrites an item itself (§ 42).",
+    ),
+
+    # --- § 5. An item filed with its questions open ------------------------
+    "open_questions.mode": ask(
+        "When a request leaves a question open that only its author can answer, "
+        "should the filing role ask and file nothing until it is answered, or file "
+        "the item at once carrying the questions and the gate's `label_absent` "
+        "mark? Unstated, it asks. ⛔ Filing marked needs exactly one "
+        "`label_absent` check in the readiness list, whose label is the mark (§ 5).",
+    ),
+    "open_questions.written_on": ask(
+        "Where on the item should those questions be written: in a comment after "
+        "it is created, or in its body under a heading of its own? Unstated, a "
+        "comment (§ 5).",
+    ),
+    "open_questions.heading": ask(
+        "Which heading should the open questions sit under in the body, in the "
+        "item's own language? ⛔ Asked only where they go in the body, and refused "
+        "where they go in a comment (§ 5).",
     ),
 
     # --- § 41. What a deployed item is judged against ----------------------

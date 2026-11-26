@@ -386,3 +386,8 @@ verify:
   revisit_when: >-
     This project states a deploy target, which is the first thing a criterion could be measured
     on.
+
+# § 5 at its default: a request that left a question open is asked about, and nothing is
+# filed until it is answered.
+open_questions:
+  mode: ask
