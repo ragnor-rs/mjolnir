@@ -771,7 +771,9 @@ ANSWERED_BY: dict[str, Answer] = {
         "And a billing period's line items, for whoever pays the invoice?",
     ),
     "language.artifacts.hours_breakdown": ask(
-        "And a period's hours broken down over the work it shipped?",
+        "And a period's hours broken down over the work it shipped -- and is a "
+        "duration there counted in hundredths of an hour, written as decimals, or "
+        "in minutes, written as hours and minutes in which unit words?",
     ),
 
     # --- § 9. Day log ------------------------------------------------------
@@ -951,6 +953,11 @@ ANSWERED_BY: dict[str, Answer] = {
     "branch_model.exclusive_resources.wait_up_to": ask(
         "How many seconds may a role wait for a place that is not free? ⚠️ Unstated, a "
         "call over the cap is refused and nothing waits.",
+    ),
+    "branch_model.exclusive_resources.wait_holds_for": ask(
+        "Should waits for it be served in arrival order, each ending holding the place -- "
+        "and for how many seconds is a waiter's place kept with nobody asking for it? ⚠️ "
+        "Unstated, a wait holds nothing and whoever calls first after a place frees takes it.",
     ),
     "branch_model.exclusive_resources.probe_timeout": ask(
         "How many seconds may asking the resource take?",

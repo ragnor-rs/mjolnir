@@ -30,24 +30,26 @@ What it owns is the part none of its callers should perform twice:
     the one fact a report that stopped here may not omit.
 
 ⚠️ **It decides neither the order against the invocation nor whether anything is
-pending.** The first is configured and the go may overrule it; the second is the
-project's command's own answer. This module performs what it was handed and says
-which of the two it took.
+pending.** The first is configured -- fixed, or a § 33 choice the run takes a
+value of -- and the second is the project's command's own answer. This module
+performs what it was handed and says which side it took and where it came from.
 
 Usage:
     live_data.py [--skills-root DIR] --target NAME   what the target states
-    live_data.py plan --target NAME [--step S]       the ordering, nothing run
-    live_data.py prepare --target NAME [--step S] [--side SIDE]
+    live_data.py plan --target NAME [--step S] [--choose N=V]...
+                                                     the ordering, nothing run
+    live_data.py prepare --target NAME [--step S] [--side SIDE] [--choose N=V]...
                                                      the dump, its reading, the
                                                      rehearsal — and then a stop
-    live_data.py apply --target NAME [--step S] --given TEXT
+    live_data.py apply --target NAME [--step S] --given TEXT [--choose N=V]...
                                                      the write, under that go
     live_data.py --self-test                         assert every answer against
                                                      planted trees and commands
 
 ⚠️ `--step` names one step of a target that lists several, and is refused on a
 target with one; `--side` prepares only the phases `sides` and `order` place on
-that side of the invocation (§ 35).
+that side of the invocation (§ 35); `--choose` is the run's § 33 choices, exactly
+as the deploy was handed them, which a step whose side is a choice is resolved by.
 
 Exit status, and ⛔ **four values rather than two**: 0 the answer was produced,
 1 the step stopped and names where, 2 the configuration could not be read or does
@@ -333,23 +335,46 @@ def _plan_of(configuration: config.Config, target: str, read: dict, block: dict)
     """The whole ordering of one step, with nothing run and nothing written."""
     entry = read["target"]
     sides = _sides_of(block)
+    side_chosen = list(block.get("side_chosen") or [])
     report = list(read["report"])
     split = len({side for side in sides.values() if side is not None}) > 1
-    report.append(
-        f"The order stated is {block['order']!r}, which is where this step falls "
-        "against § 33's invocation"
-        + (
-            "; `sides` places its phases apart — "
-            + ", ".join(f"{phase} {side}" for phase, side in sides.items() if side)
-            if split
-            else ""
-        )
-        + ". ⛔ The configured value is what this role proposes and the go is "
-        "where it is settled: whether the write belongs before the image depends "
-        "on what is pending, and detecting that is the project's own (§ 35). ⚠️ "
-        "What the go may not settle is a write ahead of its own dump or "
-        "rehearsal, which the write refuses whatever was asked."
+    placement = (
+        "; `sides` places its phases apart — "
+        + ", ".join(f"{phase} {side}" for phase, side in sides.items() if side)
+        if split
+        else ""
     )
+    if side_chosen:
+        report.append(
+            f"The order this run takes is {block['order']!r}{placement}. "
+            + " ".join(
+                f"The side placed at {', '.join(one['places'])} is the choice "
+                f"{one['name']!r}, taken as {one['value']!r} — "
+                + (
+                    "chosen for this run"
+                    if one["chosen"]
+                    else "its default, the run choosing none"
+                )
+                + "".join(f"; ⚠️ {warning}" for warning in one["warnings"])
+                + "."
+                for one in side_chosen
+            )
+            + " ⛔ The go names the side taken, and a different selection is a "
+            "different deploy, prepared again (§ 35). ⚠️ What no choice settles is "
+            "a write ahead of its own dump or rehearsal, which the write refuses "
+            "whatever was chosen."
+        )
+    else:
+        report.append(
+            f"The order stated is {block['order']!r}, which is where this step falls "
+            "against § 33's invocation"
+            + placement
+            + ". ⛔ The configured value is what this role proposes and the go is "
+            "where it is settled: whether the write belongs before the image depends "
+            "on what is pending, and detecting that is the project's own (§ 35). ⚠️ "
+            "What the go may not settle is a write ahead of its own dump or "
+            "rehearsal, which the write refuses whatever was asked."
+        )
     if block["apply_by"] == "person":
         report.append(
             "This target states that a person performs the write, so the command "
@@ -381,6 +406,8 @@ def _plan_of(configuration: config.Config, target: str, read: dict, block: dict)
         go_must_name.append(GO_MUST_NAME_NO_BACKUP)
     if block.get("name") is not None:
         go_must_name.append(f"the step's name ({block['name']})")
+    for one in side_chosen:
+        go_must_name.append(f"the side taken ({one['value']})")
     return {
         "target": target,
         "step": block.get("name"),
@@ -388,6 +415,7 @@ def _plan_of(configuration: config.Config, target: str, read: dict, block: dict)
         "code_root": configuration.code_root,
         "order": block["order"],
         "sides": sides,
+        "side_chosen": side_chosen,
         "apply_by": block["apply_by"],
         "steps": _steps(block),
         "backup_absent": absent,
@@ -402,7 +430,12 @@ def _plan_of(configuration: config.Config, target: str, read: dict, block: dict)
     }
 
 
-def plan(configuration: config.Config, target: str, step: str | None = None) -> dict | None:
+def plan(
+    configuration: config.Config,
+    target: str,
+    step: str | None = None,
+    chosen: list[str] | None = None,
+) -> dict | None:
     """The whole ordering, with nothing run and nothing written, or `None`.
 
     `None` is the target's stated absence (§ 35) and never an empty plan: this
@@ -414,7 +447,7 @@ def plan(configuration: config.Config, target: str, step: str | None = None) -> 
     deploy is confirmed — while the commands that run something are addressed to
     one step by name (§ 35).
     """
-    read = configuration.live_data_step(target)
+    read = configuration.live_data_step(target, chosen)
     if read["found"] is None:
         return None
     if read.get("listed") and step is None:
@@ -515,6 +548,7 @@ def prepare(
     target: str,
     step: str | None = None,
     side: str | None = None,
+    chosen: list[str] | None = None,
 ) -> dict | None:
     """The dump, the dump read back, the rehearsal — and then a stop.
 
@@ -531,8 +565,12 @@ def prepare(
     falls after it is prepared in two calls. Omitted, every phase runs — which is
     the single block exactly as it always was, and is refused for a step whose
     phases fall on both sides.
+
+    ⚠️ **`chosen` is the run's § 33 choices**, which place a chosen side; the
+    sides it resolves to are what the record keeps, so a later side or the write
+    handed another selection is refused rather than read as this one (§ 35).
     """
-    read = configuration.live_data_step(target)
+    read = configuration.live_data_step(target, chosen)
     if read["found"] is None:
         return None
     block = _which(read, step)
@@ -603,6 +641,7 @@ def prepare(
             record is None
             or record.get("target") != target
             or record.get("step") != name
+            or record.get("sides") != sides
             or not set(before) <= set(record.get("verified") or [])
         ):
             answer["stopped_at"] = here[0]["step"]
@@ -610,9 +649,14 @@ def prepare(
             answer["report"].insert(
                 0,
                 f"The deploy stops: {here[0]['step']} falls {side}, after "
-                f"{', '.join(before)}, which is not on record for this step, so it "
-                "would follow nothing. ⛔ What it follows runs first, on its own "
-                "side (§ 35). "
+                f"{', '.join(before)}, which is not on record for this step"
+                + (
+                    " under the sides this run takes"
+                    if record is not None and record.get("sides") != sides
+                    else ""
+                )
+                + ", so it would follow nothing. ⛔ What it follows runs first, on "
+                "its own side (§ 35). "
                 + _writes_line(answer["writes"]),
             )
             return answer
@@ -730,16 +774,19 @@ def apply(
     target: str,
     go: str,
     step: str | None = None,
+    chosen: list[str] | None = None,
 ) -> dict | None:
     """The write, under a go that names what it is a go for. `None` where none.
 
     ⛔ **Four refusals before anything runs**, and each is a stop rather than a
     warning: no record from `prepare`, a record for another target or step or
     one missing a phase this write follows, a go that names neither the target
-    nor the reading it was given (nor the step, on a listed one), and a target
-    whose configuration states that a person performs the write.
+    nor the reading it was given (nor the step, on a listed one, nor the side
+    taken, where the side is a choice), and a target whose configuration states
+    that a person performs the write. ⚠️ A reading taken under other sides than
+    `chosen` resolves to is no completed preparation for this write (§ 35).
     """
-    read = configuration.live_data_step(target)
+    read = configuration.live_data_step(target, chosen)
     if read["found"] is None:
         return None
     block = _which(read, step)
@@ -764,11 +811,16 @@ def apply(
         if each["stated"]
         and each["step"] not in set((held or {}).get("verified") or [])
     ]
+    # ⛔ A reading taken under other sides is another deploy's: a go is for the
+    # selection it showed, and one that changed after the dump is prepared again
+    # (§ 33, § 35).
+    other_sides = held is not None and held.get("sides") != answer["sides"]
     if (
         held is None
         or held.get("target") != target
         or held.get("step") != name
         or owed
+        or other_sides
     ):
         answer["writes"] = _writes(configuration, target, read)
         answer["report"].insert(
@@ -779,7 +831,18 @@ def apply(
             + (
                 f" — {', '.join(owed)} is not on record"
                 if held is not None and held.get("target") == target
-                and held.get("step") == name
+                and held.get("step") == name and owed
+                else ""
+            )
+            + (
+                " — the reading on record was taken with the phases placed "
+                + ", ".join(
+                    f"{phase} {side}" for phase, side in (held.get("sides") or {}).items()
+                    if side
+                )
+                + ", and this run places them "
+                + ", ".join(f"{phase} {side}" for phase, side in answer["sides"].items() if side)
+                if other_sides
                 else ""
             )
             + ", so its reading is incomplete: the dump unverified or the "
@@ -802,6 +865,11 @@ def apply(
     # was not told nothing could recover the store from (§ 35).
     if answer["backup_absent"] is not None and GO_MUST_NAME_NO_BACKUP not in said:
         missing.append(GO_MUST_NAME_NO_BACKUP)
+    # ⛔ Where the side is a choice the go names the side taken, or it approved a
+    # write without saying which side of the new code it lands on (§ 35).
+    for one in answer["side_chosen"]:
+        if one["value"].lower() not in said:
+            missing.append(f"side {one['value']!r}")
     if missing:
         answer["report"].insert(
             0,
@@ -865,9 +933,11 @@ def apply(
     return answer
 
 
-def _report(configuration: config.Config, target: str) -> dict:
+def _report(
+    configuration: config.Config, target: str, chosen: list[str] | None = None
+) -> dict:
     """What this target states, without running any of it."""
-    read = configuration.live_data_step(target)
+    read = configuration.live_data_step(target, chosen)
     if read["found"] is None:
         return {
             "target": target,
@@ -875,7 +945,7 @@ def _report(configuration: config.Config, target: str) -> dict:
             "names": read["names"],
             "report": read["report"],
         }
-    answer = plan(configuration, target)
+    answer = plan(configuration, target, chosen=chosen)
     if answer.get("listed"):
         return {
             "target": target,
@@ -890,6 +960,7 @@ def _report(configuration: config.Config, target: str) -> dict:
         "names": read["names"],
         "order": answer["order"],
         "sides": answer["sides"],
+        "side_chosen": answer["side_chosen"],
         "apply_by": answer["apply_by"],
         "reads_record": answer["reads_record"],
         "steps": answer["steps"],
@@ -909,12 +980,16 @@ class _Stated:
     reader's own suite, where the refusals are.
     """
 
-    def __init__(self, block, root, *, not_live=False, name="a-target", artifacts=None):
+    def __init__(
+        self, block, root, *, not_live=False, name="a-target", artifacts=None,
+        choices=None,
+    ):
         self._block = block
         self._root = root
         self._not_live = not_live
         self._name = name
         self._artifacts = artifacts
+        self._choices = choices
 
     # ⛔ A property, because the reader's is one: a fake answering a call where
     # the reader answers an attribute let every arm here pass while the
@@ -926,9 +1001,25 @@ class _Stated:
     def get(self, path, default=None):
         if path == "context.artifacts.dir":
             return self._artifacts
+        if path == "deploy":
+            # ⚠️ The one entry the reader's own choice resolution reads, stated
+            # in the shape that runs no command, so a planted choice is resolved
+            # and refused by `deploy_target` itself rather than by a copy here.
+            entry = {"name": self._name, "not_live": self._not_live,
+                     "invoke": "by_hand", "workflow": "a-workflow", "ref": "main"}
+            if self._choices:
+                entry["choices"] = self._choices
+            return [entry]
         return default
 
-    def live_data_step(self, target):
+    def _shown(self, target, chosen):
+        """The run's choices, resolved by the reader's own `deploy_target`."""
+        if not self._choices:
+            return {}
+        answer = config.Config.deploy_target(self, target, chosen)
+        return {one["name"]: one for one in answer["choices"]}
+
+    def live_data_step(self, target, chosen=None):
         if target != self._name:
             return {
                 "target": None, "found": None, "steps": [], "reads_record": False,
@@ -946,13 +1037,11 @@ class _Stated:
         # assert its placement instead of the one the loader holds.
         listed = isinstance(self._block, list)
         blocks = self._block if listed else [self._block]
+        steps = config.live_data_steps(blocks, self._shown(target, chosen))
         return {
             "target": {"name": self._name, "not_live": self._not_live},
             "found": self._block,
-            "steps": [
-                dict(block, name=block.get("name"), sides=config.live_data_sides(block))
-                for block in blocks
-            ],
+            "steps": steps,
             "listed": listed,
             "reads_record": self._not_live is False,
             "names": [self._name],
@@ -1468,6 +1557,119 @@ def self_test() -> int:
         answer["written"] is True,
         f"reported {answer['report'][:1]!r}",
     )
+
+    print("\nA side chosen for one run, from values the target states (§ 35):")
+    before, after = _the_sides()
+    # ⛔ One target, and both of its orders: the item this is written for is a
+    # project whose releases need the write on either side, decided per release.
+    side_choice = {
+        "name": "side", "values": [before, after], "default": before,
+        "warnings": {after: "the new code serves before the write lands"},
+    }
+
+    def chosen_target(**overrides):
+        return _Stated(
+            _a_block(order="{choose:side}", **overrides), _a_tree(_scripts()),
+            artifacts=_a_tree({}), choices=[dict(side_choice)],
+        )
+
+    def a_go_naming(side):
+        return _a_go() + f" The write lands {side}."
+
+    for label, chosen, side in (
+        ("a run choosing nothing takes the default side", None, before),
+        ("a run choosing the other side takes it", [f"side={after}"], after),
+    ):
+        target_here = chosen_target()
+        answer = plan(target_here, "a-target", chosen=chosen)
+        check(
+            f"{label}, and the plan says which and where it came from",
+            answer["order"] == side
+            and set(v for v in answer["sides"].values() if v) == {side}
+            and answer["side_chosen"][0]["value"] == side
+            and answer["side_chosen"][0]["chosen"] is (chosen is not None)
+            and f"taken as {side!r}" in " ".join(answer["report"]),
+            f"answered order {answer['order']!r}, {answer['side_chosen']!r}",
+        )
+        check(
+            f"and its go must name {side}",
+            f"the side taken ({side})" in answer["go_must_name"],
+            f"must name {answer['go_must_name']!r}",
+        )
+        answer = prepare(target_here, "a-target", chosen=chosen)
+        check(
+            f"prepared on {side}, the dump still runs first and the sequence whole",
+            [outcome["step"] for outcome in answer["ran"]]
+            == ["backup.run", "backup.verify", "rehearse"]
+            and answer["stopped_at"] is None,
+            f"ran {[outcome['step'] for outcome in answer['ran']]!r}",
+        )
+        refused = apply(target_here, "a-target", _a_go(), chosen=chosen)
+        check(
+            f"a go on {side} that does not name the side writes nothing",
+            refused["written"] is False and refused["ran"] == []
+            and f"no side {side!r}" in refused["report"][0],
+            f"reported {refused['report'][:1]!r}",
+        )
+        answer = apply(target_here, "a-target", a_go_naming(side), chosen=chosen)
+        check(
+            f"and a go naming {side} makes the write",
+            answer["written"] is True,
+            f"reported {answer['report'][:1]!r}",
+        )
+    check(
+        "the warning declared for a side is in the plan when that side is taken",
+        "the new code serves before the write lands" in " ".join(
+            plan(chosen_target(), "a-target", chosen=[f"side={after}"])["report"]
+        ),
+    )
+
+    # ⛔ A go is for the selection it showed: a reading taken under one side does
+    # not license a write handed the other.
+    switched = chosen_target()
+    prepare(switched, "a-target", chosen=[f"side={before}"])
+    answer = apply(switched, "a-target", a_go_naming(after), chosen=[f"side={after}"])
+    check(
+        "a reading taken on one side licenses no write handed the other",
+        answer["written"] is False and answer["ran"] == []
+        and "this run places them" in answer["report"][0],
+        f"reported {answer['report'][:1]!r}",
+    )
+
+    # ⛔ The dump fixed before the invocation, the rest chosen: the shape where a
+    # chosen side moves the write and never the backup ahead of it.
+    split_chosen = chosen_target(sides={"backup": before})
+    answer = prepare(split_chosen, "a-target", side=before, chosen=[f"side={after}"])
+    check(
+        "with the backup fixed before and the side chosen after, the earlier side "
+        "takes the dump alone",
+        [outcome["step"] for outcome in answer["ran"]] == ["backup.run", "backup.verify"],
+        f"ran {[outcome['step'] for outcome in answer['ran']]!r}",
+    )
+    prepare(split_chosen, "a-target", side=after, chosen=[f"side={after}"])
+    check(
+        "and the write, after its rehearsal on the later side, is made under a go naming it",
+        apply(split_chosen, "a-target", a_go_naming(after),
+              chosen=[f"side={after}"])["written"] is True,
+    )
+
+    refusal = None
+    try:
+        plan(chosen_target(), "a-target", chosen=["side=whenever"])
+    except config.ConfigError as refused:
+        refusal = refused.key
+    check(
+        "a side the choice does not allow is refused by § 33's resolution, before anything",
+        refusal == "deploy.choices.side",
+        f"refused on {refusal!r}",
+    )
+    fixed = plan(_Stated(_a_block(), root), "a-target")
+    check(
+        "a step stating a fixed order carries no chosen side and its go names none",
+        fixed["side_chosen"] == []
+        and not any("side taken" in what for what in fixed["go_must_name"]),
+        f"answered {fixed['side_chosen']!r}, {fixed['go_must_name']!r}",
+    )
     # ⚠️ The later side reached with no dump on record — a deploy that skipped
     # the earlier side, or an earlier deploy's reading for another target.
     orphan = _Stated(split_block, _a_tree(_scripts()), artifacts=_a_tree({}))
@@ -1744,6 +1946,11 @@ def main(argv: list[str] | None = None) -> int:
         "--side", default=None,
         help="prepare only the phases placed on this side of the invocation (§ 35)",
     )
+    parser.add_argument(
+        "--choose", action="append", default=None, metavar="NAME=VALUE",
+        help="one of the run's § 33 choices, repeated per choice -- exactly what "
+             "the deploy was handed, which a chosen side is resolved by (§ 35)",
+    )
     parser.add_argument("--skills-root", default=None)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args(argv)
@@ -1775,20 +1982,20 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.action == "plan":
-            answer = plan(resolved, args.target, args.step)
+            answer = plan(resolved, args.target, args.step, args.choose)
         elif args.action == "prepare":
-            answer = prepare(resolved, args.target, args.step, args.side)
+            answer = prepare(resolved, args.target, args.step, args.side, args.choose)
         elif args.action == "apply":
-            answer = apply(resolved, args.target, args.given, args.step)
+            answer = apply(resolved, args.target, args.given, args.step, args.choose)
         else:
-            answer = None
-    except _Unaddressed as error:
-        # ⛔ The configuration does not answer to the step named, which is a
-        # reading that could not be taken rather than a step that stopped.
+            answer = _report(resolved, args.target, args.choose)
+    except (_Unaddressed, config.ConfigError) as error:
+        # ⛔ The configuration does not answer to the step named, or to a choice
+        # the run was handed (§ 33), which is a reading that could not be taken
+        # rather than a step that stopped.
         print(json.dumps({"error": str(error)}, indent=2, ensure_ascii=False))
         return 2
     if args.action is None:
-        answer = _report(resolved, args.target)
         print(json.dumps(answer, indent=2, ensure_ascii=False))
         return NO_STEP if answer["live_data_step"] is None else 0
 

@@ -884,7 +884,7 @@ def states_a_configuration(cwd: str | None) -> bool:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     try:
         import config as reader  # noqa: PLC0415 -- the path is set one line up
-        return bool(reader.configured(cwd or "."))
+        return bool(reader.configured(reader.hook_root(cwd)))
     except Exception:  # noqa: BLE001 -- an unreachable reader answers no, per above
         return False
 
@@ -1494,6 +1494,29 @@ def self_test() -> int:
             check(f"silent on: {what}", silent == {}, repr(silent)[:120])
         check("and a body it could not read is not reported there either",
               answered_for(f"gh pr create --title t --body-file {missing}", cwd=bare) == {})
+
+        # ⛔ The same refusal from a subdirectory of the adopted project, which is
+        # where a session stands after one `cd` (§ 7 -> A hook in a project that
+        # states no configuration): the event's directory follows the shell, the
+        # harness's project directory does not. Bounded by it, so a project
+        # directory that does not contain the event reaches nothing.
+        below = Path(adopted) / "a-package" / "src"
+        below.mkdir(parents=True)
+        leaking = f"gh pr comment 1 --body '{secret}'"
+        held_project = os.environ.get("CLAUDE_PROJECT_DIR")
+        try:
+            os.environ["CLAUDE_PROJECT_DIR"] = adopted
+            check("a subdirectory of the project is refused as its root is",
+                  answered_for(leaking, cwd=str(below)).get("hookSpecificOutput", {})
+                  .get("permissionDecision") == "deny")
+            os.environ["CLAUDE_PROJECT_DIR"] = bare
+            check("and a project directory not containing it reaches nothing above it",
+                  answered_for(leaking, cwd=str(below)) == {})
+        finally:
+            if held_project is None:
+                os.environ.pop("CLAUDE_PROJECT_DIR", None)
+            else:
+                os.environ["CLAUDE_PROJECT_DIR"] = held_project
 
     out.append("")
     out.append("Neither report reads a clean run as a clearance:")

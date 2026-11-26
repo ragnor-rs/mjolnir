@@ -1906,7 +1906,7 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
         # ⛔ Resolved against the board, which is what `search_items` does with a
         # field a caller names: a field this board does not carry is refused
         # rather than answered with the cards that do not match it.
-        _field(str(held), key="work_item.grouping.field")
+        _field(str(held), key=f"{config.grouping_at((grouping or {}).get('name'))}.field")
     label = None
     if carrier == "label":
         label = f"{(grouping or {}).get('label_prefix') or ''}{value}"
@@ -2045,6 +2045,12 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # ⚠️ So § 3's stated fallback is what the bootstrap gets here: the run names the
 # grouping it would have created and writes nothing anywhere else.
 #
+# `read_current_grouping` is absent for the plain-issues module's reason about a
+# milestone, and a board's iteration adds nothing to it: an iteration is current by
+# its dates rather than by a mark the board sets, so answering one would be this
+# module reading a calendar as the tracker's statement. The value arrives on the
+# invocation, which is § 3's fallback.
+#
 # `link_relation` and `read_relations` are absent for the plain-issues module's
 # reason, a card being a view over an issue: the host records the dependency and
 # a parent's sub-issues between issues and no link type a project can name, so a
@@ -2053,6 +2059,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
 DELIBERATELY_ABSENT = (
     "mark_grouping_released",
     "create_grouping",
+    "read_current_grouping",
     "link_relation",
     "read_relations",
     "checklist_read",

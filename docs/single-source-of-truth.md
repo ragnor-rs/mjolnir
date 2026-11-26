@@ -1326,10 +1326,10 @@ every other row.
 
 It is also the carrier for the one message a project that states no configuration ever gets, by
 [schema § 7](../plugins/mjolnir/config/schema.md#a-hook-in-a-project-that-states-no-configuration):
-where the reader finds no configuration under the directory the event names, no rule is loaded and
-the person is invited to write one, with the file to write and the document its keys are stated in
-both named. The two answers are exclusive, and the run asserts each against the other. This script
-carries that message only because it answers the event the exception is scoped to.
+where the reader finds no configuration for the event, resolved by that section's rule, no rule is
+loaded and the person is invited to write one, with the file to write and the document its keys are
+stated in both named. The two answers are exclusive, and the run asserts each against the other.
+This script carries that message only because it answers the event the exception is scoped to.
 
 One loader serves both rules, unlike the gates here, which are one script per question: both are a
 table in a subsection, read at an event that reaches a writer before it writes, with the same

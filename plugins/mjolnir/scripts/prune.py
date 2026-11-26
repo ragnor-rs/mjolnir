@@ -1097,7 +1097,7 @@ def answer(payload: dict, *, run=None) -> dict:
         return {}
     cwd = str(payload.get("cwd") or ".")
     try:
-        loaded, stop = reader.read_or_why(cwd)
+        loaded, stop = reader.read_or_why(reader.hook_root(cwd))
     except Exception:  # noqa: BLE001 -- an unreachable reader says nothing, as above
         return {}
     if stop:
@@ -1361,7 +1361,10 @@ def merged_answer(payload: dict, *, run=None, confirm=None, main=None, stopper=N
         return {}
     cwd = str(payload.get("cwd") or ".")
     try:
-        loaded, stop = reader.read_or_why(cwd)
+        # ⛔ Resolved under the event's project and not its directory (§ 7), while the
+        # directory itself is still what places the merge below: a merge typed after a
+        # `cd` is the same project's merge.
+        loaded, stop = reader.read_or_why(reader.hook_root(cwd))
     except Exception:  # noqa: BLE001 -- an unreachable reader says nothing
         return {}
     # ⛔ A configuration that does not resolve is the opening event's to report, every session: a

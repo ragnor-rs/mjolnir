@@ -903,7 +903,7 @@ def states_a_configuration(cwd: str | None) -> bool:
     """
     try:
         import config as reader  # noqa: PLC0415 -- the path is set at import time
-        return bool(reader.configured(cwd or "."))
+        return bool(reader.configured(reader.hook_root(cwd)))
     except Exception:  # noqa: BLE001 -- an unreachable reader answers no, per above
         return False
 
@@ -916,7 +916,7 @@ def _config(cwd: str | None):
     """
     try:
         import config as reader  # noqa: PLC0415 -- the path is set at import time
-        return reader.load(cwd or ".", check_paths=False)
+        return reader.load(reader.hook_root(cwd), check_paths=False)
     except Exception:  # noqa: BLE001 -- any failure is reported by the caller
         return None
 
@@ -934,7 +934,7 @@ def _read(cwd: str | None):
     """
     try:
         import config as reader  # noqa: PLC0415 -- the path is set at import time
-        loaded, stop = reader.read_or_why(cwd or ".")
+        loaded, stop = reader.read_or_why(reader.hook_root(cwd))
         return loaded, (f" {reader.REFUSAL_PREFACE} {stop}" if stop else "")
     except Exception:  # noqa: BLE001 -- an unreachable reader explains nothing
         return None, ""

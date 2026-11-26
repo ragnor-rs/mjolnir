@@ -658,7 +658,7 @@ def states_a_configuration(cwd: str | None) -> bool:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     try:
         import config as reader  # noqa: PLC0415 -- the path is set one line up
-        return bool(reader.configured(cwd or "."))
+        return bool(reader.configured(reader.hook_root(cwd)))
     except Exception:  # noqa: BLE001 -- an unreachable reader answers no, per above
         return False
 

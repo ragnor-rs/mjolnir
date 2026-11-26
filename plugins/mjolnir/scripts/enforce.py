@@ -405,15 +405,45 @@ SHOWN = 160
 # outlived one would hold a place on something that is no longer running.
 
 
-def store_for(skills_root: str | Path) -> Path:
-    """Where this project's leases live.
+def store_key(skills_root: str | Path, git=None) -> str:
+    """What one project's leases are counted under, the same from every tree of it.
 
-    Keyed by a digest of the skills root rather than by its path, so two projects
-    on one machine never share a place and nothing about either of them is
-    written into a directory name.
+    ⛔ **The repository and not the tree** (§ 7 → A lease on an exclusive resource):
+    the repository's common git directory, which every work tree of it and every
+    subdirectory resolves to alike, with the skills root's place inside its tree,
+    so two projects living in one repository still count apart. Keyed by the
+    skills root's own path, a session in a sibling tree wrote its leases where
+    this one never read, and `subject: tree` queued nothing against it.
+
+    Where git answers nothing — no repository, no git on the path, a read that
+    timed out — the key is the skills root's resolved path, which is what every
+    project was keyed by before, so a directory with no repository behind it
+    keeps its one place.
     """
     root = str(Path(skills_root).resolve())
-    digest = hashlib.sha256(root.encode("utf-8")).hexdigest()[:16]
+    code, out = (git or _run_git)(root, ["rev-parse", "--git-common-dir", "--show-prefix"])
+    lines = out.split("\n") if code == 0 else []
+    if not lines or not lines[0].strip():
+        return root
+    common = Path(lines[0].strip())
+    if not common.is_absolute():
+        common = Path(root) / common
+    prefix = lines[1].strip().strip("/") if len(lines) > 1 else ""
+    return f"{common.resolve()}\0{prefix}"
+
+
+def store_for(skills_root: str | Path, git=None) -> Path:
+    """Where this project's leases live.
+
+    Keyed by a digest of `store_key` rather than by a path, so two projects on
+    one machine never share a place and nothing about either of them is written
+    into a directory name.
+    """
+    return _store_at(store_key(skills_root, git))
+
+
+def _store_at(key: str) -> Path:
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
     return Path(tempfile.gettempdir()) / "mjolnir-leases" / digest
 
 
@@ -430,6 +460,45 @@ def _read_lease(path: Path) -> dict | None:
     except (OSError, json.JSONDecodeError):
         return None
     return loaded if isinstance(loaded, dict) else None
+
+
+def _ticket_files(store: Path) -> list[Path]:
+    try:
+        return sorted(p for p in store.iterdir() if p.suffix == ".ticket")
+    except OSError:
+        return []
+
+
+def live_tickets(store: Path, resource, now: float) -> list[tuple[Path, dict]]:
+    """Every place in line for one resource, first arrival first, the stale ones removed.
+
+    ⛔ A ticket is kept by its waiter reading the resource again, and never by the
+    call that wrote it: a wait has a hard time limit, and a ticket that died with
+    its call would put its waiter at the back each time it waited again.
+    """
+    found = []
+    for path in _ticket_files(store):
+        ticket = _read_lease(path)
+        if ticket is None or now > float(ticket.get("until") or 0):
+            path.unlink(missing_ok=True)
+            continue
+        if ticket.get("resource") == resource:
+            found.append((path, ticket))
+    # The file name breaks a tie, so every reader sees one order.
+    return sorted(found, key=lambda one: (float(one[1].get("arrived") or 0), one[0].name))
+
+
+def _ticket_path(store: Path, resource, session: str) -> Path:
+    digest = hashlib.sha256(f"{resource}\0{session}".encode("utf-8")).hexdigest()[:24]
+    return store / f"{digest}.ticket"
+
+
+def _ahead(tickets: list[tuple[Path, dict]], session: str) -> int:
+    """How many in line are ahead of this session: everyone, where it holds no ticket."""
+    for count, (_path, ticket) in enumerate(tickets):
+        if ticket.get("session") == session:
+            return count
+    return len(tickets)
 
 
 def live_leases(store: Path, now: float) -> list[tuple[Path, dict]]:
@@ -797,7 +866,9 @@ def occupancy(entry: dict, leases: list[tuple[Path, dict]], counted: int | None,
         key = str(lease.get("key"))
         keys.add(key)
         age = now - float(lease.get("taken") or 0)
-        if not asked or grace is None or age <= int(grace):
+        # ⛔ A place a wait handed over always counts: nothing is running under it
+        # yet, so no count the resource reports can have seen it.
+        if lease.get("handed") or not asked or grace is None or age <= int(grace):
             added.add(key)
     return (counted or 0) + len(added), keys, added
 
@@ -815,9 +886,26 @@ def take(entry: dict, store: Path, key: str, session: str, command: str,
     and then writing lets two sessions each read the last place as free. A lease
     that puts the resource over its cap is removed again, so the bias is towards
     refusing rather than towards two holders.
+
+    ⛔ Where the resource keeps a line (`wait_holds_for`), a place a wait handed
+    this session is the one this call takes, and everyone in line ahead of this
+    session counts against the cap: a call that never waited does not take the
+    place somebody is waiting for.
     """
     cap = int(entry.get("cap") or 1)
     held = live_leases(store, now)
+    queued = entry.get("wait_holds_for") is not None
+    if queued:
+        for path, lease in held:
+            if (lease.get("handed") and lease.get("resource") == entry.get("name")
+                    and lease.get("session") == session):
+                lease.pop("handed", None)
+                lease.update(key=key, command=command[:SHOWN], background=bool(background),
+                             taken=now, ttl=int(entry.get("ttl") or 1))
+                _rewrite(path, lease)
+                _ticket_path(store, entry.get("name"), session).unlink(missing_ok=True)
+                standing, _keys, _added = occupancy(entry, live_leases(store, now), counted, now)
+                return path, True, standing, cap
     standing, keys, _added = occupancy(entry, held, counted, now)
     if key in keys:
         # The place is already this key's -- the `tree` case, where a second call
@@ -849,9 +937,12 @@ def take(entry: dict, store: Path, key: str, session: str, command: str,
         return None, True, standing, cap
 
     standing, _keys, _added = occupancy(entry, live_leases(store, now), counted, now)
-    if standing > cap:
+    ahead = _ahead(live_tickets(store, entry.get("name"), now), session) if queued else 0
+    if standing + ahead > cap:
         path.unlink(missing_ok=True)
         return None, False, standing, cap
+    if queued:
+        _ticket_path(store, entry.get("name"), session).unlink(missing_ok=True)
     return path, True, standing, cap
 
 
@@ -2194,16 +2285,22 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
                 unknown[held] for held, lease in live_leases(where, now)
                 if held in unknown and lease.get("resource") == entry.get("name")
             })
+            queued = entry.get("wait_holds_for") is not None
+            ahead = _ahead(live_tickets(where, entry.get("name"), now), session) if queued else 0
             refusals.append(
                 f"{entry.get('name')} is at its cap of {cap}, with {standing} held"
+                + (f" and {ahead} waiting ahead of this call" if ahead else "")
                 + (f" ({'; '.join(whys)}, so a backgrounded holder's place counts until it "
                    "expires)" if whys else "")
             )
             if entry.get("wait_up_to"):
                 waits.append(
                     f"`python3 \"{Path(__file__).resolve()}\" wait --resource {number} "
-                    f"--skills-root \"{Path(config.skills_root).resolve()}\"` waits up to "
-                    f"{entry['wait_up_to']}s for one on {entry.get('name')}"
+                    f"--skills-root \"{Path(config.skills_root).resolve()}\""
+                    + (f" --session \"{session}\"" if queued else "")
+                    + f"` waits up to {entry['wait_up_to']}s for one on {entry.get('name')}"
+                    + (", in line, and ends holding it for this session's next call"
+                       if queued else "")
                 )
     if refusals:
         # ⛔ Every place this call took on its way to being refused is given back
@@ -2580,7 +2677,7 @@ def release_answer(payload: dict, *, config=None, now: float | None = None,
         return {}
     if config is None and not _states_a_configuration(payload.get("cwd")):
         return {}
-    loaded = config if config is not None else _config(payload.get("cwd"))
+    loaded = config if config is not None else _config(_hook_root(payload.get("cwd")))
     # ⛔ The root the call stood in, resolved as the guard resolved it, so the
     # resources a background process is recorded against are the ones the guard
     # leased. `None` where the call stood in none of several roots: the guard
@@ -2603,8 +2700,15 @@ def prompts_for(loaded, store: Path | None) -> Path:
 
     Beside this project's leases and not among them: the lease sweep reads the
     files of its own directory, and a note is no place on anything.
+
+    ⚠️ Keyed by the skills root's own path and never by `store_key`: a note is
+    one session's, read back by that session's own exit event, so no sibling
+    tree has a reason to see it — and this is reached on every guarded call, so
+    the repository's key would put a git process on each one in a project that
+    states no exclusive resource at all.
     """
-    return (store if store is not None else store_for(loaded.skills_root)) / "prompts"
+    return (store if store is not None else _store_at(str(Path(loaded.skills_root).resolve()))
+            ) / "prompts"
 
 
 def _note_path(where: Path, payload: dict) -> Path:
@@ -2754,9 +2858,25 @@ def _states_a_configuration(cwd: str | None) -> bool:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     try:
         import config as reader  # noqa: PLC0415 -- the path is set one line up
-        return bool(reader.configured(cwd or "."))
+        return bool(reader.configured(reader.hook_root(cwd)))
     except Exception:  # noqa: BLE001 -- an unreachable reader answers no, per above
         return False
+
+
+def _hook_root(cwd: str | None) -> str:
+    """The directory this event's configuration is resolved under (§ 7).
+
+    ⛔ The reader's rule and not one of this carrier's: the event's directory
+    follows the session's shell, and which project it is standing in is the
+    reader's `hook_root` to answer. A role's own `--skills-root` never passes
+    through here.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        return reader.hook_root(cwd)
+    except Exception:  # noqa: BLE001 -- an unreachable reader resolves nothing new
+        return cwd or "."
 
 
 def _config(cwd: str | None):
@@ -2787,7 +2907,7 @@ def _read(cwd: str | None):
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     try:
         import config as reader  # noqa: PLC0415 -- the path is set one line up
-        loaded, stop = reader.read_or_why(cwd or ".")
+        loaded, stop = reader.read_or_why(reader.hook_root(cwd))
         return loaded, (f" {reader.REFUSAL_PREFACE} {stop}" if stop else "")
     except Exception:  # noqa: BLE001 -- an unreachable reader explains nothing
         return None, ""
@@ -2942,15 +3062,72 @@ def write_record(address: str, question: str, given: str, by: str, at: str,
     )
 
 
+def _hand_over(entry: dict, store: Path, key: str, session: str, counted: int | None,
+               moment: float) -> bool:
+    """Take the place this session waited for, held for its next claiming call.
+
+    ⛔ Written before the count is read back, as `take` writes a lease, and
+    before the ticket is removed, so there is no moment at which this waiter
+    holds neither and a call arriving then finds the place free.
+    """
+    holds = int(entry.get("wait_holds_for") or 1)
+    lease = {
+        "resource": entry.get("name"),
+        "subject": entry.get("subject"),
+        "key": key or f"handed:{session}",
+        "session": session,
+        "command": "",
+        "background": False,
+        "taken": moment,
+        "ttl": holds,
+        "handed": True,
+    }
+    try:
+        store.mkdir(parents=True, exist_ok=True)
+        path = store / f"{hashlib.sha256(json.dumps(lease, sort_keys=True).encode()).hexdigest()[:24]}.json"
+        with open(path, "x", encoding="utf-8") as handle:
+            json.dump(lease, handle)
+    except OSError:
+        return False
+    standing, _keys, _added = occupancy(entry, live_leases(store, moment), counted, moment)
+    ahead = _ahead(live_tickets(store, entry.get("name"), moment), session)
+    if standing + ahead > int(entry.get("cap") or 1):
+        path.unlink(missing_ok=True)
+        return False
+    _ticket_path(store, entry.get("name"), session).unlink(missing_ok=True)
+    return True
+
+
+def _in_line(entry: dict, store: Path, session: str, key: str | None,
+             moment: float) -> list[tuple[Path, dict]]:
+    """Keep this session's place in line, taking one at the back where it holds none."""
+    path = _ticket_path(store, entry.get("name"), session)
+    ticket = _read_lease(path) if path.exists() else None
+    if ticket is None or moment > float(ticket.get("until") or 0):
+        ticket = {"resource": entry.get("name"), "session": session, "key": key,
+                  "arrived": moment}
+    ticket["until"] = moment + int(entry.get("wait_holds_for") or 1)
+    try:
+        store.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+    _rewrite(path, ticket)
+    return live_tickets(store, entry.get("name"), moment)
+
+
 def wait_for(config, number: int, *, within: float | None = None, cwd: str = ".",
-             store: Path | None = None, probe=None, clock=time.time,
-             rest=time.sleep) -> tuple[str, int]:
+             session: str | None = None, store: Path | None = None, probe=None,
+             clock=time.time, rest=time.sleep) -> tuple[str, int]:
     """Wait for a place on one resource, up to the bound its project states.
 
     ⛔ A command and never a hook: what a hook blocks on is killed at the hook's
-    own limit, and a killed guard lets its call through unheld. ⚠️ It holds
-    nothing. A place found free here is taken by the call's own guard, which may
-    still refuse it.
+    own limit, and a killed guard lets its call through unheld.
+
+    ⚠️ Where the resource states no `wait_holds_for` it holds nothing: a place
+    found free here is taken by the call's own guard, which may still refuse it.
+    Where it states one, the wait keeps a place in line that outlives this call,
+    is served in arrival order, and ends holding the place for the session's next
+    claiming call.
 
     The resource is named by its position, so that the call waiting for it does
     not carry the text its own `claimed_by` matches.
@@ -2962,6 +3139,11 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
     if within is not None and not within > 0:
         return f"`--within` is {within}; it is the seconds this call has, above zero.", 2
     entry = stated[number - 1]
+    queued = entry.get("wait_holds_for") is not None and bool(entry.get("wait_up_to"))
+    if queued and not session:
+        return (f"{entry.get('name')} keeps a line (`wait_holds_for`), so the wait names the "
+                "session it holds a place for: `--session`, as the refusal that named this "
+                "wait wrote it."), 2
     name, cap = entry.get("name"), int(entry.get("cap") or 1)
     bound = float(entry.get("wait_up_to") or 0)
     if within is not None:
@@ -2989,9 +3171,25 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
             )
             leases = live_leases(where, moment)
             standing, keys, _added = occupancy(entry, leases, counted, moment)
-            if standing < cap or key in keys:
+            if key in keys:
+                if queued:
+                    # ⛔ Out of line too: a ticket left standing would count against
+                    # the cap for a place this waiter no longer needs.
+                    _ticket_path(where, name, session).unlink(missing_ok=True)
+                return (f"{name}: this tree already holds a place after "
+                        f"{int(moment - started)}s, so the call is made in it."), 0
+            if not queued and standing < cap:
                 return (f"{name}: a place is free after {int(moment - started)}s. ⚠️ It is not "
                         "held: the call itself takes it."), 0
+            if queued:
+                line = _in_line(entry, where, session, key, moment)
+                ahead = _ahead(line, session)
+                if standing + ahead < cap and _hand_over(entry, where, key, session, counted,
+                                                         moment):
+                    return (f"{name}: a place is held for this session after "
+                            f"{int(moment - started)}s, for its next claiming call, which is "
+                            f"made now: it is given back after "
+                            f"{entry['wait_holds_for']}s with no call taking it."), 0
             full = (standing, counted, leases, moment, unknown)
         if moment >= deadline:
             break
@@ -3001,7 +3199,10 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
             break
     standing, counted, leases, moment, unknown = full
     lines = [
-        f"Refused: {name} is at its cap of {cap}, with {standing} held, "
+        (f"Refused: {name} has {cap - standing} of its {cap} places free and every one of "
+         "them promised to a session ahead in line, "
+         if queued and standing < cap
+         else f"Refused: {name} is at its cap of {cap}, with {standing} held, ")
         + (f"after {int(bound)}s of waiting" if bound
            else "and this project states no wait for it")
         + f" ({LEASE_CITATION}).",
@@ -3010,6 +3211,13 @@ def wait_for(config, number: int, *, within: float | None = None, cwd: str = "."
         else "  the resource cannot be asked, so its leases are the whole of the count",
     ]
     lines.extend(_holders(entry, leases, moment, counted, unknown))
+    if queued:
+        line = live_tickets(where, name, moment)
+        lines.append(
+            f"  this session is {_ahead(line, session) + 1} of {len(line)} in line, and keeps "
+            f"that place for {entry['wait_holds_for']}s: the same wait, run again within "
+            "them, waits from it rather than from the back"
+        )
     return "\n".join(lines), 1
 
 
@@ -3021,6 +3229,8 @@ def _holders(entry: dict, leases: list[tuple[Path, dict]], now: float,
         f"    - {lease.get('key')}, session {lease.get('session')} — "
         f"{int(now - float(lease.get('taken') or 0))}s old of {lease.get('ttl')}s"
         + (", backgrounded" if lease.get("background") else "")
+        + (", handed by a wait to this session's next claiming call" if lease.get("handed")
+           else "")
         + ("" if str(lease.get("key")) in added
            else ", past its grace and left to the resource's own count")
         + (f", counting until it expires: {unknown[path]}" if path in unknown else "")
@@ -3061,6 +3271,14 @@ def held_report(config, *, now: float | None = None, store: Path | None = None,
         lines.extend(
             _holders(entry, leases, moment, None if unestablished else counted, unknown)
         )
+        if entry.get("wait_holds_for") is not None:
+            line = live_tickets(where, entry.get("name"), moment)
+            lines.append(f"  {len(line)} session(s) in line, first arrival first")
+            lines.extend(
+                f"    {place}. session {ticket.get('session')} — waiting "
+                f"{int(moment - float(ticket.get('arrived') or 0))}s"
+                for place, (_path, ticket) in enumerate(line, 1)
+            )
     return "\n".join(lines), 0
 
 
@@ -3762,6 +3980,79 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("a failed call gives back its own place and not its sibling's",
               left == ["a-claiming-command --two"], repr(left))
 
+        # --- leases counted per repository (§ 7 → A lease) ---------------
+        # ⛔ Real repositories and real work trees, and the store derived rather
+        # than handed in: what is in question is what git resolves from inside a
+        # tree, and a fixture that passed one store to both sessions would assert
+        # the fixture. The machine's temp directory is swapped for this one so
+        # the derived stores are written nowhere a later run reads.
+        out.append("")
+        out.append("Two trees of one repository count their leases in one store:")
+        machine_temp = tempfile.tempdir
+        tempfile.tempdir = str(fresh("a-temp-directory"))
+        try:
+            repository = fresh("one-repository").resolve()
+            _in(repository, "init", "--quiet", "--initial-branch=main")
+            for key, value in (("user.email", "a@repo"), ("user.name", "A Repo")):
+                _in(repository, "config", key, value)
+            _a_commit(repository, "base.txt")
+            (repository / "a-project").mkdir()
+            _a_commit(repository, "a-project/marker.txt")
+            sibling = Path(directory).resolve() / "a-sibling-tree"
+            _in(repository, "worktree", "add", "--quiet", "-b", "a-branch", str(sibling))
+            check("the tree and the main checkout resolve one store",
+                  store_for(repository) == store_for(sibling),
+                  f"{store_for(repository)} vs {store_for(sibling)}")
+            check("and so does the same project inside each of them",
+                  store_for(repository / "a-project") == store_for(sibling / "a-project"))
+            check("while two projects in one repository still count apart",
+                  store_for(repository) != store_for(repository / "a-project"))
+
+            entry = _a_resource(name="a-shared-stack", cap=1, subject="tree")
+            in_a, in_b = _a_config([entry], root=str(repository)), _a_config(
+                [entry], root=str(sibling))
+            held = guard_answer(_call("a-claiming-command", cwd=str(repository)), config=in_a,
+                                now=1000.0, store=store_for(in_a.skills_root))
+            check("a claiming call in one tree takes the place", held == {}, repr(held)[:120])
+            queued = guard_answer(_call("a-claiming-command", session="another",
+                                        cwd=str(sibling)),
+                                  config=in_b, now=1000.0, store=store_for(in_b.skills_root))
+            check("and one in the sibling tree is refused, with no probe to count it",
+                  denied(queued), repr(queued)[:160])
+
+            other = fresh("another-repository").resolve()
+            _in(other, "init", "--quiet", "--initial-branch=main")
+            check("two repositories on one machine never share a store",
+                  store_for(other) != store_for(repository))
+            elsewhere = guard_answer(
+                _call("a-claiming-command", session="a-third", cwd=str(other)),
+                config=_a_config([entry], root=str(other)), now=1000.0,
+                store=store_for(other))
+            check("so the other repository's call takes a place of its own",
+                  elsewhere == {}, repr(elsewhere)[:120])
+
+            bare_directory = fresh("no-repository-here").resolve()
+            check("a directory with no repository is keyed by its own path, as before",
+                  store_key(bare_directory, git=lambda _root, _args: (128, ""))
+                  == str(bare_directory))
+            check("and a git that answers nothing reads the same as no repository",
+                  store_key(repository, git=lambda _root, _args: (1, ""))
+                  == str(repository))
+
+            # ⛔ The note store is reached on every guarded call, so a git
+            # process there is paid by every project, resources or none.
+            asked_git = []
+            real_git = globals()["_run_git"]
+            globals()["_run_git"] = lambda *args: asked_git.append(args) or (1, "")
+            try:
+                prompts_for(_a_config([], root=str(repository)), None)
+            finally:
+                globals()["_run_git"] = real_git
+            check("and the per-call note store asks git nothing", asked_git == [],
+                  repr(asked_git)[:120])
+        finally:
+            tempfile.tempdir = machine_temp
+
         # ⛔ The path the harness publishes no event for. What is asserted is
         # not that an event fires: it is that the sweep at the end of the turn
         # releases a place whose call never reached a completion at all, which
@@ -4185,6 +4476,129 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                   denied(answered) and time.monotonic() - before < 5)
             check(f"{label}: the wait is " + ("named" if named else "not named"),
                   ("wait --resource 1" in reason(answered)) is named, reason(answered)[-160:])
+
+        out.append("")
+        out.append("A resource that keeps a line serves its waits in arrival order, each one "
+                   "ending holding its place:")
+        lined = _a_config([_a_resource(cap=1, wait_up_to=1, wait_holds_for=30)])
+        where = fresh("line")
+        shared = _Clock()
+
+        def claim(session: str) -> dict:
+            return guard_answer(_call("a-claiming-command", session=session), config=lined,
+                                now=shared.at, store=where)
+
+        def wait_as(session: str) -> tuple[str, int]:
+            return wait_for(lined, 1, session=session, store=where, clock=shared.now,
+                            rest=shared.rest)
+
+        def done(session: str) -> None:
+            release(where, session, "call", "a-claiming-command", shared.at)
+
+        check("a holder is admitted", not denied(claim("holder")))
+        refused = claim("first")
+        check("a full resource with a line names the wait with the session it holds for",
+              denied(refused) and '--session "first"' in reason(refused), reason(refused)[-220:])
+        check("a refused caller that never waits takes no ticket",
+              live_tickets(where, "a-held-thing", shared.at) == [])
+        for session in ("first", "second", "third"):
+            report, status = wait_as(session)
+            check(f"{session}: a wait that runs out keeps its place in line",
+                  status == 1 and "in line" in report, report[-160:])
+        order = [t.get("session") for _p, t in live_tickets(where, "a-held-thing", shared.at)]
+        check("the line is the order the waits began in", order == ["first", "second", "third"],
+              repr(order))
+        done("holder")
+        report, status = wait_as("third")
+        check("a place coming back is not taken by a waiter behind others", status == 1,
+              report[:160])
+        report, status = wait_as("second")
+        check("nor by the second", status == 1, report[:160])
+        check("a caller that never waited is refused while the line holds the place",
+              denied(claim("fourth")), reason(claim("fourth"))[-160:])
+        report, status = wait_as("first")
+        check("the first arrival's wait ends holding the place", status == 0 and "held" in report,
+              report)
+        check("and a session arriving at that moment is refused", denied(claim("fourth")))
+        check("the waiter's next claiming call is the one admitted", not denied(claim("first")))
+        check("and the place it was handed is the one it holds, not a second",
+              len([1 for _p, lease in live_leases(where, shared.at)
+                   if lease.get("resource") == "a-held-thing"]) == 1)
+        done("first")
+        report, status = wait_as("third")
+        check("the third still waits behind the second", status == 1, report[:160])
+        report, status = wait_as("second")
+        check("and the second is served next", status == 0, report)
+        claim("second")
+        done("second")
+        report, status = wait_as("third")
+        check("and the third after it", status == 0, report)
+
+        where = fresh("line-stale")
+        stale = _Clock()
+        guard_answer(_call("a-claiming-command", session="holder"), config=lined,
+                     now=stale.at, store=where)
+        wait_for(lined, 1, session="gone", store=where, clock=stale.now, rest=stale.rest)
+        stale.at += 31
+        check("a place in line nobody keeps is given up after `wait_holds_for`",
+              live_tickets(where, "a-held-thing", stale.at) == [])
+        where = fresh("line-unclaimed")
+        unclaimed = _Clock()
+        wait_for(lined, 1, session="idle", store=where, clock=unclaimed.now,
+                 rest=unclaimed.rest)
+        check("a free place is held for the waiter",
+              len(live_leases(where, unclaimed.at)) == 1)
+        check("and given back when no call comes for it",
+              live_leases(where, unclaimed.at + 31) == [])
+        check("a wait for a resource keeping a line names its session or is misuse",
+              wait_for(lined, 1, store=where)[1] == 2)
+
+        treed = _a_config([_a_resource(cap=2, subject="tree", wait_up_to=1,
+                                       wait_holds_for=30)])
+        where = fresh("line-tree")
+        trees = {name: fresh(f"line-tree-{name}") for name in ("t", "x", "y", "c")}
+        sibling = _Clock()
+
+        def claim_in(session: str, tree: str) -> dict:
+            return guard_answer(_call("a-claiming-command", session=session,
+                                      cwd=str(trees[tree])),
+                                config=treed, now=sibling.at, store=where)
+
+        claim_in("x", "x")
+        claim_in("y", "y")
+        wait_for(treed, 1, session="a", cwd=str(trees["t"]), store=where, clock=sibling.now,
+                 rest=sibling.rest)
+        for holder in ("x", "y"):
+            release(where, holder, "call", "a-claiming-command", sibling.at)
+        claim_in("b", "t")
+        wait_for(treed, 1, session="a", cwd=str(trees["t"]), store=where, clock=sibling.now,
+                 rest=sibling.rest)
+        check("a waiter whose tree came to hold a place leaves the line, so its ticket holds "
+              "no second place",
+              live_tickets(where, "a-held-thing", sibling.at) == []
+              and not denied(claim_in("c", "c")))
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        check("the least `wait_holds_for` the reader admits outlasts the longest gap between "
+              "two of a waiter's readings",
+              reader.WAIT_HOLDS_LEAST >= WAIT_REST + 8,
+              f"{reader.WAIT_HOLDS_LEAST} against {WAIT_REST} + 8")
+
+        unlined = _a_config([_a_resource(cap=1, wait_up_to=1)])
+        where = fresh("no-line")
+        plain = _Clock()
+        guard_answer(_call("a-claiming-command", session="holder"), config=unlined,
+                     now=plain.at, store=where)
+        wait_for(unlined, 1, session="first", store=where, clock=plain.now, rest=plain.rest)
+        release(where, "holder", "call", "a-claiming-command", plain.at)
+        check("a resource stating no line keeps none, so a caller that never waited is "
+              "admitted as before",
+              not denied(guard_answer(_call("a-claiming-command", session="fourth"),
+                                      config=unlined, now=plain.at, store=where))
+              and not list(where.glob("*.ticket")))
+        report, status = wait_for(unlined, 1, store=where, clock=plain.now, rest=plain.rest)
+        check("and its wait still holds nothing and needs no session",
+              status == 1 and "in line" not in report, report[:160])
 
         out.append("")
         out.append("A count that could not be established holds nothing, and says so:")
@@ -5473,6 +5887,27 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               guard_answer(_call("gh pr merge 7", cwd=str(outside)), now=1000.0,
                            store=fresh("unconfigured-merge")) == {})
 
+        # ⛔ The same merge typed after a `cd` into the project, which a guard
+        # reading the event's directory alone holds to nothing (§ 7): that
+        # directory follows the shell, the harness's project directory does not.
+        below = Path(unreadable) / "a-package" / "src"
+        below.mkdir(parents=True)
+        held_project = os.environ.get("CLAUDE_PROJECT_DIR")
+        try:
+            os.environ["CLAUDE_PROJECT_DIR"] = str(unreadable)
+            check("a merge typed in a subdirectory of the project is refused as at its root",
+                  denied(guard_answer(_call("gh pr merge 7", cwd=str(below)), now=1000.0,
+                                      store=fresh("subdirectory-merge"))))
+            os.environ["CLAUDE_PROJECT_DIR"] = str(outside)
+            check("while a project directory not containing it reaches nothing above it",
+                  guard_answer(_call("gh pr merge 7", cwd=str(below)), now=1000.0,
+                               store=fresh("subdirectory-merge")) == {})
+        finally:
+            if held_project is None:
+                os.environ.pop("CLAUDE_PROJECT_DIR", None)
+            else:
+                os.environ["CLAUDE_PROJECT_DIR"] = held_project
+
         check("while a merge whose record could not be read is refused",
               denied(guard_answer(_call("gh pr merge 7"), config=_a_config([]), now=1000.0,
                                   store=fresh("merge"), host=_a_host(code=1))))
@@ -6013,6 +6448,8 @@ def main(argv: list[str]) -> int:
     waiting.add_argument("--skills-root", default=".",
                          help="the root the configuration is resolved relative to")
     waiting.add_argument("--cwd", default=".", help="the tree the call would be made from")
+    waiting.add_argument("--session", default=None,
+                         help="the session the place is held for, where the resource keeps a line")
 
     args = parser.parse_args(argv)
     if args.self_test:
@@ -6023,7 +6460,8 @@ def main(argv: list[str]) -> int:
             print("⛔ Not established: the project's configuration could not be read, so there "
                   "is nothing to wait for.")
             return 2
-        report, status = wait_for(loaded, args.resource, within=args.within, cwd=args.cwd)
+        report, status = wait_for(loaded, args.resource, within=args.within, cwd=args.cwd,
+                                  session=args.session)
         print(report)
         return status
     if args.arm == "guard":

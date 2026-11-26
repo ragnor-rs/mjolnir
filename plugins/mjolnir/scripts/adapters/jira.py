@@ -113,6 +113,7 @@ _SCRIPTS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _SCRIPTS not in sys.path:
     sys.path.append(_SCRIPTS)
 
+import config  # noqa: E402
 import port  # noqa: E402
 from adapters._policy import forbidden  # noqa: E402
 from adapters import _search as coverage  # noqa: E402
@@ -126,6 +127,23 @@ KIND = "jira"
 # below is this version's, and a project pointed at the older one would have its
 # bodies accepted as literal text with no error anywhere.
 API = "/rest/api/3"
+
+# Where the board and its sprints live: a second interface on the same site, with
+# its own version. ⛔ A path under it is addressed whole, never under `API` -- the
+# two share the site and nothing else, and a board read under the issue interface
+# answers 404, which this module reads as a fact about an item.
+AGILE = "/rest/agile/1.0"
+ADDRESSED_WHOLE = "/rest/"
+
+# The custom type the tracker gives its own sprint field. ⛔ The one list of
+# `json` members a write is shaped for here, and matched by this type rather than
+# by the field's name, which is the site's and the project's: a list of `json`
+# that is anything else carries a structure nobody measured, and stays refused.
+SPRINT_TYPE = "com.pyxis.greenhopper.jira:gh-sprint"
+
+# The board kind that carries sprints. ⚠️ The other kind answers its sprint list
+# with a refusal rather than an empty one, so a board of it is not asked.
+SPRINTED_BOARD = "scrum"
 
 # The two variables that address the site. ⛔ A pair rather than one token,
 # because this tracker authenticates as a **person**: the credential and the
@@ -246,7 +264,7 @@ TEXT, RICH, DATE, NUMBER, DURATION_FIELD, NAMED, OPTION, USER = (
 # `schema.type` as this tracker's own field catalogue reports it, mapped to the
 # shape a write takes. ⚠️ Read from the catalogue rather than from a list of
 # field names, because every custom field's id is site-specific -- which is the
-# whole reason a field is addressed by **name** here and resolved per site.
+# whole reason a field is resolved per site, by whichever name a project states.
 SHAPES = {
     "string": TEXT,
     "summary": TEXT,
@@ -432,6 +450,11 @@ def _credentials() -> str:
     return "Basic " + base64.b64encode(pair).decode("ascii")
 
 
+def _under(path: str) -> str:
+    """A call's path under the interface it belongs to: the issue one, or whole."""
+    return path if path.startswith(ADDRESSED_WHOLE) else f"{API}{path}"
+
+
 def _shown(method: str, path: str, params: dict | None = None) -> str:
     """One call, as a person could re-run it, carrying no credential.
 
@@ -442,7 +465,7 @@ def _shown(method: str, path: str, params: dict | None = None) -> str:
     because neither is in the string this builds.
     """
     query = urllib.parse.urlencode(params or {}, doseq=True)
-    return f"{method} {API}{path}" + (f"?{query}" if query else "")
+    return f"{method} {_under(path)}" + (f"?{query}" if query else "")
 
 
 def _urlopen_request(
@@ -470,7 +493,7 @@ def _urlopen_request(
     for the same reason.
     """
     query = urllib.parse.urlencode(params or {}, doseq=True)
-    url = f"{where}{API}{path}" + (f"?{query}" if query else "")
+    url = f"{where}{_under(path)}" + (f"?{query}" if query else "")
     data = None if body is None else json.dumps(body).encode("utf-8")
     request = urllib.request.Request(url, data=data, method=method)
     request.add_header("Authorization", auth)
@@ -565,8 +588,8 @@ def _site_payload(site: str) -> dict:
     """What a name is resolved against: the field catalogue, and who we are.
 
     ⛔ Two reads rather than a guess at either. Every custom field's id is
-    site-specific -- which is why § 4.3's estimate and § 4.5's date are addressed
-    by **name** here and resolved against this -- and the account this credential
+    site-specific -- which is why a field a project states is resolved against
+    this, by display name, id or clause name -- and the account this credential
     authenticates as is what `advance_on_merge` compares an author to.
 
     ⚠️ The field catalogue is site-wide and carries every field of every project,
@@ -576,12 +599,24 @@ def _site_payload(site: str) -> dict:
     """
     fields = _call("GET", "/field") or []
     by_name: dict[str, list[dict]] = {}
+    by_id: dict[str, dict] = {}
+    by_clause: dict[str, list[dict]] = {}
     for field in fields:
         name = field.get("name")
-        if name is None:
-            continue
-        by_name.setdefault(str(name), []).append(field)
-    return {"site": site, "fields": by_name, "me": _call("GET", "/myself") or {}}
+        if name is not None:
+            by_name.setdefault(str(name), []).append(field)
+        if field.get("id") is not None:
+            by_id[str(field["id"])] = field
+        for clause in field.get("clauseNames") or []:
+            if clause:
+                by_clause.setdefault(str(clause), []).append(field)
+    return {
+        "site": site,
+        "fields": by_name,
+        "ids": by_id,
+        "clauses": by_clause,
+        "me": _call("GET", "/myself") or {},
+    }
 
 
 def _site_facts(*, again: bool = False) -> dict:
@@ -594,12 +629,31 @@ def _site_facts(*, again: bool = False) -> dict:
 def _field_named(name: str, *, key: str, again: bool = False) -> dict:
     """The one field a name resolves to, or a refusal naming the key.
 
+    ⛔ **A display name or the field's own id**, whichever the configuration
+    states: § 3's one name that serves every operation. The two differ for most
+    fields -- `Fix versions` against `fixVersions` -- and a project may state
+    either, so both are resolved here and every operation reaches the field
+    through this one lookup. ⚠️ **A clause name only where neither answers**:
+    a query took the configured spelling as written before either was resolved,
+    so a clause spelling a project already states (`fixVersion`) keeps working,
+    and a name a display name or an id already resolves is never re-read as a
+    clause and made ambiguous by one.
+
     Three refusals, and ⛔ **the middle one is why this exists**: this tracker
     holds no uniqueness for a field's name, so two fields may carry one, and
-    writing to either would write a value a reader of the other never sees.
+    writing to either would write a value a reader of the other never sees. A
+    name that is one field's id and another field's display name is the same
+    case and refused the same way.
     """
     facts = _site_facts(again=again)
-    found = facts["fields"].get(str(name), [])
+    found = list(facts["fields"].get(str(name), []))
+    by_id = (facts.get("ids") or {}).get(str(name))
+    if by_id is not None and all(one.get("id") != by_id.get("id") for one in found):
+        found.append(by_id)
+    if not found:
+        for one in (facts.get("clauses") or {}).get(str(name), []):
+            if all(held.get("id") != one.get("id") for held in found):
+                found.append(one)
     if not found and not again:
         # A field created after this process started is absent from a catalogue
         # read before it existed, so the re-read happens before the refusal.
@@ -607,19 +661,18 @@ def _field_named(name: str, *, key: str, again: bool = False) -> dict:
     if not found:
         raise ConfigError(
             key,
-            f"names the field `{name}`, which this site has none of. A field is "
-            "addressed by name here and its id is read from the site's own "
-            "catalogue, because every custom field's id is site-specific -- so "
-            "this is a name the site does not answer to rather than an id gone "
-            "stale.",
+            f"names the field `{name}`, which this site has none of, by display "
+            "name, id or clause name. A field is resolved against the site's own "
+            "catalogue, so this is a name the site does not answer to, and nothing "
+            "was sent under it.",
         )
     if len(found) > 1:
         raise ConfigError(
             key,
-            f"names the field `{name}`, which this site has {len(found)} of. This "
-            "tracker holds no uniqueness for a field's name, so there is no "
-            "reading of which one was meant -- name one that is unambiguous, or "
-            "rename one on the site.",
+            f"names the field `{name}`, which {len(found)} fields on this site "
+            "answer to, by display name, id or clause name. This tracker holds no "
+            "uniqueness for a field's name, so there is no reading of which one "
+            "was meant -- name one that is unambiguous, or rename one on the site.",
         )
     return found[0]
 
@@ -1214,19 +1267,26 @@ def search_items(
     }, searched, missed)
 
 
-def _clause_for(name: str) -> str:
-    """The clause a listed field is queried by, from the site's catalogue.
+def _clause_for(name: str, *, key: str = coverage.FIELDS_KEY) -> str:
+    """The clause a configured field is queried by, from the site's catalogue.
 
-    ⛔ Refused naming `tracker.search.fields` where the site has no such field,
-    has two, marks it unsearchable or states no clause for it -- each a field
-    nothing could ask about, which an empty answer must not stand in for.
+    ⛔ Refused naming the key that stated the field -- `tracker.search.fields` for
+    a search, `work_item.grouping.field` for a grouping read -- where the site has
+    no such field, has two, marks it unsearchable or states no clause for it:
+    each a field nothing could ask about, which an empty answer must not stand in
+    for. ⚠️ The clause is the catalogue's and never the configured spelling: a
+    field's display name, its id and its clause name are three strings here
+    (`Fix versions`, `fixVersions`, `fixVersion`), and only the last is what a
+    query names it by.
     """
-    found = _field_named(name, key=coverage.FIELDS_KEY)
+    found = _field_named(name, key=key)
     if found.get("searchable") is False:
-        raise coverage.unqueryable(name, "this site marks it unsearchable.")
+        raise coverage.unqueryable(name, "this site marks it unsearchable.", key=key)
     clauses = [str(clause) for clause in found.get("clauseNames") or [] if clause]
     if not clauses:
-        raise coverage.unqueryable(name, "this site states no clause a query names it by.")
+        raise coverage.unqueryable(
+            name, "this site states no clause a query names it by.", key=key
+        )
     clause = clauses[0]
     return clause if BARE_CLAUSE.match(clause) else _quoted(clause, what="a field's clause")
 
@@ -1314,6 +1374,59 @@ def _shaped_list(found: dict, value, *, guard: str, named: str, where: str) -> l
     return [{IDENTIFIED_BY[shape]: member} for member in members]
 
 
+def _is_sprint(found: dict) -> bool:
+    """Whether a resolved field is the tracker's own sprint field, by its type."""
+    return (found.get("schema") or {}).get("custom") == SPRINT_TYPE
+
+
+def _sprint_id(value, *, guard: str) -> int:
+    """A sprint, as the one value its field takes on a write: the sprint's id.
+
+    ⛔ **The id and never the name.** The host takes the number alone, and a name
+    handed here is refused rather than looked up: a name is what a person reads
+    and two sprints may carry one, so resolving it would choose a sprint.
+    `read_current_grouping` answers the open one with both, and the id is the
+    half handed back. ⚠️ Text of digits is the id too, since the port's command
+    line hands every value as text.
+    """
+    if isinstance(value, bool):
+        number = None
+    elif isinstance(value, int):
+        number = value
+    elif isinstance(value, str) and value.strip().isdigit():
+        number = int(value.strip())
+    else:
+        number = None
+    if number is None or number <= 0:
+        raise ConfigError(
+            guard,
+            f"was handed {value!r} for the tracker's own sprint field, which is "
+            "written by the sprint's id -- a positive number. A sprint's name is "
+            "what a person reads and is not resolved here, two sprints being free "
+            "to carry one; `read_current_grouping` answers the open sprint with "
+            "both.",
+        )
+    return number
+
+
+def _sprints_short(wanted: dict, item: dict) -> str:
+    """Which sprint ids did not read back, in words; empty for none.
+
+    ⛔ Read by the id the write sent, since the host answers each sprint as a
+    structure carrying it and the name beside it.
+    """
+    held = item.get("fields") or {}
+    short = []
+    for name, number in wanted.items():
+        answered = held.get(name)
+        back = {
+            one.get("id") for one in answered if isinstance(one, dict)
+        } if isinstance(answered, list) else set()
+        if number not in back:
+            short.append(f"sprint `{number}` in `{name}`")
+    return ", ".join(short)
+
+
 def _shaped_value(found: dict, value, *, guard: str, named: str, where: str):
     """One value, in the shape the resolved field's own type takes."""
     if found["id"] in OWNED_ELSEWHERE:
@@ -1325,6 +1438,8 @@ def _shaped_value(found: dict, value, *, guard: str, named: str, where: str):
             "through a different question.",
         )
     schema = (found.get("schema") or {}).get("type")
+    if _is_sprint(found):
+        return _sprint_id(value, guard=guard)
     if schema == LIST:
         return _shaped_list(found, value, guard=guard, named=named, where=where)
     shape = RICH if found["id"] in RICH_FIELDS else SHAPES.get(str(schema))
@@ -1527,7 +1642,17 @@ def create_item(
             "is reported rather than retried: a second create would file the work "
             "twice."
         )
-    short = _not_landed({name: shaped for name, (_, shaped) in extra.items()}, item)
+    sprints = {
+        name for name in extra
+        if _is_sprint(_field_named(name, key="tracker.operations.create_item"))
+    }
+    short = ", ".join(part for part in (
+        _not_landed(
+            {name: shaped for name, (_, shaped) in extra.items() if name not in sprints},
+            item,
+        ),
+        _sprints_short({name: extra[name][1] for name in sprints}, item),
+    ) if part)
     if short:
         raise HostUnavailable(
             f"item {key} was created and came back without {short}. The item "
@@ -1647,6 +1772,9 @@ def _not_held(wanted: dict, item: dict) -> str:
             landed = isinstance(back, dict) and all(
                 back.get(part) == value for part, value in shaped.items()
             )
+        elif isinstance(back, list) and isinstance(shaped, int):
+            # A sprint, written by its id and answered as the structures carrying it.
+            landed = not _sprints_short({name: shaped}, item)
         else:
             landed = back == shaped
         if not landed:
@@ -1745,8 +1873,8 @@ def set_field(key: str, field: str, value) -> dict:
     """A value written onto the item, where a facet states the field.
 
     The operation § 4.3's estimate, § 4.5's date and § 4.6's priority reach this
-    tracker through -- each addressed by **name** and resolved to this site's own
-    id, because every custom field's id is site-specific.
+    tracker through -- each resolved to this site's own id from the name the
+    project states, because every custom field's id is site-specific.
 
     ⛔ The shape is decided by the field's own type and never by what the value
     is: a date handed to a text field is accepted by the host and read back by
@@ -1760,10 +1888,14 @@ def set_field(key: str, field: str, value) -> dict:
     shaped = _shaped_value(found, value, guard=guard, named=field, where="set_field")
     read_item(key)
     _call("PUT", f"/issue/{_addressed(key)}", body={"fields": {found["id"]: shaped}})
-    if not isinstance(shaped, list):
+    sprint = _is_sprint(found)
+    if not (sprint or isinstance(shaped, list)):
         return read_item(key)
     item = read_item(key, fields=[field])
-    missing = _not_landed({field: shaped}, item)
+    missing = (
+        _sprints_short({field: shaped}, item) if sprint
+        else _not_landed({field: shaped}, item)
+    )
     if missing:
         raise HostUnavailable(
             f"item {key} was written and came back without {missing}. ⛔ The write "
@@ -2165,8 +2297,8 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
     """The items this project holds in one grouping, by one bounded query.
 
     ⛔ **One query rather than a read per item**, and the field is the
-    configuration's: § 4.8 says where a grouping is held here, so the clause is
-    built from that name and the host resolves it. ⚠️ The project bound is
+    configuration's: § 4.8 says where a grouping is held here, and the clause is
+    the one the site's catalogue states for that field. ⚠️ The project bound is
     `as_query`'s and not a narrowing of its own -- an unbounded query is refused
     by this host outright, which is the same restriction every search here
     carries.
@@ -2187,15 +2319,18 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
     the precondition above it cannot survive.
     """
     carrier = (grouping or {}).get("carrier")
+    at = config.grouping_at((grouping or {}).get("name"))
     if carrier == "field":
-        clause = {str((grouping or {}).get("field")): value}
+        # ⛔ Resolved, never put into the query as configured: § 3's one name may
+        # be a display name or an id, and the query takes the catalogue's clause.
+        clause = {_clause_for(str((grouping or {}).get("field")), key=f"{at}.field"): value}
         labels: list[str] = []
     elif carrier == "label":
         clause = {}
         labels = [f"{(grouping or {}).get('label_prefix') or ''}{value}"]
     else:
         raise ConfigError(
-            "work_item.grouping.carrier",
+            f"{at}.carrier",
             f"is {carrier!r}, and a grouping here is read by a query: a field this "
             "project names, or a label. A carrier with nothing for a clause to "
             "name is a configuration this implementation cannot address rather "
@@ -2227,6 +2362,103 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
         "pages": pages,
         "at_limit": cut,
         "items": found,
+    }
+
+
+def _agile_pages(path: str, params: dict) -> tuple[list[dict], bool]:
+    """Every value a board listing answers, under this module's page ceiling.
+
+    ⚠️ This interface pages by offset and says `isLast`, where the search above
+    pages by token; reaching the ceiling is answered as cut rather than whole.
+    """
+    found: list[dict] = []
+    start, pages = 0, 0
+    while True:
+        answer = _call(
+            "GET", path, params={**params, "startAt": start, "maxResults": PAGE}
+        ) or {}
+        values = list(answer.get("values") or [])
+        found += values
+        pages += 1
+        if answer.get("isLast", True) or not values:
+            return found, False
+        if pages >= PAGES_AT_MOST:
+            return found, True
+        start += len(values)
+
+
+def read_current_grouping(*, grouping: dict) -> dict:
+    """The grouping value this tracker itself marks open, for one of § 4.8's.
+
+    ⛔ **Answered for the tracker's own sprint field and nothing else.** A sprint
+    is the one grouping here the tracker marks open; a version or a field of any
+    other type carries no such mark, so a grouping held in one is refused with
+    its field named rather than answered with a guess.
+
+    ⛔ **Every open sprint on every board of this project, and never a choice
+    between them.** One is the answer; none or several is `value: None` with
+    each one listed, and the role asks -- which is § 4.8's rule for a grouping
+    value it cannot settle. Boards that carry no sprints are not asked, and a
+    sprint two boards share is listed once.
+
+    ⚠️ Each sprint comes back with its id, which is what a write takes, and its
+    name, which is what a person and a reply read.
+    """
+    name = (grouping or {}).get("name")
+    at = config.grouping_at(name)
+    key = f"{at}.field"
+    if (grouping or {}).get("carrier") != "field":
+        raise ConfigError(
+            f"{at}.carrier",
+            f"is {(grouping or {}).get('carrier')!r}, and the open grouping is read "
+            "here off the tracker's own sprint field. A grouping held anywhere "
+            "else carries no mark this tracker sets.",
+        )
+    field = str((grouping or {}).get("field"))
+    if not _is_sprint(_field_named(field, key=key)):
+        raise ConfigError(
+            key,
+            f"names `{field}`, which is not the tracker's own sprint field on this "
+            "site. The sprint is the one grouping this tracker marks open, so a "
+            "grouping held in another field has no open value to read.",
+        )
+    boards, cut = _agile_pages(
+        f"{AGILE}/board", {"projectKeyOrId": _project_key(), "type": SPRINTED_BOARD}
+    )
+    sprints: dict[int, dict] = {}
+    for board in boards:
+        if board.get("type") not in (None, SPRINTED_BOARD):
+            continue
+        found, short = _agile_pages(
+            f"{AGILE}/board/{int(board['id'])}/sprint", {"state": "active"}
+        )
+        cut = cut or short
+        for sprint in found:
+            if sprint.get("state", "active") == "active" and sprint.get("id") is not None:
+                sprints.setdefault(
+                    int(sprint["id"]), {"value": int(sprint["id"]), "name": sprint.get("name")}
+                )
+    current = [sprints[number] for number in sorted(sprints)]
+    one = current[0] if len(current) == 1 and not cut else None
+    if one:
+        reason = None
+    elif not current:
+        reason = (
+            f"no sprint is open on the {len(boards)} sprint board(s) of this project"
+        )
+    elif cut:
+        reason = "the board listing reached this module's page ceiling, so it is not whole"
+    else:
+        reason = f"{len(current)} sprints are open at once, and which one is a person's answer"
+    return {
+        "grouping": name,
+        "field": field,
+        "boards": len(boards),
+        "at_limit": cut,
+        "current": current,
+        "value": None if one is None else one["value"],
+        "name": None if one is None else one["name"],
+        "ask": reason,
     }
 
 
@@ -2341,6 +2573,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "read_relations": read_relations,
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
+    "read_current_grouping": read_current_grouping,
     # ⛔ The operations this tracker has nothing to implement against are named
     # once, below, and read from there by the suite.
 })

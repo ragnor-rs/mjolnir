@@ -398,8 +398,8 @@ def grouping_places(tracker, record: dict, value: str | None) -> dict[int, tuple
     coverage here asks whether an item is in it rather than which of many it is in.
 
     ⛔ **The grouping's own value arrives on this role's invocation**, which is § 4.8's `current`
-    rule and not a choice here: nothing in the procedure reads a tracker's own mark for the open
-    one, so that holds under either value of that key. ⚠️ A pass given none is a **stop naming
+    rule and not a choice here: the tracker's own mark for the open one is read by the filing role
+    alone, so that holds under either value of that key. ⚠️ A pass given none is a **stop naming
     what it needs**, never a pass over whichever grouping the tracker happened to answer with --
     an order read off the wrong time box is the one wrong answer that looks right.
     """
@@ -407,8 +407,8 @@ def grouping_places(tracker, record: dict, value: str | None) -> dict[int, tuple
         raise Stop(
             f"this project keeps its order of work in the grouping {record['grouping']!r}, and "
             "which grouping -- which time box, which release -- arrives on this role's "
-            "invocation: § 4.8's `current` is read by nothing in the procedure under either of "
-            "its values. Name it with `--in <value>`."
+            "invocation: under either value of § 4.8's `current` this role reads no tracker's "
+            "mark for it. Name it with `--in <value>`."
         )
     answer = _answered(
         tracker.items_in(record["grouping"], str(value).strip()),
