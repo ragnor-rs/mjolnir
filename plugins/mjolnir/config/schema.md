@@ -7391,7 +7391,10 @@ runs, so it is held exactly as the same block written in the tracked file would 
 its requiredness and its cross-key rules, by the one resolver. ⚠️ **So a project naming a block does
 not load where the file is absent**, and the refusal names the file and the blocks rather than
 reading as a configuration with no day log. A listed key keeps its lazy read, the reason given above
-for it being unchanged.
+for it being unchanged. ⛔ **To a hook that is an unreadable configuration**, and what a guard does
+then is [§ 7](#a-hook-in-a-project-that-states-no-configuration)'s — measured with the file moved
+away from a project naming a block: every guard announced itself inert. So a project naming a block
+makes the file reachable from every tree it works in, a fresh one included.
 
 ⚠️ **What is reported is still never a value**: the configuration a role prints shows each named
 block as the marker it shows a listed key as.

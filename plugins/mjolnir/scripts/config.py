@@ -8926,7 +8926,8 @@ def _read_private_file(skills_root: str, source, supplies: list[str]) -> dict:
     return values
 
 
-def _with_private_blocks(data: dict, skills_root: str, facts: dict) -> tuple[dict, list[str]]:
+def _with_private_blocks(data: dict, skills_root: str, facts: dict,
+                         layer: dict | None = None) -> tuple[dict, list[str]]:
     """The configuration with § 28's named blocks put in place, and their paths.
 
     ⛔ **Read at load and not at read, which is the opposite of a listed key**, and
@@ -8938,6 +8939,10 @@ def _with_private_blocks(data: dict, skills_root: str, facts: dict) -> tuple[dic
 
     Each block is taken whole from the one entry naming its path, never merged
     with anything in the tracked file -- which carries nothing at or under it.
+
+    ⚠️ `layer` is the private file's contents handed in rather than read, for a
+    writer holding a layer it has not written yet: setup reads its own edit back
+    through this resolver before writing either file.
     """
     named = _private_blocks(data, facts)
     if not named:
@@ -8952,7 +8957,7 @@ def _with_private_blocks(data: dict, skills_root: str, facts: dict) -> tuple[dic
                 "one in review. Delete it here.",
             )
     source = _get(data, PRIVATE_SOURCE_PATH)
-    values = _read_private_file(skills_root, source, named)
+    values = layer if layer is not None else _read_private_file(skills_root, source, named)
     merged = copy.deepcopy(data)
     for path in named:
         if path not in values:
@@ -11626,15 +11631,21 @@ def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
     )
 
 
-def load_text(text: str, skills_root: str, *, check_paths: bool = False) -> Config:
-    """Resolve a configuration already in hand. Used to load the examples."""
+def load_text(text: str, skills_root: str, *, check_paths: bool = False,
+              private_layer: dict | None = None) -> Config:
+    """Resolve a configuration already in hand. Used to load the examples.
+
+    `private_layer` is § 28's file handed in rather than read, which is what a
+    writer reading back an edit it has not written yet needs.
+    """
     surface = surface_for(skills_root)
     with open(surface, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
     data = _load_yaml(text, CONFIG_PATH)
     if not isinstance(data, dict):
         raise ConfigError(CONFIG_PATH, "is empty or is not a block of keys.")
-    return _resolve(data, skills_root, facts, check_paths, None, surface)
+    return _resolve(data, skills_root, facts, check_paths, None, surface,
+                    private_layer=private_layer)
 
 
 def _resolve(
@@ -11644,11 +11655,13 @@ def _resolve(
     check_paths: bool,
     source: str | None = None,
     surface: str | None = None,
+    *,
+    private_layer: dict | None = None,
 ) -> Config:
     # § 28's named blocks, before anything else reads the configuration: every
     # rule below then holds a block exactly as it holds one the tracked file
     # states, which is what one resolver means.
-    data, blocks = _with_private_blocks(data, skills_root, facts)
+    data, blocks = _with_private_blocks(data, skills_root, facts, private_layer)
     roots, collection = _code_roots(data, facts)
 
     # ⛔ One view per root, each resolved and validated as a configuration of one
