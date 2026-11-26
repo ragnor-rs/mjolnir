@@ -114,6 +114,28 @@ def _alive(pid) -> bool:
     return done == 0
 
 
+def _ours(record: dict) -> bool:
+    """Whether the live process at the record's number is this run's wrapper.
+
+    ⛔ A number is reused — after a reboot, or once the counter wraps — so a live
+    process at it is not evidence the run is still going: read as running, a run
+    that ended long ago would hold every advance and refuse every later start for
+    good. The wrapper carries the status file as an argument, so its command line
+    names it. ⚠️ Where the command line cannot be read at all the number is
+    believed, since reading a run as ended is the direction that advances.
+    """
+    try:
+        done = subprocess.run(
+            ["ps", "-p", str(record.get("pid")), "-o", "args="],
+            capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return True
+    if done.returncode != 0 or not done.stdout.strip():
+        return True
+    return (record.get("status_file") or "\0") in done.stdout
+
+
 def follow_command(log: str) -> str:
     """The command a person runs to follow the log while the run is in flight."""
     return f"tail -f {shlex.quote(log)}"
@@ -150,7 +172,7 @@ def reading(record: dict) -> dict:
             "why": f"the run was started on {started_on}, and its process can be read "
             "only there (§ 33)",
         }
-    if _alive(record.get("pid")):
+    if _alive(record.get("pid")) and _ours(record):
         return {"state": "running", "status": None, "advance_held": True}
     return {
         "state": "lost",
@@ -402,6 +424,9 @@ def self_test() -> int:
         elsewhere["pid"] = os.getpid()
         check("a record started on another machine reads lost, even where its number is alive",
               reading(elsewhere)["state"] == "lost", reading(elsewhere))
+        reused = dict(lost, pid=os.getpid(), host=os.uname().nodename)
+        check("a live process at a reused number that is not this run's wrapper reads lost",
+              reading(reused)["state"] == "lost", reading(reused))
         code, got = wait("never-started", store, 0.1)
         check("a target with no recorded run says so with its own exit",
               code == NO_RECORD, (code, got))

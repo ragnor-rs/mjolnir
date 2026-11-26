@@ -9101,7 +9101,8 @@ grouping's mark each follow the outcome, and a run whose outcome could not be re
 exactly as a run still running does.
 
 ⛔ **A run that ended with no status recorded is reported as lost, and never as delivered or
-failed.** Its process is gone and nothing wrote how it exited, which is
+failed.** Its process is gone, or the number it ran under now belongs to another process, and
+nothing wrote how it exited, which is
 [§ 11](#a-report-names-what-it-could-not-establish)'s case: the record names the log, and what the
 log says is a person's to read.
 
