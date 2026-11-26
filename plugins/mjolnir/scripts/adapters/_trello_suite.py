@@ -1358,6 +1358,42 @@ def self_test() -> int:
         reported == "tracker.operations.search_items.Story points",
         f"reported {reported!r}",
     )
+    # --- what a search covers (§ 3) -------------------------------------------
+    #
+    # ⛔ A term the title lacks and the description carries: found only where the
+    # body is searched, and the descriptions read only then.
+    def description_reads(asked) -> list:
+        return [params for name, params in asked.sent
+                if name == "cards" and "desc" in str(params.get("fields"))]
+
+    plain = host()
+    answered = with_host(plain, lambda: search_items(terms="what card 2"))
+    check(
+        "a project stating no texts matches the title alone, as before, and says so",
+        entries(answered) == [] and got(answered, "texts_searched") == ["title"]
+        and got(answered, "texts_not_searched") == [] and description_reads(plain) == [],
+        f"answered {answered!r}",
+    )
+    covering = _example_configuration()
+    covering.data["tracker"]["search"] = {"texts": ["title", "body"], "fields": ["Area"]}
+    bind(covering)
+    asked = host()
+    answered = with_host(asked, lambda: search_items(terms="what card 2"))
+    check(
+        "stated texts match a term in the description, read in one more index call",
+        [entry["number"] for entry in entries(answered)] == [2]
+        and got(answered, "texts_searched") == ["title", "body"]
+        and len(description_reads(asked)) == 1,
+        f"answered {answered!r} after {asked.sent!r}",
+    )
+    reported = with_host(host(), lambda: refused(lambda: search_items(fields={"Area": "core"})))
+    check(
+        "a listed custom field is refused naming the list, never answered as no match",
+        reported == "tracker.search.fields",
+        f"reported {reported!r}",
+    )
+    bind(configuration)
+
     bounded = host({"cards": [_card(n, "a card") for n in range(1, 6)]})
     answered = with_host(bounded, lambda: search_items(limit=2))
     check(

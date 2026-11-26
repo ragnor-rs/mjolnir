@@ -115,6 +115,7 @@ if _SCRIPTS not in sys.path:
 
 import port  # noqa: E402
 from adapters._policy import forbidden  # noqa: E402
+from adapters import _search as coverage  # noqa: E402
 from adapters import _comments  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
 
@@ -202,6 +203,18 @@ PAGES_AT_MOST = 50
 # match. ⚠️ Each of these is a JQL field name and a key of the shape `read_item`
 # answers in, which is what lets a caller filter on what it just read.
 QUERYABLE = ("status", "type", "priority")
+
+# The texts a term is matched in, by § 3's names, and the clause this host matches
+# each with. ⛔ Both natively: the host's text clause searches a field's words, so
+# a body is matched by the query rather than by reading every description back.
+# ⚠️ Before `tracker.search.texts` existed the summary alone was matched, which is
+# what a project stating none keeps.
+TEXT_CLAUSES = {"title": "summary", "body": "description"}
+SEARCHED_BEFORE = ("title",)
+
+# A clause name this host takes unquoted: a plain word, or a custom field's
+# `cf[N]`. ⚠️ Anything else -- a display name with a space in it -- is quoted.
+BARE_CLAUSE = re.compile(r"^(?:[A-Za-z_][A-Za-z0-9_]*|cf\[\d+\])$")
 
 # What the operations above own, by the **id** this tracker gives the field.
 # ⛔ Refused with that operation named, rather than falling through to the
@@ -1082,6 +1095,8 @@ def as_query(
     terms: str | None,
     labels: list[str] | None,
     fields: dict | None,
+    *,
+    texts: list[str] | tuple = ("summary",),
 ) -> str:
     """The query one search sends, bounded by the project.
 
@@ -1098,7 +1113,10 @@ def as_query(
     """
     clauses = [f"project = {_quoted(project, what='the project key')}"]
     for word in (terms or "").split():
-        clauses.append(f"summary ~ {_quoted(word, what='a term')}")
+        # ⛔ A term matches in **any** searched text (§ 3), so the texts are one
+        # disjunction per term and the terms stay a conjunction.
+        either = [f"{text} ~ {_quoted(word, what='a term')}" for text in texts]
+        clauses.append(either[0] if len(either) == 1 else f"({' OR '.join(either)})")
     for label in labels or []:
         clauses.append(f"labels = {_quoted(label, what='a label')}")
     for name, value in (fields or {}).items():
@@ -1133,18 +1151,37 @@ def search_items(
     difference from the implementation next door: this host answers an unknown
     label with a refusal naming it rather than with an empty list, so the
     distinction it has to buy with an extra call arrives here for free.
+
+    ⛔ **The texts a term is matched in are `tracker.search.texts`** (§ 3), each
+    by the host's own text clause, and the answer names what it searched. ⛔ **A
+    field beyond the three above is admitted by `tracker.search.fields` alone**,
+    resolved by name against the site's own catalogue and queried by the clause
+    name the catalogue states for it -- so a field holding several values, a
+    component's or a custom one's, is asked about natively and matches when any
+    of its values is the one asked for. A listed field the site does not have, or
+    holds and marks unsearchable, is refused naming the list. ⚠️ The catalogue's
+    `searchable` and `clauseNames` are read from the published reference and not
+    yet from a live site.
     """
-    for name in fields or {}:
-        if name not in QUERYABLE:
-            raise ConfigError(
-                f"tracker.operations.search_items.{name}",
-                f"is not a field this tracker answers a query on here. Queryable "
-                f"are: {', '.join(QUERYABLE)}. Anything else is a field whose "
-                "query shape is site-specific -- a name resolves to an id per "
-                "site, and two sites spell the same question differently -- so it "
-                "is refused rather than answered with the items that do not match.",
-            )
-    jql = as_query(_project_key(), terms, labels, fields)
+    admitted = coverage.stated_fields(_configuration())
+    asked: dict = {}
+    for name, value in (fields or {}).items():
+        if name in QUERYABLE:
+            asked[name] = value
+        elif name in admitted:
+            asked[_clause_for(name)] = value
+        else:
+            raise coverage.not_admitted(name, QUERYABLE)
+    searched, missed = coverage.coverage(
+        _configuration(),
+        reachable=tuple(TEXT_CLAUSES),
+        default=SEARCHED_BEFORE,
+        terms=bool((terms or "").split()),
+    )
+    jql = as_query(
+        _project_key(), terms, labels, asked or None,
+        texts=[TEXT_CLAUSES[text] for text in searched],
+    )
     found: list[dict] = []
     token, pages, cut = None, 0, False
     while True:
@@ -1160,7 +1197,7 @@ def search_items(
         if pages >= PAGES_AT_MOST:
             cut = True
             break
-    return {
+    return coverage.reported({
         "jql": jql,
         "terms": terms or "",
         "labels": list(labels or []),
@@ -1171,7 +1208,24 @@ def search_items(
         # bound, and this module's ceiling on how far it follows the cursor.
         "at_limit": len(found) >= limit or cut,
         "items": found[:limit],
-    }
+    }, searched, missed)
+
+
+def _clause_for(name: str) -> str:
+    """The clause a listed field is queried by, from the site's catalogue.
+
+    ⛔ Refused naming `tracker.search.fields` where the site has no such field,
+    has two, marks it unsearchable or states no clause for it -- each a field
+    nothing could ask about, which an empty answer must not stand in for.
+    """
+    found = _field_named(name, key=coverage.FIELDS_KEY)
+    if found.get("searchable") is False:
+        raise coverage.unqueryable(name, "this site marks it unsearchable.")
+    clauses = [str(clause) for clause in found.get("clauseNames") or [] if clause]
+    if not clauses:
+        raise coverage.unqueryable(name, "this site states no clause a query names it by.")
+    clause = clauses[0]
+    return clause if BARE_CLAUSE.match(clause) else _quoted(clause, what="a field's clause")
 
 
 # --- writing -----------------------------------------------------------------

@@ -1646,6 +1646,70 @@ def self_test() -> int:
         f"reported {reported!r}",
     )
 
+    # --- what a search covers (§ 3) -------------------------------------------
+    #
+    # ⛔ The texts a term is matched in are the project's. A body is asked of the
+    # board read only where the body is searched, and the answer names both lists.
+    def bodied(number: int, title: str, body: str) -> dict:
+        card = _item_card(number, title)
+        card["content"]["body"] = body
+        return card
+
+    bodied_cards = [bodied(1, "an unrelated title", "the duplicate is in the body"),
+                    bodied(2, "the duplicate title", "nothing here")]
+    bodied_pages = {
+        "Board": lambda after: _board_payload_for(_page_of(FIELD_NODES)),
+        "Items": lambda after: {
+            "repositoryOwner": {"projectV2": {"items": _page_of(bodied_cards)}}},
+    }
+
+    def read_with(host) -> list[str]:
+        return [" ".join(args) for args in host.sent if "query Items" in " ".join(args)]
+
+    _boards.clear()
+    plain = _Host({}, pages=bodied_pages)
+    answer = with_host(plain, lambda: search_items(terms="duplicate"))
+    check(
+        "a project stating no texts matches the title alone, as before, and says so",
+        [at(entry, "number") for entry in at(answer, "items") or []] == [2]
+        and at(answer, "texts_searched") == ["title"]
+        and at(answer, "texts_not_searched") == []
+        and not any(" body" in document for document in read_with(plain)),
+        f"answered {answer!r}",
+    )
+    covering = _example_configuration()
+    covering.data["tracker"]["search"] = {"texts": ["title", "body"], "fields": ["Area"]}
+    bind(covering)
+    _boards.clear()
+    asked = _Host({}, pages=bodied_pages)
+    answer = with_host(asked, lambda: search_items(terms="duplicate"))
+    check(
+        "stated texts match a term in the body too, the body asked of the board read",
+        [at(entry, "number") for entry in at(answer, "items") or []] == [1, 2]
+        and at(answer, "texts_searched") == ["title", "body"]
+        and any(" body" in document for document in read_with(asked)),
+        f"answered {answer!r}",
+    )
+    _boards.clear()
+    reported = with_host(
+        _Host({}, pages=bodied_pages),
+        lambda: refused(lambda: search_items(fields={"Area": "core"})),
+    )
+    check(
+        "a listed field the board does not have is refused naming the list, never answered empty",
+        reported == "tracker.search.fields",
+        f"reported {reported!r}",
+    )
+    check(
+        "a field holding several values matches when any one of them is the value",
+        under_test.matches({"title": "", "labels": [], "fields": {"Parts": ["a", "b"]}},
+                           [], [], {"Parts": "b"})
+        and not under_test.matches(
+            {"title": "", "labels": [], "fields": {"Parts": ["a"]}}, [], [], {"Parts": "b"}),
+    )
+    bind(configuration)
+    _boards.clear()
+
     # § 33's publishing set, which on this tracker is the same board read with a
     # different question asked of it. ⛔ The grouping's field is the
     # configuration's and is resolved against the board, so a field this board

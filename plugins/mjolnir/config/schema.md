@@ -1973,6 +1973,44 @@ operations the survey reached and says which it did not.
 | `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
 | `read_vocabulary` | the vocabularies the tracker itself states — its status words in their own order, its label set, its item types where it has native ones — each answered as **read**, as the tracker stating none, or as unestablished, and ⛔ never a verdict about which of them this project means, that being the facets' own question and a person's to answer. ⚠️ **An implementation may publish a vocabulary of its own beyond those three** where its tracker holds one the others do not: the measured case is a board's single-select columns, which is what makes *which field carries status* a question with a menu rather than a column picked out of several | every question about a status word, a label prefix or a type is **asked** rather than filled in, and the asking step's report names the reading it could not take; an unreadable vocabulary is never an empty one, by § 2's rule that absence of signal is not an answer |
 
+### What a search covers, and what it says it did not
+
+`search_items` matches a query's terms in some of an item's texts and filters on some of its
+fields. ⛔ **Which texts and which fields is the project's to state.** A duplicate known only by its
+body, or only by the area a field records, is the one a title search misses. Nothing in that
+search's answer would show the miss.
+
+```yaml
+tracker:
+  search:
+    texts: [title, body]        # the texts a query's terms are matched in; absent: the implementation's own
+    fields: []                  # the fields a query may filter on beyond the implementation's own
+```
+
+- **`texts`** names the texts a term is matched in, out of the list shown. A term matches an item
+  when it appears in **any** of them, and a query matches when every term does. ⚠️ **Where the key
+  is absent, each implementation matches in what it matched before this key existed**, so a project
+  that states nothing new searches as it always did.
+- ⛔ **A text is searched wherever the tracker can search it**, whether by a native query or by
+  reading the text alongside the item. A stated text the tracker cannot reach is not dropped
+  silently. Every answer names the texts it searched (`texts_searched`) and the stated ones it did
+  not (`texts_not_searched`), so the report of a duplicate check states its coverage rather than
+  implying it. ⛔ **Where none of the stated texts can be searched, a query carrying terms is
+  refused** with the key named. Terms matched in nothing would answer with no items, and that
+  answer cannot be told from a tracker holding no such item.
+- **`fields`** names fields a query may filter on, as the tracker names them, beyond those the
+  implementation already queries. A field holding several values matches when any one of them is
+  the value asked for.
+- ⛔ **A field the tracker cannot query is refused, never answered as no match.** That covers a
+  field asked for that neither the implementation nor this list admits, a listed field the tracker
+  does not have, and a listed field it holds but cannot query. Each is refused naming the key. An
+  empty answer is what a field nothing carries looks like, so it cannot also be what a field
+  nothing could ask about looks like.
+
+⛔ **The filing role's keyword-independent sweep filters by these fields** where the request names
+an area one of them records, and its report carries each answer's two lists. That is the coverage
+[`skills/file-work-item/`](../skills/file-work-item/) reports.
+
 ### An item's comments, and what an unread one is
 
 ⛔ **A role that acts on an item reads its comments as well as its body, through `read_comments`.** A
