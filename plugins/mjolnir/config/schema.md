@@ -7911,6 +7911,9 @@ deploy:
     batch:        "<a command handed identifiers on its input, printing the ones this deploy carries>"
     grouping:     "<a grouping § 4.8 carries, by the name that facet keys it on — or `none`>"
     requires_role: "<one of § 4.2's own roles, read there — or `none`>"
+    excludes:                  # a block; omitted where this target leaves nothing out
+      labels:     "<the labels that leave an item out of this target's sets, as a list>"
+      types:      "<the § 4.1 types that leave an item out of them, as a list>"
     publishes:    false
     live_data_step: "<§ 35's block, stated there and not restated>"
     advance_requires:
@@ -8560,6 +8563,19 @@ Both of its shapes are measured: one project's live target may carry only items 
 accepted; another's refuses to run while any item whose code is on the integration branch has not
 reached the lower environment's own role. It is stated and not derived from `advances`: a project
 that states nothing here has no precondition.
+
+⛔ **`excludes` leaves an item out of every set the target reads, by a label or a type the item
+states, and never by its title.** A project files the release's own work — the backup, the deploy,
+the release itself — into the grouping it ships, and those items close only after the deploy they
+gate; read by the bar, they would hold the release for as long as releasing it takes. An item
+carrying any label under `labels`, or any [§ 4.1](#41-type) type under `types`, matched whole, is
+taken out before the bar is read and before the batch command is handed anything: it holds nothing
+and it is not advanced. A title is prose and changes, so a rename would leave an item out that
+nobody decided to. Every item left out is reported, with the label or type that left it out, so the
+exclusion is read rather than silent. An item whose labels and type could not be read is not left
+out, which is the reading that holds a release instead of clearing it. A target stating no
+`excludes` leaves nothing out, and one stating it beside `requires_role: none` and `advances: none`
+is refused, there being no set for it to narrow.
 
 `publishes` is the target's own fact and is never read off `not_live`. A project's lower target
 advances a subset and marks nothing, and the one that publishes is the one whose entry says so;

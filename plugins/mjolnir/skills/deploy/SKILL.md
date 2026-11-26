@@ -216,9 +216,15 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
-  --short-of "<the entry's requires_role>" --in-grouping "<the entry's grouping>"
+  --short-of "<the entry's requires_role>" --in-grouping "<the entry's grouping>" \
+  --excluding-for "<the entry's name>"
 ```
 
+- **What the target's `excludes` leaves out comes back under `excluded`, each item with the label
+  or type that left it out**, and the bar read none of them — the rule is
+  [`§ 33`](../../config/schema.md#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s.
+  `batch.py run` leaves the same items out of every set it hands, so none of them is advanced
+  either; the reply names every one as left out.
 - **Where the entry names no grouping the same question is asked over what the batch's
   `precondition` run carried** — `--short-of <role> --argument <each identifier>`, which is § 33's
   other arm. ⚠️ **Never over the `advance` run's**: that run is handed items the bar may already
@@ -648,6 +654,9 @@ content enumerates.
 - **the precondition, where the entry states one** — the role required, and **every item short of
   it with the role it stands in**, plus every item the answer could not place. Where the entry
   states `requires_role: none`, that there was none, not that one passed;
+- **every item the target's `excludes` left out**, with the label or type that left it out, as
+  neither held against the bar nor advanced — or, where the backlog went unread, that nothing it
+  would leave out could be found;
 - **every step collected out of a change** — the section it came from and which change, where its
   entry placed it, who its entry says answers it, and whether it ran, is still running with its
   readings, was answered, or is **unperformed**. Unanswered is reported as unanswered, and

@@ -1384,6 +1384,13 @@ ANSWERED_BY: dict[str, Answer] = {
     "deploy.requires_role": ask(
         "Which role must an item already stand in to go out on this target?",
     ),
+    "deploy.excludes.labels": ask(
+        "Which labels mark an item this target leaves out of its sets — the release's own "
+        "tracking items, say? ⚠️ None is an answer: the key is then omitted (§ 33).",
+    ),
+    "deploy.excludes.types": ask(
+        "And which item types does it leave out the same way?",
+    ),
     "deploy.advances": ask(
         "Which role does a deploy move its items to?",
     ),

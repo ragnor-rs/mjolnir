@@ -887,6 +887,45 @@ def _item_word(item: object) -> str | None:
     return None
 
 
+def _named_words(value: object) -> list[str]:
+    """The names a label list or a type carries, in either shape an answer uses.
+
+    ⚠️ **Both shapes, because the operation returns the host's own field
+    names** (§ 3): one tracker answers a label as its bare word and another as
+    a record carrying `name`, and a type the same way.
+    """
+    members = value if isinstance(value, list) else [value]
+    words = []
+    for member in members:
+        word = member.get("name") if isinstance(member, dict) else member
+        if isinstance(word, str) and word.strip():
+            words.append(word)
+    return words
+
+
+def left_out_by(item: object, excludes: dict | None) -> str | None:
+    """What leaves one item out of a target's publishing set, or None (§ 33).
+
+    ⛔ **A stated label or type, matched exactly, and never a title.** A title is
+    prose and changes, so a pattern over it would leave an item out on a rename
+    nobody read as a release decision. ⚠️ An item that carries no readable label
+    or type is never left out: an item nobody could read is reported where the
+    bar reports it, and leaving it out would make a held release read as a clear
+    one.
+    """
+    if not excludes or not isinstance(item, dict):
+        return None
+    carried = set(_named_words(item.get("labels")))
+    for label in excludes.get("labels") or []:
+        if label in carried:
+            return f"the label `{label}`"
+    typed = set(_named_words(item.get("type")))
+    for kind in excludes.get("types") or []:
+        if kind in typed:
+            return f"the type `{kind}`"
+    return None
+
+
 # --- what a vocabulary read answers with -----------------------------------
 #
 # ⛔ **Three answers and never two.** `read_vocabulary` (§ 3) is asked once per
@@ -1684,7 +1723,22 @@ class Port:
         ladder = self.roles()
         return ladder[: ladder.index(role)] if role in ladder else []
 
-    def short_of(self, role: str, items: list) -> dict:
+    def excludes_of(self, target: str) -> dict:
+        """One § 33 target's `excludes`, or an empty block where it states none.
+
+        ⛔ Read off the target by its name, so the items a deploy leaves out are
+        the configuration's and never the caller's list.
+        """
+        for entry in self.config.get("deploy") or []:
+            if isinstance(entry, dict) and entry.get("name") == target:
+                return dict(entry.get("excludes") or {})
+        raise ConfigError(
+            "deploy",
+            f"names no target {target!r}, so there is no `excludes` to read for it "
+            "(§ 33).",
+        )
+
+    def short_of(self, role: str, items: list, excludes: dict | None = None) -> dict:
         """Which of `items` have not reached a role, in § 4.2's own order (§ 33).
 
         ⛔ **Here because the mapping is here.** § 4.2 puts role-to-word in the
@@ -1707,10 +1761,25 @@ class Port:
         set is clear: a release held by an item nobody could place reads exactly
         like one held by nothing.
 
+        ⛔ **An item a target's `excludes` names is left out before anything is
+        placed**, and reported under `excluded` with what left it out -- never
+        dropped: § 33's bar is over the set the target publishes, the release's
+        own tracking items close only after the deploy they gate, and a person
+        reading the answer sees which items the bar did not read.
+
         ⚠️ **No verdict about the target.** What may be invoked is § 33's and the
         role's; what this answers is which items are where.
         """
         self._stated(WROTE_A_STATUS)
+        excluded = []
+        kept = []
+        for item in items:
+            by = left_out_by(item, excludes)
+            if by is None:
+                kept.append(item)
+            else:
+                excluded.append({**_item_name(item), "by": by})
+        items = kept
         ladder = [
             status
             for status in (self.config.get("statuses") or [])
@@ -1729,6 +1798,7 @@ class Port:
                 "unanswered": [
                     {**_item_name(item), "word": _item_word(item)} for item in items
                 ],
+                "excluded": excluded,
                 "detail": f"No status here maps the `{role}` role, so no item can "
                 "be placed against it and none is reported as having reached it. "
                 "The configuration reader refuses that bar where it is written.",
@@ -1764,9 +1834,16 @@ class Port:
             "placed": placed,
             "short": short,
             "unanswered": unanswered,
+            "excluded": excluded,
             "detail": f"{len(short)} of {len(items)} in the set are short of the "
             f"`{role}` role (`{status.get('name')}`), and {len(unanswered)} could "
-            "not be placed at all.",
+            "not be placed at all"
+            + (
+                f"; {len(excluded)} more the target's `excludes` left out of the "
+                "set, the bar reading none of them."
+                if excluded
+                else "."
+            ),
         }
 
     def closing_against(self, change, intended: list, landing: tuple = ()) -> dict:
@@ -3538,6 +3615,54 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         f"answered {barless!r}",
     )
 
+    # § 33's `excludes`, every arm read off the item's own acceptance statement: a
+    # grouping whose only short item carries the stated label passes and names it,
+    # a short item without it still holds, and a target stating nothing reads
+    # exactly as before.
+    tracking = {"number": 7, "status": "first", "labels": [{"name": "release"}]}
+    product = {"number": 8, "status": "first", "labels": ["release-notes"]}
+    typed = {"number": 9, "status": "first", "type": "Chore"}
+    cleared = placing.short_of(another_role, [tracking], {"labels": ["release"]})
+    check(
+        "a set whose only short item carries an excluded label clears the bar",
+        not cleared["short"] and not cleared["unanswered"],
+        f"answered {cleared!r}",
+    )
+    check(
+        "and the answer names the item left out, with what left it out",
+        cleared["excluded"] == [{"item": 7, "by": "the label `release`"}],
+        f"excluded {cleared['excluded']!r}",
+    )
+    held = placing.short_of(
+        another_role, [tracking, product], {"labels": ["release"]}
+    )
+    check(
+        "a short item without the label still holds the bar, matched whole and not by part",
+        [entry.get("item") for entry in held["short"]] == [8],
+        f"answered {held!r}",
+    )
+    check(
+        "an item is left out by its stated type, in the shape a tracker answers it",
+        left_out_by(typed, {"types": ["Chore"]}) == "the type `Chore`"
+        and left_out_by(
+            {"type": {"name": "Chore"}}, {"types": ["Chore"]}
+        ) == "the type `Chore`",
+        f"read {left_out_by(typed, {'types': ['Chore']})!r}",
+    )
+    check(
+        "a title is never what leaves an item out",
+        left_out_by({"title": "release", "labels": []}, {"labels": ["release"]})
+        is None,
+        "a title matched an excluded label",
+    )
+    unchanged = placing.short_of(another_role, [tracking])
+    check(
+        "a target stating no `excludes` reads the same set it always did",
+        [entry.get("item") for entry in unchanged["short"]] == [7]
+        and unchanged["excluded"] == [],
+        f"answered {unchanged!r}",
+    )
+
     # § 3's comparison before a merge. Every reading is derived from the item's
     # own acceptance statement: an extra, a missing one, a commit, no answer.
     def comparing(method: str, intended: list, *, closes=True, listed=(), said=()):
@@ -4483,6 +4608,14 @@ def main(argv: list[str]) -> int:
         "carries no verdict about whether the target may be invoked",
     )
     parser.add_argument(
+        "--excluding-for",
+        metavar="TARGET",
+        help="the § 33 deploy target whose `excludes` leaves items out of the set "
+        "before `--short-of` places it, by the name the target is asked for by. "
+        "Every item left out is reported under `excluded` with the label or type "
+        "that left it out, and the bar reads none of them",
+    )
+    parser.add_argument(
         "--closing-of",
         metavar="CHANGE",
         help="whether what merging one change closes is what was meant, which is "
@@ -4686,6 +4819,13 @@ def main(argv: list[str]) -> int:
         print(json.dumps(verdict, indent=2, ensure_ascii=False))
         return {True: 0, False: 1, None: 3}[verdict["matches"]]
 
+    if args.excluding_for and not args.short_of:
+        print(
+            "Refused: `--excluding-for` narrows the set `--short-of` places, so "
+            "it is asked with that flag and never alone.",
+            file=sys.stderr,
+        )
+        return 2
     if args.in_grouping is not None or args.short_of:
         if args.ports:
             print(
@@ -4721,8 +4861,15 @@ def main(argv: list[str]) -> int:
                 for given in args.argument:
                     read = answering.invoke("read_item", given)
                     held.append(read.result if read.performed else {"unread": given})
+            excludes = (
+                answering.excludes_of(args.excluding_for)
+                if args.excluding_for
+                else None
+            )
             answer = (
-                answering.short_of(args.short_of, held) if args.short_of else None
+                answering.short_of(args.short_of, held, excludes)
+                if args.short_of
+                else None
             )
         except ConfigError as error:
             print(
