@@ -21,6 +21,7 @@ What it owns is the part a role should not perform by eye:
 
 Usage:
     deploy_run.py [--skills-root DIR] start --target NAME [--choose NAME=VALUE ...]
+                  [--grouping-value VALUE]
     deploy_run.py [--skills-root DIR] wait --target NAME --up-to SECONDS
     deploy_run.py [--skills-root DIR] status [--target NAME]
     deploy_run.py --self-test
@@ -490,6 +491,7 @@ def main(argv: list[str] | None = None) -> int:
     started = sub.add_parser("start", help="start the target's command in the background")
     started.add_argument("--target", required=True)
     started.add_argument("--choose", action="append", default=[], metavar="NAME=VALUE")
+    started.add_argument("--grouping-value", default=None, metavar="VALUE")
     waited = sub.add_parser("wait", help="read the run until it ends, up to a bound")
     waited.add_argument("--target", required=True)
     waited.add_argument("--up-to", type=float, required=True, metavar="SECONDS")
@@ -505,7 +507,17 @@ def main(argv: list[str] | None = None) -> int:
         configuration = config.load(args.skills_root or os.getcwd())
         store = _store(configuration)
         if args.act == "start":
-            resolved = configuration.deploy_target(args.target, args.choose)
+            resolved = configuration.deploy_target(
+                args.target, args.choose, args.grouping_value
+            )
+            if resolved.get("grouping_unhanded"):
+                # ⛔ A command left unfilled is never started: it would run with
+                # the placement's own text where the go's value belongs (§ 33).
+                raise config.ConfigError(
+                    f"deploy[{args.target}].command",
+                    "places {deploy:grouping} and no grouping value was handed "
+                    "over (§ 33). Pass `--grouping-value` with the value the go names.",
+                )
             if resolved.get("reached_by") != "command":
                 code, answer = NO_BACKGROUND, {
                     "target": args.target,

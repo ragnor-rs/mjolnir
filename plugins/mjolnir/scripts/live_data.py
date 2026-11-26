@@ -36,7 +36,7 @@ performs what it was handed and says which side it took and where it came from.
 
 Usage:
     live_data.py [--skills-root DIR] --target NAME   what the target states
-    live_data.py plan --target NAME [--step S] [--choose N=V]...
+    live_data.py plan --target NAME [--step S] [--choose N=V]... [--grouping-value V]
                                                      the ordering, nothing run
     live_data.py prepare --target NAME [--step S] [--side SIDE] [--choose N=V]...
                                                      the dump, its reading, the
@@ -49,7 +49,9 @@ Usage:
 ⚠️ `--step` names one step of a target that lists several, and is refused on a
 target with one; `--side` prepares only the phases `sides` and `order` place on
 that side of the invocation (§ 35); `--choose` is the run's § 33 choices, exactly
-as the deploy was handed them, which a step whose side is a choice is resolved by.
+as the deploy was handed them, which a step whose side is a choice is resolved by;
+`--grouping-value` is the grouping's own value the go names, placed wherever a
+step's command states `{deploy:grouping}` (§ 33). Every action takes both the same.
 
 Exit status, and ⛔ **four values rather than two**: 0 the answer was produced,
 1 the step stopped and names where, 2 the configuration could not be read or does
@@ -334,8 +336,19 @@ def _sides_of(block: dict) -> dict:
 def _plan_of(configuration: config.Config, target: str, read: dict, block: dict) -> dict:
     """The whole ordering of one step, with nothing run and nothing written."""
     entry = read["target"]
+    # ⛔ A command left unfilled is neither planned nor run: what the plan shows is
+    # what the go approves, and the placement's own text is no value (§ 33).
+    if block.get("grouping_unhanded"):
+        raise config.ConfigError(
+            f"deploy[{target}].live_data_step",
+            "places {deploy:grouping} at "
+            + ", ".join(block["grouping_unhanded"])
+            + " and no grouping value was handed over (§ 33). Pass "
+            "`--grouping-value` with the value the go names.",
+        )
     sides = _sides_of(block)
     side_chosen = list(block.get("side_chosen") or [])
+    grouping = block.get("grouping")
     report = list(read["report"])
     split = len({side for side in sides.values() if side is not None}) > 1
     placement = (
@@ -375,6 +388,13 @@ def _plan_of(configuration: config.Config, target: str, read: dict, block: dict)
             "What the go may not settle is a write ahead of its own dump or "
             "rehearsal, which the write refuses whatever was asked."
         )
+    if grouping is not None:
+        report.append(
+            f"The grouping value this run places is {grouping!r}, at "
+            + ", ".join(block["grouping_places"])
+            + ". ⛔ The go names it, and a reading prepared under another value "
+            "licenses no write under this one (§ 33, § 35)."
+        )
     if block["apply_by"] == "person":
         report.append(
             "This target states that a person performs the write, so the command "
@@ -408,6 +428,8 @@ def _plan_of(configuration: config.Config, target: str, read: dict, block: dict)
         go_must_name.append(f"the step's name ({block['name']})")
     for one in side_chosen:
         go_must_name.append(f"the side taken ({one['value']})")
+    if grouping is not None:
+        go_must_name.append(f"the grouping value ({grouping})")
     return {
         "target": target,
         "step": block.get("name"),
@@ -416,6 +438,7 @@ def _plan_of(configuration: config.Config, target: str, read: dict, block: dict)
         "order": block["order"],
         "sides": sides,
         "side_chosen": side_chosen,
+        "grouping": grouping,
         "apply_by": block["apply_by"],
         "steps": _steps(block),
         "backup_absent": absent,
@@ -435,6 +458,7 @@ def plan(
     target: str,
     step: str | None = None,
     chosen: list[str] | None = None,
+    grouping: str | None = None,
 ) -> dict | None:
     """The whole ordering, with nothing run and nothing written, or `None`.
 
@@ -447,7 +471,7 @@ def plan(
     deploy is confirmed — while the commands that run something are addressed to
     one step by name (§ 35).
     """
-    read = configuration.live_data_step(target, chosen)
+    read = configuration.live_data_step(target, chosen, grouping)
     if read["found"] is None:
         return None
     if read.get("listed") and step is None:
@@ -549,6 +573,7 @@ def prepare(
     step: str | None = None,
     side: str | None = None,
     chosen: list[str] | None = None,
+    grouping: str | None = None,
 ) -> dict | None:
     """The dump, the dump read back, the rehearsal — and then a stop.
 
@@ -569,8 +594,9 @@ def prepare(
     ⚠️ **`chosen` is the run's § 33 choices**, which place a chosen side; the
     sides it resolves to are what the record keeps, so a later side or the write
     handed another selection is refused rather than read as this one (§ 35).
+    `grouping` is kept beside them for the same reason, where the step places it.
     """
-    read = configuration.live_data_step(target, chosen)
+    read = configuration.live_data_step(target, chosen, grouping)
     if read["found"] is None:
         return None
     block = _which(read, step)
@@ -602,8 +628,8 @@ def prepare(
             os.remove(path)
         _clear_later(configuration, target, read, block)
         _keep(path, {"target": target, "step": name, "order": answer["order"],
-                     "sides": sides, "preview": None, "rehearsal": None,
-                     "verified": []})
+                     "sides": sides, "grouping": answer["grouping"], "preview": None,
+                     "rehearsal": None, "verified": []})
         answer["record_at"] = path
         answer["report"].insert(
             0,
@@ -632,7 +658,8 @@ def prepare(
             os.remove(path)
         _clear_later(configuration, target, read, block)
         record = {"target": target, "step": name, "order": answer["order"],
-                  "sides": sides, "preview": None, "rehearsal": None, "verified": []}
+                  "sides": sides, "grouping": answer["grouping"], "preview": None,
+                  "rehearsal": None, "verified": []}
     else:
         # ⛔ A later side of a sequence that began earlier: what it follows has to
         # be on record, or this side would be a rehearsal with no dump behind it.
@@ -642,6 +669,7 @@ def prepare(
             or record.get("target") != target
             or record.get("step") != name
             or record.get("sides") != sides
+            or record.get("grouping") != answer["grouping"]
             or not set(before) <= set(record.get("verified") or [])
         ):
             answer["stopped_at"] = here[0]["step"]
@@ -653,6 +681,12 @@ def prepare(
                 + (
                     " under the sides this run takes"
                     if record is not None and record.get("sides") != sides
+                    else ""
+                )
+                + (
+                    f" under the grouping value {answer['grouping']!r}"
+                    if record is not None and record.get("sides") == sides
+                    and record.get("grouping") != answer["grouping"]
                     else ""
                 )
                 + ", so it would follow nothing. ⛔ What it follows runs first, on "
@@ -775,6 +809,7 @@ def apply(
     go: str,
     step: str | None = None,
     chosen: list[str] | None = None,
+    grouping: str | None = None,
 ) -> dict | None:
     """The write, under a go that names what it is a go for. `None` where none.
 
@@ -784,9 +819,11 @@ def apply(
     nor the reading it was given (nor the step, on a listed one, nor the side
     taken, where the side is a choice), and a target whose configuration states
     that a person performs the write. ⚠️ A reading taken under other sides than
-    `chosen` resolves to is no completed preparation for this write (§ 35).
+    `chosen` resolves to is no completed preparation for this write (§ 35), and
+    neither is one taken under another grouping value; the go names the value
+    where the step places it (§ 33).
     """
-    read = configuration.live_data_step(target, chosen)
+    read = configuration.live_data_step(target, chosen, grouping)
     if read["found"] is None:
         return None
     block = _which(read, step)
@@ -815,12 +852,14 @@ def apply(
     # selection it showed, and one that changed after the dump is prepared again
     # (§ 33, § 35).
     other_sides = held is not None and held.get("sides") != answer["sides"]
+    other_grouping = held is not None and held.get("grouping") != answer["grouping"]
     if (
         held is None
         or held.get("target") != target
         or held.get("step") != name
         or owed
         or other_sides
+        or other_grouping
     ):
         answer["writes"] = _writes(configuration, target, read)
         answer["report"].insert(
@@ -843,6 +882,12 @@ def apply(
                 + ", and this run places them "
                 + ", ".join(f"{phase} {side}" for phase, side in answer["sides"].items() if side)
                 if other_sides
+                else ""
+            )
+            + (
+                f" — the reading on record was taken under the grouping value "
+                f"{held.get('grouping')!r}, and this run places {answer['grouping']!r}"
+                if other_grouping
                 else ""
             )
             + ", so its reading is incomplete: the dump unverified or the "
@@ -870,6 +915,10 @@ def apply(
     for one in answer["side_chosen"]:
         if one["value"].lower() not in said:
             missing.append(f"side {one['value']!r}")
+    # ⛔ Where a command places the grouping value the go names it, or it approved
+    # a write against a version it never said (§ 33).
+    if answer["grouping"] is not None and answer["grouping"].lower() not in said:
+        missing.append(f"grouping value {answer['grouping']!r}")
     if missing:
         answer["report"].insert(
             0,
@@ -934,10 +983,13 @@ def apply(
 
 
 def _report(
-    configuration: config.Config, target: str, chosen: list[str] | None = None
+    configuration: config.Config,
+    target: str,
+    chosen: list[str] | None = None,
+    grouping: str | None = None,
 ) -> dict:
     """What this target states, without running any of it."""
-    read = configuration.live_data_step(target, chosen)
+    read = configuration.live_data_step(target, chosen, grouping)
     if read["found"] is None:
         return {
             "target": target,
@@ -945,7 +997,7 @@ def _report(
             "names": read["names"],
             "report": read["report"],
         }
-    answer = plan(configuration, target, chosen=chosen)
+    answer = plan(configuration, target, chosen=chosen, grouping=grouping)
     if answer.get("listed"):
         return {
             "target": target,
@@ -982,7 +1034,7 @@ class _Stated:
 
     def __init__(
         self, block, root, *, not_live=False, name="a-target", artifacts=None,
-        choices=None,
+        choices=None, grouping="none",
     ):
         self._block = block
         self._root = root
@@ -990,6 +1042,7 @@ class _Stated:
         self._name = name
         self._artifacts = artifacts
         self._choices = choices
+        self._grouping = grouping
 
     # ⛔ A property, because the reader's is one: a fake answering a call where
     # the reader answers an attribute let every arm here pass while the
@@ -1006,20 +1059,18 @@ class _Stated:
             # in the shape that runs no command, so a planted choice is resolved
             # and refused by `deploy_target` itself rather than by a copy here.
             entry = {"name": self._name, "not_live": self._not_live,
-                     "invoke": "by_hand", "workflow": "a-workflow", "ref": "main"}
+                     "invoke": "by_hand", "workflow": "a-workflow", "ref": "main",
+                     "grouping": self._grouping}
             if self._choices:
                 entry["choices"] = self._choices
             return [entry]
         return default
 
-    def _shown(self, target, chosen):
-        """The run's choices, resolved by the reader's own `deploy_target`."""
-        if not self._choices:
-            return {}
-        answer = config.Config.deploy_target(self, target, chosen)
-        return {one["name"]: one for one in answer["choices"]}
+    def _resolved(self, target, chosen, grouping):
+        """The run's choices and grouping value, by the reader's own `deploy_target`."""
+        return config.Config.deploy_target(self, target, chosen, grouping)
 
-    def live_data_step(self, target, chosen=None):
+    def live_data_step(self, target, chosen=None, grouping=None):
         if target != self._name:
             return {
                 "target": None, "found": None, "steps": [], "reads_record": False,
@@ -1037,7 +1088,9 @@ class _Stated:
         # assert its placement instead of the one the loader holds.
         listed = isinstance(self._block, list)
         blocks = self._block if listed else [self._block]
-        steps = config.live_data_steps(blocks, self._shown(target, chosen))
+        resolved = self._resolved(target, chosen, grouping)
+        shown = {one["name"]: one for one in resolved["choices"]}
+        steps = config.live_data_steps(blocks, shown, resolved["grouping"])
         return {
             "target": {"name": self._name, "not_live": self._not_live},
             "found": self._block,
@@ -1699,6 +1752,79 @@ def self_test() -> int:
         f"answered {answer.get('nothing_on_side')!r}",
     )
 
+    print("\nThe grouping value the go named, placed in the step's commands (§ 33):")
+
+    def grouped_target():
+        # ⛔ The write and its rehearsal place the value; the dump does too, so a
+        # project dumping per version is the shape planted.
+        return _Stated(
+            _a_block(
+                backup={"run": "./dump {deploy:grouping}", "verify": "./read-back"},
+                rehearse="./write --dry {deploy:grouping}",
+                apply="./write {deploy:grouping}",
+            ),
+            _a_tree(_scripts()), artifacts=_a_tree({}), grouping="a-release",
+        )
+
+    grouped = grouped_target()
+    answer = plan(grouped, "a-target", grouping="5.7")
+    check(
+        "the plan shows the commands with the value placed, and where it was placed",
+        answer["apply"] == "./write 5.7" and answer["grouping"] == "5.7"
+        and "'5.7'" in " ".join(answer["report"])
+        and "the grouping value (5.7)" in answer["go_must_name"],
+        f"answered {answer['apply']!r}, {answer['go_must_name']!r}",
+    )
+    said = None
+    try:
+        plan(grouped, "a-target")
+    except config.ConfigError as error:
+        said = str(error)
+    check(
+        "a step placing the value with none handed is neither planned nor run",
+        said is not None and "apply" in said and "--grouping-value" in said,
+        f"raised {said!r}",
+    )
+    answer = prepare(grouped, "a-target", grouping="5.7")
+    check(
+        "prepared under the value, the dump and the rehearsal run with it placed",
+        [outcome["step"] for outcome in answer["ran"]]
+        == ["backup.run", "backup.verify", "rehearse"]
+        and [outcome["command"] for outcome in answer["ran"]]
+        == ["./dump 5.7", "./read-back", "./write --dry 5.7"]
+        and answer["stopped_at"] is None,
+        f"ran {[outcome['command'] for outcome in answer['ran']]!r}",
+    )
+    refused = apply(grouped, "a-target", _a_go(), grouping="5.7")
+    check(
+        "a go that does not name the grouping value writes nothing",
+        refused["written"] is False and refused["ran"] == []
+        and "no grouping value '5.7'" in refused["report"][0],
+        f"reported {refused['report'][:1]!r}",
+    )
+    refused = apply(grouped, "a-target", _a_go() + " For 5.8.", grouping="5.8")
+    check(
+        "a reading prepared under one value licenses no write under another",
+        refused["written"] is False and refused["ran"] == []
+        and "grouping value '5.7'" in refused["report"][0],
+        f"reported {refused['report'][:1]!r}",
+    )
+    answer = apply(grouped, "a-target", _a_go() + " For 5.7.", grouping="5.7")
+    check(
+        "a go naming the value makes the write, with the value placed",
+        answer["written"] is True
+        and [o["command"] for o in answer["ran"] if o["step"] == "apply"] == ["./write 5.7"],
+        f"reported {answer['report'][:1]!r}",
+    )
+    fixed = plan(_Stated(_a_block(), _a_tree(_scripts()), artifacts=_a_tree({})),
+                 "a-target")
+    check(
+        "a step placing no value carries none and its go is asked for none",
+        fixed["grouping"] is None
+        and not any("grouping value" in what for what in fixed["go_must_name"]),
+        f"answered {fixed['grouping']!r}, {fixed['go_must_name']!r}",
+    )
+
     print("\nSeveral steps on one target, each addressed by name:")
     listed_tree = _a_tree(dict(
         _scripts(), **{"write-fails": "#!/bin/sh\necho 'half of it ran'\nexit 1\n"}
@@ -1951,6 +2077,11 @@ def main(argv: list[str] | None = None) -> int:
         help="one of the run's § 33 choices, repeated per choice -- exactly what "
              "the deploy was handed, which a chosen side is resolved by (§ 35)",
     )
+    parser.add_argument(
+        "--grouping-value", default=None, metavar="VALUE",
+        help="the grouping's own value the go names, placed wherever a step's "
+             "command states {deploy:grouping} (§ 33)",
+    )
     parser.add_argument("--skills-root", default=None)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args(argv)
@@ -1982,13 +2113,16 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.action == "plan":
-            answer = plan(resolved, args.target, args.step, args.choose)
+            answer = plan(resolved, args.target, args.step, args.choose,
+                          args.grouping_value)
         elif args.action == "prepare":
-            answer = prepare(resolved, args.target, args.step, args.side, args.choose)
+            answer = prepare(resolved, args.target, args.step, args.side, args.choose,
+                             args.grouping_value)
         elif args.action == "apply":
-            answer = apply(resolved, args.target, args.given, args.step, args.choose)
+            answer = apply(resolved, args.target, args.given, args.step, args.choose,
+                           args.grouping_value)
         else:
-            answer = _report(resolved, args.target, args.choose)
+            answer = _report(resolved, args.target, args.choose, args.grouping_value)
     except (_Unaddressed, config.ConfigError) as error:
         # ⛔ The configuration does not answer to the step named, or to a choice
         # the run was handed (§ 33), which is a reading that could not be taken
