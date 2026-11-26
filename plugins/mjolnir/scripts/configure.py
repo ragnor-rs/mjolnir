@@ -488,8 +488,18 @@ ANSWERED_BY: dict[str, Answer] = {
     "work_item.estimate.band": ask(
         "Above which value is an item too big to take as one piece?",
     ),
+    "work_item.estimate.writer": ask(
+        "Who writes the estimate? Leave it unstated to have whoever moves an item "
+        "into the committed status write it; state `procedure` to have the gate "
+        "write it even where a person makes that move (§ 4.2).",
+    ),
     "work_item.due_date.carrier": ask(
         "How is the date a gate writes carried on an item here?",
+    ),
+    "work_item.due_date.writer": ask(
+        "Who writes the committed date? Leave it unstated to have whoever moves an "
+        "item into the committed status write it; state `procedure` to have the "
+        "gate write it even where a person makes that move (§ 4.2).",
     ),
     "work_item.due_date.field": skip(
         "the field's name is this facet's own carrier question answered: that "
