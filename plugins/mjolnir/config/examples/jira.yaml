@@ -808,6 +808,12 @@ spec_corpus:
     copy that governs its own version — or a port is grown for the wiki, which § 3 declines to do
     for one measured shape.
 
+# § 42 at its defaults, written out so a reader sees the step was considered: no role reads the code
+# for whether an item is already built.
+built_check:
+  points: []
+  on_finding: report
+
 # § 40's absent case. Two environments and no accepted role: a release branch is verified on the
 # first and shipped from the second, and both moves write the finished state — so there is no
 # state a verdict could be recorded into, and ⛔ nothing here reads one as a precondition either.

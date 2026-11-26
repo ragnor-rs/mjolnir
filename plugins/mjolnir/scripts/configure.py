@@ -691,6 +691,18 @@ ANSWERED_BY: dict[str, Answer] = {
     "commit.trailer": ask(
         "What trailer does a commit here carry, if any?",
     ),
+    "commit.branch_rules.branches": ask(
+        "Is there a branch a commit may carry only some paths onto -- a release "
+        "branch that takes documents and no code, say? None is the answer for a "
+        "project where every branch takes what a commit stages.",
+    ),
+    "commit.branch_rules.paths": ask(
+        "Which paths may a commit on those branches carry?",
+    ),
+    "commit.branch_rules.otherwise": ask(
+        "And a commit carrying any other path -- does it stop, or leave that path "
+        "out and commit the rest?",
+    ),
 
     # --- § 7. Carrier ------------------------------------------------------
     "carriers.*": ask(
@@ -1581,6 +1593,31 @@ ANSWERED_BY: dict[str, Answer] = {
         "single entry, and the ref is that grouping's `ref_prefix` joined onto "
         "the value the item carries — no second key states a branch-naming "
         "scheme (§ 39, § 4.8).",
+    ),
+    "spec_corpus.while_working.roles": ask(
+        "Besides the filing role, which always reads it, should the starting "
+        "or implementing role read the copy that governs the item they hold? "
+        "⚠️ Leaving both out is a real answer and keeps the corpus a filing "
+        "read. ⛔ Where the starting role reads it, a contradiction between the "
+        "item and the specification stops the start (§ 39).",
+    ),
+    "spec_corpus.while_working.files": ask(
+        "Should those roles load less than the whole corpus, so the window is "
+        "not filled? ⛔ A document is loaded only where it matches both these "
+        "globs and the corpus's own, so this can narrow and never widen; "
+        "leaving it out loads the whole corpus (§ 39).",
+    ),
+
+    # --- § 42. Whether the work is already built ---------------------------
+    "built_check.points": ask(
+        "Where should a role read the code to see whether an item's work is already "
+        "built — when filing, when starting, when implementing? Unstated, it reads at "
+        "none of them, which is how every role behaves today (§ 42).",
+    ),
+    "built_check.on_finding": ask(
+        "When that reading finds the work built or partly built, should the role report "
+        "it and carry on, or stop and ask you? Unstated, it reports. It never closes, "
+        "reopens or rewrites an item itself (§ 42).",
     ),
 
     # --- § 41. What a deployed item is judged against ----------------------

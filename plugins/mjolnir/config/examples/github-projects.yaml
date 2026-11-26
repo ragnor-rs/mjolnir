@@ -611,6 +611,12 @@ spec_corpus:
     This project starts cutting versions and a branch per version, which is the first moment one
     copy of its prose governs an item and another does not.
 
+# § 42 at its defaults, written out so a reader sees the step was considered: no role reads the code
+# for whether an item is already built.
+built_check:
+  points: []
+  on_finding: report
+
 # § 40's absent case, and the shape worth showing: this project **deploys** and still judges
 # nothing through the procedure, because its ladder maps no `accepted` role at all — an item goes
 # from code landed to finished and there is no state between them for a verdict to be written

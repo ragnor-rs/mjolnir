@@ -2577,6 +2577,92 @@ class Config:
             "identity": str(identity),
         }
 
+    def commit_rule_for(self, paths: list[str], branch: str) -> dict:
+        """§ 6's answer on one commit: which of its staged paths a branch admits.
+
+        Every rule whose `branches` matches applies, and a path has to be
+        admitted by each. Returns the verdict, the paths to commit, the paths
+        that were not admitted, and which rules decided it -- so a committing
+        role names what it left out without deriving any of it.
+        """
+        held = _changed_paths(paths, BRANCH_RULES_PATH)
+        # ⛔ An empty list is refused rather than admitted: every path of
+        # nothing is admitted vacuously, which answers about a commit nobody
+        # described.
+        if not held:
+            raise ConfigError(
+                BRANCH_RULES_PATH,
+                "was handed no staged path, so there is no commit to hold against "
+                "a rule. ⛔ Not answered as admitted: every path of an empty list "
+                "is admitted vacuously (§ 6).",
+            )
+        if not isinstance(branch, str) or not branch.strip():
+            raise ConfigError(
+                BRANCH_RULES_PATH,
+                f"was handed {branch!r} as the branch, which names none. ⛔ Not "
+                "answered as unruled: a commit with no branch would match no rule "
+                "and be admitted whole (§ 6).",
+            )
+        rules = _absent_as(self.get(BRANCH_RULES_PATH), [])
+        applying = [
+            (index, rule)
+            for index, rule in enumerate(rules)
+            if any(_matches(branch, glob) for glob in rule["branches"])
+        ]
+        answer = {
+            "verdict": UNRULED,
+            "branch": branch,
+            "rules": [index for index, _ in applying],
+            "commit": held,
+            "left_out": [],
+            "why": "",
+        }
+        if not applying:
+            answer["why"] = (
+                f"No rule under `{BRANCH_RULES_PATH}` matches `{branch}`, so the "
+                "commit carries what was staged, as it does today (§ 6)."
+            )
+            return answer
+        refused, stops = [], False
+        for _, rule in applying:
+            outside = [
+                p for p in held if not any(_matches(p, g) for g in rule["paths"])
+            ]
+            if outside and rule["otherwise"] == OTHERWISE_STOPS:
+                stops = True
+            refused += [p for p in outside if p not in refused]
+        named = ", ".join(f"[{index}]" for index, _ in applying)
+        if not refused:
+            answer["verdict"] = ADMITTED
+            answer["why"] = (
+                f"Every staged path is admitted on `{branch}` by "
+                f"`{BRANCH_RULES_PATH}` {named} (§ 6)."
+            )
+            return answer
+        answer["left_out"] = refused
+        if stops:
+            answer["verdict"] = STOPPED
+            answer["commit"] = []
+            answer["why"] = (
+                f"`{branch}` admits none of {', '.join(refused)} under "
+                f"`{BRANCH_RULES_PATH}` {named}, and a rule refusing one says "
+                "`stop`: no commit is made (§ 6)."
+            )
+            return answer
+        answer["verdict"] = LEFT_OUT
+        answer["commit"] = [p for p in held if p not in refused]
+        answer["why"] = (
+            f"`{branch}` admits none of {', '.join(refused)} under "
+            f"`{BRANCH_RULES_PATH}` {named}, so they are left out and stay in the "
+            "tree (§ 6)."
+        )
+        if not answer["commit"]:
+            answer["why"] += (
+                " ⚠️ Nothing is left to commit, so no commit is made rather than an "
+                "empty one."
+            )
+        return answer
+
     def exempt_for(self, paths: list[str], kind: str | None = None) -> dict:
         """§ 30's verdict on one change: does it go through the loop or not.
 
@@ -3192,11 +3278,17 @@ class Config:
         # time any caller is handed this object, so the call here cannot raise
         # and reads one shape either way.
         grouping = self.grouping(self.get(SPEC_CORPUS_GROUPING))
+        working = self.get(f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}") or {}
         return {
             "files": list(self.get(f"{SPEC_CORPUS_KEY}.files") or ()),
             "load_bearing": list(self.get(f"{SPEC_CORPUS_KEY}.load_bearing") or ()),
             "grouping": grouping["name"],
             "ref_prefix": grouping.get("ref_prefix"),
+            # ⛔ The filing role first and always: § 39 has it read wherever a
+            # corpus is carried, so a caller asks this list rather than knowing
+            # that rule a second time.
+            "readers": [FILING_READER, *working.get("roles", ())],
+            "narrowed_to": list(working["files"]) if "files" in working else None,
         }
 
     def deploy_target(self, target: str, chosen: list[str] | None = None) -> dict:
@@ -4460,9 +4552,14 @@ FIELD_PRESENT_CHECK = "field_present"
 # § 4.8's own groupings, so the two spellings are one fact and a literal here
 # would be free to disagree with the gate entry's.
 SPEC_CORPUS_KEY = "spec_corpus"
+BUILT_CHECK_KEY = "built_check"
+BUILT_CHECK_POINTS_PATH = f"{BUILT_CHECK_KEY}.points"
 SPEC_CORPUS_CARRIER = f"{SPEC_CORPUS_KEY}.carrier"
 SPEC_CORPUS_REPOSITORY = "repository"
 SPEC_CORPUS_GROUPING = f"{SPEC_CORPUS_KEY}.{GROUPING_ENTRY_KEY}"
+WHILE_WORKING = "while_working"
+FILING_READER = "file"
+WORKING_READERS = ("start", "implement")
 
 # § 40's role key in `carriers`. ⛔ The only role key this module names, and it is
 # named because this is the one role whose whole subject is a facet the reader
@@ -4510,6 +4607,25 @@ CROSSING_GLOB = "**"
 EXEMPT = "exempt"
 THROUGH_THE_LOOP = "through_the_loop"
 ASK = "ask"
+
+# § 6's branch rules: what a commit may contain, by the branch it lands on. ⚠️
+# Hand-checked for the reason § 30's classes are: an entry's first key sits behind
+# a `- ` the walk cannot see.
+BRANCH_RULES_PATH = "commit.branch_rules"
+BRANCH_RULE_KEYS = ("branches", "paths", "otherwise")
+OTHERWISE_PATH = f"{BRANCH_RULES_PATH}.otherwise"
+# The `otherwise` member that makes no commit. ⛔ One sentinel: the other member
+# is *whatever is not this*, and the vocabulary itself is the surface's.
+OTHERWISE_STOPS = "stop"
+# The four answers `commit_rule_for` gives. `unruled` is a stated absence and
+# not an admission: no rule matched, so the commit is today's.
+UNRULED = "unruled"
+ADMITTED = "admitted"
+STOPPED = "stop"
+LEFT_OUT = "leave_out"
+# The flag a committing role asks before its commit, and which the suite looks for
+# in every committing carrier.
+COMMIT_RULE_FLAG = "--commit-rule-for"
 
 # What `memory.carrier: derived` leaves open -- ⛔ **one list and not two**. This
 # reader reports it in `unavailable()` and § 25's own carrier hands it back to a
@@ -7269,6 +7385,37 @@ def _a_forbidding_scope(entry: dict, where: str, declared_paths: set) -> None:
             )
 
 
+def _validate_built_check(data: dict, facts: dict) -> None:
+    """§ 42's `points`: a set drawn from the list the surface shows.
+
+    The block's defaults and `on_finding`'s alternation are marked and answered
+    before this runs. What is here is what the list has to be: a list, each
+    entry one the surface shows, and no point twice.
+    """
+    key = BUILT_CHECK_POINTS_PATH
+    points = _get(data, key)
+    if points is None or points == []:
+        return
+    if not isinstance(points, list):
+        raise ConfigError(
+            key,
+            f"is {points!r}; it is a list of the points the step runs at (§ 42), "
+            "and `[]` where it runs at none.",
+        )
+    allowed = vocabulary_list(facts, key, "the points the step runs at")
+    seen: set = set()
+    for point in points:
+        if point not in allowed:
+            raise ConfigError(
+                key,
+                f"names {point!r}; a point is one of {' | '.join(allowed)} "
+                "(§ 42), the roles whose files carry the step.",
+            )
+        if point in seen:
+            raise ConfigError(key, f"names {point!r} twice; it is a set (§ 42).")
+        seen.add(point)
+
+
 def _validate_spec_corpus(data: dict) -> None:
     """§ 39's two glob lists, and the keys stated beside a carrier that reads none.
 
@@ -7293,7 +7440,7 @@ def _validate_spec_corpus(data: dict) -> None:
         # corpus somebody configured and nothing opens.
         stated = [
             key
-            for key in ("files", "load_bearing", GROUPING_ENTRY_KEY)
+            for key in ("files", "load_bearing", GROUPING_ENTRY_KEY, WHILE_WORKING)
             if key in _absent_as(_get(data, SPEC_CORPUS_KEY), {})
         ]
         if stated:
@@ -7336,6 +7483,70 @@ def _validate_spec_corpus(data: dict) -> None:
             "contradiction* for a reason that has nothing to do with the "
             "specification. A project with no corpus states `carrier: none` "
             "with its reason instead.",
+        )
+    _validate_while_working(data)
+
+
+def _validate_while_working(data: dict) -> None:
+    """§ 39's `while_working`: which working roles read the corpus, and what narrows it.
+
+    ⛔ **Absent is the filing role alone**, which is how a project stating
+    nothing new reads its corpus as it did. What is refused is every shape that
+    would read as a narrowing or a role while being neither.
+    """
+    where = f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}"
+    block = _get(data, where)
+    if block is None:
+        return
+    if not isinstance(block, dict):
+        raise ConfigError(
+            where,
+            "must be a block carrying `roles` and, optionally, `files` (§ 39).",
+        )
+    unknown = sorted(set(block) - {"roles", "files"})
+    if unknown:
+        raise ConfigError(
+            f"{where}.{unknown[0]}",
+            "is not a key of this block, which carries `roles` and `files` (§ 39).",
+        )
+    roles = block.get("roles")
+    if not isinstance(roles, list) or not roles:
+        raise ConfigError(
+            f"{where}.roles",
+            "must be a non-empty list of the working roles that read the corpus "
+            f"-- {', '.join(repr(role) for role in WORKING_READERS)} (§ 39). A "
+            "block naming none is a project that reads at filing alone, which "
+            "is said by leaving the block out.",
+        )
+    for index, role in enumerate(roles):
+        # ⛔ The filing role is refused here too: it reads wherever a corpus is
+        # carried, so naming it would be an entry that changes nothing (§ 39).
+        if role not in WORKING_READERS:
+            raise ConfigError(
+                f"{where}.roles[{index}]",
+                f"is {role!r}, and the roles that read the corpus while the "
+                f"work is done are {', '.join(repr(r) for r in WORKING_READERS)} "
+                "(§ 39). The filing role is not one of them: it reads wherever "
+                "a corpus is carried.",
+            )
+    if len(set(roles)) != len(roles):
+        raise ConfigError(f"{where}.roles", "names one role twice (§ 39).")
+    if "files" not in block:
+        return
+    narrowing = block["files"]
+    if not isinstance(narrowing, list) or not narrowing:
+        raise ConfigError(
+            f"{where}.files",
+            "must be a non-empty list of globs (§ 39). A narrowing to nothing "
+            "is a read that opens nothing while reading as one that opens "
+            "something; a role that should read nothing is left out of `roles`.",
+        )
+    for index, glob in enumerate(narrowing):
+        _a_document(
+            glob,
+            f"{where}.files[{index}]",
+            "a glob narrowing what the working roles load",
+            "§ 39",
         )
 
 
@@ -9368,6 +9579,67 @@ def _workflows_anywhere(data: dict, facts: dict) -> set[str]:
     return {name for name in out if name}
 
 
+def _branch_rules(data: dict, facts: dict) -> None:
+    """§ 6's branch rules, entry by entry."""
+    rules = _get(data, BRANCH_RULES_PATH)
+    if rules is not None and not isinstance(rules, list):
+        raise ConfigError(
+            BRANCH_RULES_PATH,
+            f"is {type(rules).__name__} and § 6 states a list of rules. `[]` is the "
+            "empty form -- no branch is ruled, and every commit is today's.",
+        )
+    for index, rule in enumerate(rules or []):
+        at = f"{BRANCH_RULES_PATH}[{index}]"
+        if not isinstance(rule, dict):
+            raise ConfigError(
+                at,
+                f"is {type(rule).__name__} and § 6 states each rule as a block of "
+                f"{', '.join(f'`{k}`' for k in BRANCH_RULE_KEYS)}.",
+            )
+        # ⛔ An unknown key is refused: a misspelt `otherwise` would otherwise
+        # read as absent and leave the rule deciding nothing a reader can see.
+        for key in rule:
+            if key not in BRANCH_RULE_KEYS:
+                raise ConfigError(
+                    f"{at}.{key}",
+                    f"is not a key of a branch rule. § 6 states "
+                    f"{', '.join(f'`{k}`' for k in BRANCH_RULE_KEYS)}.",
+                )
+        branches = rule.get("branches")
+        if not isinstance(branches, list) or not branches:
+            raise ConfigError(
+                f"{at}.branches",
+                f"is {branches!r} and § 6 states a non-empty list of branch globs. "
+                "A rule naming no branch applies to none, which reads as a rule "
+                "and holds nothing.",
+            )
+        for position, glob in enumerate(branches):
+            if not isinstance(glob, str) or not glob.strip():
+                raise ConfigError(
+                    f"{at}.branches[{position}]",
+                    f"is {glob!r} and a branch glob is a non-empty string (§ 6).",
+                )
+        globs = rule.get("paths")
+        if not isinstance(globs, list) or not globs:
+            raise ConfigError(
+                f"{at}.paths",
+                f"is {globs!r} and § 6 states a non-empty list of path globs. ⛔ An "
+                "empty list is not *admit nothing*: a rule admitting nothing is a "
+                "branch closed to commits, which is stated by `otherwise: stop` "
+                "over a glob, never by an empty value read either way.",
+            )
+        _held_to_the_class_globs(globs, at)
+        published = vocabulary(facts, OTHERWISE_PATH, "what a branch rule does otherwise")
+        if rule.get("otherwise") not in published:
+            raise ConfigError(
+                f"{at}.otherwise",
+                f"is {rule.get('otherwise')!r}; § 6 states {' | '.join(published)}. "
+                "⛔ No default: whether a commit stops or drops what the branch "
+                "refuses is the project's decision, and either default would make "
+                "it silently.",
+            )
+
+
 def _held_to_the_class_globs(globs: list, at: str) -> None:
     """The glob forms § 30 refuses, for every class written in its grammar.
 
@@ -10082,6 +10354,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                     "of where the review pass earns its keep, cited rather than "
                     "listed again here.",
                 )
+    _branch_rules(data, facts)
     destination = _get(data, EXEMPT_DESTINATION_PATH)
     if destination is not None and (
         not isinstance(destination, str) or not destination.strip()
@@ -10715,6 +10988,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # **not** here: it needs that facet's own carried set rather than the raw
     # block, so it runs in `_grouping_facet` where the set exists.
     _validate_spec_corpus(data)
+    _validate_built_check(data, facts)
     # § 41's block, and ⛔ **after § 33's rather than beside it**: the names its
     # `identity` is keyed on are a target's own, so this reads a list the arm
     # above has already held to being a list of targets at all.
@@ -12664,6 +12938,8 @@ SHOWN_LISTS = {
         "tooling",
     ],
     "session.parts": ["tracker", "memory", "commit"],
+    # § 42's points, read by the rule refusing a point no role's file carries.
+    BUILT_CHECK_POINTS_PATH: ["file", "start", "implement"],
     STREAMS_PATH: ["sessions", "commits", CHAT_STREAM, "meetings", "host_activity"],
 }
 
@@ -15253,6 +15529,81 @@ def self_test() -> int:
             f"reported {reported!r}",
         )
 
+    print("\n§ 6, what a commit may contain on a given branch:")
+    docs_only = {"branches": ["release/*"], "paths": ["docs/*", "*.md"]}
+    stops = [{**docs_only, "otherwise": "stop"}]
+    drops = [{**docs_only, "otherwise": "leave_out"}]
+    mixed = ["docs/notes.md", "app/main.py"]
+    for label, paths, branch, rules, wanted in (
+        ("a project stating no rule", mixed, "release/1.2", None,
+         (UNRULED, mixed, [])),
+        ("a branch no rule matches", mixed, "feature/7-x", stops,
+         (UNRULED, mixed, [])),
+        ("a commit wholly admitted on a ruled branch", ["docs/notes.md", "README.md"],
+         "release/1.2", stops, (ADMITTED, ["docs/notes.md", "README.md"], [])),
+        ("a refused path under `stop`", mixed, "release/1.2", stops,
+         (STOPPED, [], ["app/main.py"])),
+        ("a refused path under `leave_out`", mixed, "release/1.2", drops,
+         (LEFT_OUT, ["docs/notes.md"], ["app/main.py"])),
+        ("a `leave_out` that admits nothing", ["app/main.py"], "release/1.2", drops,
+         (LEFT_OUT, [], ["app/main.py"])),
+        # ⛔ Every matching rule applies, so a second rule can only narrow: the
+        # README is admitted by the first and refused by the second.
+        ("two rules matching one branch", ["docs/notes.md", "README.md"], "release/1.2",
+         drops + [{"branches": ["release/1.*"], "paths": ["docs/*"],
+                   "otherwise": "leave_out"}],
+         (LEFT_OUT, ["docs/notes.md"], ["README.md"])),
+        ("a `stop` among matching rules wins over a `leave_out`", mixed, "release/1.2",
+         drops + [{"branches": ["*"], "paths": ["docs/*"], "otherwise": "stop"}],
+         (STOPPED, [], ["app/main.py"])),
+        ("a refused path named twice is named once", mixed + ["app/main.py"],
+         "release/1.2", drops, (LEFT_OUT, ["docs/notes.md"], ["app/main.py"])),
+    ):
+        answer = _rule_on(paths, branch, rules)
+        got = (answer["verdict"], answer["commit"], answer["left_out"])
+        check(f"{label} answers `{wanted[0]}`", got == wanted, f"answered {got!r}")
+    left = _rule_on(["app/main.py"], "release/1.2", drops)
+    check("and the reason says nothing is left to commit",
+          "no commit is made" in left["why"], left["why"])
+    check("an unruled answer says so rather than admitting",
+          "as it does today" in _rule_on(mixed, "main", stops)["why"])
+    for label, paths, branch in (
+        ("a decision handed no staged path", [], "release/1.2"),
+        ("a decision handed no branch", mixed, "  "),
+        ("a decision handed an absolute path", ["/etc/x.md"], "release/1.2"),
+    ):
+        try:
+            _rule_on(paths, branch, stops)
+            reported = None
+        except ConfigError as error:
+            reported = error.key
+        check(f"{label} stops, naming `{BRANCH_RULES_PATH}`",
+              reported == BRANCH_RULES_PATH, f"reported {reported!r}")
+    # ⛔ Every committing role asks before its commit, read off the carriers the
+    # skills declare against the roles § 6's block gives a staging entry to.
+    with open(SURFACE, encoding="utf-8") as handle:
+        committing = sorted({
+            path.split(".")[2] for path in surface_facts(handle.read())["declared"]
+            if path.startswith("commit.staging.")
+        })
+    asking = {}
+    skills_dir = os.path.join(PLUGIN_ROOT, "skills")
+    for name in sorted(os.listdir(skills_dir)):
+        skill = os.path.join(skills_dir, name, "SKILL.md")
+        if not os.path.isfile(skill):
+            continue
+        with open(skill, encoding="utf-8") as handle:
+            text = handle.read()
+        declared = re.search(r"^#\s*carrier:\s*(\w+)\s*$", text, re.MULTILINE)
+        if declared:
+            asking[declared.group(1)] = text
+    check("the surface names some committing role, so what follows asserts something",
+          bool(committing))
+    for role in committing:
+        check(f"the `{role}` carrier asks `{COMMIT_RULE_FLAG}` before its commit",
+              COMMIT_RULE_FLAG in asking.get(role, ""),
+              "no skill declares that carrier" if role not in asking else "")
+
     print("\n§ 30, which changes never go through the loop -- and never by size:")
     # ⛔ One fixture shape per arm rather than the mixed list throughout, and that
     # is not tidiness: with a kinds-only class in the fixture, every change whose
@@ -16178,6 +16529,33 @@ def self_test() -> int:
         scoped["documents"] = _a_documents_of(forbidden=[entry])
         broken = _refused(scoped)
         check(f"{label} loads", broken is None, f"refused {broken!r}")
+
+    # ⛔ § 39's `while_working` from the green side, and what the reader hands a
+    # caller for it: the filing role first and always, the working roles after
+    # it, and the narrowing as written -- or `None` where none is stated, which
+    # is not the same as a narrowing to nothing.
+    with open(SURFACE, encoding="utf-8") as handle:
+        corpus_facts = surface_facts(handle.read())
+    for label, block, readers, narrowed in (
+        ("a corpus with no working roles is read at filing alone", _ABSENT,
+         ["file"], None),
+        ("a corpus both working roles read, narrowed",
+         {"roles": ["start", "implement"], "files": ["spec/requirements/**/*.md"]},
+         ["file", "start", "implement"], ["spec/requirements/**/*.md"]),
+        ("a corpus the implementing role reads unnarrowed", {"roles": ["implement"]},
+         ["file", "implement"], None),
+    ):
+        corpus = _a_valid_example()
+        corpus[SPEC_CORPUS_KEY] = _a_spec_corpus_of(while_working=block)
+        try:
+            facet = _resolve(corpus, EXAMPLES, corpus_facts, False).spec_corpus
+        except ConfigError as error:
+            facet = {"refused": error.key}
+        check(
+            f"{label}, and the reader says so",
+            facet.get("readers") == readers and facet.get("narrowed_to") == narrowed,
+            f"answered {facet!r}",
+        )
 
     # ⛔ And the surface that has lost the scope keys from its entry fence: this
     # reader names them optional, so a fence without them is refused rather than
@@ -18365,6 +18743,34 @@ def _planted_violations():
         # shapes coexist and one role goes on being wrong.
         ("a staging mode stated once for the whole project", "commit.staging",
          at("commit.staging", "sometimes")),
+        # § 6's branch rules, one plant per refusal.
+        ("branch rules written as one value", BRANCH_RULES_PATH,
+         at(BRANCH_RULES_PATH, "release/*")),
+        ("a branch rule that is not a block", f"{BRANCH_RULES_PATH}[0]",
+         at(BRANCH_RULES_PATH, ["release/*"])),
+        ("a branch rule with a key it does not have", f"{BRANCH_RULES_PATH}[0].otherwize",
+         at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "paths": ["docs/*"],
+                                 "otherwise": "stop", "otherwize": "stop"}])),
+        ("a branch rule naming no branch", f"{BRANCH_RULES_PATH}[0].branches",
+         at(BRANCH_RULES_PATH, [{"branches": [], "paths": ["docs/*"],
+                                 "otherwise": "stop"}])),
+        ("a branch rule with a blank branch glob", f"{BRANCH_RULES_PATH}[0].branches[0]",
+         at(BRANCH_RULES_PATH, [{"branches": [" "], "paths": ["docs/*"],
+                                 "otherwise": "stop"}])),
+        ("a branch rule admitting no path", f"{BRANCH_RULES_PATH}[0].paths",
+         at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "paths": [],
+                                 "otherwise": "stop"}])),
+        ("a branch rule admitting every path", f"{BRANCH_RULES_PATH}[0].paths[0]",
+         at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "paths": ["*"],
+                                 "otherwise": "stop"}])),
+        ("a branch rule with a crossing glob", f"{BRANCH_RULES_PATH}[0].paths[0]",
+         at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "paths": ["docs/**"],
+                                 "otherwise": "stop"}])),
+        ("a branch rule stating no `otherwise`", f"{BRANCH_RULES_PATH}[0].otherwise",
+         at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "paths": ["docs/*"]}])),
+        ("a branch rule whose `otherwise` is not one", f"{BRANCH_RULES_PATH}[0].otherwise",
+         at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "paths": ["docs/*"],
+                                 "otherwise": "warn"}])),
         # ⚠️ The out-of-alternation case is the generic enum rule's and is
         # planted there; what this arm answers is the *empty* value, which that
         # rule reads as absent and skips.
@@ -19455,6 +19861,20 @@ def _planted_violations():
         # ⚠️ The complement first, which is § 38's own arm one section over: a
         # glob stated beside a carrier that reads none is a corpus somebody
         # configured and nothing opens.
+        # § 42. A point outside the list the surface shows would be a step no
+        # role's file carries, so a project would read it as configured and no
+        # role would ever run it; a point twice is the same set written larger;
+        # and a mapping iterates as its keys, so `{start: true}` would pass the
+        # point check while meaning something no reader states.
+        ("a built-check point no role carries", BUILT_CHECK_POINTS_PATH,
+         at(BUILT_CHECK_POINTS_PATH, ["start", "deploy"])),
+        ("a built-check point named twice", BUILT_CHECK_POINTS_PATH,
+         at(BUILT_CHECK_POINTS_PATH, ["file", "file"])),
+        ("a built-check point list that is a mapping", BUILT_CHECK_POINTS_PATH,
+         at(BUILT_CHECK_POINTS_PATH, {"start": True})),
+        ("a built-check finding outcome outside the alternation",
+         f"{BUILT_CHECK_KEY}.on_finding",
+         at(f"{BUILT_CHECK_KEY}.on_finding", "close")),
         ("a glob list stated beside a corpus carrier that reads none",
          f"{SPEC_CORPUS_KEY}.files",
          at(SPEC_CORPUS_KEY, {"carrier": "none", "absent_reason": "no corpus here",
@@ -19491,6 +19911,39 @@ def _planted_violations():
          f"{SPEC_CORPUS_KEY}.load_bearing[0]",
          at(SPEC_CORPUS_KEY,
             _a_spec_corpus_of(load_bearing=["/spec/requirements.md"]))),
+        # ⛔ `while_working`: every shape that reads as a role or a narrowing
+        # while being neither (§ 39).
+        ("the working roles stated beside a corpus carrier that reads none",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}",
+         at(SPEC_CORPUS_KEY, {"carrier": "none", "absent_reason": "no corpus here",
+                              WHILE_WORKING: {"roles": ["start"]}})),
+        ("the working roles written as one string", f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(while_working="start"))),
+        ("a working-roles block naming no role",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.roles",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(while_working={"roles": []}))),
+        ("a working-roles block naming the filing role, which changes nothing",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.roles[0]",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(while_working={"roles": ["file"]}))),
+        ("a working-roles block naming a role that does not read the corpus",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.roles[1]",
+         at(SPEC_CORPUS_KEY,
+            _a_spec_corpus_of(while_working={"roles": ["start", "review"]}))),
+        ("a working-roles block naming one role twice",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.roles",
+         at(SPEC_CORPUS_KEY,
+            _a_spec_corpus_of(while_working={"roles": ["start", "start"]}))),
+        ("a working-roles block carrying a key it does not have",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.load_bearing",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(
+             while_working={"roles": ["start"], "load_bearing": ["spec/**/*.md"]}))),
+        ("a narrowing to nothing", f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.files",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(
+             while_working={"roles": ["implement"], "files": []}))),
+        ("a narrowing glob written absolutely",
+         f"{SPEC_CORPUS_KEY}.{WHILE_WORKING}.files[0]",
+         at(SPEC_CORPUS_KEY, _a_spec_corpus_of(
+             while_working={"roles": ["implement"], "files": ["/spec/one.md"]}))),
         # ⛔ The grouping arms, which are the ones about *which ref* rather than
         # about a key being present. ⚠️ The first names § 4.8's own carrier and
         # not this facet's key, which is § 5's rule for the same pair: the remedy
@@ -21120,6 +21573,18 @@ PLANTED_CLASSES = [
 # A path no fixture class covers, which is the second half of § 30's `every` rule
 # and the one the facet exists against.
 NON_EXEMPT_PATH = "app/main.py"
+
+
+def _rule_on(paths, branch, rules):
+    """§ 6's answer on one commit, under the branch rules handed (None: unstated)."""
+    data = _a_valid_example()
+    if rules is None:
+        data.get("commit", {}).pop("branch_rules", None)
+    else:
+        data.setdefault("commit", {})["branch_rules"] = copy.deepcopy(rules)
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    return _resolve(data, EXAMPLES, facts, False).commit_rule_for(paths, branch)
 
 
 def _answer_on(paths, kind=None, *, classes=None, borderline=None,
@@ -23375,6 +23840,19 @@ def main(argv: list[str]) -> int:
         "is exempt at one line and at two hundred files alike",
     )
     parser.add_argument(
+        "--commit-rule-for",
+        nargs="+",
+        metavar="PATH",
+        help="a commit's staged paths, repository-relative, held against § 6's "
+        "`commit.branch_rules` for the branch `--on-branch` names. Prints the "
+        "verdict, the paths to commit and every path the branch does not admit",
+    )
+    parser.add_argument(
+        "--on-branch",
+        metavar="BRANCH",
+        help="the branch the commit lands on, for `--commit-rule-for`",
+    )
+    parser.add_argument(
         "--of-kind",
         metavar="KIND",
         help="what the change is, for a § 30 class that states `kinds`. Omitted, "
@@ -23545,6 +24023,20 @@ def main(argv: list[str]) -> int:
                 "deploy.choices",
                 "cannot be chosen with no target named: § 33 states a choice per "
                 "target. Pass `--deploy-target` with it.",
+            )
+        if args.commit_rule_for:
+            if args.on_branch is None:
+                raise ConfigError(
+                    BRANCH_RULES_PATH,
+                    "cannot be asked about a commit with no branch: a rule is chosen "
+                    "by the branch the commit lands on. Pass `--on-branch`.",
+                )
+            answer = config.commit_rule_for(args.commit_rule_for, args.on_branch)
+        elif args.on_branch is not None:
+            raise ConfigError(
+                BRANCH_RULES_PATH,
+                "cannot be asked about a branch with no staged path. Pass "
+                "`--commit-rule-for` with the commit's paths.",
             )
         if args.exempt_for:
             answer = config.exempt_for(args.exempt_for, args.of_kind)
