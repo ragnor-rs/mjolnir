@@ -6264,7 +6264,24 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
 # § 35's sequence, which the sides a step's phases fall on may never run
 # backwards through. ⛔ Phases rather than commands: `backup.verify` belongs to
 # the backup and falls where it does.
-LIVE_DATA_PHASES = ("backup", "rehearse", "apply")
+LIVE_DATA_PHASES = ("backup", "preview", "rehearse", "apply")
+
+# The phases a step may omit, each read by `live_data_command` -- and the only two
+# whose absence leaves a phase with no side at all.
+LIVE_DATA_OPTIONAL = ("preview", "rehearse")
+
+
+def live_data_command(block: dict, phase: str) -> str | None:
+    """The command one optional phase of a step states, or `None` where none.
+
+    ⛔ The one reading of whether `preview` or `rehearse` is stated, which the
+    placement below and the carrier's sequence both take: `rehearse` is a command
+    stated whole, and `preview` a mapping whose `run` is (§ 35).
+    """
+    value = block.get(phase)
+    if phase == "preview":
+        value = value.get("run") if isinstance(value, dict) else None
+    return value if isinstance(value, str) and value.strip() else None
 
 
 def live_data_sides(block: dict) -> dict:
@@ -6272,14 +6289,12 @@ def live_data_sides(block: dict) -> dict:
 
     ⛔ The one derivation of a step's placement, which the loader holds and the
     carrier performs: a phase `sides` does not name falls where `order` says, and
-    a `rehearse` the step does not state has no side at all.
+    a `preview` or `rehearse` the step does not state has no side at all.
     """
     placed = block.get("sides") if isinstance(block.get("sides"), dict) else {}
     out = {}
     for phase in LIVE_DATA_PHASES:
-        if phase == "rehearse" and not (
-            isinstance(block.get("rehearse"), str) and block["rehearse"].strip()
-        ):
+        if phase in LIVE_DATA_OPTIONAL and live_data_command(block, phase) is None:
             out[phase] = None
             continue
         out[phase] = placed.get(phase, block.get("order"))
@@ -6361,6 +6376,7 @@ def _validate_one_live_data_step(
                 f"{at}.backup.{key}",
                 "required, and a non-empty command stated whole (§ 35).",
             )
+    _validate_live_data_preview(at, block, declared)
     for key in ("apply", "rehearse", "record"):
         if key in block and (
             not isinstance(block[key], str) or not block[key].strip()
@@ -6401,6 +6417,50 @@ def _validate_one_live_data_step(
     _validate_live_data_sides(at, block, declared, facts)
 
 
+def _validate_live_data_preview(at: str, block: dict, declared: set) -> None:
+    """`preview`, a read-only listing of the pending writes that is never a rehearsal.
+
+    ⛔ A mapping rather than a command, because where the listing lands is part of
+    what is stated: the output whole, or the file `at` names (§ 35).
+    """
+    if "preview" not in block:
+        return
+    preview = block["preview"]
+    if not isinstance(preview, dict):
+        raise ConfigError(
+            f"{at}.preview",
+            "must be a mapping of `run`, the read-only command printing the writes "
+            "this deploy would make, and optionally `at`, the file it writes them to "
+            "(§ 35). Omit it where the project has no preview.",
+        )
+    inside = {
+        path[len("preview."):]
+        for path in declared
+        if path.startswith("preview.") and "." not in path[len("preview."):]
+    }
+    for stated_key in preview:
+        if stated_key not in inside:
+            raise ConfigError(
+                f"{at}.preview.{stated_key}",
+                "is a key § 35 does not declare on a preview, so it is a fact "
+                f"nothing reads. The keys it declares are: {', '.join(sorted(inside))}.",
+            )
+    if live_data_command(block, "preview") is None:
+        raise ConfigError(
+            f"{at}.preview.run",
+            "required of a stated preview, and a non-empty command stated whole "
+            "(§ 35).",
+        )
+    if "at" in preview and (
+        not isinstance(preview["at"], str) or not preview["at"].strip()
+    ):
+        raise ConfigError(
+            f"{at}.preview.at",
+            "must be a non-empty path, the file the preview command writes to; "
+            "omit it where the command prints its preview (§ 35).",
+        )
+
+
 def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) -> None:
     """`sides`, and the placement no deploy may perform: a write ahead of its evidence.
 
@@ -6414,7 +6474,7 @@ def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) 
         if not isinstance(sides, dict):
             raise ConfigError(
                 f"{at}.sides",
-                "must be a mapping of a phase -- backup, rehearse, apply -- to the "
+                "must be a mapping of a phase -- backup, preview, rehearse, apply -- to the "
                 "side of the invocation it falls on (§ 35). Omit it where every "
                 "phase falls where `order` says.",
             )
@@ -6440,12 +6500,13 @@ def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) 
                     f"{at}.sides.{phase}",
                     f"is {side!r}; the surface states {' | '.join(stated)}.",
                 )
-        if "rehearse" in sides and "rehearse" not in block:
-            raise ConfigError(
-                f"{at}.sides.rehearse",
-                "places a rehearsal this step does not state, which is a placement "
-                "of nothing (§ 35). State `rehearse`, or omit its side.",
-            )
+        for phase in LIVE_DATA_OPTIONAL:
+            if phase in sides and phase not in block:
+                raise ConfigError(
+                    f"{at}.sides.{phase}",
+                    f"places a {phase} this step does not state, which is a "
+                    f"placement of nothing (§ 35). State `{phase}`, or omit its side.",
+                )
     rank = vocabulary(
         facts, "deploy.live_data_step.order",
         "which side of the invocation a live data step falls on",
@@ -17724,6 +17785,19 @@ def self_test() -> int:
          {"live_data_step": _a_live_data_step()}),
         ("and the same step with a rehearsal stated loads",
          {"live_data_step": _a_live_data_step(rehearse="a-dry-run")}),
+        # ⛔ The preview in both of the shapes § 35 states for where it lands, and
+        # beside no rehearsal -- the target the key was written for.
+        ("a step with a preview printing its writes and no rehearsal loads",
+         {"live_data_step": _a_live_data_step(preview={"run": "a-listing-of-writes"})}),
+        ("a step with a preview written to a stated path loads",
+         {"live_data_step": _a_live_data_step(
+             preview={"run": "a-listing-of-writes", "at": "pending.txt"})}),
+        ("a preview after the invocation, ahead of the rehearsal and the write, loads",
+         {"live_data_step": _a_live_data_step(
+             preview={"run": "a-listing-of-writes"}, rehearse="a-dry-run",
+             order=_the_sides()[0],
+             sides={"preview": _the_sides()[1], "rehearse": _the_sides()[1],
+                    "apply": _the_sides()[1]})}),
         # ⚠️ Both members of each alternation, written out rather than sampled:
         # the fixture carries the surface's *first* member, so an arm that
         # exercised only the fixture would say nothing about the second -- and the
@@ -19357,6 +19431,23 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(apply="   "))])),
         ("a rehearsal written blank", "deploy[0].live_data_step.rehearse",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(rehearse="   "))])),
+        # ⛔ The preview's own shape: a mapping, its keys, a `run` and an `at` that
+        # each name something (§ 35).
+        ("a preview stated as a bare command", "deploy[0].live_data_step.preview",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview="a-listing-of-writes"))])),
+        ("a key § 35 declares on no preview", "deploy[0].live_data_step.preview.format",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes", "format": "json"}))])),
+        ("a preview with no command to run", "deploy[0].live_data_step.preview.run",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"at": "pending.txt"}))])),
+        ("a preview command written blank", "deploy[0].live_data_step.preview.run",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "   "}))])),
+        ("a preview path written blank", "deploy[0].live_data_step.preview.at",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes", "at": "  "}))])),
         ("a record command written blank", "deploy[0].live_data_step.record",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(record="   "))])),
         ("who performs the write, outside its alternation",
@@ -19407,6 +19498,20 @@ def _planted_violations():
          "deploy[0].live_data_step.sides.rehearse",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
              sides={"rehearse": _the_sides()[0]}))])),
+        ("a side for a preview the step does not state",
+         "deploy[0].live_data_step.sides.preview",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             sides={"preview": _the_sides()[0]}))])),
+        ("a preview placed before the backup it follows",
+         "deploy[0].live_data_step.sides.preview",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes"}, order=_the_sides()[1],
+             sides={"preview": _the_sides()[0]}))])),
+        ("a write placed before the preview it follows",
+         "deploy[0].live_data_step.sides.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes"},
+             sides={"preview": _the_sides()[1], "apply": _the_sides()[0]}))])),
         ("a side for a phase § 35 does not declare",
          "deploy[0].live_data_step.sides.record",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
@@ -22781,9 +22886,9 @@ def _a_live_data_step(**overrides) -> dict:
     ⛔ Built here rather than borrowed from whichever example carries the facet,
     for `_a_deploy_target`'s reason: a plant that broke one key of a shipped file
     would stop asserting the moment that file grew a second target.
-    ⚠️ It states no `rehearse`, that being the one key § 35 lets a block omit, so
-    the arms about it state it themselves and the arm about its absence is the
-    fixture as it stands.
+    ⚠️ It states neither `preview` nor `rehearse`, those being the two commands
+    § 35 lets a block omit, so the arms about each state it themselves and the arm
+    about their absence is the fixture as it stands.
     """
     step = {
         "backup": {"run": "a-dump", "verify": "a-read-back"},

@@ -1392,6 +1392,16 @@ ANSWERED_BY: dict[str, Answer] = {
         "because a dump nothing read is a backup on the strength of an exit "
         "status alone, which is the measured failure (§ 35).",
     ),
+    "deploy.live_data_step.preview.run": ask(
+        "Is there a read-only command that prints the writes this deploy would "
+        "make? ⚠️ Its output is shown in the go before the write, and it is never "
+        "reported as a rehearsal: it runs nothing against the store (§ 35).",
+    ),
+    "deploy.live_data_step.preview.at": ask(
+        "Does that command write its preview to a file rather than print it? "
+        "Where it does, the go names that path rather than carrying the listing "
+        "whole (§ 35).",
+    ),
     "deploy.live_data_step.rehearse": ask(
         "Does the write have a dry variant? ⚠️ An omitted one is reported as no "
         "rehearsal rather than as a clean one, so it is asked rather than left "
@@ -1418,6 +1428,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "Does the dump fall on a different side of the invocation from the "
         "write? ⛔ Never after it: a write is not reached before its own "
         "verified backup, and a placement that would is refused (§ 35).",
+    ),
+    "deploy.live_data_step.sides.preview": ask(
+        "Does the preview fall on a different side of the invocation from the "
+        "write? ⛔ Never after it, the go showing its output (§ 35).",
     ),
     "deploy.live_data_step.sides.rehearse": ask(
         "Does the rehearsal fall on a different side of the invocation from the "
