@@ -519,9 +519,9 @@ below and already has a home of its own.
 
 ### The operations added after the survey
 
-Seven operations joined § 3's list after the survey, each because a role needed a reading no
+Eight operations joined § 3's list after the survey, each because a role needed a reading no
 project's copy took: `read_comments`, `read_vocabulary`, `read_closing_list`, `grouping_items`,
-`read_current_grouping`, `link_relation` and `read_relations`. No copy's measurement stands behind
+`read_current_grouping`, `open_groupings`, `link_relation` and `read_relations`. No copy's measurement stands behind
 them, so the table records what each implementation in `plugins/mjolnir/scripts/adapters/` does.
 An absence is that implementation's, declared in its module with the reason
 ([`schema.md § 3 → Who declares a capability`](../plugins/mjolnir/config/schema.md#who-declares-a-capability)),
@@ -534,15 +534,17 @@ and § 3's stated fallback is what a role gets there.
 | `read_closing_list` | the host's own closing list for the change, beside a scan of its title, body, commit messages and the merge call's text | the same reading on the same host | **absent**: no text in a change closes an item | **absent**: a merge closes no card |
 | `grouping_items` | one milestone's issues in both states, without bodies, with the host's listing bound reported | the board read whole and matched on the card's grouping field; a milestone read off the repository and joined | one bounded query on the field § 4.8 names, across every state | **absent**: a board's lists are its statuses, so it holds no grouping |
 | `read_current_grouping` | **absent**: a milestone carries no mark saying it is the open one, several staying open at once | **absent**: an iteration is current by its dates, not by a mark the board sets | the active sprints on every sprint board of the project, deduplicated; one is the answer, and none or several is answered with no value and every open sprint listed | **absent**: a board's lists are its statuses, so it holds no grouping |
+| `open_groupings` | the open milestones by due date, ties by number; an undated one listed apart as unplaced | the same, for a grouping in the milestone; a field's option or a label is refused, carrying no order the board states | the project's unreleased, unarchived versions in the project's own version order, for a field holding versions; any other field refused | **absent**: a board's lists are its statuses, so it holds no grouping |
 | `link_relation` | **absent**: the host records a dependency and sub-issues, and no link type a project can name | **absent**, for the same host's reason | a link of the type `tracker.relations` maps, written with the inward/outward inversion `link_dependency` has | **absent**: no relation exists between two cards |
 | `read_relations` | **absent**, with `link_relation` | **absent**, with `link_relation` | the links that arrive with the item; a type the project maps no name for comes back under `unnamed`, and the dependency's type never appears | **absent**, with `link_relation` |
 
-What the table states is the code, and this document records no live run of any of the seven.
+What the table states is the code, and this document records no live run of any of the eight.
 `link_relation` and `read_relations` in particular were exercised only against the Jira suite's fake
 host: the link-type names a real site uses, and which side of a link each item reads, are
 unmeasured. So is `read_current_grouping` against a live board: the sprint field's schema and its
 custom type were read live from one site's field catalogue, and the board and sprint listings only
-from the Jira suite's fake host.
+from the Jira suite's fake host. So is `open_groupings`: the version listing and the milestone
+order were exercised on the suites' fake hosts only.
 
 ### Reading a dependency back, per tracker, and the one tracker that cannot
 

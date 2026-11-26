@@ -312,6 +312,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which branches besides the integration branch is a local merge into held "
         "to a change's recorded approval?",
     ),
+    "host.landing.bases": ask(
+        "Which branches besides the integration branch does a pull request land on — "
+        "a grouping branch the integration branch reaches only at release?",
+    ),
     "host.landing.unrecorded_merge": ask(
         "Where no recorded approval covers a merge, is it refused, or put to the "
         "person at the harness's own prompt?",
@@ -584,6 +588,12 @@ ANSWERED_BY: dict[str, Answer] = {
     "work_item.grouping.default_map": ask(
         "For each value of that facet, which grouping does an item carrying it go "
         "into? A value you leave out is asked for.",
+    ),
+    "work_item.grouping.default_by": ask(
+        "Does each of those name a grouping, or a position among the open ones "
+        "(first, second ... last) counted in the tracker's own order when the item "
+        "is filed? A position keeps meaning the nearest unreleased one after every "
+        "release.",
     ),
     "work_item.template.carrier": ask(
         "Where does the body a new item is written to come from?",
@@ -1395,6 +1405,13 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "deploy.requires_role": ask(
         "Which role must an item already stand in to go out on this target?",
+    ),
+    "deploy.excludes.labels": ask(
+        "Which labels mark an item this target leaves out of its sets — the release's own "
+        "tracking items, say? ⚠️ None is an answer: the key is then omitted (§ 33).",
+    ),
+    "deploy.excludes.types": ask(
+        "And which item types does it leave out the same way?",
     ),
     "deploy.advances": ask(
         "Which role does a deploy move its items to?",

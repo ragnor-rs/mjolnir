@@ -265,6 +265,29 @@ def _sprinted_configuration():
     return loaded
 
 
+def _versioned_configuration(by: str = "position"):
+    """The shipped example, its release scope in the version field and mapped by tier.
+
+    ⛔ The example's own text with its placeholder filled and § 4.8's three
+    default keys added under the release scope, rather than a block written
+    here: every other key of the grouping stays the example's.
+    """
+    path = os.path.join(config.EXAMPLES, f"{KIND}.yaml")
+    with open(path, encoding="utf-8") as handle:
+        text = handle.read().replace(
+            "<the field the release scope is held in>", VERSION_FIELD_NAME
+        )
+    anchor = '      ref_prefix: "release/"\n'
+    added = (
+        "      default_from: priority\n"
+        "      default_map: { High: first, Medium: second, Low: last }\n"
+        f"      default_by: {by}\n"
+    )
+    loaded = config.load_text(text.replace(anchor, anchor + added), config.EXAMPLES)
+    loaded.data["tracker"].pop("create_fields", None)
+    return loaded
+
+
 def _statuses(configuration) -> list[dict]:
     return list(configuration.get("statuses") or [])
 
@@ -327,6 +350,7 @@ ROUTES = [
     ("POST", r"^/issue$", "create"),
     ("POST", r"^/issueLink$", "link"),
     ("GET", r"^/project/[^/]+/statuses$", "statuses"),
+    ("GET", r"^/project/[^/]+/version$", "versions"),
     ("GET", r"^/project/[^/]+$", "project"),
     ("GET", r"^/rest/agile/1\.0/board/\d+/sprint$", "sprints"),
     ("GET", r"^/rest/agile/1\.0/board$", "boards"),
@@ -345,6 +369,19 @@ BOARDS = [
     {"id": 8, "name": "the flow board", "type": "kanban"},
 ]
 SPRINTS = {7: [CLOSED_SPRINT, OPEN_SPRINT], 8: [SECOND_SPRINT]}
+
+# This project's versions in the project's own order, as the listing answers them.
+# ⚠️ The open ones in that order are 2.10, 2.2, 10.0, which no sort of the names
+# gives -- so a read that sorted would place every position wrongly -- and a
+# released and an archived version sit between them.
+VERSION_FIELD_NAME = "Ships in"
+VERSIONS = [
+    {"id": "10001", "name": "1.9", "released": True, "archived": False},
+    {"id": "10002", "name": "2.10", "released": False, "archived": False},
+    {"id": "10003", "name": "2.9-hotfix", "released": False, "archived": True},
+    {"id": "10004", "name": "2.2", "released": False, "archived": False},
+    {"id": "10005", "name": "10.0", "released": False, "archived": False},
+]
 
 
 def route(method: str, path: str) -> str | None:
@@ -381,6 +418,7 @@ class _Host:
         self.fields = list(self.answers.pop("<fields>", FIELDS))
         self.boards = list(self.answers.pop("<boards>", BOARDS))
         self.sprints = dict(self.answers.pop("<sprints>", SPRINTS))
+        self.versions = list(self.answers.pop("<versions>", VERSIONS))
         self.changelog: dict[str, list[dict]] = dict(self.answers.pop("<changelog>", {}))
         self.filed = 0
         self.calls: list[str] = []
@@ -562,6 +600,18 @@ class _Host:
         boards = [board for board in self.boards if kind in (None, board["type"])]
         return {"startAt": 0, "isLast": True, "values": boards}
 
+    def _answer_versions(self, _path, params: dict, _body) -> dict:
+        """The paged version listing, in the project's order only when asked for.
+
+        ⚠️ Asked for no order, it answers by id, newest first, which is an order
+        the host is free to use -- so a read that dropped the order it asked for
+        would count positions in that one instead.
+        """
+        held = [dict(version) for version in self.versions]
+        if params.get("orderBy") not in ("sequence", "+sequence"):
+            held.sort(key=lambda version: -int(version["id"]))
+        return {"startAt": 0, "isLast": True, "values": held}
+
     def _answer_sprints(self, path: str, params: dict, _body) -> tuple | dict:
         board = int(path.split("/")[-2])
         held = next(one for one in self.boards if one["id"] == board)
@@ -600,7 +650,9 @@ class _Host:
                     self.filed -= 1
                     return 400, json.dumps({"errors": {name: "Number value expected"}})
                 issue["fields"][name] = value
-            elif name not in issue["fields"]:
+            elif name not in issue["fields"] or issue["fields"][name] in (None, []):
+                # A field an item is made with empty, the version list among
+                # them, takes what the filing sent.
                 issue["fields"][name] = value
         issue["fields"]["issuetype"] = {"name": str((fields.get("issuetype") or {}).get("name"))}
         self.issues[issue["key"]] = issue
@@ -674,6 +726,7 @@ class _Host:
             "search": self._answer_search,
             "boards": self._answer_boards,
             "sprints": self._answer_sprints,
+            "versions": self._answer_versions,
             # ⛔ Two issue types with **overlapping** state sets, which is what
             # this tracker actually publishes: a vocabulary read that took one
             # type's words would state a set the other half of the backlog
@@ -732,7 +785,10 @@ class _Host:
         return 200, json.dumps(answer)
 
     def writes(self) -> list[str]:
-        reads = {"fields", "me", "issue", "transitions", "search", "boards", "sprints"}
+        reads = {
+            "fields", "me", "issue", "transitions", "search", "boards", "sprints",
+            "versions",
+        }
         return [call for call in self.calls if call not in reads]
 
     def sent_for(self, name: str) -> list[dict]:
@@ -2723,6 +2779,91 @@ def self_test() -> int:
         "and refuses the read for a grouping the project states, naming `current`",
         reported == f"{config.GROUPING_KEY}.current",
         f"reported {reported!r}",
+    )
+
+    # --- `open_groupings` and § 4.8's positional default ----------------------
+    versioned = _versioned_configuration()
+    version_port = port.Port(versioned, adapter=ADAPTER, stated=port.surface_operations())
+    scope = versioned.grouping("release_scope")
+    listed = with_host(host(), lambda: under_test.open_groupings(grouping=scope))
+    check(
+        "the open versions come back in the project's own order, released and archived left out",
+        [one["value"] for one in got(listed, "open", [])] == ["2.10", "2.2", "10.0"],
+        f"answered {listed!r}",
+    )
+    reported = with_host(host(), lambda: refused(
+        lambda: under_test.open_groupings(grouping={**scope, "field": "Sprint"})
+    ))
+    check(
+        "a grouping held in a field that holds no versions is refused, naming the field",
+        reported == "work_item.grouping.release_scope.field",
+        f"reported {reported!r}",
+    )
+    landed: dict[str, object] = {}
+    filing_host = host()
+    for tier, expected in (("High", "2.10"), ("Medium", "2.2"), ("Low", "10.0")):
+        answer = with_host(
+            filing_host, lambda tier=tier: version_port.default_in("release_scope", from_value=tier)
+        )
+        filed = with_host(filing_host, lambda answer=answer: create_item(
+            f"a {tier} item", "a body", type=_a_type(versioned),
+            fields={VERSION_FIELD_NAME: [got(answer, "value")]},
+        ))
+        held = filing_host.issues.get(got(filed, "key"), {}).get("fields", {})
+        landed[tier] = [one.get("name") for one in held.get("fixVersions") or []]
+        check(
+            f"a {tier} filing under the positional map lands in version {expected}",
+            got(answer, "value") == expected and got(answer, "fallback") is None
+            and landed[tier] == [expected],
+            f"answered {answer!r}, filed into {landed[tier]!r}",
+        )
+    one_open = [VERSIONS[0], VERSIONS[3]]
+    lone = host({"<versions>": one_open})
+    answers = {
+        tier: with_host(lone, lambda tier=tier: version_port.default_in(
+            "release_scope", from_value=tier))
+        for tier in ("High", "Medium", "Low")
+    }
+    check(
+        "with one open version every tier lands in it",
+        {tier: got(answer, "value") for tier, answer in answers.items()}
+        == {"High": "2.2", "Medium": "2.2", "Low": "2.2"},
+        f"answered {answers!r}",
+    )
+    check(
+        "and the position past the end is reported as a fallback to the last",
+        got(answers["Medium"], "fallback") == {"asked": "second", "took": "first"}
+        and "second" in str(got(answers["Medium"], "report"))
+        and got(answers["High"], "fallback") is None,
+        f"answered {answers['Medium']!r}",
+    )
+    none_open = with_host(host({"<versions>": [VERSIONS[0]]}), lambda: version_port.default_in(
+        "release_scope", from_value="High"))
+    check(
+        "with no open version nothing is written and the answer says to create one",
+        (got(none_open, "source"), got(none_open, "value")) == ("none_open", None)
+        and "created first" in str(got(none_open, "report")),
+        f"answered {none_open!r}",
+    )
+    blind_port = port.Port(versioned, adapter=port.Adapter(), stated=port.surface_operations())
+    blind = blind_port.default_in("release_scope", from_value="High")
+    check(
+        "with the read absent the positional map asks, saying the groupings went unread",
+        (got(blind, "source"), got(blind, "value")) == ("ask", None)
+        and "unread" in str(got(blind, "report")),
+        f"answered {blind!r}",
+    )
+    names_port = port.Port(
+        _versioned_configuration(by="value"), adapter=ADAPTER,
+        stated=port.surface_operations(),
+    )
+    names_host = host()
+    named = with_host(names_host, lambda: names_port.default_in("release_scope", from_value="High"))
+    check(
+        "a map read as names is the name and asks the tracker nothing",
+        (got(named, "source"), got(named, "value")) == ("map", "first")
+        and not names_host.sent_for("versions"),
+        f"answered {named!r}",
     )
 
     # --- `advance_on_merge`: the tracker's half of the question ---------------

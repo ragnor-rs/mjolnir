@@ -1408,6 +1408,7 @@ host:
     approval_covers: commit | content          # what a merge approval covers; default: commit
     admin_override: refused | allowed          # whether a merge may override the host's protections; default: refused
     protected: ["release/*"]                   # branches a local merge into is held, beside the integration branch; default: []
+    bases: ["release/*"]                       # branches a pull request lands on, beside the integration branch; default: []
     unrecorded_merge: deny | prompt            # what a merge no approval covers gets; default: deny
 ```
 
@@ -1466,6 +1467,19 @@ integration branch to is a merge the host's own protections did not admit, so it
 says it allows rather than one the guard assumes. `protected` adds branches to the integration
 branch, which is derived and never stated here, and a glob in it is matched against the whole
 branch name.
+
+**`bases` says where a change lands when that is not the integration branch alone**, and a role
+that reads landed work reads it on every branch the list matches as well as on the integration
+branch. Some projects merge each change into a grouping branch and move the integration branch
+only at release, by fast-forward or by a merge of the grouping branch. Read on the integration
+branch alone, the weeks between two releases show no landed work. Each glob is matched against
+the whole branch name, on the remote's copy where the integration branch is read there. **A
+change is counted once, on the first branch it landed on**: a commit reached from several
+branches is one change, and a merge whose other parent is already on one of those branches'
+first-parent history only moves landed work between them, so it is not a change of its own. An
+empty list, which is what a project stating nothing gets, reads the integration branch alone,
+exactly as before the key existed. It is not `protected`: one says where a local merge is held
+and the other where work lands, and a project may state either without the other.
 
 **`unrecorded_merge` is read by the same guard and by nothing else**, and what each value does is
 [§ 7's](#a-merge-put-to-the-person-at-the-prompt-and-the-record-it-leaves) to state. Per
@@ -1787,13 +1801,14 @@ the operations the survey reached and says which it did not.
 | `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
 | `link_relation` | one item recorded as standing in a relation to another that blocks nothing, under a name the project maps in `tracker.relations` ([below](#a-relation-that-blocks-nothing)) — ⛔ never a dependency, which is `link_dependency`'s | the relation stays a line of prose in the item's own body, which is where it lived before the operation existed, and the report says it went there rather than to the tracker |
 | `read_relations` | the items one item is recorded as related to, each under the project's own relation name and read from that item's side — ⛔ never read by a readiness check | the relations are reported **unread**, never as none, by § 2's rule that absence of signal is not an answer |
-| `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
+| `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not. A role reading which item a landed change names reads it from the references a line of the change's message opens with, in the [title form](#what-a-pull-request-title-opens-with) where the root states one, and reports the item **unread** where it states none |
 | `read_closing_change` | `link_for_close`'s own read, after the fact: the change that closed one item and the commit that change landed as — ⛔ never a verdict about whether the item is done, which is the item's state and is `read_item`'s | the landed record names the item and reports the closing change **unread**: never *no change closed it*, and never the newest change on the branch, by § 2's rule that absence of signal is not an answer |
 | `read_closing_list` | `link_for_close`'s own read, before the fact: the items the host will close when one change lands, and every text in its title, its body, its commit messages and the merge call's own text that could close one — ⛔ never a verdict about which were meant, which is [the comparison](#what-a-merge-closes-and-the-comparison-that-holds-it) below | the report says what the merge closes went **unread**, and never that nothing but the intended items closes, by § 2's rule that absence of signal is not an answer |
 | `create_grouping` | one of § 4.8's groupings brought into existence, by the value that facet keys it on — the one write about a grouping that is made before any item is in it | nothing is created, and the role **names the grouping it would have created** for whoever creates it by hand; ⛔ no file and no record of a grouping is written anywhere else instead, a grouping the tracker does not hold being a grouping no `grouping_items` can read |
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
 | `read_current_grouping` | the value the tracker itself marks open for one of § 4.8's groupings under `current: discoverable`, each open value by what a write takes and by the name a person reads — ⛔ never a choice between several, which the role asks, and never asked under `stated`, where the tracker marks none | the grouping is asked for, as under `stated`, and the report says the tracker's mark went **unread**; never the first value the tracker lists, by § 2's rule that absence of signal is not an answer |
+| `open_groupings` | every value of one of § 4.8's groupings that the tracker holds open, **in the tracker's own order** — a version list's position, a milestone's due date — each by what a write takes and by the name a person reads; ⛔ never a sort of the names, and an open value with no place in that order listed apart as unplaced | a positional default (§ 4.8) has no list to count in, so the grouping is asked for and the report says the open groupings went **unread**; never the position resolved against a list nobody read, by § 2's rule that absence of signal is not an answer |
 | `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. The address a person performs it at is the tracker's own and the procedure composes none — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `read_comments` | the item's comments, oldest first and every page of them, each with who wrote it, when, and when it was last edited | the role reports the comments **unread** and never as none, by § 2's rule that absence of signal is not an answer ([below](#an-items-comments-and-what-an-unread-one-is)) |
@@ -2551,6 +2566,7 @@ work_item:
     ref_prefix: "release/"       # when a ref is named after the grouping's own value
     default_from: priority       # under `current: stated` only; a § 4 facet that lists its values
     default_map: {}              # that facet's value -> this grouping's value; with default_from
+    default_by: value | position # with default_map; what each of its values names; value when absent
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2619,11 +2635,32 @@ it through `config.py --grouping-default` rather than applying the map itself:
 - **The source value is the one handed or already on the item, never derived.** § 4.6's rule
   stands: a map from the tier does not license working out the tier, and an item with no tier gets
   the grouping asked for.
-- A map can go stale, and that is the cost the project accepts by stating one. An entry naming a
-  grouping that has since closed fills the field with that grouping's name. The report names the
-  rule every time it is used, so the reader of the item sees where the value came from.
+- A map of names can go stale, and that is the cost the project accepts by stating one. An entry
+  naming a grouping that has since closed fills the field with that grouping's name. The report
+  names the rule every time it is used, so the reader of the item sees where the value came from.
 - **Neither key without the other**: a source with no map, or a map with no source, is refused
   with both keys named. A project that states neither is asked for the grouping exactly as before.
+
+**A map's value can be a position among the open groupings instead of a grouping's name, and
+`default_by: position` says so.** Under `value`, the reading where the key is absent, each entry
+names one grouping. Under `position` each entry is one of `first`, `second` … `tenth`, or `last`,
+counted when the item is filed over the groupings [§ 3](#the-operations-and-what-an-absent-capability-does)'s
+`open_groupings` returns — so the same map keeps naming the nearest unreleased grouping after every
+release with no edit. A role reads it through `port.py --default-of`, which decides in the table's
+order above and counts the position only where the map answers:
+
+- **The order is the tracker's own**, as `open_groupings` returns it, and never a sort of the
+  names.
+- **No open grouping is a stop**: nothing is written, and the report says a grouping has to be
+  created first.
+- **A position past the end takes the last open grouping**, so `second` with one open grouping
+  takes that one. The report names the position asked for and the position taken.
+- **An open grouping with no place in the tracker's order, or a listing cut by a page bound, leaves
+  the position unanswerable**, and the grouping is asked for with every open grouping listed.
+- **The capability absent is § 3's fallback**: the grouping is asked for, and the report says the
+  open groupings went unread.
+- `config.py --grouping-default` answers `position` with the position and no value, the reader
+  holding no tracker to count in.
 
 **`closed_by` is [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s writer argument one
 level up: a role that closes a grouping is refused where this is not the writer that role asks
@@ -7049,7 +7086,9 @@ personal names, handles and tracker member ids, and none of that may enter a too
 projects share: an identity is a fact about somebody who did not agree to be named in it —
 [§ 14](#nothing-credential-shaped-leaves-for-a-surface-outside-the-project)'s reason arriving at a
 different class of value. So `source` addresses the file the project already keeps its map in,
-`key` says how to read an entry out of it, and nothing on this surface holds a name.
+`key` says how to read an entry out of it, and nothing on this surface holds a name. A tree that
+does not carry the file reads it from the main checkout, by
+[§ 28's rule for an untracked file](#an-untracked-file-read-from-a-tree-that-does-not-carry-it).
 
 Two places a person's name legitimately appears in a toolkit, and neither is this facet: a licence
 names its copyright holder and a plugin manifest names its author, because the format requires it.
@@ -7171,7 +7210,7 @@ measured from no chats at all, which under-reports the work and looks like it wo
 
 | what is wrong | what the reader does |
 |---|---|
-| `source` does not open | refuses, naming the path and the keys it was to supply |
+| `source` does not open | refuses, naming the keys it was to supply and every path tried: in a tree, its own and the main checkout's |
 | `source` is blank under `carrier: file` | refuses; a pointer addressing nothing is reported here rather than at the first read |
 | it reads as anything but a mapping, the empty one included | refuses; a document is not parsed here, for § 27's reason one facet over |
 | a listed key is absent from it | refuses, naming the key — never an empty list and never a default |
@@ -7237,6 +7276,21 @@ statement as having no values of that class — a project may hold chat names it
 so `revisit_when` is where the condition that would change it is written, a client's organisation
 or a second collaborator being the two measured.
 
+### An untracked file, read from a tree that does not carry it
+
+⛔ **`source` is resolved against the tree first and against the main checkout second.** The file
+is untracked by design, and a tree the procedure cuts is a fresh checkout, so it carries none. Where
+`source` resolves to no file under a tree's skills root, the reader resolves the same path, relative
+to the top of the tree, against the main checkout: the parent of the repository's common directory,
+which every tree of one repository shares. A tree's own copy is read where one exists. The main
+checkout itself, a skills root in no repository and a `source` outside the tree each read the one
+path they resolve to, with no second one tried.
+
+One copy per machine is held this way. Nothing is linked or copied into a tree, so nothing there
+goes stale or is swept with it, and a tree reaches the file however it was entered.
+[§ 27](#27-the-role-to-person-map)'s `source` is resolved by the same rule. A file neither place
+holds is refused by the first row of the table above, which names both paths tried.
+
 ### A block every key of which is a rule, and which a repository still may not hold
 
 The bound above is a value's, and one project is barred by its own rules from more than values. Its
@@ -7292,7 +7346,8 @@ blocks rather than reading as a configuration with no day log. A listed key keep
 a hook that is an unreadable configuration, and what a guard does then is
 [§ 7](#a-hook-in-a-project-that-states-no-configuration)'s — with the file moved away, every guard
 announced itself inert. So a project naming a block makes the file reachable from every tree it
-works in, a fresh one included.
+works in, which a fresh one does through the main checkout's copy, by the rule for an untracked
+file above.
 
 What is reported is still never a value: the configuration a role prints shows each named block as
 the marker it shows a listed key as.
@@ -8026,6 +8081,9 @@ deploy:
     batch:        "<a command handed identifiers on its input, printing the ones this deploy carries>"
     grouping:     "<a grouping § 4.8 carries, by the name that facet keys it on — or `none`>"
     requires_role: "<one of § 4.2's own roles, read there — or `none`>"
+    excludes:                  # a block; omitted where this target leaves nothing out
+      labels:     "<the labels that leave an item out of this target's sets, as a list>"
+      types:      "<the § 4.1 types that leave an item out of them, as a list>"
     publishes:    false
     live_data_step: "<§ 35's block, stated there and not restated>"
     advance_requires:
@@ -8033,7 +8091,7 @@ deploy:
       reading:    "<a reading the project's own verification reports under>"
     after_verified:            # a list; one entry per step, run in order once the verification is clean
       name:       "<the name a step's outcome is handed back under>"
-      command:    "<the whole command; it may place {deploy:commit}, {deploy:target} and {choose:<name>}>"
+      command:    "<the whole command; it may place {deploy:commit}, {deploy:target}, {deploy:grouping} and {choose:<name>}>"
       performed_by: procedure | human
     figures:                   # a list; one entry per check whose figures the reply carries
       check:      "<the check's name, as the verification reports its outcome>"
@@ -8364,6 +8422,7 @@ port could not place is named as unplaced, by [§ 11](#a-report-names-what-it-co
 | `{deploy:target}` | the target's `name` |
 | `{deploy:commit}` | the commit this deploy serves, as the run established it — an object name, seven to sixty-four lowercase hexadecimal characters |
 | `{deploy:purpose}` | `advance`, `precondition` or `report` |
+| `{deploy:grouping}` | the grouping value the go shows, by [its own rule](#the-grouping-value-a-targets-commands-are-handed) |
 | `{choose:<name>}` | the value [the run's choice](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target) takes — the one the go shows |
 
 Every value is a word a shell reads as itself, for the reason a choice's is, so nothing is quoted at
@@ -8525,7 +8584,7 @@ collected per change, and the two keys do not stand in for each other.
 | the key | what it states | what is refused where it is written |
 |---|---|---|
 | `name` | the name a step's outcome is handed back under: letters, digits, `_` and `-` | a name another step of the target carries |
-| `command` | the whole command, on one line | a `{deploy:<word>}` other than `commit` and `target`, `{deploy:target}` on a target whose name is not one plain word, and a `{choose:<name>}` no choice of the target declares |
+| `command` | the whole command, on one line | a `{deploy:<word>}` other than `commit`, `target` and `grouping`, `{deploy:target}` on a target whose name is not one plain word, and a `{choose:<name>}` no choice of the target declares |
 | `performed_by` | `procedure` runs the command; `human` hands it to the person running the deploy, who answers whether it was done | anything outside the alternation |
 
 ⛔ **The steps run in the order the list states them, and none runs unless the verification is
@@ -8535,12 +8594,13 @@ outcomes, and not a second reading of them: a verification holding the advance r
 the report names the checks that held it. ⚠️ **The key is refused beside `invoke: by_hand`**, where
 this procedure makes no deploy and reads no verification for a step to follow.
 
-⛔ **A step reads the deploy through two placements and the run's choices.** `{deploy:commit}` is
-the commit the deploy serves, as the run established it, and a step placing it with no commit
-handed over is a stop; `{deploy:target}` is the target's name. `{choose:<name>}` is the value the
-go showed for that choice, and ⛔ **a choice a step places is held to the plain words a `command`
-target's are**, whatever the target's shape, since a step's command reaches a shell on every one. A
-step runs where the target's own act runs, which is the rule its `batch` already has.
+⛔ **A step reads the deploy through three placements and the run's choices.** `{deploy:commit}`
+is the commit the deploy serves, as the run established it, and a step placing it with no commit
+handed over is a stop; `{deploy:target}` is the target's name; `{deploy:grouping}` is
+[the grouping value](#the-grouping-value-a-targets-commands-are-handed). `{choose:<name>}` is the
+value the go showed for that choice, and ⛔ **a choice a step places is held to the plain words a
+`command` target's are**, whatever the target's shape, since a step's command reaches a shell on
+every one. A step runs where the target's own act runs, which is the rule its `batch` already has.
 
 **Every performed step comes back with one outcome, and only one lets the next step run:**
 
@@ -8677,6 +8737,22 @@ accepted; another's refuses to run while any item whose code is on the integrati
 reached the lower environment's own role. It is stated and not derived from `advances`: a project
 that states nothing here has no precondition.
 
+⛔ **`excludes` leaves an item out of every set the target reads, by a label or a type the item
+states, and never by its title.** A project files the release's own work — the backup, the deploy,
+the release itself — into the grouping it ships, and those items close only after the deploy they
+gate; read by the bar, they would hold the release for as long as releasing it takes. An item
+carrying any label under `labels`, or any [§ 4.1](#41-type) type under `types`, matched whole, is
+taken out before the bar is read and before the batch command is handed anything: it holds nothing
+and it is not advanced. A type is read where § 4.1 carries it: the item's own type under `native`,
+the prefixed label under `label`; `types` under `carrier: none` is refused, no item carrying one. A
+title is prose and changes, so a rename would leave an item out that nobody decided to. Every item
+left out is reported, with the label or type that left it out, so the exclusion is read rather than
+silent. An item whose labels could not be read is not left out, and one whose native type an answer
+did not carry is unplaced — it holds the bar and is not advanced, which is the reading that holds a
+release instead of clearing it or moving what the target meant to leave alone. A target stating no
+`excludes` leaves nothing out, and one stating it beside `requires_role: none` and `advances: none`
+is refused, there being no set for it to narrow.
+
 `publishes` is the target's own fact and is never read off `not_live`. A project's lower target
 advances a subset and marks nothing, and the one that publishes is the one whose entry says so;
 reading it off liveness is the inference [`Which target`](#which-target-and-what-makes-one-live)
@@ -8705,6 +8781,41 @@ A project carrying no grouping publishes nothing and says so: `grouping: none` o
 `publishes: false`, and the release writes the items the batch carried, advanced to the role the
 entry names. That is not a deploy that writes nothing on the tracker at all, and the report says
 which of the two the project is.
+
+### The grouping value a target's commands are handed
+
+The grouping value the invocation carries — `5.7`, never the name the entry keys its grouping on —
+is the one the go shows. A command that builds, migrates or tags per version is handed that value
+by placing `{deploy:grouping}`, so it never derives the version again from the branch it happens to
+be checked out on. Two derivations nothing compares are how a go approving `5.7` from a tree on
+`release/5.8` builds, migrates and tags `5.8`.
+
+| where it may be placed | beside what else |
+|---|---|
+| `command`, on a `command` target | the run's choices; no other `{deploy:<word>}` |
+| `batch` | [the batch's own placements](#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against) |
+| each `after_verified` step's `command` | [a step's own placements](#what-runs-after-a-verified-deploy-and-what-a-failed-step-leaves-standing) |
+| each `figures` entry's `reads` | nothing else |
+| a live data step's `backup.run`, `backup.verify`, `preview.run`, `rehearse` and `apply` | nothing else |
+
+⛔ **A placement on a target whose `grouping` is `none` is refused at the load**, with its path
+named: no run has a value to hand it, so the command would run with the placement's own text where
+the version belongs. A live data step's `record` places nothing, refused the same way: it is read
+by a check on the change, where no deploy and no go exist to name a value
+([§ 35](#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under)).
+
+The value is a word a shell reads as itself, for the reason a choice's is, and nothing is quoted at
+the substitution. One that is not, or one handed to a target scoped to no grouping, is refused
+before anything is resolved. ⛔ **A command placing the value with none handed over is a stop
+before the go**, and so is a batch or a live data step placing it; a figure command is refused
+where it would be read, and a step after the verification only where it would run. Every carrier
+that resolves one of these commands takes the same value, as it takes the same choices.
+
+Where a live data step places the value, the go names it, and a reading prepared under one value
+licenses no write under another, by the rule a chosen side is held to
+([§ 35](#a-side-chosen-for-one-run-and-the-go-that-names-it)).
+
+A target placing nothing is handed nothing and runs as it did before the placement existed.
 
 ### What a change in the batch owes this target, and where the step falls
 
@@ -9241,6 +9352,10 @@ different deploy*, met at the write.
 A step stating fixed sides is untouched by any of this, and its go names no side beyond the order
 the plan already states.
 
+A step whose commands place [the grouping value](#the-grouping-value-a-targets-commands-are-handed)
+is held the same way: its go names the value, and a reading prepared under one value licenses no
+write under another.
+
 ### Several steps on one target, and the side each phase falls on
 
 `live_data_step` is one block or a list of them, and each block's phases may fall on different sides
@@ -9376,12 +9491,22 @@ above each meet that condition. A candidate whose values nothing reads is a temp
 configuration wrapper, which is what § 38 refuses for prose by declaring no document's content, no
 heading, no wording and no style. The measured candidate is a role that writes a specification from
 raw sources: its per-project values are a document set, a section list per document, a directory
-convention and a validation pass per document, every one of them arriving as data, and not one of
-them read by any leg of the route — nothing downstream waits on a specification, and a project
-keeping none files its items unchanged. What is left once those values are configuration is a role
-that asks the configured questions and writes the configured headings, which is the pointer
+convention and a validation pass per document, every one of them arriving as data. Legs of the
+route do read a specification: § 39's corpus is read by
+[the roles that section names](#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read),
+and
+[§ 42](#42-whether-the-work-is-already-built-and-where-a-role-asks) reads the code against an item
+that may have been written from one. What each of them reads is the document a project already
+holds, at its ref, and not one of them reads the writer's values — no leg asks which documents a
+specification was written as, under which headings, in which directory or after which validation
+pass, and § 39 reports a project keeping no corpus as a stated absence and proceeds. What is left
+once those values are configuration is a role that asks the configured questions and writes the
+configured headings, which is the pointer
 [the subsection below](#why-a-utility-has-no-home-on-this-surface-from-either-direction) forecloses
 ([the measurement](../../../docs/configuration-surface.md#the-role-that-writes-a-specification-two-implementations-and-the-half-already-carried)).
+A project that writes its specification by a procedure of its own routes to it, as
+[the last subsection](#a-project-that-writes-its-own-specification-routes-to-a-carrier-of-its-own)
+states.
 
 ### Why a utility has no home on this surface, from either direction
 
@@ -9410,6 +9535,32 @@ No count of what is carried is written here or anywhere else. [§ 7](#7-carrier)
 directory sweep answers which carriers a thing has rather than which roles; a carrier directory
 under a plugin holds a role of the loop, so a sweep cannot find more carriers than there are
 roles carried, whichever kind each one is.
+
+### A project that writes its own specification routes to a carrier of its own
+
+⛔ **[`carrier_routes`](#an-item-a-project-routes-to-a-carrier-of-its-own) is the permanent answer
+for a project that turns raw sources into a specification, and no role for that work is carried
+here.** The project states a route for the label or type its specification items carry, and its
+own carrier does the writing. A route names which carrier a leg the loop already has is entered
+through, so it does not reopen the closed list above.
+
+What the project keeps in its own carrier:
+
+- source intake, under whatever directory convention it uses;
+- the document set, each document's sections, and the marks tying a statement to its source or
+  labelling it reconstruction or open question;
+- the validation passes over those documents, in whichever directions it runs them;
+- the breakdown, and any task record a later pass of that carrier resumes from.
+
+What the loop still does around it, unchanged by the route:
+
+- [§ 5](#5-readiness-gate--an-ordered-predicate-list)'s gate and
+  [§ 10](#the-claim-on-a-work-item)'s claim, on the routed item as on any other;
+- [§ 11](#what-a-source-establishes-and-the-hole-a-distillation-reads-over)'s source rules,
+  on the filing leg;
+- the filing role's duplicate search, for every item the breakdown files through that role;
+- § 39's reading of the specification once the project configures it as a corpus — the document
+  the carrier wrote, never the values it was written with.
 
 ## 37. The projects a billing period is assembled from
 

@@ -80,6 +80,7 @@ COVERED = {
     "set_state",
     "grouping_items",
     "create_grouping",
+    "open_groupings",
     "mark_grouping_released",
     "read_closing_change",
     "read_closing_list",
@@ -945,6 +946,32 @@ def self_test() -> int:
         "than read as already there",
         folded == "work_item.grouping",
         f"reported {folded!r}",
+    )
+
+    # ⛔ The open milestones in the order of their due dates, which no sort of the
+    # titles gives here, a closed one left out and an undated one listed apart:
+    # its place in the order is one this host never states.
+    dated = with_host(
+        _with_milestones([
+            {"title": "b later", "number": 8, "state": "open", "due_on": "2027-03-01T00:00:00Z"},
+            {"title": "z sooner", "number": 9, "state": "open", "due_on": "2027-01-01T00:00:00Z"},
+            {"title": "a shipped", "number": 2, "state": "closed", "due_on": "2026-01-01T00:00:00Z"},
+            {"title": "c someday", "number": 10, "state": "open", "due_on": None},
+        ]),
+        lambda: under_test.open_groupings(grouping=MILESTONE),
+    )
+    check(
+        "the open milestones come back by due date, the undated one apart",
+        [one["value"] for one in (dated or {}).get("open", [])] == ["z sooner", "b later"]
+        and [one["value"] for one in (dated or {}).get("unplaced", [])] == ["c someday"],
+        f"answered {dated!r}",
+    )
+    where = with_host(_with_milestones(HELD), lambda: refused(
+        lambda: under_test.open_groupings(grouping={"carrier": "label"})))
+    check(
+        "`open_groupings` on a carrier plain issues cannot hold is refused, naming the key",
+        where == "work_item.grouping.carrier",
+        f"reported {where!r}",
     )
 
     # --- the landed record: which change closed an item -----------------------

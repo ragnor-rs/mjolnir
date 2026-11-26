@@ -1642,9 +1642,9 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # `create_grouping` joins `grouping_items` and `mark_grouping_released` for
 # theirs: this board carries no grouping -- the lists on it are the statuses --
 # so there is no object of that kind to create, read or mark. `read_current_grouping`
-# is absent with them, there being no grouping to find the open one of. ⚠️ All four
-# move together the moment a project here carries one, which is one condition rather
-# than four.
+# and `open_groupings` are absent with them, there being no grouping to find the open
+# one of or to list in order. ⚠️ All five move together the moment a project here
+# carries one, which is one condition rather than five.
 #
 # `link_relation` and `read_relations` join the dependency's pair for its reason:
 # with no relation between two cards there is no link type to name, so a relation
@@ -1662,6 +1662,7 @@ DELIBERATELY_ABSENT = (
     "grouping_items",
     "mark_grouping_released",
     "read_current_grouping",
+    "open_groupings",
 )
 
 

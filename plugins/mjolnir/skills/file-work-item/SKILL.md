@@ -94,6 +94,18 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --grouping-default [--grouping
   from the tier is not a licence to rank the work.
 - **`map`** ⇒ the item goes into that grouping, and **the report names the rule** the answer
   carries, so the reader of the item can see the value was the project's map and not a choice.
+- **`position`** ⇒ the map names a position among the open groupings rather than a grouping, and
+  the position is counted over the tracker's own order by the port rather than here:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" --default-of [<the grouping's name>] \
+    [--from-value <the item's value of the mapped facet>] [--given <the grouping on the request>]
+  ```
+
+  `position` back ⇒ its `value` goes into the grouping's field in `create_item`'s own fields, and
+  the report names the rule and any `fallback` the answer carries. `none_open` ⇒ nothing is filed,
+  and the reply says a grouping has to be created first. `ask` ⇒ asked for as below, with every
+  open grouping the answer lists.
 - **`ask`** ⇒ the grouping is asked for, with the answer's reason, before anything is written.
 - **`discoverable`** ⇒ the tracker names the current grouping, and it is read there, through
   [`§ 3`](../../config/schema.md#the-operations-and-what-an-absent-capability-does)'s

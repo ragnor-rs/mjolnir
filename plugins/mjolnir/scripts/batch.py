@@ -7,8 +7,8 @@ this module states none of it. What is here is what the deploying role should no
   * **The handed set** -- the backlog read through the port's `search_items` (§ 3), each item
     placed against `statuses` by the port, and the ones holding the roles a purpose hands kept.
   * **The run** -- the project's own command, resolved by the reader with the run's target,
-    commit and choices put in place, run once per purpose with the handed identifiers on its
-    input.
+    commit, grouping value and choices put in place, run once per purpose with the handed
+    identifiers on its input.
   * **The match** -- what it printed against what it was handed, naming both differences.
 
 ⚠️ **Nothing here advances, holds or decides.** The carried set is a candidate list: the role
@@ -16,7 +16,7 @@ reads each item's role again where it advances it, and whether a precondition ho
 is the role's reading of the answer rather than this module's verdict.
 
 Usage:
-    batch.py run --target NAME [--commit SHA] [--choose NAME=VALUE ...]
+    batch.py run --target NAME [--commit SHA] [--grouping-value VALUE] [--choose NAME=VALUE ...]
     batch.py --self-test
 
 Exit status: 0 answered; 2 the configuration, the backlog or the command could not be read or
@@ -60,11 +60,15 @@ def _key(word: str) -> str:
     return word.strip().lstrip("#").casefold()
 
 
-def backlog(tracker) -> dict | None:
+def backlog(tracker, excludes: dict | None = None) -> dict | None:
     """Every item the tracker holds, placed against `statuses`, or None where it cannot be read.
 
     ⛔ **None is the absent capability and never an empty backlog.** A search that failed is a
     stop; a tracker with no search takes § 33's fallback, which the answer names.
+
+    ⛔ **An item the target's `excludes` names is left out here, before any purpose hands
+    anything**, so it is neither held against a bar nor advanced -- and it is kept under
+    `excluded` with what left it out, which the answer reports.
     """
     outcome = tracker.invoke("search_items", limit=LIMIT)
     if outcome.failed:
@@ -76,9 +80,13 @@ def backlog(tracker) -> dict | None:
     ladder = tracker.roles()
     # ⚠️ Any role places every item: what is read off the answer is each item's own
     # role, and the bar the first role sets is one nothing here reads.
-    placed = tracker.short_of(ladder[0], items) if ladder and items else {}
+    placed = tracker.short_of(ladder[0], items, excludes) if ladder and items else {}
     return {
         "at_limit": bool(answer.get("at_limit")),
+        "excluded": [
+            {"item": str(one.get("item")), "title": one.get("title"), "by": one["by"]}
+            for one in placed.get("excluded") or []
+        ],
         "placed": [
             {"item": str(one["item"]), "title": one.get("title"), "role": one["role"]}
             for one in placed.get("placed") or []
@@ -117,11 +125,13 @@ def answer(tracker, resolved: dict, read: dict | None, run=_ran) -> dict:
         "choices": resolved["choices"],
         "backlog": (
             "unread: this tracker has no search, so the command is the batch's only source "
-            "of candidates and nothing it left out can be named (§ 33)"
+            "of candidates, nothing it left out can be named, and nothing the target's "
+            "`excludes` would leave out could be found (§ 33)"
             if read is None
             else ("read, at its bound, so the handed set may be short" if read["at_limit"]
                   else "read whole")
         ),
+        "excluded": None if read is None else read["excluded"],
         "purposes": [],
     }
     for one in resolved["purposes"]:
@@ -172,14 +182,14 @@ def answer(tracker, resolved: dict, read: dict | None, run=_ran) -> dict:
 def run(args, tracker, resolved_by=None, ran=_ran) -> int:
     """`run`, over whichever tracker and reader it was handed."""
     resolved = (resolved_by or config.load(args.skills_root)).deploy_batch(
-        args.target, args.choose, args.commit
+        args.target, args.choose, args.commit, getattr(args, "grouping_value", None)
     )
     if resolved["batch"] is None:
         print(f"The target {args.target!r} carries no batch (§ 33), so nothing is handed "
               "and nothing is matched.")
         return NO_BATCH
-    print(json.dumps(answer(tracker, resolved, backlog(tracker), ran), indent=2,
-                     ensure_ascii=False))
+    read = backlog(tracker, resolved.get("excludes"))
+    print(json.dumps(answer(tracker, resolved, read, ran), indent=2, ensure_ascii=False))
     return ANSWERED
 
 
@@ -193,6 +203,9 @@ def main(argv: list[str] | None = None) -> int:
     running.add_argument("--commit", help="the commit this deploy serves, as the run read it")
     running.add_argument("--choose", action="append", metavar="NAME=VALUE",
                          help="one of the run's choices, exactly as the go shows it")
+    running.add_argument("--grouping-value", metavar="VALUE",
+                         help="the grouping's own value the go names, for a command "
+                         "placing {deploy:grouping}")
     args = parser.parse_args(argv)
     if args.self_test:
         return self_test()
@@ -265,7 +278,7 @@ def self_test() -> int:
     def answered(configuration, ran, items=backlog_items, commit=None, choose=None, **kw):
         resolved = configuration.deploy_batch("a-target", choose, commit)
         subject = tracker(configuration, items, **kw)
-        return answer(subject, resolved, backlog(subject), ran)
+        return answer(subject, resolved, backlog(subject, resolved["excludes"]), ran)
 
     def stopped(call) -> bool:
         try:
@@ -313,6 +326,29 @@ def self_test() -> int:
           bar.get("carried") == ["1"], bar)
     check("the purpose is told apart on the command line",
           [one[0] for one in runs] == ["a-batch advance", "a-batch precondition"], runs)
+
+    print("What the target leaves out:")
+    tracking = {**item(4, landed), "labels": [{"name": "release"}]}
+    # ⚠️ The shipped example carries its type as a `type:` label (§ 4.1), so that is
+    # where the excluded type is read.
+    chore = {**item(2, early), "labels": ["type:task"]}
+    leaving = reader(requires_role=landed, excludes={"labels": ["release"], "types": ["task"]})
+    runs.clear()
+    got = answered(leaving, printing("1", "3"),
+                   items=[item(1, first), chore, item(3, landed), tracking, item(5, last)])
+    purposes = {row["purpose"]: row for row in got["purposes"]}
+    check("an item carrying an excluded label is not handed for the advance",
+          purposes["advance"].get("handed") == ["3"], purposes["advance"])
+    check("and one of an excluded type is not handed for the precondition",
+          purposes["precondition"].get("handed") == ["1"], purposes["precondition"])
+    check("every item left out is reported with what left it out",
+          got["excluded"] == [
+              {"item": "2", "title": "item 2", "by": "the type `task`"},
+              {"item": "4", "title": "item 4", "by": "the label `release`"},
+          ], got["excluded"])
+    got = answered(reader(), printing("3"))
+    check("a target stating no `excludes` hands what it always did and leaves nothing out",
+          got["purposes"][0]["handed"] == ["3", "4"] and got["excluded"] == [], got)
 
     print("The run's own inputs:")
     runs.clear()
