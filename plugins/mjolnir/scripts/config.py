@@ -2669,18 +2669,21 @@ class Config:
         and the starting role's invocation is the test.
         """
         held = {str(value) for value in values}
+        # ⚠️ Under a `label` carrier the type an item carries *is* the prefixed
+        # label, so the bare word is a different label and matches nothing.
         prefix = (
             str(self.get("work_item.type.label_prefix") or "")
             if self.get("work_item.type.carrier") == "label" else ""
         )
         matched = []
         for index, entry in enumerate(self.get(ROUTES_KEY) or []):
-            if "label" in entry:
-                hit = str(entry["label"]) in held
-            else:
-                hit = bool({str(entry["type"]), f"{prefix}{entry['type']}"} & held)
-            if hit:
-                matched.append((index, entry))
+            # ⛔ Which half an entry routes on is the one it states a value for,
+            # as the reader decided it at load -- never whichever key is present,
+            # a `label: null` beside a `type` being a type route.
+            on = "label" if entry.get("label") is not None else "type"
+            wanted = str(entry[on]) if on == "label" else f"{prefix}{entry[on]}"
+            if wanted in held:
+                matched.append((index, entry, on))
         if not matched:
             return {
                 "routed": False,
@@ -2688,28 +2691,29 @@ class Config:
                 "detail": "no route matches the item, so its work is entered "
                 "through `carriers.implement` (§ 7).",
             }
-        carriers = {entry["carrier"] for _, entry in matched}
+        carriers = {entry["carrier"] for _, entry, _ in matched}
         if len(carriers) > 1:
             raise ConfigError(
                 ROUTES_KEY,
                 "routes this item to "
                 + " and to ".join(
-                    f"`{entry['carrier']}` (entry {index}, by "
-                    f"{'label' if 'label' in entry else 'type'})"
-                    for index, entry in matched
+                    f"`{entry['carrier']}` (entry {index}, by {on})"
+                    for index, entry, on in matched
                 )
                 + ". Which carrier the work belongs to is the project's to state, "
                 "so this is a stop rather than the first of them (§ 7).",
             )
-        index, entry = matched[0]
+        index, entry, on = matched[0]
         carrier, kind = entry["carrier"], entry["kind"]
-        on = "label" if "label" in entry else "type"
         if ":" in carrier:
             present, where = "unestablished", None
         else:
+            # ⛔ The name goes into the place's own parts and never into the
+            # joined path, which carries the skills root and whatever it spells.
             where = os.path.join(
-                self.skills_root, *ROUTE_PLACES[kind]
-            ).format(name=carrier)
+                self.skills_root,
+                *(part.format(name=carrier) for part in ROUTE_PLACES[kind]),
+            )
             present = os.path.isfile(where)
         if present is False:
             raise ConfigError(
@@ -15587,9 +15591,18 @@ def self_test() -> int:
          # the item's type label, under whatever prefix the example states
          [TYPE_LABEL_HELD], True,
          f"skill {PLANTED_CARRIER} True"),
+        ("a bare type word is not the prefixed label a type is carried as",
+         [{"type": PLANTED_ROUTE_TYPE, "carrier": PLANTED_CARRIER, "kind": "skill"}],
+         [PLANTED_ROUTE_TYPE], True, "loop"),
+        ("a null label beside a type routes on the type and never on its text",
+         [{"label": None, "type": PLANTED_ROUTE_TYPE, "carrier": PLANTED_CARRIER,
+           "kind": "skill"}], ["None"], True, "loop"),
     ):
         answered = _routed(routes, values, written=written)
         check(label, answered == wanted, f"answered {answered!r}")
+    braced = _routed([design], [PLANTED_ROUTE_LABEL], root_name="a{root}")
+    check("a skills root spelling a brace still resolves its carrier",
+          braced == f"skill {PLANTED_CARRIER} True", f"answered {braced!r}")
 
     # § 28's layer. ⛔ The answering arm first, and it reads the value: every
     # refusal below is sound only if the facet resolves at all, and a reader that
@@ -23836,7 +23849,8 @@ HARNESS_PLACES = {
 }
 
 
-def _routed(routes: list, values: list, *, written: bool = True) -> str:
+def _routed(routes: list, values: list, *, written: bool = True,
+            root_name: str = "root") -> str:
     """`<kind> <carrier> <present>`, `loop` where nothing routes, `stop <key>`.
 
     The carrier's file is written only where the harness reads the first
@@ -23849,7 +23863,9 @@ def _routed(routes: list, values: list, *, written: bool = True) -> str:
               for value in values]
     with open(SURFACE, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
-    with tempfile.TemporaryDirectory() as root:
+    with tempfile.TemporaryDirectory() as scratch:
+        root = os.path.join(scratch, root_name)
+        os.makedirs(root)
         if written:
             path = os.path.join(root, HARNESS_PLACES[routes[0]["kind"]])
             os.makedirs(os.path.dirname(path), exist_ok=True)
