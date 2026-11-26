@@ -429,6 +429,14 @@ ANSWERED_BY: dict[str, Answer] = {
         "Where that link type is worded differently each way, which wording does "
         "the item named first read -- outward or inward?",
     ),
+    "tracker.search.texts": ask(
+        "Which texts should a duplicate search match its terms in -- the title, the "
+        "body, or both? Leave it unstated to keep what this tracker searches today.",
+    ),
+    "tracker.search.fields": ask(
+        "Which fields record an item's area well enough that a duplicate search "
+        "should be able to filter on them?",
+    ),
     "tracker.policy.forbid_on_item": ask(
         "Which classes of content may not be written onto an item here?",
     ),
