@@ -2213,6 +2213,13 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
         # below, which is a configuration that *is* stated and does not resolve.
         return {}
     loaded, stop = (config, "") if config is not None else _read(payload.get("cwd"))
+    if loaded is not None:
+        # § 1's root this call addresses, before any arm reads a per-root fact:
+        # one root answers for itself, and several answer by where the call
+        # stands. ⛔ A call standing in none of several is the reader's stop, and
+        # it goes down the unresolved path below rather than into an arm that
+        # would raise on its first per-root read with no cause named.
+        loaded, stop = _standing_in(loaded, payload.get("cwd"))
     if loaded is None:
         # ⛔ A merge is recognised from the call alone, so it is refused here;
         # § 7 states why, and the arm below is every other call.
@@ -2228,6 +2235,59 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
         # the configuration makes inert, so this arm composes none of it and
         # carries no prefix of its own (§ 19 -> How often).
         return _inert(str(payload.get("session_id") or ""), stop)
+    try:
+        return _resolved_answer(loaded, payload, command, tool_input, now=now, store=store,
+                                probe=probe, host=host, runs=runs, code=code, git=git)
+    except Exception as error:  # noqa: BLE001 -- only the reader's refusal is answered here
+        if type(error).__name__ != "ConfigError":
+            raise
+        # ⛔ A read the configuration refuses inside an arm is the configuration
+        # not resolving for this call, so it is answered as the branch above
+        # answers one: a merge refused naming the reader's stop, and every other
+        # call proceeding with that stop reported (§ 7 -> Which direction a guard
+        # fails in). Without this the refusal escaped to `hook`, whose answer
+        # names the exception's type and not its cause.
+        stop = _stopped_on(error)
+        refused = unread_merge_guard(command, stop, str(payload.get("cwd") or "."), git=git)
+        return refused or _inert(str(payload.get("session_id") or ""), stop)
+
+
+def _standing_in(loaded, cwd: str | None):
+    """(§ 1's root a call standing in `cwd` addresses, "") or (None, the stop).
+
+    ⛔ The reader's own resolution, so which root a guard holds a call to and
+    which root a role addresses are one answer. ⚠️ A stand-in that carries no
+    roots answers as itself: the arms' plants hand over the facts one arm reads
+    and nothing about § 1.
+    """
+    resolve = getattr(loaded, "standing_in", None)
+    if resolve is None:
+        return loaded, ""
+    try:
+        return resolve(cwd or "."), ""
+    except Exception as error:  # noqa: BLE001 -- only the reader's refusal is answered here
+        if type(error).__name__ != "ConfigError":
+            raise
+        return None, _stopped_on(error)
+
+
+def _stopped_on(error: BaseException) -> str:
+    """The reader's refusal as a guard's answer carries it, after `REFUSAL_PREFACE`.
+
+    ⛔ The reader's sentence and its cut, for `_read`'s reason: the stop a guard
+    names is the same stop the reader gives, never one composed here.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        return f" {reader.REFUSAL_PREFACE} {reader.refusal_text(error)}"
+    except Exception:  # noqa: BLE001 -- an unreachable reader still names the type
+        return f" {type(error).__name__}"
+
+
+def _resolved_answer(loaded, payload: dict, command: str, tool_input: dict, *, now, store,
+                     probe, host, runs, code, git) -> dict:
+    """`guard_answer`'s arms, over a configuration resolved to the root the call addresses."""
     asked: dict = {}
     refused = merge_guard(loaded, command, host=host, asked=asked,
                           mode=str(payload.get(live.PERMISSION_MODE) or ""),
@@ -5363,6 +5423,46 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("while a merge whose record could not be read is refused",
               denied(guard_answer(_call("gh pr merge 7"), config=_a_config([]), now=1000.0,
                                   store=fresh("merge"), host=_a_host(code=1))))
+
+        # § 1's collection of one root stating command roots in its entry, which
+        # the reader accepts. ⛔ Through the hook and from the project's own
+        # file, because that is where it failed: the already-run arm read the
+        # facet off the project and refused the root's own command root, and the
+        # hook answered with the exception's type and nothing else.
+        out.append("")
+        out.append("A collection of one root is held as that root:")
+        import yaml  # noqa: PLC0415 -- a fixture's dependency, not the arm's
+
+        stated = reader._a_one_root_collection_with_command_roots()
+        for entry in stated["roots"]["code"].values():
+            entry["path"] = "."
+        one_root = _a_root(Path(directory) / "states-one-root", yaml.safe_dump(stated))
+        printed = io.StringIO()
+        hook(io.StringIO(json.dumps(_call("ls", session="a-one-root-session", cwd=one_root))),
+             lambda payload: guard_answer(payload, now=1000.0, store=fresh("one-root")),
+             printed)
+        check("a call there is held rather than let through by a guard that did not run",
+              "did not run" not in printed.getvalue()
+              and "held to nothing" not in printed.getvalue(),
+              printed.getvalue()[:200])
+
+        # And several roots, called from a directory inside none of them: which
+        # root the call addresses has no answer, so the guard names the reader's
+        # stop rather than raising on its first per-root read.
+        several = _a_root(Path(directory) / "states-several-roots",
+                          yaml.safe_dump(reader._a_collection_example()))
+        nowhere = guard_answer(_call("ls", session="a-session-standing-nowhere", cwd=several),
+                               now=1000.0, store=fresh("several"))
+        said = str(nowhere.get("systemMessage", ""))
+        check("several roots and a call inside none of them is reported with the cause named",
+              reader.REFUSAL_PREFACE in said and "roots.code" in said
+              and "did not run" not in said, said[:240])
+        merged = guard_answer(_call("gh pr merge 7", cwd=several), now=1000.0,
+                              store=fresh("several"))
+        reason = str((merged.get("hookSpecificOutput") or {}).get("permissionDecisionReason"))
+        check("and a merge made there is refused naming the same cause",
+              denied(merged) and "roots.code" in reason and DIRECTION_CITATION in reason,
+              reason[:240])
 
         out.append("")
         out.append("A payload neither arm can read interrupts nothing:")

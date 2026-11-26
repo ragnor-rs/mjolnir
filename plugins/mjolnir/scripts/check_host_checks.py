@@ -564,9 +564,15 @@ class Subject:
     the assertions.
     """
 
-    def __init__(self, kind, entries: list, texts, where: Where | None, runner=None):
+    def __init__(self, kind, entries: list, texts, where: Where | None, runner=None,
+                 roots: dict | None = None):
         self.kind = kind
         self.entries = entries
+        # § 1's command roots of the code root these entries are that root's, or
+        # `{}` where it declares none. ⛔ Held beside the entries because the walk
+        # below resolves every `command_root` an entry names against them, and an
+        # entry walked without them refuses a name the reader accepted.
+        self.roots = roots or {}
         self.texts = texts
         self.where = where
         # § 2's `host.runner` as the reader walked it, or `None` where the
@@ -593,7 +599,10 @@ class Subject:
         second direction is about runs no entry names.
         """
         if self._checks is None:
-            self._checks = reader.defined_runs({"host": {"checks": self.entries}})
+            stated: dict = {"host": {"checks": self.entries}}
+            if self.roots:
+                stated[reader.COMMAND_ROOTS] = self.roots
+            self._checks = reader.defined_runs(stated)
         return self._checks
 
     @property
@@ -615,12 +624,17 @@ class Subject:
         texts = UNKNOWN if self.texts is UNKNOWN else dict(self.texts)
         return Subject(
             self.kind, copy.deepcopy(self.entries), texts, self.where,
-            copy.deepcopy(self.runner),
+            copy.deepcopy(self.runner), copy.deepcopy(self.roots),
         )
 
 
-def read_subject(skills_root: str) -> Subject:
+def read_subject(skills_root: str, root: str | None = None) -> Subject:
     """A project's facet and its host's own definitions, resolved through the reader (§ 1).
+
+    `root` names one of § 1's roots, for a collection of several that state the
+    facet per root; where it is absent the reader answers for the project, which
+    for a collection of one root is that root. ⛔ A collection of several read
+    without it is the reader's own stop naming the roots, never the first of them.
 
     ⚠️ A `github` project with no workflow directory has **zero** definitions
     rather than undeterminable ones: no directory is the host's own answer that
@@ -628,15 +642,18 @@ def read_subject(skills_root: str) -> Subject:
     host kind whose definitions are not files at all.
     """
     config = reader.load(skills_root)
+    if root is not None:
+        config = config.root(root)
     kind = config.get("host.kind")
     entries = config.get("host.checks")
+    roots = config.command_roots()
     # ⛔ Through the reader's own accessor and never off the dict: § 2 makes
     # this one statement, and a second walk of it here would be allowed to
     # disagree with what the installer writing a workflow file reads.
     runner = config.runner()
     where = DEFINITIONS.get(kind)
     if where is None:
-        return Subject(kind, entries, UNKNOWN, None, runner)
+        return _walked(Subject(kind, entries, UNKNOWN, None, runner, roots))
     root = os.path.join(config.code_root, where.directory)
     texts: dict[str, str] = {}
     for name in sorted(os.listdir(root)) if os.path.isdir(root) else []:
@@ -648,7 +665,18 @@ def read_subject(skills_root: str) -> Subject:
                 texts[path] = handle.read()
         except (OSError, UnicodeDecodeError) as error:
             texts[path] = error
-    return Subject(kind, entries, texts, where, runner)
+    return _walked(Subject(kind, entries, texts, where, runner, roots))
+
+
+def _walked(subject: Subject) -> Subject:
+    """`subject`, its facet walked now rather than on first use.
+
+    ⛔ A facet the reader refuses is refused here, inside the read, so the caller
+    reports it as the configuration's stop rather than a traceback from
+    whichever check happened to read the facet first.
+    """
+    subject.checks  # noqa: B018 -- read for its refusal; the walk is cached
+    return subject
 
 
 def _named(subject: Subject) -> dict[str, Definition]:
@@ -1088,6 +1116,50 @@ STATED = [
                   "pull_request(edited, opened) -> *"],
      "jobs": [{"job": "second", "mirrors": "the-second-command"}]},
 ]
+
+
+def _read_from_a_project(shape: str, root: str | None) -> str:
+    """What reading `STATED` from a project of this shape refused or found, or "".
+
+    The project is written to a directory of its own: an example's
+    configuration carrying `STATED`, whose second entry's job names a command
+    root, and `PLANTED` as its workflow files. `shape` is `single` -- the block
+    at the top level -- or `one-root`, § 1's collection of one root carrying it
+    in the entry. ⚠️ The command root is a directory that exists, so the read
+    runs under the reader's path checks as `main` does.
+    """
+    import tempfile  # noqa: PLC0415 -- a fixture's dependency, not the check's
+
+    import yaml  # noqa: PLC0415 -- a fixture's dependency, not the check's
+
+    stated = copy.deepcopy(STATED)
+    stated[1]["jobs"][0][reader.COMMAND_ROOT_REF] = "a-package-root"
+    blocks = {reader.COMMAND_ROOTS: {"a-package-root": {"path": "a-package"}}}
+    data = reader._a_valid_example()
+    data["host"]["kind"] = "github"
+    data["host"]["checks"] = stated
+    data["checks_local"] = []
+    if shape == "single":
+        data["roots"]["code"] = "."
+        data.update(blocks)
+    else:
+        data["roots"]["code"] = {"a-root": {"path": ".", **blocks}}
+    with tempfile.TemporaryDirectory() as project:
+        os.makedirs(os.path.join(project, "a-package"))
+        written = os.path.join(project, reader.CONFIG_PATH)
+        os.makedirs(os.path.dirname(written), exist_ok=True)
+        with open(written, "w", encoding="utf-8") as handle:
+            yaml.safe_dump(data, handle)
+        for path, text in PLANTED.items():
+            os.makedirs(os.path.join(project, os.path.dirname(path)), exist_ok=True)
+            with open(os.path.join(project, path), "w", encoding="utf-8") as handle:
+                handle.write(text)
+        try:
+            subject = read_subject(project, root)
+        except reader.ConfigError as error:
+            return f"refused: {error}"
+        drift = [line for _name, check in CHECKS for line in check(subject)]
+        return "; ".join(drift + undeterminable(subject))
 
 
 def _a_subject() -> Subject:
@@ -1944,6 +2016,24 @@ def self_test() -> int:
             print(f"                         - {line}")
             failures += 1
 
+    # ⛔ The read itself, from a project's own file, where a job names a command
+    # root: the planted subjects above are built past the reader, so nothing
+    # above reaches the two ways the read refused a facet the reader accepted --
+    # a collection of one root refused as a project-level read, and the single
+    # form's command roots dropped from the walk.
+    for label, shape, root in (
+        ("the single form, command roots at the top level", "single", None),
+        ("a collection of one root, command roots in its entry", "one-root", None),
+        ("the same collection with its root named", "one-root", "a-root"),
+    ):
+        said = _read_from_a_project(shape, root)
+        if said:
+            print(f"  REFUSED OR DRIFTED     read: {label}")
+            print(f"                         - {said}")
+            failures += 1
+        else:
+            print(f"  read and agreed        read: {label}")
+
     over = assert_the_reader_is_linear()
     for line in over:
         print(f"  OVER BUDGET            linear: {line}")
@@ -1973,6 +2063,10 @@ def main(argv: list[str]) -> int:
         help="the root the configuration is resolved relative to (§ 1)",
     )
     parser.add_argument(
+        "--root",
+        help="which of § 1's code roots to hold, where the collection states the facet per root",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="assert each check reddens on each planted violation, each planted absence is "
@@ -1993,7 +2087,7 @@ def main(argv: list[str]) -> int:
         print()
 
     try:
-        subject = read_subject(args.skills_root)
+        subject = read_subject(args.skills_root, args.root)
     except reader.ConfigError as error:
         print(str(error), file=sys.stderr)
         return 1

@@ -759,10 +759,17 @@ entry states is that root's; a key it does not is the project's, read exactly wh
 project's is read. The slug and the `checks` beside it are what travel with the root they describe,
 and `kind`, `landing` and the rest are ordinarily the project's.
 
-**A fact some entry states is refused at the project level, with the roots named.** A role asking
-for one answer where the configuration holds two is handed a stop and never the first of them —
-[§ 2](#2-code-host)'s rule that absence of signal is not an answer. A fact no entry states is not
-refused, there being one answer to give.
+**A fact some entry of several states is refused at the project level, with the roots named.** A
+role asking for one answer where the configuration holds two is handed a stop and never the first of
+them — [§ 2](#2-code-host)'s rule that absence of signal is not an answer. A fact no entry states is
+not refused, there being one answer to give, and neither is any fact of a collection carrying
+**one** root: every project-level read there is that root's, its entry's blocks included.
+
+**A call is held to the root it stands in.** A guard, which is handed a call and no root key,
+resolves the root whose path contains the call's working directory, the deepest where entries nest.
+One root answers wherever the call stands. A call inside none of several is a configuration that
+does not resolve for that call, named with the reader's stop and failing in the direction
+[§ 7 → Which direction a guard fails in](#which-direction-a-guard-fails-in) states.
 
 **No two entries may resolve to the same `host.repo`, and no two may name the same `path`.** Two
 names for one repository is the defect this facet exists against, reached either by stating a slug
