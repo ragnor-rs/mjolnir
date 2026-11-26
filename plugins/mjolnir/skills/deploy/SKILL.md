@@ -123,7 +123,8 @@ what this step does is run it.
   with the tree's own. Exit 1 is a **stop before the go**, every condition not met named with what
   the tree held; exit 4 lets the deploy run and holds every advance, which step 5 shows and step 8
   reads again; exit 3 is a target stating no condition, reported as that and never as conditions
-  met. ⛔ **Nothing is fetched or pulled to meet a condition** — that is the project's own command,
+  met; exit 2 is a configuration that could not answer, and a stop before the go naming it.
+  ⛔ **Nothing is fetched or pulled to meet a condition** — that is the project's own command,
   run before the deploy is asked for.
 - ⚠️ **A command target may contend on something the project declared exclusive**
   ([`§ 10`](../../config/schema.md#exclusive-resources)). A refusal there is a place to come back

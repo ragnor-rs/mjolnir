@@ -250,7 +250,7 @@ class _Stated:
 
 def _sh(directory: str, *args: str) -> str:
     done = subprocess.run(
-        ["git", "-c", "user.name=suite", "-c", "user.email=suite@example.invalid",
+        ["git", "-c", "user.name=the-suite", "-c", "user.email=the-suite",
          "-c", "init.defaultBranch=main", "-C", directory, *args],
         capture_output=True, text=True, check=True,
     )
@@ -301,6 +301,15 @@ def self_test() -> int:
         "every condition § 33 states has a reading here, and nothing else does",
         sorted(stated) == sorted(READINGS),
         f"the surface states {stated!r}, this module reads {sorted(READINGS)!r}",
+    )
+    # ⛔ The same in the other key: a `holds` member stopping neither act would let a
+    # condition not met hold nothing and exit 0.
+    holds = facts["enums"].get("deploy.tree.holds") or []
+    check(
+        "every `holds` value § 33 states stops something here, and nothing else does",
+        bool(holds) and sorted(holds) == sorted(STOPS_DEPLOY | STOPS_ADVANCE),
+        f"the surface states {holds!r}, this module stops on "
+        f"{sorted(STOPS_DEPLOY | STOPS_ADVANCE)!r}",
     )
 
     scratch, tree = _a_repository()
