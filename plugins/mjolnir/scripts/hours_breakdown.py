@@ -9,8 +9,9 @@ is the arithmetic and the reading a skill should not do by eye.
 ⛔ **The total arrives on the invocation and is never measured here**, which is § The loop's rule
 and is cited rather than argued here. ⚠️ **So the two arms are asymmetric by design**:
 
-  * **Given a total**, the run distributes it over the period's changes so the parts sum back to
-    it exactly, and ⛔ **no store is asked anything** -- the day log is not read even to compare.
+  * **Given a total**, the run distributes it over the period's changes in whole units of § 8's
+    `duration.resolution` so the parts sum back exactly to the total at that resolution, and ⛔ **no
+    store is asked anything** -- the day log is not read even to compare.
   * **Given none**, the run **offers** the sum of the day log's own entries for the period, read
     through this project's § 26 port, and ⛔ **stops**. An offer is not a total: nothing is
     distributed until somebody hands one back.
@@ -53,7 +54,7 @@ import os
 import re
 import subprocess
 import sys
-from decimal import ROUND_DOWN, Decimal, InvalidOperation
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal, InvalidOperation
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -70,9 +71,14 @@ DESTINATION = "day_log.destination.kind"
 TRIPLE = "language.artifacts.hours_breakdown"
 REMOTE = "origin"
 
-# The grain a part is stated in: hundredths of an hour. ⛔ A total finer than this is refused rather
-# than rounded, since a rounded total is a figure this role replaced with one of its own.
-GRAIN = Decimal("0.01")
+# The resolutions a part can be stated in, as how many units make an hour, read from
+# `language.artifacts.hours_breakdown.duration.resolution` (§ 8) and stated nowhere else. A total
+# finer than the resolution is rounded to it, half up, and both figures are reported: that is the
+# one adjustment this carrier makes to the total it was handed.
+RESOLUTIONS = {"hundredth": 100, "minute": 60}
+DEFAULT_RESOLUTION = "hundredth"
+# The unit words a minute-resolution duration is written with where the triple states none.
+DEFAULT_UNITS = {"hours": "h", "minutes": "min"}
 
 # A number the tracker's reference is composed around, chosen so that it cannot also be a constant
 # part of the reference. ⚠️ The same limit `title_form.py` states: the identifier is a run of
@@ -90,28 +96,71 @@ class Stop(Exception):
 # --- the total, and how it is divided --------------------------------------------------------
 
 
+class Duration:
+    """How a duration is counted and written: the resolution, and the words a minute form uses.
+
+    ⚠️ **The form follows from the resolution.** A hundredth of an hour is written as decimal
+    hours, which is the default; a minute is not a finite decimal fraction of an hour, so a
+    minute-resolution duration is written as hours and minutes in the triple's unit words, a zero
+    component dropped.
+    """
+
+    def __init__(self, stated=None):
+        stated = stated if stated is not None else {}
+        if not isinstance(stated, dict):
+            raise Stop(f"`{TRIPLE}.duration` is not a mapping: {stated!r}.")
+        self.resolution = stated.get("resolution") or DEFAULT_RESOLUTION
+        if self.resolution not in RESOLUTIONS:
+            raise Stop(
+                f"`{TRIPLE}.duration.resolution` is {self.resolution!r}; it is one of "
+                f"{', '.join(sorted(RESOLUTIONS))}."
+            )
+        self.per_hour = RESOLUTIONS[self.resolution]
+        self.words = {}
+        for key, default in DEFAULT_UNITS.items():
+            word = stated.get(key, default)
+            if not isinstance(word, str) or not word.strip():
+                raise Stop(f"`{TRIPLE}.duration.{key}` is not a unit word: {word!r}.")
+            self.words[key] = word
+        if self.resolution != "minute" and any(key in stated for key in DEFAULT_UNITS):
+            raise Stop(
+                f"`{TRIPLE}.duration` states unit words under the {self.resolution!r} resolution, "
+                "which is written as decimal hours; unit words are read at `minute` only."
+            )
+
+    def count(self, hours: Decimal) -> int:
+        """`hours` as a whole number of units, rounded half up."""
+        return int((hours * self.per_hour).to_integral_value(rounding=ROUND_HALF_UP))
+
+    def write(self, units: int) -> str:
+        """A whole number of units, written in this duration's form."""
+        if self.resolution == "hundredth":
+            return format(Decimal(units) / self.per_hour, ".2f")
+        hours, minutes = divmod(units, 60)
+        parts = ([f"{hours}{self.words['hours']}"] if hours else []) \
+            + ([f"{minutes}{self.words['minutes']}"] if minutes or not hours else [])
+        return " ".join(parts)
+
+
 def a_total(text: str) -> Decimal:
-    """The given total, held to the grain, or a stop. ⛔ Never rounded into one."""
+    """The given total as a positive number of hours, or a stop. Rounding is `Duration.count`'s."""
     try:
         total = Decimal(str(text).strip())
-        held = total.quantize(GRAIN) if total.is_finite() else None
+        if total.is_finite():
+            # A figure past the context's precision at the finest resolution is not held.
+            (total * 100).quantize(Decimal(1))
     except InvalidOperation as error:
         raise Stop(f"--hours {text!r} is not a number of hours this carrier can hold.") from error
-    if held is None or total <= 0:
+    if not total.is_finite() or total <= 0:
         raise Stop(f"--hours {text!r} is not a positive number of hours.")
-    if total != held:
-        raise Stop(
-            f"--hours {text!r} is finer than {GRAIN} of an hour. ⛔ It is refused rather than "
-            "rounded: a rounded total is a figure this role replaced with one of its own."
-        )
     return total
 
 
-def distribute(total: Decimal, weights: list[Decimal]) -> list[Decimal]:
-    """Parts of `total`, one per weight, proportional to it, that sum back to it exactly.
+def distribute(units: int, weights: list[Decimal]) -> list[int]:
+    """Parts of `units`, one per weight, proportional to it, that sum back to it exactly.
 
     ⛔ **The sum is the property, and it is exact rather than approximately held.** Each part is
-    the floor of its share at the grain, and the grains the floors left over go one each to the
+    the floor of its share in whole units, and the units the floors left over go one each to the
     largest remainders -- the earliest change winning a tie, so one input has one answer.
     """
     if not weights:
@@ -119,14 +168,13 @@ def distribute(total: Decimal, weights: list[Decimal]) -> list[Decimal]:
     if any(weight <= 0 for weight in weights):
         raise Stop("every weight is a positive number; a change is not given a share of nothing.")
     whole = sum(weights)
-    grains = int(total / GRAIN)
-    exact = [Decimal(grains) * weight / whole for weight in weights]
+    exact = [Decimal(units) * weight / whole for weight in weights]
     floors = [int(share.to_integral_value(rounding=ROUND_DOWN)) for share in exact]
-    left = grains - sum(floors)
+    left = units - sum(floors)
     order = sorted(range(len(weights)), key=lambda at: (-(exact[at] - floors[at]), at))
     for at in order[:left]:
         floors[at] += 1
-    return [Decimal(grain) * GRAIN for grain in floors]
+    return floors
 
 
 def weights_for(changes: list[dict], given: list[str]) -> list[Decimal]:
@@ -347,6 +395,13 @@ def breakdown(skills_root: str, first: str, last: str, hours: str | None, weight
         return OFFERED, report
 
     total = a_total(hours)
+    duration = Duration((triple or {}).get("duration") if isinstance(triple, dict) else None)
+    units = duration.count(total)
+    if units == 0:
+        raise Stop(
+            f"--hours {hours!r} rounds to nothing at the {duration.resolution} resolution, so "
+            "there is nothing to distribute."
+        )
     if tracker_from is None:
         tracker = ports.load(skills_root, check_paths=False)
     else:
@@ -367,7 +422,7 @@ def breakdown(skills_root: str, first: str, last: str, hours: str | None, weight
     if not changes:
         raise Stop(
             f"no change shipped between {first} and {last}, so there is nothing to distribute "
-            f"{total}h over. ⛔ The hours are not placed on work outside the period."
+            f"{format(total, 'f')}h over. ⛔ The hours are not placed on work outside the period."
         )
     text = "\n\n".join(change["message"] for change in changes)
     surfaced_report, surfaced = ingestion.read_report(text, "the period's commit messages")
@@ -375,15 +430,23 @@ def breakdown(skills_root: str, first: str, last: str, hours: str | None, weight
         raise Stop(f"the period's commit messages did not pass the ingestion step --\n"
                    f"{surfaced_report}")
     shares = weights_for(changes, weights)
-    parts = distribute(total, shares)
+    parts = distribute(units, shares)
     for change, weight, part in zip(changes, shares, parts):
         change["weight"] = str(weight)
-        change["hours"] = str(part)
+        change["units"] = part
+        change["hours"] = duration.write(part)
     report.update({
+        # ⛔ The total as handed over, and beside it the one figure this carrier made of it.
         "total": format(total, "f"),
+        "resolution": duration.resolution,
+        "units_per_hour": duration.per_hour,
+        "total_at_resolution": duration.write(units),
+        "total_units": units,
+        "rounded": Decimal(units) / duration.per_hour != total,
         "day_start": None if day_start is None else day_start.isoformat("minutes"),
         "read_from": read_from,
-        "sum_of_parts": str(sum(parts, Decimal(0))),
+        "sum_of_parts": duration.write(sum(parts)),
+        "sum_of_units": sum(parts),
         "item_reference": None if pattern is None else pattern.pattern,
         "item_reference_unread": None if pattern else
         "the tracker port composes no closing reference, so every change's item is unread "
@@ -447,7 +510,8 @@ def main(argv: list[str] | None = None) -> int:
 # from the repository, and the change with no item.
 
 
-def _a_project(base: str, name: str, days=(), *, carrier=True, landing="squash") -> str:
+def _a_project(base: str, name: str, days=(), *, carrier=True, landing="squash",
+               triple=None) -> str:
     """One real project over a real git repository, with a day log of its own."""
     import yaml
 
@@ -461,6 +525,8 @@ def _a_project(base: str, name: str, days=(), *, carrier=True, landing="squash")
         data["carriers"] = {key: value for key, value in data["carriers"].items()
                             if key != "day_log"}
     data["host"]["landing"]["method"] = landing
+    if triple is not None:
+        data["language"].setdefault("artifacts", {})["hours_breakdown"] = triple
     data["day_log"] = dict(data.get("day_log") or {})
     data["day_log"].update({
         "day_start": "05:00", "round_to": 0.5, "round_ties": "down", "enforce_grid": True,
@@ -546,23 +612,44 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             return stop
         return None
 
-    # The sum, under every shape of weights.
+    # The sum, under every shape of weights and at both resolutions.
+    hundredth, minute = Duration(), Duration({"resolution": "minute"})
     for total, weights in (("10", [1, 1, 1]), ("7.5", [3, 1]), ("0.01", [1, 1, 1]),
                            ("37.25", [1, 2, 3, 5, 8, 13]), ("1", [Decimal("0.5")] * 7)):
-        parts = distribute(a_total(total), [Decimal(w) for w in weights])
-        check(f"{total}h over weights {weights} sums back to it exactly",
-              sum(parts, Decimal(0)) == Decimal(total) and len(parts) == len(weights),
-              parts)
+        for duration in (hundredth, minute):
+            units = duration.count(a_total(total))
+            parts = distribute(units, [Decimal(w) for w in weights])
+            check(f"{total}h at the {duration.resolution} resolution over weights {weights} "
+                  "sums back to it exactly",
+                  sum(parts) == units and len(parts) == len(weights), parts)
     check("a share follows its weight",
-          distribute(Decimal("8"), [Decimal(3), Decimal(1)]) == [Decimal("6.00"),
-                                                                Decimal("2.00")])
+          distribute(800, [Decimal(3), Decimal(1)]) == [600, 200])
     check("a tie goes to the earliest change, so one input has one answer",
-          distribute(Decimal("0.01"), [Decimal(1)] * 3) == [GRAIN, Decimal(0), Decimal(0)])
-    for refused in ("0", "-3", "abc", "7.125", "nan", "1e26", "inf"):
-        check(f"a total of {refused!r} is refused rather than read or rounded",
+          distribute(1, [Decimal(1)] * 3) == [1, 0, 0])
+    for refused in ("0", "-3", "abc", "nan", "1e26", "inf"):
+        check(f"a total of {refused!r} is refused rather than read",
               stopped(lambda refused=refused: a_total(refused)) is not None)
     check("nothing to distribute over is a stop",
-          stopped(lambda: distribute(Decimal(5), [])) is not None)
+          stopped(lambda: distribute(5, [])) is not None)
+
+    # The resolution, and the one adjustment it makes to a total.
+    check("the default resolution is a hundredth, and a finer total is rounded to it half up",
+          hundredth.resolution == "hundredth" and hundredth.count(Decimal("7.125")) == 713
+          and hundredth.write(713) == "7.13", hundredth.count(Decimal("7.125")))
+    minutes = minute.count(a_total("120.4775"))
+    parts = distribute(minutes, [Decimal(w) for w in (1, 2, 3, 5, 8)])
+    check("120.4775h at the minute resolution is 7229 whole minutes, and its parts sum to it",
+          minutes == 7229 and sum(parts) == 7229 and all(isinstance(p, int) for p in parts),
+          (minutes, parts))
+    check("a minute duration is written in hours and minutes, a zero component dropped",
+          [minute.write(n) for n in (7229, 45, 180, 0)] == ["120h 29min", "45min", "3h", "0min"])
+    russian = Duration({"resolution": "minute", "hours": "ч", "minutes": "мин"})
+    check("a language writes its own unit words",
+          [russian.write(n) for n in (7229, 45, 180)] == ["120ч 29мин", "45мин", "3ч"])
+    for stated in ({"resolution": "second"}, {"hours": "ч"}, {"resolution": "minute",
+                                                             "minutes": ""}, "minute"):
+        check(f"a duration stated as {stated!r} is a stop, never a default taken in its place",
+              stopped(lambda stated=stated: Duration(stated)) is not None)
 
     changes = [{"commit": "abc123"}, {"commit": "abd456"}, {"commit": "fff000"}]
     check("a weight is matched to the one change its prefix names",
@@ -617,7 +704,18 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("a change committed outside the loop appears, with no work item to name",
               by_commit[direct]["items"] == [], by_commit[direct])
         check("the parts sum back to the given total",
-              report["sum_of_parts"] == "10.00" and report["total"] == "10", report)
+              report["sum_of_parts"] == "10.00" and report["total"] == "10"
+              and not report["rounded"], report)
+
+        status, report = breakdown(root, "2026-11-01", "2026-11-30", "7.125", [],
+                                   tracker_from=lambda c: _Tracker(None))
+        check("a total finer than the resolution is distributed at it, both figures reported",
+              status == DISTRIBUTED and report["total"] == "7.125"
+              and report["total_at_resolution"] == "7.13" and report["rounded"]
+              and report["sum_of_parts"] == "7.13", report)
+        check("a total that rounds to nothing at the resolution is a stop",
+              stopped(lambda: breakdown(root, "2026-11-01", "2026-11-30", "0.004", [],
+                                        tracker_from=lambda c: _Tracker(None))) is not None)
 
         status, unread = breakdown(root, "2026-11-01", "2026-11-30", "10", [],
                                    tracker_from=lambda c: _Tracker(None))
@@ -720,6 +818,26 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("under merge_commit a merge names the item its brought-in commits close",
               len(merge) == 1 and merge[0]["items"] == ["5"] and len(report["changes"]) == 3,
               report.get("changes"))
+
+        # The resolution and the unit words are the triple's, read through the configuration.
+        stated = _a_project(base, "minutes", triple={
+            "language": "ru", "register": "business", "audience": "the client",
+            "duration": {"resolution": "minute", "hours": "ч", "minutes": "мин"}})
+        for when in ("2026-11-02T10:00:00+00:00", "2026-11-03T10:00:00+00:00",
+                     "2026-11-04T10:00:00+00:00"):
+            _commit(stated, "A change", when)
+        status, report = breakdown(stated, "2026-11-01", "2026-11-30", "120.4775", [],
+                                   tracker_from=lambda c: _Tracker(None))
+        check("a project stating the minute resolution gets whole-minute parts in its own words",
+              status == DISTRIBUTED and report["total"] == "120.4775"
+              and report["total_units"] == 7229 and report["sum_of_units"] == 7229
+              and report["total_at_resolution"] == "120ч 29мин" and report["rounded"]
+              and [c["hours"] for c in report["changes"]] == ["40ч 10мин", "40ч 10мин",
+                                                             "40ч 9мин"], report)
+        check("the surface declares the duration keys, so the reader reports none of them",
+              not any("duration" in path
+                      for path in reader.load(stated, check_paths=False).undeclared()),
+              reader.load(stated, check_paths=False).undeclared())
 
         # The remote's copy is what shipped: a commit only the local branch holds is not in it.
         clone = _a_clone(base, merged)

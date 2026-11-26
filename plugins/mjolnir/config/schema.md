@@ -3546,7 +3546,7 @@ language:
     day_log:         { language: en, register: business,  audience: "…" }   # private_block
     session_summary: { language: ru, register: business,  audience: "…" }
     billing_report:  { language: ru, register: technical, audience: "…" }
-    hours_breakdown: { language: ru, register: business,  audience: "…" }
+    hours_breakdown: { language: ru, register: business,  audience: "…", duration: { resolution: minute, hours: "ч", minutes: "мин" } }
 ```
 
 One project writes its cards in one language and its repository in another, split by audience; its
@@ -3561,6 +3561,16 @@ session summary's is somebody outside the build, the billing report's is whoever
 and the hours breakdown's is whoever is being told where a period's hours went. Each carries its own
 triple even where a project gives two of them the same three values, so a project that later moves
 one reader and not the others has nothing to split.
+
+**How a duration is written is the artifact's too**, so the hours breakdown's triple carries
+`duration`. Its `resolution` is the one unit every part is a whole number of, and the carrier states
+it nowhere else. A total finer than the resolution is rounded to it, half up, and the artifact
+states the total as handed over beside the rounded figure; that is the only adjustment made to a
+total the role was given ([§ The loop](#the-loop)). The form follows from the resolution: a
+hundredth of an hour is written as decimal hours, which is the default, and a minute — which is no
+finite decimal fraction of an hour — as hours and minutes in the triple's own unit words, a zero
+component dropped (`120ч 29мин`, `45мин`, `3ч`). Unit words stated under the hundredth resolution
+are a stop rather than ignored, and so is a resolution outside the two.
 
 ### The reply to the person running a role
 
