@@ -762,6 +762,15 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which command prints what a tree started that is still up, and nothing where "
         "nothing is? Unstated, no removal asks.",
     ),
+    "branch_model.resources_running": ask(
+        "Which command lists every running resource with the tree it belongs to, one per "
+        "line as the tree's path, a tab, and the resource? Unstated, a resource whose tree "
+        "is gone is found by nothing.",
+    ),
+    "branch_model.resource_stop": ask(
+        "Which command stops a resource whose tree is gone? Unstated, the sweep names it "
+        "and stops nothing.",
+    ),
     "branch_model.regenerable": ask(
         "Which ignored paths does a rebuild write again? ⚠️ A new tree carries "
         "none of them, so they are read out before any removal.",

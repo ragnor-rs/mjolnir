@@ -9697,6 +9697,35 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 "is stated where no tree is ever cut, so no removal asks it (§ 10).",
             )
 
+    # § 10. What lists every running resource with the tree it belongs to, and what
+    # stops one whose tree is gone. ⛔ Absent is the ordinary answer for both; a stop
+    # with no listing is refused, there being nothing to tell it which resource.
+    listing = _get(data, "branch_model.resources_running")
+    for key, what in (
+        ("branch_model.resources_running", "prints nothing, so every resource would "
+         "read as having its tree"),
+        ("branch_model.resource_stop", "exits zero, so every stop would read as run"),
+    ):
+        value = _get(data, key)
+        if value is None:
+            continue
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(
+                key,
+                f"is {value!r}; it is a command, or `null` where this project states none "
+                f"(§ 10). An empty one {what}.",
+            )
+        if _get(data, "branch_model.kind") != "worktree":
+            raise ConfigError(
+                key, "is stated where no tree is ever cut, so no sweep asks it (§ 10)."
+            )
+    if _get(data, "branch_model.resource_stop") is not None and listing is None:
+        raise ConfigError(
+            "branch_model.resource_stop",
+            "is stated with no `branch_model.resources_running`, so nothing names a "
+            "resource whose tree is gone for it to stop (§ 10).",
+        )
+
     # § 10. What a rebuild writes again, which is the only half of the pruning
     # oracle a project states. ⛔ Whether the key is *written* is the surface's
     # `# required_when` marker and not a rule here; what is held here is its
@@ -19091,6 +19120,18 @@ def _planted_violations():
         ("a resource check stated where no tree is cut", "branch_model.resource_up",
          lambda _data: _with(
              _an_in_place_memory_project(), "branch_model.resource_up", "a-command")),
+        ("a resource listing written blank, which reads every resource as having its tree",
+         "branch_model.resources_running", at("branch_model.resources_running", "   ")),
+        ("a resource listing that is no command at all", "branch_model.resources_running",
+         at("branch_model.resources_running", ["a-command"])),
+        ("a resource listing stated where no tree is cut", "branch_model.resources_running",
+         lambda _data: _with(
+             _an_in_place_memory_project(), "branch_model.resources_running", "a-command")),
+        ("a stop written blank, which reads every stop as run", "branch_model.resource_stop",
+         lambda data: _with(_with(data, "branch_model.resources_running", "a-listing"),
+                            "branch_model.resource_stop", "   ")),
+        ("a stop with no listing to name what it stops", "branch_model.resource_stop",
+         at("branch_model.resource_stop", "a-command")),
         # ⚠️ Both of these refuse in the permissive direction, which is why each
         # has a plant of its own: a list written as one path exempts nothing and
         # an entry that names nothing exempts nothing, and in either case the

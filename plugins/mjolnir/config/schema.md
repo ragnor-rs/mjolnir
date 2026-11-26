@@ -3697,6 +3697,8 @@ branch_model:
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
   teardown: "<the command that stops what a tree started>"   # may be left unwritten; read only under worktree
   resource_up: "<the command that prints what a tree started and is still up>"   # may be left unwritten; read only under worktree
+  resources_running: "<the command that lists every running resource with its tree>"   # may be left unwritten; read only under worktree
+  resource_stop: "<the command that stops a resource whose tree is gone>"   # may be left unwritten; refused without resources_running
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
@@ -3734,6 +3736,9 @@ for — which is the condition that was met for § 9's `script`, and that retire
 a removal happens where no role is reading steps. What runs it, and when, is
 [below](#the-teardown-a-removal-runs-first). ⛔ **`resource_up` is a reading and not a step**: it
 answers whether anything a tree started [is still up](#the-resource-a-tree-started-and-the-removal-it-holds).
+⛔ **`resources_running` is the same reading turned round**: it starts from the resources rather
+than the trees, so it finds one whose tree is [already gone](#a-resource-whose-tree-is-gone), and
+`resource_stop` is the one step taken on what it finds.
 
 ⛔ **`mechanics` is steps and never a location, and `tree_dir` is the location.** The two were conflated
 while the second key was absent, which left *where a tree goes* stated in no facet and carried by
@@ -4426,6 +4431,29 @@ it keeps keeps its claim whole. A project stating none has none asked.
   made to answer.
 - ⛔ **The sweep asks inside its own bound.** With less than a second of it left the check is not
   asked, which is the unanswered row.
+
+### A resource whose tree is gone
+
+⛔ **Where `resources_running` is stated, the sweep below asks it once, after the trees**, so a
+resource left running by a tree that no longer exists is found. ⚠️ **Asking each tree cannot find
+one**: `resource_up` is asked about a tree, and a removed tree is in no list of trees to ask about.
+A project stating none has none asked, and its sweep is what it was.
+
+- **It prints one running resource per line: the tree's path, a tab, and the resource.** A relative
+  path is read against the main checkout, where it runs. ⛔ **A line with no tab is named as
+  unread**, never guessed at.
+- ⛔ **A resource whose path is not one of the repository's trees is named on the event that opens
+  a session**, with the tree's path and what became of it. It is asked after the removals, so a tree
+  the same sweep removed counts as gone.
+- ⛔ **A listing that fails, cannot be started or does not finish in `10` seconds is reported as
+  unanswered**, never as nothing running.
+- ⛔ **Nothing is stopped unless `resource_stop` is stated.** Where it is, it runs once per resource
+  found, at the main checkout, with the tree in `MJOLNIR_TREE` and the resource in
+  `MJOLNIR_RESOURCE`. ⛔ **A stop that exited zero is read back**: the listing is asked again, and
+  a resource it still names is reported as still up. A stop that fails is reported with its exit
+  and the end of what it printed.
+- ⛔ **Each command runs inside the sweep's own bound**, and one there is no time left for is not
+  started and is named as not run.
 
 ### Pruning a tree whose branch has landed
 
