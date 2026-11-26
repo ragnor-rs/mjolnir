@@ -950,7 +950,32 @@ def confirmed_merge(
     return branch, ""
 
 
-def merged_answer(payload: dict, *, run=None, confirm=None) -> dict:
+def root_view(loaded, cwd: str, *, main=None):
+    """`(the configuration of the code root this call ran in, "")`, or `(None, why)`.
+
+    ⛔ **Read per root, never at project level, where the project carries several.** § 1 has the
+    reader refuse a project-level read of a key a root states for itself, so a project-level read
+    of `branch_model` there raises -- and a hook that swallows the raise says nothing on a merge
+    the project asked to be told about. The root is the one whose main checkout is the session's.
+    """
+    views = list((getattr(loaded, "views", None) or {}).values())
+    if len(views) <= 1:
+        return loaded, ""
+    main = main if main is not None else claim.main_checkout
+    try:
+        here = os.path.realpath(main(cwd))
+    except Exception as error:  # noqa: BLE001 -- an unplaced call examines nothing
+        return None, f"which code root `{cwd}` is in could not be read ({type(error).__name__})"
+    for view in views:
+        try:
+            if os.path.realpath(main(view.code_root)) == here:
+                return view, ""
+        except Exception:  # noqa: BLE001 -- a root that cannot be read is not this one
+            continue
+    return None, f"`{cwd}` is in no code root this project states"
+
+
+def merged_answer(payload: dict, *, run=None, confirm=None, main=None) -> dict:
     """The answer to one finished call: silence unless it merged and the project turned this on.
 
     ⛔ **Which call is a merge is the merge guard's grammar, imported and not restated.** A second
@@ -981,12 +1006,27 @@ def merged_answer(payload: dict, *, run=None, confirm=None) -> dict:
         return {}
     # ⛔ A configuration that does not resolve is the opening event's to report, every session: a
     # carrier the project may never have turned on says nothing about a file it cannot read.
-    if stop or loaded is None or loaded.get("branch_model.kind") != "worktree":
+    if stop or loaded is None:
         return {}
-    if loaded.get("branch_model.prune_on_merge") is not True:
+    view, unplaced = root_view(loaded, cwd, main=main)
+    if view is None:
+        # ⚠️ Said only where some root turned the carrier on: a project that never did gets the
+        # silence it has today, wherever its merge ran.
+        wanted = any(
+            v.get("branch_model.prune_on_merge") is True
+            for v in (getattr(loaded, "views", None) or {}).values()
+        )
+        return {"systemMessage": f"Merged tree: no tree was examined — {unplaced}. ({ANCHOR})"} \
+            if wanted else {}
+    if view.get("branch_model.kind") != "worktree":
         return {}
+    if view.get("branch_model.prune_on_merge") is not True:
+        return {}
+    loaded = view
+    # ⚠️ A merge naming no repository is asked about from the session's directory, where the
+    # client resolves the repository itself -- no project-level `host.repo` is read for it.
     slug, number, _named = target
-    branch, why = (confirm or confirmed_merge)(slug or loaded.get("host.repo"), number, cwd)
+    branch, why = (confirm or confirmed_merge)(slug, number, cwd)
     if branch is None:
         return {"systemMessage": f"Merged tree: no tree was examined — {why}. ({ANCHOR})"}
     try:
@@ -2451,6 +2491,40 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         "a merge naming no change asks about the change on the session's own branch",
         bare_merge.asked[0] == ["pr", "view", "--json", "state,headRefName"],
         str(bare_merge.asked),
+    )
+
+    class _View:
+        def __init__(self, root: str, on: bool) -> None:
+            self.code_root, self.on = root, on
+
+        def get(self, path: str, default=None):
+            return {"branch_model.prune_on_merge": self.on}.get(path, default)
+
+    class _Project:
+        def __init__(self, *views) -> None:
+            self.views = {f"r{i}": v for i, v in enumerate(views)}
+
+        def get(self, path: str, default=None):
+            raise RuntimeError(f"{path} is stated per code root here")
+
+    web, api = _View("/c/web", True), _View("/c/api", False)
+    checkouts = {"/c/web": "/c/web", "/c/web-tree": "/c/web", "/c/api": "/c/api"}
+
+    def _main(where: str) -> str:
+        return checkouts[where]
+
+    suite.ok(
+        "⛔ where the project carries several roots, the call's own root answers, read per root",
+        root_view(_Project(web, api), "/c/web-tree", main=_main) == (web, "")
+        and root_view(_Project(web, api), "/c/api", main=_main) == (api, ""),
+    )
+    suite.ok(
+        "⛔ and a call in no root this project states is said, not answered from the first root",
+        root_view(_Project(web, api), "/elsewhere", main=_main)[0] is None,
+    )
+    suite.ok(
+        "a project whose code is one root is its own answer, with nothing read about checkouts",
+        root_view(web, "/anywhere", main=_raises) == (web, ""),
     )
 
     with tempfile.TemporaryDirectory() as tmp:
