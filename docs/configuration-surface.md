@@ -3331,7 +3331,10 @@ forecloses. Length did not decide it either: the skill with nothing per-project 
 
 One project holds a skill that builds a client's invoice for a period from that period's hours and
 deliverables and renders it with every value checked, and it covers more than one client — so it
-reads other projects' outputs. It is the only role surveyed with that shape.
+reads other projects' outputs. It is the only role surveyed with that shape. Its deliverables half
+is not carried: pricing hours per deliverable is a project's own carrier, by
+[`schema.md § 37 → An invoice priced per
+deliverable`](../plugins/mjolnir/config/schema.md#an-invoice-priced-per-deliverable-and-why-neither-role-carries-it).
 
 ### Why it reads as not belonging, which is the position that had to be overridden
 
