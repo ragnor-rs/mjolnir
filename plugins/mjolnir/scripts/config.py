@@ -6112,6 +6112,18 @@ def _validate_after_verified(where: str, entry: dict, facts: dict) -> None:
                     + ", ".join(f"{{deploy:{one}}}" for one in AFTER_VERIFIED_PLACEMENTS)
                     + " and a choice the target declares (§ 33).",
                 )
+            # ⛔ `batch`'s rule, for its reason: a step reaches a shell too, and a
+            # name a shell splits would run a different command than the one
+            # written.
+            if placed == BATCH_TARGET and not (
+                isinstance(entry.get("name"), str) and _PLAIN_VALUE.fullmatch(entry["name"])
+            ):
+                raise ConfigError(
+                    f"{here}.command",
+                    f"places {{deploy:{BATCH_TARGET}}} while the target's name "
+                    f"{entry.get('name')!r} is not one plain word a shell reads as "
+                    "itself (§ 33). Name the target in the command instead.",
+                )
         for placed in _CHOICE_PLACED.findall(command):
             if placed not in chosen:
                 raise ConfigError(
@@ -19969,6 +19981,10 @@ def _planted_violations():
         ("a step placing the batch's purpose", f"deploy[0].{AFTER_VERIFIED}[0].command",
          at("deploy", [_a_deploy_target(
              after_verified=[_a_step_after(command="tag {deploy:purpose}")])])),
+        ("a step placing a target name a shell reads as more",
+         f"deploy[0].{AFTER_VERIFIED}[0].command",
+         at("deploy", [_a_deploy_target(name="a target",
+                                        after_verified=[_a_step_after()])])),
         ("a step placing a choice the target does not declare",
          f"deploy[0].{AFTER_VERIFIED}[0].command",
          at("deploy", [_a_deploy_target(

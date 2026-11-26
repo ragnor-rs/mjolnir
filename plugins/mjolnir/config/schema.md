@@ -9190,7 +9190,7 @@ collected per change, and the two keys do not stand in for each other.
 | the key | what it states | what is refused where it is written |
 |---|---|---|
 | `name` | the name a step's outcome is handed back under: letters, digits, `_` and `-` | a name another step of the target carries |
-| `command` | the whole command, on one line | a `{deploy:<word>}` other than `commit` and `target`, and a `{choose:<name>}` no choice of the target declares |
+| `command` | the whole command, on one line | a `{deploy:<word>}` other than `commit` and `target`, `{deploy:target}` on a target whose name is not one plain word, and a `{choose:<name>}` no choice of the target declares |
 | `performed_by` | `procedure` runs the command; `human` hands it to the person running the deploy, who answers whether it was done | anything outside the alternation |
 
 ⛔ **The steps run in the order the list states them, and none runs unless the verification is
