@@ -315,6 +315,10 @@ GIT_VALUE_FLAGS = {"-c", "--git-dir", "--work-tree", "--namespace", "--exec-path
 # The names a merge uses for a branch's own upstream, which brings the branch
 # level with itself rather than landing anything on it.
 OWN_UPSTREAM = {"@{u}", "@{upstream}", "@{push}"}
+# The subcommands that change which branch a later merge in the same call lands
+# on, and the flags whose value is the branch they create and check out.
+BRANCH_SWITCHES = {"checkout", "switch"}
+NEW_BRANCH_FLAGS = ("-b", "-B", "-c", "-C", "--orphan")
 
 # A change named as a web address, which is the other form the client accepts.
 PULL_URL = re.compile(r"/pull/(?P<number>\d+)")
@@ -1140,14 +1144,15 @@ def merge_target(
                     read_by_client.add(candidate)
                 if found and writes:
                     return found.group("slug"), found.group("number"), candidate
-    if _states_a_read(words):
-        return None
-    for word in words:
-        if word in read_by_client:
-            continue
-        found = MERGE_URL.search(word)
-        if found:
-            return found.group("slug"), found.group("number"), found.group(0)
+    # ⛔ A read is read off the command naming the address and no other: a method
+    # word standing in a later command of the same call says nothing about this one.
+    for segment in position.segments(command) or [words]:
+        for word in segment:
+            if word in read_by_client:
+                continue
+            found = MERGE_URL.search(word)
+            if found and not _states_a_read(segment):
+                return found.group("slug"), found.group("number"), found.group(0)
     return None
 
 
@@ -1180,14 +1185,18 @@ def _run_git(directory: str, args: list[str]) -> tuple[int, str]:
     return proc.returncode, proc.stdout.strip()
 
 
-def _held_branches(directory: str, protected, git) -> tuple[str | None, set[str], bool]:
+def _held_branches(directory: str, protected, git,
+                   switched: str | None = None) -> tuple[str | None, set[str], bool]:
     """(the branch checked out, the remotes, whether that branch is held).
 
     ⛔ The integration branch is read off what each remote records as its
     default and never named here, which is § 10's derivation without its network
-    fallback: a guard on every call does not ask a remote anything.
+    fallback: a guard on every call does not ask a remote anything. ⛔ A branch
+    the same call switched to before merging is the one merged into, and what is
+    checked out now is not.
     """
-    code, branch = git(directory, ["symbolic-ref", "--short", "-q", "HEAD"])
+    code, branch = (0, switched) if switched else git(
+        directory, ["symbolic-ref", "--short", "-q", "HEAD"])
     if code != 0 or not branch:
         return None, set(), False
     code, listed = git(directory, ["remote"])
@@ -1216,6 +1225,7 @@ def local_merge(command: str, cwd: str, protected, git=None) -> dict | None:
     """
     runner = git if git is not None else _run_git
     directory = cwd or "."
+    switched: dict[str, str] = {}
     for segment in position.segments(command):
         for token, args in position.command_chain(segment):
             if token == "cd" and args and not args[0].startswith("-"):
@@ -1231,15 +1241,25 @@ def local_merge(command: str, cwd: str, protected, git=None) -> dict | None:
                     index += 2
                     continue
                 index += 2 if flag in GIT_VALUE_FLAGS else 1
+            if index < len(args) and args[index] in BRANCH_SWITCHES and "--" not in args:
+                rest = args[index + 1:]
+                name = (_flag_value(rest, *NEW_BRANCH_FLAGS)
+                        or next(iter(_positionals(rest, set(NEW_BRANCH_FLAGS))), None))
+                if name:
+                    switched[os.path.normpath(here)] = name
+                break
             if index >= len(args) or args[index] not in LOCAL_MERGES:
                 break
             verb, rest = args[index], args[index + 1:]
             if any(flag in LOCAL_MERGE_RESUMES for flag in rest):
                 break
-            branch, remotes, held = _held_branches(here, protected, runner)
+            branch, remotes, held = _held_branches(here, protected, runner,
+                                                   switched.get(os.path.normpath(here)))
             if not held:
                 break
-            named = _positionals(rest, LOCAL_VALUE_FLAGS)
+            # ⚠️ A lone dash is the branch checked out before this one, which no
+            # change is resolved from, so it stays a ref and is refused as one.
+            named = _positionals(rest, LOCAL_VALUE_FLAGS) + (["-"] if "-" in rest else [])
             remote = None
             if verb == "pull":
                 remote, named = (named[0], named[1:]) if named else (None, [])
@@ -4294,6 +4314,25 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                   guard_answer(_call(command), config=config, now=1000.0, store=fresh("local"),
                                host=_a_host(code=1),
                                git=git if git is not None else _a_git()) == {})
+        work = _a_git(branch="a-work-branch", commits={"a-work-branch": A_HEAD})
+        for label, command, git in (
+            ("a write whose call goes on to read HEAD", f"curl -X PUT {endpoint} && "
+             "git rev-parse HEAD", None),
+            ("a write whose call carries the word GET in another command",
+             f"curl -X PUT {endpoint}; echo GET", None),
+            ("the base checked out and merged into in one call",
+             "git checkout a-base && git merge a-work-branch", work),
+            ("the same by switching", "git switch a-base; git merge a-work-branch", work),
+            ("the branch checked out before this one, merged by its dash", "git merge -", None),
+        ):
+            check(f"{label}: refused with no record",
+                  denied(guard_answer(_call(command), config=config, now=1000.0,
+                                      store=fresh("local"), host=_a_host(comments=[]),
+                                      git=git if git is not None else _a_git())))
+        check("and a work branch created in the same call and merged into is free",
+              guard_answer(_call("git checkout -b another-work-branch && git merge a-remote/a-base"),
+                           config=config, now=1000.0, store=fresh("local"),
+                           host=_a_host(code=1), git=_a_git()) == {})
         check("a configuration that does not resolve refuses a local merge into the "
               "integration branch",
               denied(unread_merge_guard("git merge a-work-branch", "", git=_a_git())))

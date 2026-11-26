@@ -3292,8 +3292,10 @@ a remote — since neither lands a change. A merge or pull already begun and the
 abandoned is free too, having been held when it began. ⛔ **A ref that is the head of no open change,
 or of several, is refused rather than merged**, and so is a merge of more than one change at once:
 each would need its own record. The directory the branch is read in is where the call runs, moved by
-`-C` and by a `cd` before it in the same call. ⚠️ **The integration branch is what a remote records
-as its default**, read locally; a clone recording none holds only what `protected` names.
+`-C` and by a `cd` before it in the same call, and a branch the call checks out before merging is
+the one merged into. A lone `-` names no change and is refused. ⚠️ **The integration branch is what
+a remote records as its default**, read locally; a clone recording none holds only what `protected`
+names.
 
 ⛔ **The administrator override is refused unless the project states
 [`admin_override: allowed`](#how-a-pull-request-lands)**, whatever is recorded; where it is allowed
