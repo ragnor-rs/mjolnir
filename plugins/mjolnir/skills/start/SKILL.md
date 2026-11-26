@@ -182,6 +182,30 @@ carries one root this is the root it has**, whatever an item carries; where the 
 `none` the root arrives on this role's invocation and the reply says so, which is a stated absence
 § 4.7 reports rather than a fault.
 
+**Then whether the work is already built, where the project runs that step here.**
+[`§ 42`](../../config/schema.md#42-whether-the-work-is-already-built-and-where-a-role-asks) states
+the step, the finding and what it does. ⛔ **None of it is restated here.** What is this role's is
+where the step falls: after the gate and before the claim, so a stop leaves no ref behind.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" decide --point start
+```
+
+- **It exits 3** ⇒ the project runs no step here. Nothing is read and the reply mentions none.
+- **It exits 0** ⇒ read the code at `<code-root>` against each acceptance bullet of the item, write
+  the finding in the form `built.py form` prints, and hand it over:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" check --file <the finding> --root <code-root>
+  ```
+
+  ⛔ **A refusal is fixed and handed over again**, never worked around. What comes back says what
+  this role does: **proceed** to the claim with the finding in the reply, or **stop** before the
+  claim with the finding put to the person. ⛔ **Nothing is closed, reopened or rewritten here.**
+  An item whose work is built is the person's to close.
+- ⚠️ **An auto-picked item that stops here is not skipped to the next candidate.** The finding is a
+  question about this item, and a pass that fell through would bury it.
+
 ## 4. The claim is the branch
 
 **The claim is the branch, and publishing the ref is what makes it one.** The rule, both arms of

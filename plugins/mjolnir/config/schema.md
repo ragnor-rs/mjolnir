@@ -10615,6 +10615,108 @@ the record the change lands with says that configurations outside this repositor
 each writes the key. ⚠️ **No check here can reach them**, they being files in repositories this one
 cannot open.
 
+## 42. Whether the work is already built, and where a role asks
+
+```yaml
+built_check:
+  points: [file, start, implement] # default: []
+  on_finding: report | stop        # default: report
+```
+
+**An item states work, and the code may already do it.** The filing role searches the tracker and
+not the code, and the starting and implementing roles take an item's statement as still true. So an
+item whose work landed under another item gets filed, started and implemented again. A closed
+duplicate whose work was never built is found by the filing role, read as already handled, and the
+request is dropped. ⛔ **This facet makes the question a step**: before a role acts on an item, it
+reads the code against what the item asks and reports what it found.
+
+⛔ **This is a facet and no further leg of [§ The loop](#the-loop)**, which is § 38's rule and
+§ 39's beside it. No `carriers` key answers for it and no role enters it. It is a step inside the
+three roles `points` names, and each of those roles' own files says where the step falls.
+
+### The three points, and what each one reads
+
+| point | the role | what is read against the code | where the step falls |
+|---|---|---|---|
+| `file` | the filing role | the request, and every **closed** item its duplicate search found above the lowest tier | after the duplicate check and before anything is written |
+| `start` | the starting role | the chosen item | after the readiness gate and before the claim, so a stop leaves no ref behind |
+| `implement` | the implementing role | the item in hand | after its condition is read and before any edit |
+
+⛔ **`points` names where the step runs, and a point it does not name runs nothing.** The list the
+fence shows is the vocabulary, as `session.parts`'s is, and the default is the empty list. The list
+is a set, so a point named twice is refused, and so is a name outside the three. ⛔ **`points: []`, or the
+block unwritten, is every role as it was before this facet existed.** No step runs and no reply
+mentions one. That is the default, because a step that reads the code on every item has a cost a
+project should choose to pay.
+
+### The finding, and what it has to carry
+
+⛔ **The finding is held per acceptance bullet**, because an item half built and an item not built
+read the same at the level of the whole item. Each bullet gets one of three verdicts:
+
+| verdict | what it has to carry |
+|---|---|
+| `built` | at least one citation: a path in the tree, a commit, or a change on the host that answers the bullet |
+| `absent` | nothing more. It is the claim that the code does not answer the bullet, and it states what was read |
+| `unestablished` | what could not be read, and why. ⛔ **Never folded into `absent`**: a bullet nobody could check is not a bullet the code fails |
+
+⛔ **A `built` with no citation is refused**, which is the case this facet exists to stop: a role
+that believes an item is done without being able to point at where. A path cited has to exist in the
+tree the role is standing in, with any line it names, and a commit cited has to resolve in its
+repository. A citation that does neither is refused, not passed on. ⚠️ **A change on the host is
+held to its form only**, since checking it would mean asking the host. A path or a commit is the
+stronger citation for that reason. ⚠️ **What a citation cannot establish is that the cited code
+answers the bullet.** That is the role's reading. What the carrier holds is that the reading
+pointed at something real.
+
+An item stating no acceptance condition ([§ 4.4](#44-template)) is read against its stated outcome,
+as one bullet, and the finding says so.
+
+The item's verdict is derived from its bullets, and nothing writes it by hand:
+
+| the bullets | the item |
+|---|---|
+| every one `built` | `built` |
+| every one `absent` | `absent` |
+| some `built` and some not | `partly built` |
+| none `built`, and some `unestablished` | `unestablished`. ⛔ Never `absent`: a bullet nobody could check might be built |
+
+### What a finding does, and what it never does
+
+`on_finding` decides what happens when the item's verdict is anything but `absent`:
+
+- **`report`** puts the finding in the role's reply and the role carries on.
+- **`stop`** puts the finding to the person and stops the role until they answer. At `start` the
+  stop comes before the claim, so nothing is published while the question is open.
+
+⛔ **An `absent` verdict carries on under either value.** The work is not built, so the item stands
+as written.
+
+⛔ **The step closes nothing, reopens nothing and rewrites nothing by itself.** What it may do is
+offer. Closing an item whose work is built, reopening one, or rewriting a body are a person's call,
+or the call of the role whose act it already is. A finding that names an act it performed is
+refused. ⚠️ **The cost is a step that only ever informs.** That is the point: the reading is a
+judgement about code, and a judgement that silently closes items is one nobody can audit afterwards.
+
+### A closed item whose work is absent
+
+⛔ **At `file`, a closed duplicate whose work is `absent` or `partly built` is offered for reopening,
+beside filing anew.** The duplicate check finds it and [§ 3](#a-duplicate-is-the-item-rewritten-never-a-second-item-filed)
+would otherwise send the request to it. That is right only where its work exists. Where it does not,
+the closed item's history is worth keeping, and a new item loses it. Which of the two to take is a
+person's choice: the filing role asks, and the step does neither.
+
+⚠️ **The opposite case needs no offer.** A closed duplicate whose work is `built` is the duplicate
+check's ordinary outcome, and the finding is the citation that makes it believable.
+
+### The carrier, and what it holds
+
+`plugins/mjolnir/scripts/built.py` is the one carrier. `decide --point` says whether the step runs
+at a point and what a finding does there. `check --file` reads a finding, refuses the shapes above,
+derives the item's verdict, and prints what the role does next and what it offers. ⛔ **What the
+carrier never does is read the code**: which code answers a bullet is a reading only the role can
+take, and the carrier holds the reading to its shape.
+
 ## What the toolkit installs into a project, and what takes it out
 
 **Adoption costs one file a project writes, and a short list of files the toolkit writes.** The
