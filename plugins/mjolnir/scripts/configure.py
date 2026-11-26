@@ -1770,6 +1770,11 @@ ANSWERED_BY: dict[str, Answer] = {
         "it and carry on, or stop and ask you? Unstated, it reports. It never closes, "
         "reopens or rewrites an item itself (§ 42).",
     ),
+    "approach_ask.asked": ask(
+        "Should the implementing leg show you how it read the item and what it plans to "
+        "change, and wait for your go, before it writes its first edit? Unstated, it asks "
+        "nothing and starts writing once the item is claimed (§ 43).",
+    ),
 
     # --- § 5. An item filed with its questions open ------------------------
     "open_questions.mode": ask(

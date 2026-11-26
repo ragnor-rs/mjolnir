@@ -1,0 +1,39 @@
+name: Approach ask carrier
+
+# The carrier that holds the person's go on an item's approach before the implementing leg's first
+# edit. What a gate can hold about it is every arm that needs no tracker of anybody's: whether the
+# project asks, that an ask carries the reading and the plan and never its own answer, that a record
+# the route gave itself is refused, and that only an approved record read back off the item lets the
+# leg write -- a decline, no record, an edited record and unread comments each holding it.
+#
+# ⚠️ The tracker is a fake held in memory. What stays unheld is stated rather than assumed away:
+# whether the plan put to the person is the plan the leg then writes is the role's to keep by
+# § 43, so nothing here reads one against the other.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: the suite reads only the configuration examples in the checkout.
+permissions: {}
+
+jobs:
+  approach-ask-carrier:
+    name: Approach ask carrier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⚠️ Held
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command it
+      # mirrors is configured and never inferred. The workflow *name* above is held mechanically,
+      # by the `Host checks drift` run.
+      - name: Plant each refused ask and record, and assert what the leg reads back
+        run: python3 plugins/mjolnir/scripts/approach.py --self-test

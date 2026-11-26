@@ -4002,3 +4002,28 @@ role texts, and nothing there was run.
   Which code answers a bullet is a reading only the role can take. What a script can hold is that
   every citation exists, that the verdict is derived rather than written, and that nothing was
   performed.
+
+## The person's go on the approach, ruled out and then admitted as a project's act
+
+The loop asked the person one thing, the merge, and ruled out every question about how the route
+works before it reaches that act. One adopter's own starting skill asked before the first edit:
+it showed the item as read and the intended change, and implementation began on a yes. Its owner
+wanted the behaviour kept, because items there are a contract the owner validates, and work written
+against a misreading of one is work they would have refused before it was written. The gap was found
+by reading that skill against the shipped surface, and nothing was run.
+
+- **The ask is the project's to add, and asking nothing is the default**, at
+  [`schema.md § 43 → The ask`](../plugins/mjolnir/config/schema.md#the-ask-and-what-it-carries).
+  The loop's test is whether the act is the person's. Where a project states that its person signs
+  off the approach, it is; where it does not, the approach stays the route's own business, and a
+  default that asked would put a stop on every adopter's every item.
+- **The answer is kept on the item and read back before the first edit**, at
+  [`schema.md § 43 → The record`](../plugins/mjolnir/config/schema.md#the-record-and-what-the-leg-reads-before-it-writes).
+  No change exists yet for a record to live on, and an answer kept in a reply is one the next pass
+  cannot read. Only an approval read back lets the leg write: a decline, no record, an edited record
+  and unread comments each hold it, because none of them is the answer as it was given.
+- **The carrier refuses an answer the route gave itself**, at
+  [`schema.md § 43 → What the carrier holds`](../plugins/mjolnir/config/schema.md#what-the-carrier-holds-and-what-it-never-decides).
+  An unattended run is exactly where nobody receives the question. A record it wrote for itself
+  would turn the ask into a formality, so it stops instead, the way § 21's guard denies a prompt
+  the session could clear on its own behalf.

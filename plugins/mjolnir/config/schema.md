@@ -422,6 +422,13 @@ a judgement on the host that is theirs to record because this route holds the cr
 otherwise clear its own finding. **None of those is a question about how thoroughly this route
 works before it reaches the person's act.**
 
+One ask is a project's to add, and it passes the same test only because the project states that it
+does: **the go on an item's approach before the implementing leg's first edit**
+([§ 43](#43-the-persons-go-on-the-approach-before-the-first-edit)). Where a project states it, the
+approach is part of what its person signs off, so the act is theirs. Where a project does not, the
+approach is the route's own business like every other question above, and nothing is asked. It is
+not configuration of the merge ask, which no project can turn off.
+
 **Every question narrower than that one is answered by the role that needs it, and recorded.**
 Measured on this repository: a route that also asked how deep the reading goes, who runs the plan,
 and whether anybody intends to read the diff put a person's own merge authorization behind three
@@ -10725,6 +10732,81 @@ at a point and what a finding does there. `check --file` reads a finding, refuse
 derives the item's verdict, and prints what the role does next and what it offers. The carrier never
 reads the code: which code answers a bullet is a reading only the role can take, and the carrier
 holds the reading to its shape.
+
+## 43. The person's go on the approach, before the first edit
+
+```yaml
+approach_ask:
+  asked: never | before_first_edit # default: never
+```
+
+Some projects treat the approach to an item as part of what the person signs off, not only the
+merge: the item is a contract the owner validated, and work written against a misreading of it is
+work the owner would have refused before it was written. Under the default the implementing leg
+writes as soon as the starting role enters it, and § 42's `on_finding: stop` holds only when the
+work reads as built, partly built or unestablished. It never holds when the work reads as absent,
+which is the usual case. This facet lets a project make the approach the person's act, which is
+the test [§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) puts every ask to.
+
+This is a facet and no further leg of [§ The loop](#the-loop), for § 42's reason. No `carriers` key
+answers for it and no role enters it. It is a step inside the implementing role, whose own file says
+where it falls: after the condition is read and after § 42's step at `implement`, and before any
+edit.
+
+⛔ **`never` is the default, and under it nothing is asked.** The loop is then exactly the loop the
+rest of this surface states, and no reply mentions an ask.
+
+### The ask, and what it carries
+
+Under `before_first_edit` the implementing leg puts **one question** to the person, once per item
+and again only where the plan it puts changes: approve this approach, or decline it. The question
+carries what the person needs to judge it, and nothing they do not:
+
+| field | what it carries |
+|---|---|
+| `item` | the item, by identifier |
+| `reading` | the item as the role read it: its outcome, in the role's words |
+| `condition` and `bullets` | the acceptance condition, bullet by bullet as the item states it, or the item's outcome as one bullet where it states none ([§ 4.4](#44-template)) |
+| `plan` | the intended change, step by step: what is written, and where |
+
+⛔ **An ask that carries its own answer is refused.** The ask is the question. The answer is the
+person's, and it is written separately once they give it.
+
+### The record, and what the leg reads before it writes
+
+The answer is **recorded on the item**, as a comment through [§ 3](#3-tracker-port)'s `comment`,
+and read back through `read_comments` before the first edit. It goes on the item because no change
+exists yet for a record to live on, and a record kept in a reply is one the next pass cannot read.
+
+| what the item says | what the leg does |
+|---|---|
+| the latest record is `approved` | writes |
+| the latest record is `declined` | ⛔ makes no edit and ends the pass. The claim and the tree stay where they are, and the reply says so |
+| no record | ⛔ makes no edit: the ask has not been answered |
+| a record edited after it was written, or comments that could not be read | ⛔ makes no edit, and reports the record as **unread**: neither is the answer as it was given |
+
+The latest record governs, so a person who declined and was asked again after the plan changed can
+approve the second plan. A comment that does not open with the carrier's marker is never read as a
+record, whatever it says.
+
+⛔ **A record answered by the route itself is refused, and nothing is written.** The go is the
+person's. A run that cannot reach a person — an unattended one, where nobody receives the
+question — states the setting as unanswerable and **stops**, rather than approving its own approach.
+Which mode a session runs in is not a project's fact
+([§ 21](#21-a-command-that-could-open-a-session-on-a-live-machine) states the same about its own
+guard), so no key here turns an unattended mode into an answer.
+
+A tracker that cannot write or read a comment cannot keep the record. The leg then stops before its
+first edit with the operation named, by the fourth row above, and never proceeds on the ask having
+been put.
+
+### What the carrier holds, and what it never decides
+
+`plugins/mjolnir/scripts/approach.py` is the one carrier. `decide` says whether the project asks.
+`check --file` holds an ask to the shape above. `record` writes an answer onto the item and refuses
+one the route gave itself. `read` reads the latest record back and exits zero only on an approval.
+The carrier never decides the approach and never answers the ask: what the plan is belongs to the
+role, and whether it is approved belongs to the person.
 
 ## What the toolkit installs into a project, and what takes it out
 

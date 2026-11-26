@@ -542,6 +542,11 @@ built_check:
   points: [file, start]
   on_finding: stop
 
+approach_ask:
+  # § 43 stated: items here are a contract the owner validates, so the approach is part of
+  # what they sign off, and the implementing leg waits for their go before its first edit.
+  asked: before_first_edit
+
 # § 40's absent case, in its other shape: `deploy: []` above, so there is no target for a
 # criterion to be measurable **on**. ⛔ Not a project whose work goes unjudged — somebody reads
 # the change — and nothing here says whether anybody looks at a running copy by hand.

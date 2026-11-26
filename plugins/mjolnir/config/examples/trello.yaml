@@ -726,6 +726,9 @@ built_check:
   points: []
   on_finding: report
 
+approach_ask:
+  asked: never
+
 # § 40's stated arm, and the only shipped example that carries one: this is the ladder with an
 # `accepted` role in it, so it is the one project here where somebody judges a deployed item
 # before a release may carry it. ⛔ `identity` is keyed by a target's own `name` from `deploy`
