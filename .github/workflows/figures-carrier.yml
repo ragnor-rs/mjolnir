@@ -1,0 +1,38 @@
+name: Figures carrier
+
+# The carrier that reads a deploy's check figures and lowers an outcome only where a bound says so.
+# One mirrored command, so one workflow, per § 2 of plugins/mjolnir/config/schema.md — the rule its
+# siblings here cite too.
+#
+# ⚠️ The workflow name and the job name are deliberately the same string, as in every sibling:
+# `host.checks` is keyed by the workflow name and never by a job name, and identical names leave
+# no key to get wrong.
+#
+# ⛔ What runs here is the carrier's own assertion suite and not a verdict about this repository,
+# which states no deploy target and so reads no figure.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: every scope of the automatic token is dropped, and the checkout is
+# told not to leave it behind in the git config. No network either — the suite builds its own
+# report in a temporary directory.
+permissions: {}
+
+jobs:
+  figures-carrier:
+    name: Figures carrier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command: the grammar from both sides, every arm of what a figure does to an
+      # outcome, and real commands run in a directory the suite builds. That command is also the
+      # string `host.checks` states this run mirrors — held together by eye, as § 2 rules; the
+      # workflow *name* is held mechanically by the `Host checks drift` run.
+      - name: Assert the rules can fail, can pass, and read real commands
+        run: python3 plugins/mjolnir/scripts/figures.py --self-test

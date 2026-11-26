@@ -548,6 +548,26 @@ def surface_operations(name: str = TRACKER) -> dict[str, str]:
 # --- the contract ----------------------------------------------------------
 
 
+def _takes_a_list(parameter: inspect.Parameter) -> bool:
+    """Whether an implementation's parameter is annotated as taking a list.
+
+    ⛔ **The implementation's own signature is what answers**, not a table here:
+    a list of list-taking operations kept beside the implementations would be a
+    second statement of their parameters, free to disagree with them. Read off
+    the annotation as text, since the implementations defer their annotations,
+    and an optional list (`list[str] | None`) takes a list as much as a bare one.
+    """
+    annotation = parameter.annotation
+    if annotation is parameter.empty:
+        return False
+    text = "list" if annotation is list else str(annotation).replace("typing.", "")
+    text = re.sub(r"^Optional\[(.*)\]$", r"\1", text)
+    return any(
+        member.strip() == "list" or member.strip().startswith(("list[", "List["))
+        for member in text.split("|")
+    )
+
+
 class Adapter:
     """One tracker behind the port.
 
@@ -1044,6 +1064,53 @@ class Port:
                 f"is closed and holds: {', '.join(sorted(self.stated))}.",
             ) from None
 
+    def from_command_line(self, operation: str, values: list[str]) -> list:
+        """The `--argument` values, each read as the parameter it lands on takes.
+
+        A command line carries text alone, so a parameter that takes a list is
+        written there as a JSON array of strings and decoded here; every other
+        value goes on exactly as written. ⛔ **A value for a list that is not such
+        an array is refused by name**, rather than wrapped or split: either
+        reading would be a guess at what the caller meant.
+
+        Where the capability is absent there is nothing to read the parameters
+        off, so the values go on as written and `invoke` answers the fallback.
+        """
+        adapter = self.adapter
+        if adapter is None or not adapter.implements(operation):
+            return list(values)
+        positional = [
+            parameter
+            for parameter in inspect.signature(
+                adapter.operations[operation]
+            ).parameters.values()
+            if parameter.kind
+            in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
+        ]
+        read = []
+        for index, value in enumerate(values):
+            if index >= len(positional) or not _takes_a_list(positional[index]):
+                read.append(value)
+                continue
+            name = positional[index].name
+            try:
+                decoded = json.loads(value)
+            except ValueError:
+                decoded = None
+            if not (
+                isinstance(decoded, list)
+                and all(isinstance(entry, str) for entry in decoded)
+            ):
+                raise ConfigError(
+                    f"{self.spec.prefix}.operations.{operation}",
+                    f"takes a list as `{name}` (argument {index + 1}), and "
+                    f"{value!r} is not a JSON array of strings. From the command "
+                    "line a list is written as one, e.g. "
+                    "`--argument '[\"a\", \"b\"]'`; text is never split into one.",
+                )
+            read.append(decoded)
+        return read
+
     def invoke(self, operation: str, *args, **kwargs) -> Outcome:
         """Perform an operation, or come back with the fallback stated for it.
 
@@ -1064,7 +1131,9 @@ class Port:
         if adapter is None or not adapter.implements(operation):
             return Outcome(operation, performed=False, detail=fallback)
         try:
-            inspect.signature(adapter.operations[operation]).bind(*args, **kwargs)
+            bound = inspect.signature(adapter.operations[operation]).bind(
+                *args, **kwargs
+            )
         except TypeError as error:
             raise ConfigError(
                 f"{self.spec.prefix}.operations.{operation}",
@@ -1073,6 +1142,21 @@ class Port:
                 "takes and in what order is the contract's -- read the port's own "
                 "report rather than guessing at the list.",
             ) from None
+        # ⛔ Text where the operation takes a list is refused by name, never
+        # handed on: an implementation iterating it writes one value per
+        # character, which is how `role` reached the host as `r`, `o`, `l`, `e`.
+        for name, value in bound.arguments.items():
+            if isinstance(value, str) and _takes_a_list(
+                bound.signature.parameters[name]
+            ):
+                raise ConfigError(
+                    f"{self.spec.prefix}.operations.{operation}",
+                    f"takes a list as `{name}` and was handed the text {value!r}. "
+                    "Text is never read as a list, since iterating it would hand "
+                    "the tracker one value per character; from the command line a "
+                    f"list is written as a JSON array, `--argument "
+                    f"'[\"{value}\"]'`.",
+                )
         # ⛔ The configuration goes to the implementation here, every time, and
         # the implementation keeps none of its own. An adapter that resolved the
         # project itself would read it from the working directory -- which § 2
@@ -2353,6 +2437,92 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         "while a genuine absence is not marked failed",
         not nothing.invoke(one).failed,
     )
+
+    # ⛔ A list-valued argument: decoded from a JSON array on the command line,
+    # and text handed to it refused by name rather than iterated -- which is how
+    # one label reached the host as one label per character.
+    if {"set_labels", "comment"} <= set(stated):
+
+        def _labels(number: str, labels: list[str]) -> list:
+            return [number, labels]
+
+        def _comment(number: str, body: str) -> list:
+            return [number, body]
+
+        listing = Port(
+            _any_example(),
+            spec,
+            adapter=Adapter({"set_labels": _labels, "comment": _comment}),
+            stated=stated,
+        )
+        read = listing.from_command_line("set_labels", ["5", '["role", "b"]'])
+        check(
+            "a list argument written as a JSON array reaches the operation as a list",
+            read == ["5", ["role", "b"]]
+            and listing.invoke("set_labels", *read).result == ["5", ["role", "b"]],
+            f"read {read!r}",
+        )
+        prefix = f"{spec.prefix}.operations.set_labels"
+        check(
+            "⛔ text handed to an operation that takes a list is refused, not iterated",
+            _refused(lambda: listing.invoke("set_labels", "5", "role")) == prefix,
+            f"refused on {_refused(lambda: listing.invoke('set_labels', '5', 'role'))!r}",
+        )
+        check(
+            "and from the command line a list that is not a JSON array is refused",
+            all(
+                _refused(lambda v=value: listing.from_command_line("set_labels", ["5", v]))
+                == prefix
+                for value in ("role", '"role"', "[1]", '{"a": 1}')
+            ),
+        )
+        try:
+            listing.invoke("set_labels", "5", "role")
+            said = ""
+        except ConfigError as error:
+            said = str(error)
+        check(
+            "and the refusal names the parameter and how a list is written",
+            "`labels`" in said and "JSON array" in said,
+            said,
+        )
+        check(
+            "an operation taking text receives exactly what was written",
+            listing.from_command_line("comment", ["5", '["x"]']) == ["5", '["x"]']
+            and listing.invoke("comment", "5", '["x"]').result == ["5", '["x"]'],
+        )
+
+    def _annotated(annotation) -> inspect.Parameter:
+        return inspect.Parameter(
+            "p", inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=annotation
+        )
+
+    read_as = {
+        annotation: _takes_a_list(_annotated(annotation))
+        for annotation in (
+            "list[str]", "None | list[str]", "Optional[list[str]]", list,
+            "str", "dict | int | str", "listing", inspect.Parameter.empty,
+        )
+    }
+    check(
+        "a list annotation is read as one in whichever position a union names it",
+        [annotation for annotation, taken in read_as.items() if taken]
+        == ["list[str]", "None | list[str]", "Optional[list[str]]", list],
+        f"read {read_as!r}",
+    )
+
+    # ⛔ And the implementations this port installs are read the same way: an
+    # annotation the reader did not recognise would send text on to be iterated.
+    for kind, implementation in sorted(load_adapters(spec).items()):
+        for name in ("set_labels", "create_item"):
+            if not implementation.implements(name):
+                continue
+            parameters = inspect.signature(implementation.operations[name]).parameters
+            check(
+                f"`{kind}`'s `{name}` is read as taking its labels as a list",
+                "labels" in parameters and _takes_a_list(parameters["labels"]),
+                f"its parameters are {list(parameters)!r}",
+            )
     # The capability is still declared: a failure is not an absence, so the query
     # must keep answering yes. Reading it the other way would have a role give up
     # on an operation its tracker has because one call timed out.
@@ -4240,8 +4410,9 @@ def main(argv: list[str]) -> int:
         "--invoke",
         metavar="OPERATION",
         help="perform one of this port's operations rather than reporting it, and "
-        "print the outcome. Every value is passed as written; an implementation "
-        "holds what it will accept",
+        "print the outcome. Every value is passed as written but a list, which "
+        "`--argument` says how to write; an implementation holds what it will "
+        "accept",
     )
     parser.add_argument(
         "--argument",
@@ -4249,7 +4420,9 @@ def main(argv: list[str]) -> int:
         default=[],
         metavar="VALUE",
         help="one argument for `--invoke`, repeated in the order the operation "
-        "takes them. Always passed as text",
+        "takes them. Passed as text, except where the operation takes a list "
+        "there: that one is written as a JSON array of strings, "
+        "`--argument '[\"a\", \"b\"]'`, and anything else is refused",
     )
     parser.add_argument(
         "--type",
@@ -4640,7 +4813,11 @@ def main(argv: list[str]) -> int:
                 check_paths=not args.no_check_paths,
             )
             stated = {} if args.type is None else {"type": args.type}
-            outcome = answering.invoke(args.invoke, *args.argument, **stated)
+            outcome = answering.invoke(
+                args.invoke,
+                *answering.from_command_line(args.invoke, args.argument),
+                **stated,
+            )
         except ConfigError as error:
             # ⛔ Reported as a refusal and never as a traceback. A value the
             # configuration states badly, or an operation this port does not

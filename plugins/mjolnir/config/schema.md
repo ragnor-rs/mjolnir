@@ -2391,6 +2391,42 @@ writer is.
 A status stating `writer` is asked for no path, and one handed over is not read. What a grouping's
 close needs of a classed status is [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s.
 
+#### A commitment written apart from the move
+
+The two values an item is committed with — [§ 4.3](#43-estimate)'s estimate and
+[§ 4.5](#45-due-date)'s date — each take a `writer` of their own, from the set above:
+
+```yaml
+statuses:
+  - { name: "…", role: ready, writer: orderer }
+work_item:
+  estimate: { carrier: field, field: "…", writer: procedure }
+  due_date: { carrier: native, writer: procedure }
+```
+
+⛔ **A value stating no `writer` has the writer of the status whose role is `ready`**, so a project
+that states none behaves as it always did: where a person admits the item, the gating role writes
+neither value. ⚠️ A `ready` status stating `writers` has no one writer before any work exists, so a
+value under it with no `writer` of its own is written by nobody.
+
+⛔ **The gating role writes a value whose writer is `procedure`, and makes the move only where the
+status's writer is `procedure` too.** Where the move is somebody else's, it writes the values, then
+reports the move for that writer and names who it is. ⛔ **Where the move is the procedure's and a
+carried value is somebody else's, the move waits for that value** and the report names it: an item
+admitted without its commitment reads as gated to every role after it. ⚠️ **What a person's move
+costs is an item carrying its commitment and still outside the committed set** until the person
+moves it. A project stating the key has accepted that cost; one that states nothing still gets the
+all-or-nothing rule.
+
+⛔ **A value written `procedure` under a `ready` status written `never` is refused when the
+configuration is read**, naming the value's key. `never` states that the tracker credential acts as
+a person, so any write would read as that person speaking. A field writer cannot override that.
+⛔ So is a `writer` on a value whose carrier is `none`, which names a writer for nothing, and one on
+a project that maps no `ready` status, where no gate commits anything.
+
+What the gating role reads is one answer, not three keys: `config.py --commitment` reports each
+carried value with its writer and where that writer came from, and the move with its own writer.
+
 ### 4.3 Estimate
 
 ```yaml
@@ -2401,12 +2437,14 @@ work_item:
     values: [1, 2, 5, 8, 13]
     label_prefix: "E:"           # when carrier is label
     band: top                    # when each rung is the top of a band
+    writer: "…"
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
 
 Four carriers observed, plus a deliberate absence. `carrier: none` with a stated reason is a
-first-class setting; an unset carrier is a misconfiguration.
+first-class setting; an unset carrier is a misconfiguration. Who writes the estimate is covered in
+[§ 4.2 → A commitment written apart from the move](#a-commitment-written-apart-from-the-move).
 
 ⛔ **One rule here is procedure, not configuration, and holds everywhere:** an estimate is a
 bound written before the work, and a logged hour is a measurement written after. **Never move a
@@ -2514,6 +2552,7 @@ work_item:
   due_date:
     carrier: native | field | none           # required; absent_reason
     field: "…"                   # when carrier is field
+    writer: "…"
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2521,7 +2560,9 @@ work_item:
 The date an item is committed for. **Which role writes it is § The loop's statement and is not
 restated here**; what belongs here is why that role and no other: filing writes the item before
 anyone has committed to it and starting is downstream of the commitment, so a date set in either
-place is a promise made where nobody was asked for one.
+place is a promise made where nobody was asked for one. Whether that role writes it where a person
+makes the move is covered in
+[§ 4.2 → A commitment written apart from the move](#a-commitment-written-apart-from-the-move).
 
 `native` is the tracker's own due date and `field` is a named field where the tracker has none.
 ⚠️ **The carrier says where a date is written, never what the date is.** What computes one is not
@@ -8691,6 +8732,14 @@ deploy:
       name:       "<the name a step's outcome is handed back under>"
       command:    "<the whole command; it may place {deploy:commit}, {deploy:target} and {choose:<name>}>"
       performed_by: procedure | human
+    figures:                   # a list; one entry per check whose figures the reply carries
+      check:      "<the check's name, as the verification reports its outcome>"
+      reads:      "<a command printing that check's figures, one `<name> <number>` per line>"
+      names:      "<the figures that check is expected to report, as a list>"
+      bounds:                  # a list; one entry per figure allowed to decide anything
+        figure:   "<one of `names`>"
+        min:      "<the least value that keeps the check's outcome>"
+        max:      "<the greatest value that keeps it>"
 ```
 
 ⛔ **The last of those is a block rather than a value, and what it is read for is
@@ -9181,6 +9230,66 @@ resolved, where it runs, who performs it, and whether any runs. Handed each perf
 with `--step <name>=<outcome>`, it names where the sequence stopped and what was left standing.
 ⚠️ **A target that omits the key runs nothing after its verification**, which is what every
 target did before the key existed.
+
+### A check's figures, and the bound that lets one decide anything
+
+⛔ **An outcome says whether a check passed; the figures behind it say how much it covered**, and a
+deploy reply that carries only the first hands a reader a `passed` over three cases and a `passed`
+over three thousand as the same fact. `figures` states where each check's figures are read from,
+and the reply carries them beside the outcome.
+
+**What the command prints is the one contract a project writes to**, in the form
+[§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran) already uses for a
+count: the procedure reads numbers and never output, so no runner or report format enters the
+toolkit, and a project whose verification prints something else states a command ending in
+whatever turns it into this:
+
+```
+<name> <number>
+```
+
+- **One figure per line**, the name a single word of letters, digits, `_`, `.` and `-`, and the
+  number an integer or a decimal. Blank lines are read as nothing.
+- ⛔ **A line this grammar cannot read refuses the whole command's reading**, and so does one name
+  printed twice or a command that exited non-zero: a line nobody can parse may be the figure, and a
+  reader that skipped it would report a number it did not read. Every figure the entry names is then
+  `unread`, with the reason.
+- ⛔ **`names` is what makes a missing figure visible.** A figure the entry names and the command did
+  not print is reported `unread`, never left out — an omission reads exactly like a check with
+  nothing to report. A figure printed and not named is reported and decides nothing.
+- ⚠️ **The command runs at the target's code root, through a shell**, the same trust as the
+  commands `host.checks` already states, and after the deploy rather than beside it — the figures
+  are about what the verification read of the target, which exists only once it has run.
+
+⛔ **No figure decides a verdict unless the entry states a bound for it.** Every figure is reported
+and nothing is judged, which is § 16's rule for every count above its one floor, arriving here; a
+project that wants a figure to hold the advance says so with `bounds`, and the bound is the whole of
+the judgement — `min`, `max` or both, numbers, `min` no greater than `max`, one bound per figure,
+and each naming a figure `names` carries.
+
+| a bounded figure reads | what it does to the outcome handed for its check |
+|---|---|
+| inside its bound | nothing: the outcome is what the verification reported |
+| outside its bound | a `passed` becomes `failed` — a check that passed over too few cases did not pass; any other outcome is kept |
+| `unread` | a `passed` becomes `unread`; any other outcome is kept |
+
+⚠️ **A check handed no outcome is handed none still**, whatever its figures read, which
+`--advance-for` already reads as `unread`.
+
+⛔ **A bound only ever lowers an outcome**, and the lowered outcome is what is handed to `--advance-for`
+([above](#what-an-advance-requires-and-what-holds-it)), whose table then decides whether it holds —
+so a bound on a check the target does not require is reported and still holds nothing under a target
+that names its checks. ⛔ **And `bounds` is refused beside `advances: none`**, by the rule
+[`The three shapes`](#the-three-shapes-a-target-is-reached-by) states for a key the entry never reads:
+a target that moves nothing has no outcome for a bound to lower. `figures` without bounds is accepted
+there, the reply carrying them either way.
+
+⛔ **A target that omits `figures` reads none**, and the reply says it reads none rather than that a
+check reported nothing: every configuration written before the key behaves exactly as it did.
+⚠️ **What reads the figures and applies the bounds is the carrier's**: the role runs
+`figures.py --target <target>` with each outcome it read as `--reading <check>=<outcome>`, and what
+comes back names every figure, its value or why it is unread, its bound, and the outcomes to hand
+on.
 
 ### Publishing a grouping, and the precondition that holds the whole target
 
