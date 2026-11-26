@@ -439,7 +439,11 @@ def store_for(skills_root: str | Path, git=None) -> Path:
     one machine never share a place and nothing about either of them is written
     into a directory name.
     """
-    digest = hashlib.sha256(store_key(skills_root, git).encode("utf-8")).hexdigest()[:16]
+    return _store_at(store_key(skills_root, git))
+
+
+def _store_at(key: str) -> Path:
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
     return Path(tempfile.gettempdir()) / "mjolnir-leases" / digest
 
 
@@ -2600,8 +2604,15 @@ def prompts_for(loaded, store: Path | None) -> Path:
 
     Beside this project's leases and not among them: the lease sweep reads the
     files of its own directory, and a note is no place on anything.
+
+    ⚠️ Keyed by the skills root's own path and never by `store_key`: a note is
+    one session's, read back by that session's own exit event, so no sibling
+    tree has a reason to see it — and this is reached on every guarded call, so
+    the repository's key would put a git process on each one in a project that
+    states no exclusive resource at all.
     """
-    return (store if store is not None else store_for(loaded.skills_root)) / "prompts"
+    return (store if store is not None else _store_at(str(Path(loaded.skills_root).resolve()))
+            ) / "prompts"
 
 
 def _note_path(where: Path, payload: dict) -> Path:
@@ -3817,6 +3828,18 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check("and a git that answers nothing reads the same as no repository",
                   store_key(repository, git=lambda _root, _args: (1, ""))
                   == str(repository))
+
+            # ⛔ The note store is reached on every guarded call, so a git
+            # process there is paid by every project, resources or none.
+            asked_git = []
+            real_git = globals()["_run_git"]
+            globals()["_run_git"] = lambda *args: asked_git.append(args) or (1, "")
+            try:
+                prompts_for(_a_config([], root=str(repository)), None)
+            finally:
+                globals()["_run_git"] = real_git
+            check("and the per-call note store asks git nothing", asked_git == [],
+                  repr(asked_git)[:120])
         finally:
             tempfile.tempdir = machine_temp
 
