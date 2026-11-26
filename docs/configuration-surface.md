@@ -3962,10 +3962,8 @@ eight planted violations now names its own.
 ### A ban fails the document that states it
 
 ⛔ **A forbidding entry with no scope holds every governed document, including the one that defines
-the ban**, and that document has to name the banned thing to define it. One adopter's audit, read
-against the shipped code and not run, measured this as the gap: under an unscoped entry that
-adopter's only options were to drop the ban or to reword the rule that states it until it no longer
-says what is banned. That is why
+the ban**, and that document has to name the banned thing to define it. An adopter audit found the
+gap by reading the shipped surface and code, without running them. That is why
 [`schema.md § 38 → Which documents a forbidding entry holds`](../plugins/mjolnir/config/schema.md#which-documents-a-forbidding-entry-holds)
 lets an entry narrow itself with `covers` and take documents out with `exempt`, each exemption
 carrying its reason.

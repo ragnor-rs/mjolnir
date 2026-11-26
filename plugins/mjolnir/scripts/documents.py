@@ -480,6 +480,12 @@ def held_by(entry: dict, governed_now: list) -> tuple:
         if not matched:
             stale.append((f"exempt[{at}].glob", glob, "no document this entry holds"))
         held = [path for path in held if path not in matched]
+    # ⛔ Every glob may match and the entry still hold nothing, where its
+    # exemptions take out all it covers -- the same scope holding nothing,
+    # reached through globs each of which is live.
+    if candidates and not held:
+        globs = ", ".join(str(item.get("glob")) for item in entry.get("exempt") or ())
+        stale.append(("exempt", globs, "every document this entry would hold"))
     return sorted(held), stale
 
 
@@ -910,6 +916,18 @@ def _plant_an_exemption_outside_what_the_entry_covers(subject: Subject) -> Subje
     )
 
 
+def _plant_exemptions_that_take_out_everything_covered(subject: Subject) -> Subject:
+    """Every glob live, and the entry holding nothing once its exemptions apply.
+
+    ⚠️ Each glob here matches a document the entry covers, so the per-glob test
+    stays green on it; what reddens it is the entry's held set being empty.
+    """
+    return _scoped(
+        subject, covers=["docs/**/*.md"],
+        exempt=[{"glob": "docs/*.md", "reason": "it defines the ban"}],
+    )
+
+
 def _plant_a_forbidden_pattern_that_cannot_compile(subject: Subject) -> Subject:
     subject.forbidden = [
         {"pattern": "A(Retired", "reason": "a typo in the pattern",
@@ -1006,6 +1024,8 @@ VIOLATIONS = [
      _plant_an_exemption_matching_no_governed_document),
     ("no forbidden name appears", "an exempt glob outside what the entry covers",
      _plant_an_exemption_outside_what_the_entry_covers),
+    ("no forbidden name appears", "exemptions taking out every document the entry covers",
+     _plant_exemptions_that_take_out_everything_covered),
     ("no forbidden name appears", "a forbidden pattern that cannot be evaluated",
      _plant_a_forbidden_pattern_that_cannot_compile),
     ("a table keeps its shape", "a table row short of a cell", _plant_a_ragged_table),

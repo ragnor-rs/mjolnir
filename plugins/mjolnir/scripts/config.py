@@ -13680,6 +13680,24 @@ def self_test() -> int:
         broken = _refused(scoped)
         check(f"{label} loads", broken is None, f"refused {broken!r}")
 
+    # ⛔ And the surface that has lost the scope keys from its entry fence: this
+    # reader names them optional, so a fence without them is refused rather than
+    # left to make every other key read as the whole of an entry.
+    with open(SURFACE, encoding="utf-8") as handle:
+        surface_text = handle.read()
+    unscoped_surface = re.sub(
+        r"\n    covers: .*\n    exempt: .*\n      glob: .*\n      reason: .*\n", "\n",
+        surface_text, count=1,
+    )
+    lost = _a_valid_example()
+    lost["documents"] = _a_documents_of(forbidden=[_a_forbidden_name()])
+    broken = _refused(lost, facts=surface_facts(unscoped_surface))
+    check(
+        "a surface whose forbidding entry has lost its scope keys is refused",
+        unscoped_surface != surface_text and broken == "documents.forbidden",
+        f"stripped {unscoped_surface != surface_text}, refused {broken!r}",
+    )
+
     # ⛔ § 37 against § 28's list, both directions. ⚠️ The list is how a project
     # states a key without writing it, and this facet read that rule in one
     # direction only -- so the arm below is the green side and the one under it

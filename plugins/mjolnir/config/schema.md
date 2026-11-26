@@ -8923,9 +8923,10 @@ document an entry holds is one `covers` matches, or any governed document where 
 and no `exempt` glob matches.
 
 ⛔ **A scope matching nothing is a red, not a scope that holds nothing.** A `covers` glob that
-matches no governed document, and an `exempt` glob that matches no document the entry would
-otherwise hold, are each reported by the check, so a scope that went stale when a file moved is not
-read as the entry having nothing to find. ⛔ **An exemption carries its reason, and `covers: []` and
+matches no governed document, an `exempt` glob that matches no document the entry would otherwise
+hold, and exemptions that together take out every document the entry covers are each reported by
+the check, so a scope that went stale when a file moved is not read as the entry having nothing to
+find. ⛔ **An exemption carries its reason, and `covers: []` and
 `exempt: []` are refused at load**: an empty `covers` would hold no document while reading as
 holding some, and the absent key is how an entry says it holds every one or exempts none.
 
