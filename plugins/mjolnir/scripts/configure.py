@@ -1281,7 +1281,11 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which deploy targets does this project have?",
     ),
     "deploy.invoke": ask(
-        "How is this target reached -- a command, a dispatch, or by hand?",
+        "How is this target reached -- a command, a dispatch, or by hand? Or is "
+        "it named and not implemented yet?",
+    ),
+    "deploy.reason": ask(
+        "Why does nothing reach this target yet? A deploy of it stops with this.",
     ),
     "deploy.command": ask(
         "Which command?",
@@ -1368,6 +1372,18 @@ ANSWERED_BY: dict[str, Answer] = {
     "deploy.advance_requires.reading": ask(
         "And which of the project's own readings must agree -- an exact served "
         "commit, every service's image?",
+    ),
+    "deploy.after_verified.name": ask(
+        "Does anything run once this target's deploy is verified -- a tag, a "
+        "fast-forward, a rebase of the next branch? Name each step. ⚠️ Nothing is "
+        "an answer: the key is then omitted and nothing runs after it (§ 33).",
+    ),
+    "deploy.after_verified.command": ask(
+        "Which whole command is that step? It may place the deployed commit and "
+        "this target's choices (§ 33).",
+    ),
+    "deploy.after_verified.performed_by": ask(
+        "Does the procedure run it, or does a person perform it and say so?",
     ),
     "deploy.figures.check": ask(
         "Does a check this target's verification runs report figures -- case "
