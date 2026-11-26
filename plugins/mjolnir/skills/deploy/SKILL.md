@@ -344,12 +344,12 @@ the write cannot be taken back — and ⛔ **no key turns it off**, `apply_by` d
 the command once it is recorded.
 
 **Show, in the question:** the target, that the entry states it live, the dump's path or name and
-that it was read back, the preview of the pending writes **whole** — or the path the carrier names
-where the step states `preview.at` — or that no preview is stated, the rehearsal's output **whole**
-or that there was none, the order being taken and that it is the configured one, and who the entry
-says performs the write. ⛔ **The preview is shown as a preview and never as the rehearsal**: it
-runs nothing against the store, so a step stating one and no `rehearse` is still asked with *no
-rehearsal* said.
+that it was read back, or that the step takes no backup with the reason the plan quotes —
+the preview of the pending writes **whole** — or the path the carrier names where the step states
+`preview.at` — or that no preview is stated, the rehearsal's output **whole** or that there was
+none, the order being taken and that it is the configured one, and who the entry says performs the
+write. ⛔ **The preview is shown as a preview and never as the rehearsal**: it runs nothing against
+the store, so a step stating one and no `rehearse` is still asked with *no rehearsal* said.
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" apply --target "<the entry's name>" \
@@ -366,8 +366,8 @@ shorter spelling, which the names check reads as the build tool of the same name
 whole command.
 
 - ⛔ **The go is handed over as they wrote it and is never composed to satisfy the carrier.** It
-  refuses one that names neither the target nor the rehearsal's verdict, and that refusal is
-  reported, not worked around.
+  refuses one that names neither the target nor the rehearsal's verdict — nor, on a step taking no
+  backup, that there is none — and that refusal is reported, not worked around.
 - **Silence is not a yes.** Nothing is invoked, the deploy stays unmade, and the reply says the
   question went unanswered.
 - **Where `apply_by` is `person` the carrier makes no write and hands the command over**, and the
@@ -657,12 +657,12 @@ content enumerates.
 - **whether the verification held the advance** — every check `--advance-for` reported, its
   outcome, whether the target requires it, and which hold; and where the target names no check,
   that § 33's default governed, not that every check passed;
-- **the live data step, where the target carries one** — that the dump was verified and by what,
-  whether a preview ran and where its output is, whether a rehearsal ran at all, what its output
-  was read as, which order was taken and whether the configured one was overruled, and whether the
-  write ran or was handed over — per step, by
-  name, where the target lists several, with the writes made and not made. A target stating no
-  step says so, by
+- **the live data step, where the target carries one** — that the dump was verified and by what, or
+  that the step takes none and why, whether a preview ran and where its output is, whether a
+  rehearsal ran at all, what its output was read as, which order was taken and whether the
+  configured one was overruled, and whether the write ran or was handed over — per step, by name,
+  where the target lists several, with the writes made and not made. A target stating no step says
+  so, by
   [`§ 35`](../../config/schema.md#35-the-live-data-step-a-deploy-performs-and-the-rails-it-is-performed-under),
   and is never left out;
 - **what the deploy left standing** — a version spent, a branch ahead of what the target serves,
