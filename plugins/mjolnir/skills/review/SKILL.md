@@ -255,8 +255,13 @@ Before each fix commit, ask what the branch admits, with the staged paths
 states the verdicts):
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <the staged paths> --on-branch <the change's branch>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <the staged paths> --on-branch <the change's branch> \
+  --ahead <every path the branch's unpushed commits carry>
 ```
+
+`--ahead` is given with no path where nothing is unpushed. This role's push puts the change in
+front of review, so it reads `push_for_review` rather than `push`: both commits are pushed where it
+is true, and where it is false the push is not made, which is a stop naming the rule.
 
 A path left out is named on the reply. A `stop` is a finding this pass cannot commit, and the reply
 names its paths.

@@ -765,8 +765,12 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which paths may a commit on those branches carry?",
     ),
     "commit.branch_rules.otherwise": ask(
-        "And a commit carrying any other path -- does it stop, or leave that path "
-        "out and commit the rest?",
+        "And a commit carrying any other path -- does it stop, leave that path "
+        "out and commit the rest, or commit it after the rest and not push it?",
+    ),
+    "commit.branch_rules.push": ask(
+        "Is there a branch commits are made on and never pushed? Absent, every "
+        "commit is pushed as it is today.",
     ),
 
     # --- § 7. Carrier ------------------------------------------------------
