@@ -396,6 +396,11 @@ spend_guard:
   # stale, while a missing one is a key nobody knew to look for.
   deny: []
 
+# No launcher is listed, so a call is read by its own command positions and nothing handed to a shell
+# as a string is read.
+command_position:
+  launchers: []
+
 live_guard:
   # The first day again, on the other guard: nothing here runs anywhere but this machine, so there
   # is no session command to name. ⚠️ Stated empty for the same reason as the list above — the day

@@ -65,8 +65,8 @@ tracker:
 
 work_item:
   type:
-    # A user-owned repository on this host has no native issue types at all,
-    # so the type is carried as a label convention.
+    # This project carries its type as a label convention. The host states native
+    # issue types too, and stating them does not make them the carrier.
     carrier: label
     label_prefix: "type:"
     values: [bug, feature, task]
@@ -311,6 +311,12 @@ branch_model:
   # directory, not what the tree holds. A path, never a step — the steps are the pointer below.
   tree_dir: ".claude/worktrees/items"
   mechanics: ".claude/worktrees.md"   # the tree's own setup and teardown steps
+  # What the tree started that is still up, one per line. Asked before the tree is removed, with
+  # the tree's path in `MJOLNIR_TREE`; a line printed keeps the tree, and so does a failure.
+  resource_up: "<the command that prints what a tree started and is still up>"
+  # What stops the instance a tree started. Run before the tree is removed, with the tree's path in
+  # `MJOLNIR_TREE`; a failure keeps the tree.
+  teardown: "<the command that stops what a tree started>"
   # The non-empty shape, and the one the pointer above implies: a tree that has something installed
   # into it holds ignored files that running the install again writes back. ⚠️ The environment file
   # the pointer copies in is deliberately absent from this list — a copied secret is written by
@@ -326,6 +332,10 @@ branch_model:
       subject: tree
       claimed_by: "<what the command that boots the instance is matched against>"
       probe: "<prints how many instances are up>"
+      # An instance is in the probe's count within a minute of launch, and past that its lease is
+      # not added to the count a second time.
+      grace: 60
+      probe_timeout: 5
       ttl: 1800
     - name: "<the build daemon's slots>"
       cap: 2
@@ -498,6 +508,11 @@ spend_guard:
   # The resume price is read here too, and the bar is this project's: the window it pays to
   # rewrite is the same window the deploy above is driven from.
   resume_bar_usd: 0.5
+
+# No launcher is listed, so a call is read by its own command positions and nothing handed to a shell
+# as a string is read.
+command_position:
+  launchers: []
 
 live_guard:
   # The same environment the deploy above reaches, guarded one layer lower: the release goes

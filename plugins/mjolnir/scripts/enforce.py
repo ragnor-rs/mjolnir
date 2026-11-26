@@ -11,10 +11,9 @@ project that states no configuration. This script is the carrier for each:
               refuse a local run the host's own runs have already made, then
               hold a place on whatever the call puts at stake -- and nothing at
               all where the project states no configuration
-    release   a `PostToolUse`, `Stop`, `SessionEnd` or `SubagentStop` answer:
-              give back the places this session is holding -- and, at two of
-              those four, report whether this tree's branch has fallen behind
-              its base
+    release   an answer to any event `RELEASE_EVENTS` maps: give back the
+              places this session is holding -- and, at two of those events,
+              report whether this tree's branch has fallen behind its base
     record    write the recorded answer a guard reads onto a change
     held      report what is held right now, and by what
 
@@ -45,23 +44,32 @@ Usage:
     enforce.py release                      a hook payload on stdin
     enforce.py record --change O/R#N --question Q --given TEXT --by WHO
     enforce.py held   [--skills-root R]
+    enforce.py wait   --resource N [--within SECONDS] [--skills-root R] [--cwd DIR]
     enforce.py --self-test
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import io
+import itertools
 import json
 import os
 import re
 import shlex
+import signal
 import subprocess
 import sys
 import tempfile
 import time
 from pathlib import Path
+from urllib.parse import quote
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import spend as position  # noqa: E402 -- the one reading of where a command is
 
 # What this carrier is, read from this file and declared nowhere else, by schema.md
 # § Whether a project can adopt this procedure at all. ⛔ The class is the hook's own and not
@@ -91,6 +99,7 @@ ARM_ANCHORS = {
 }
 
 RECORD_CITATION = "schema § 7 → What a hook refuses, and the record it reads"
+DIRECTION_CITATION = "schema § 7 → Which direction a guard fails in"
 LEASE_CITATION = ("schema § 7 → A lease on an exclusive resource, and the exit paths that "
                   "release it")
 ALREADY_RUN_CITATION = "schema § 18 → The guard on a command the host has already run"
@@ -138,11 +147,6 @@ NOT_OPERATIONAL = {"startup_failure", "action_required", "stale"}
 # rather than past it.
 IN_FLIGHT = {"queued", "in_progress", "requested", "waiting", "pending"}
 
-# The words that end one command inside a call, so what follows begins another in
-# command position. ⛔ Read as tokens rather than searched for as text: a quoted
-# argument carrying one of them is an argument.
-SEPARATORS = {"&&", "||", "|", ";", "&", "(", ")", "{", "}", "!", "\n"}
-
 # The carrier, and every event an arm here answers. ⛔ Held rather than assumed:
 # an event that stopped being registered leaves the arm dead in every session,
 # and a dead guard reports green on every act it was supposed to refuse.
@@ -154,7 +158,9 @@ GUARD_EVENT = "PreToolUse"
 # the one call that just ended, or every place the session is holding.
 RELEASE_EVENTS = {
     "PostToolUse": "call",
+    "PostToolUseFailure": "call",
     "Stop": "session",
+    "StopFailure": "session",
     "SessionEnd": "session",
     "SubagentStop": "session",
 }
@@ -164,7 +170,7 @@ RELEASE_EVENTS = {
 GUARDED_TOOL = "Bash"
 
 # § 7's two points a branch is measured against its base at, and ⛔ **two of the
-# four events above rather than all of them**: a session ending is a report
+# events above rather than all of them**: a session ending is a report
 # nobody is left to act on, and a subagent stopping is not this tree's turn
 # ending. The second entry is further narrowed to a call that merged, which is
 # read with the merge guard's own grammar rather than a second one.
@@ -197,15 +203,30 @@ BEHIND_TIMEOUT = 3
 # --- the record a guard reads ----------------------------------------------
 #
 # The form is the surface's: one comment on the change, keyed by the repository
-# and the change's own number, stating the question, the answer as it came back,
-# who answered and when. It is a visible table rather than a hidden marker, for
+# and the change's own number, stating the question, its verdict, the answer as it
+# came back, who answered and when. It is a visible table rather than a hidden marker, for
 # two reasons: the boundary carrier reports an HTML comment as a span that
 # renders as nothing, so a record written as one would be surfaced as a finding
 # every time a role ingested the change; and a record a person cannot read on the
 # change is a record only a machine can audit.
 
 RECORD_MARKER = "**mjolnir · recorded answer**"
-RECORD_COLUMNS = ["question", "answer", "answered by", "answered at"]
+RECORD_COLUMNS = ["question", "verdict", "answer", "answered by", "answered at", "at commit"]
+
+# ⚠️ A record written without a verdict or a commit is still read, so that the
+# questions no guard holds keep their answers and the merge guard can say what the
+# answer lacks rather than that there is no answer.
+OPTIONAL_COLUMNS = ("verdict", "at commit")
+
+# ⛔ The whole commit and never a prefix: a comparison with an abbreviation is a
+# comparison something has to resolve, and the guard resolves nothing.
+COMMIT = re.compile(r"^[0-9a-f]{40}(?:[0-9a-f]{24})?$")
+
+# § 2's key for what an approval covers, the value that widens it, and the value
+# a project that states nothing has.
+APPROVAL_COVERS = "host.landing.approval_covers"
+COVERS_COMMIT = "commit"
+COVERS_CONTENT = "content"
 
 # The question a merge is held on, and where the whole vocabulary comes from.
 # ⛔ The name is read out of the surface's own alternation rather than carried
@@ -223,12 +244,16 @@ RECORD_COLUMNS = ["question", "answer", "answered by", "answered at"]
 # measured, and the reason the key moved here from `read_by_a_person`, which the
 # surface has since retired from the alternation entirely.
 #
-# ⚠️ What this guard therefore establishes is that the ask was put and answered,
-# never that a person answered it: the `answered by` cell is written by the same
-# pass that writes the answer. § 7 states that bound rather than implying the
+# ⚠️ What this guard therefore establishes is that an approval is recorded, never
+# that a person gave it: the verdict and the `answered by` cell are written by the
+# same pass that writes the answer. § 7 states that bound rather than implying the
 # stronger one, and what holds that cell honest is the authorship rule.
 MERGE_QUESTION = "merge_now"
 QUESTION_VOCABULARY = "recorded_answer.question"
+
+# The one verdict that allows a merge, held to the surface's list the same way.
+APPROVED = "approved"
+VERDICT_VOCABULARY = "recorded_answer.verdict"
 
 # A change named the way the record is keyed. ⛔ The repository is part of the
 # address and not context: a bare number names a different change in every
@@ -279,8 +304,23 @@ FIELD_FLAGS = ("-f", "--raw-field", "-F", "--field", "--input")
 # How long a command of somebody else's may run before its answer is no longer
 # worth waiting for. ⚠️ Bounded well inside the carrier's own timeout: a probe
 # that hangs must cost the call a known delay rather than the whole hook.
+# ⚠️ A resource's own `probe_timeout` is read in its place where the project states
+# one, and the reader bounds that value for the same reason.
 PROBE_TIMEOUT = 5
-HOST_TIMEOUT = 8
+
+# How long one reading may spend asking whether background work has ended, over
+# every lease it asks about. Shared, because the guard's own budget is.
+BACKGROUND_BUDGET = 5
+
+# How long a wait rests between two readings of a resource. A probe is a command the
+# project pays for, so the rest is what bounds how often it is asked.
+WAIT_REST = 2
+
+# ⛔ The merge guard makes up to this many host reads in one call, and a hook the
+# harness kills is a merge held to nothing -- so the two figures multiplied stay
+# inside the carrier's own timeout, which `--self-test` asserts off the carrier.
+HOST_TIMEOUT = 5
+MERGE_READS = 5
 
 # ⚠️ Tighter than the merge guard's, because this arm may make three reads where
 # that one makes two and runs on every call rather than on a merge: the whole of
@@ -356,6 +396,206 @@ def live_leases(store: Path, now: float) -> list[tuple[Path, dict]]:
     return found
 
 
+# --- whether background work has ended --------------------------------------
+
+
+def process_table() -> dict[int, tuple[int, str, str]] | None:
+    """Every process here as pid -> (parent, when it started, its arguments).
+
+    ⛔ `None` where the table could not be read, and a table this process is not
+    in is one: what is missing from it has not been shown to have ended.
+    ⚠️ A process that has exited and is not yet reaped is left out.
+    """
+    try:
+        proc = subprocess.run(
+            ["ps", "-axww", "-o", "pid=,ppid=,stat=,lstart=,args="],
+            capture_output=True, text=True, errors="replace", timeout=PROBE_TIMEOUT,
+            # The start is a local time, so the zone is fixed for it to compare.
+            env={**os.environ, "LC_ALL": "C", "TZ": "UTC"},
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    table = {}
+    for line in proc.stdout.splitlines():
+        parts = line.split(None, 8)
+        if len(parts) < 8 or not (parts[0].isdigit() and parts[1].isdigit()):
+            continue
+        if parts[2].startswith("Z"):
+            continue
+        table[int(parts[0])] = (
+            int(parts[1]), " ".join(parts[3:8]), parts[8] if len(parts) > 8 else ""
+        )
+    return table if os.getpid() in table else None
+
+
+def _started(pid: int, listed: str) -> str:
+    """When a process started, in the most exact form this machine states.
+
+    ⚠️ Where the kernel states it in ticks, the listed time is derived from them
+    and moves when the clock is set, so the ticks are what is compared.
+    """
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8", errors="replace")
+        return stat.rpartition(")")[2].split()[19]
+    except (OSError, IndexError):
+        return listed
+
+
+def _process_space() -> str:
+    """What a process identifier is relative to, or `""` where it is the machine."""
+    try:
+        return os.readlink("/proc/self/ns/pid")
+    except OSError:
+        return ""
+
+
+def _unquoted(text: str) -> str:
+    return re.sub(r"[\s'\"\\]", "", text)
+
+
+def launched_process(command: str, table: dict, recorded: set, me: int,
+                     started=_started) -> list | None:
+    """The process the harness started for this command, as `[pid, started]`.
+
+    A child of something this process descends from, whose arguments carry the
+    command. ⛔ Compared without quotes and whitespace, the harness quoting the
+    command again on its way into a shell. `None` where none or several match.
+    """
+    line, pid = set(), me
+    while pid in table and pid not in line:
+        line.add(pid)
+        pid = table[pid][0]
+    wanted = _unquoted(command)
+    found = []
+    for pid, (parent, listed, arguments) in table.items():
+        if pid in line or parent not in line or wanted not in _unquoted(arguments):
+            continue
+        one = [pid, started(pid, listed)]
+        if tuple(one) not in recorded:
+            found.append(one)
+    return found[0] if len(found) == 1 else None
+
+
+def record_process(stated: list[dict], store: Path, session: str, cwd: str, command: str,
+                   now: float, table=None, me: int | None = None,
+                   started=_started, launchers=()) -> list[str]:
+    """Write which process a launched background call started onto its lease.
+
+    Returns the resources whose process could not be identified.
+    """
+    mine = [entry for entry in stated
+            if entry.get("background_end") == "process"
+            and claims(entry, command, launchers)]
+    if not mine:
+        return []
+    leases = live_leases(store, now)
+    recorded = {tuple(one) for _path, lease in leases for one in lease.get("processes") or []}
+    read = process_table() if table is None else table
+    found = None if read is None else launched_process(
+        command, read, recorded, os.getpid() if me is None else me, started
+    )
+    missed = []
+    for entry in mine:
+        key = _tree_key(cwd) if entry.get("subject") == "tree" else _call_key(session, command)
+        for path, lease in leases:
+            if (lease.get("resource") != entry.get("name") or lease.get("key") != key
+                    or not lease.get("background")):
+                continue
+            if found is None:
+                # ⛔ Kept on the lease: a tree's place may cover work that was
+                # identified too, and its end is not this one's.
+                lease["unidentified"] = True
+                missed.append(str(entry.get("name")))
+            else:
+                lease["processes"] = [*(lease.get("processes") or []), found]
+                lease["space"] = _process_space()
+            _rewrite(path, lease)
+    return missed
+
+
+def _rewrite(path: Path, lease: dict) -> None:
+    beside = path.with_suffix(f".{os.getpid()}")
+    try:
+        beside.write_text(json.dumps(lease), encoding="utf-8")
+        os.replace(beside, path)
+    except OSError:
+        # The lease stands as it was, with no process on it, so it expires.
+        beside.unlink(missing_ok=True)
+
+
+def _process_ended(lease: dict, table: dict | None, started) -> tuple[bool, str]:
+    """(whether every process recorded on this lease has ended, or why not known)."""
+    processes = lease.get("processes") or []
+    if lease.get("unidentified") or not processes:
+        return False, "the process it started was not identified"
+    if table is None:
+        return False, "the processes here could not be read"
+    if lease.get("space") != _process_space():
+        return False, "its process was recorded from somewhere its identifier means another one"
+    for pid, began in processes:
+        # ⛔ The start is compared and not the identifier alone, which is handed
+        # out again once its process is gone.
+        if pid in table and started(pid, table[pid][1]) == began:
+            return False, ""
+    return True, ""
+
+
+def _probe_ended(entry: dict, lease: dict, root, run, limit: float,
+                 now: float) -> tuple[bool, str]:
+    if now - float(lease.get("taken") or 0) <= int(entry.get("background_grace") or 0):
+        return False, ""
+    if limit <= 0:
+        return False, "the time for asking had run out"
+    runner = run if run is not None else _run_in_shell
+    told = {
+        "MJOLNIR_PLACE_KEY": str(lease.get("key")),
+        "MJOLNIR_PLACE_COMMAND": str(lease.get("command")),
+    }
+    try:
+        code, out = runner(str(entry.get("background_probe")), root, limit, told)
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return False, f"{type(error).__name__} while asking whether its work has ended"
+    said = out.strip()
+    if code != 0 or said not in ("running", "ended"):
+        return False, f"the background probe exited {code} printing {said[:40]!r}"
+    return said == "ended", ""
+
+
+def end_background(stated: list[dict], store: Path, now: float, root, *, run=None,
+                   most: float | None = None, table=None,
+                   started=_started) -> dict[Path, str]:
+    """Free every place whose background work has ended, on the way past.
+
+    Returns why it is unestablished, for each lease where it is. ⛔ Those are left
+    to their lifetime, and nothing here lengthens one.
+    """
+    modes = {entry.get("name"): entry for entry in stated
+             if entry.get("background_end") in ("process", "probe")}
+    if not modes:
+        return {}
+    budget = BACKGROUND_BUDGET if most is None else min(BACKGROUND_BUDGET, most)
+    deadline = time.monotonic() + budget
+    unknown: dict[Path, str] = {}
+    read = False
+    for path, lease in live_leases(store, now):
+        entry = modes.get(lease.get("resource"))
+        if entry is None or not lease.get("background"):
+            continue
+        if entry["background_end"] == "process":
+            if table is None and not read and lease.get("processes"):
+                table, read = process_table(), True
+            ended, why = _process_ended(lease, table, started)
+        else:
+            ended, why = _probe_ended(
+                entry, lease, root, run, deadline - time.monotonic(), now
+            )
+        if ended:
+            path.unlink(missing_ok=True)
+        elif why:
+            unknown[path] = why
+    return unknown
+
+
 # --- the resources a project states ----------------------------------------
 
 
@@ -370,14 +610,23 @@ def resources(config) -> list[dict]:
     return [entry for entry in stated if isinstance(entry, dict)]
 
 
-def claims(entry: dict, command: str) -> bool:
+def claims(entry: dict, command: str, launchers=()) -> bool:
     """Does this call put that resource at stake?
 
-    ⚠️ The pattern is searched rather than matched whole: a project states what a
-    claiming command looks like, and a command is a line with flags and paths
-    around whatever the project named.
+    The two forms of `claimed_by` are `schema.md § 10 -> Exclusive resources`'s.
+    ⛔ A list is read at each command position, and a form that never claims
+    spares the position it matches and no other, so it hides no claim beside it.
     """
-    pattern = str(entry.get("claimed_by") or "")
+    stated = entry.get("claimed_by")
+    if isinstance(stated, list):
+        spared = entry.get("never_claims") or []
+        return any(
+            any(position.names_the_call(called, arguments, one) for one in stated)
+            and not any(position.names_the_call(called, arguments, one) for one in spared)
+            for segment in position.segments(command, launchers)
+            for called, arguments in position.command_chain(segment, launchers)
+        )
+    pattern = str(stated or "")
     if not pattern:
         return False
     try:
@@ -390,18 +639,21 @@ def claims(entry: dict, command: str) -> bool:
         return False
 
 
-def probe_count(entry: dict, root: str | Path, run=None) -> tuple[int, str | None]:
+def probe_count(entry: dict, root: str | Path, run=None,
+                most: float | None = None) -> tuple[int, str | None]:
     """How many of this resource are held right now, or why that is unestablished.
 
     `probe: null` is a stated absence and not a count of zero: it returns `0`
     with no complaint, because the leases are then the whole of the count.
+    `most` shortens the probe's own limit for a caller with less time than that.
     """
     command = entry.get("probe")
     if command is None:
         return 0, None
     runner = run if run is not None else _run_in_shell
     try:
-        code, out = runner(str(command), root, PROBE_TIMEOUT)
+        limit = int(entry.get("probe_timeout") or PROBE_TIMEOUT)
+        code, out = runner(str(command), root, limit if most is None else min(limit, most))
     except Exception as error:  # noqa: BLE001 -- any failure is a named absence
         return 0, f"{type(error).__name__} while asking how many are held"
     if code != 0:
@@ -413,7 +665,8 @@ def probe_count(entry: dict, root: str | Path, run=None) -> tuple[int, str | Non
     return int(first), None
 
 
-def _run_in_shell(command: str, root: str | Path, timeout: int) -> tuple[int, str]:
+def _run_in_shell(command: str, root: str | Path, timeout: float,
+                  told: dict | None = None) -> tuple[int, str]:
     """Run a command the project stated, whole, from the skills root.
 
     ⚠️ Through a shell because the command is stated whole and the procedure
@@ -422,6 +675,7 @@ def _run_in_shell(command: str, root: str | Path, timeout: int) -> tuple[int, st
     """
     proc = subprocess.run(
         command, shell=True, cwd=str(root), capture_output=True, text=True, timeout=timeout,
+        env={**os.environ, **told} if told else None,
     )
     return proc.returncode, proc.stdout
 
@@ -455,8 +709,16 @@ def _tree_key(cwd: str) -> str:
         return str(cwd or ".")
 
 
-def occupancy(entry: dict, leases: list[tuple[Path, dict]], counted: int) -> tuple[int, set[str]]:
+def occupancy(entry: dict, leases: list[tuple[Path, dict]], counted: int | None,
+              now: float) -> tuple[int, set[str], set[str]]:
     """What is compared against `cap`: the resource's own count plus the young leases.
+
+    Returns (the sum, every key holding a lease, the keys the sum added). ⛔ The
+    second is not the third: a holder the probe already counts still holds its
+    place, so a second call under its key is answered from its lease.
+
+    `counted` is `None` where the count could not be established, and then no
+    lease is left out: nothing reported the holder a lease would be left out for.
 
     ⛔ A sum and never a maximum of the two. Measured on one project: a build
     started outside the loop holds the resource with no lease, while one just
@@ -466,12 +728,18 @@ def occupancy(entry: dict, leases: list[tuple[Path, dict]], counted: int) -> tup
     ⛔ Distinct keys rather than lease files, which is what `subject` decides: two
     sessions in one tree share one place, and two calls each hold their own.
     """
-    keys = {
-        str(lease.get("key"))
-        for _path, lease in leases
-        if lease.get("resource") == entry.get("name")
-    }
-    return counted + len(keys), keys
+    grace = entry.get("grace")
+    asked = entry.get("probe") is not None and counted is not None
+    keys, added = set(), set()
+    for _path, lease in leases:
+        if lease.get("resource") != entry.get("name"):
+            continue
+        key = str(lease.get("key"))
+        keys.add(key)
+        age = now - float(lease.get("taken") or 0)
+        if not asked or grace is None or age <= int(grace):
+            added.add(key)
+    return (counted or 0) + len(added), keys, added
 
 
 def take(entry: dict, store: Path, key: str, session: str, command: str,
@@ -490,7 +758,7 @@ def take(entry: dict, store: Path, key: str, session: str, command: str,
     """
     cap = int(entry.get("cap") or 1)
     held = live_leases(store, now)
-    standing, keys = occupancy(entry, held, counted)
+    standing, keys, _added = occupancy(entry, held, counted, now)
     if key in keys:
         # The place is already this key's -- the `tree` case, where a second call
         # from the same tree takes no second place. ⛔ No path comes back, because
@@ -520,7 +788,7 @@ def take(entry: dict, store: Path, key: str, session: str, command: str,
         # the open direction for a call: the answer says so rather than refusing.
         return None, True, standing, cap
 
-    standing, _keys = occupancy(entry, live_leases(store, now), counted)
+    standing, _keys, _added = occupancy(entry, live_leases(store, now), counted, now)
     if standing > cap:
         path.unlink(missing_ok=True)
         return None, False, standing, cap
@@ -532,7 +800,7 @@ def release(store: Path, session: str, scope: str, command: str, now: float) -> 
 
     ⛔ A backgrounded call's place is skipped deliberately, by the surface's own
     table: the call itself finishes at launch, so a sweep that released it would
-    hand the place back while the work ran. Expiry is the only release for one.
+    hand the place back while the work ran. `end_background` is what frees one.
     """
     given = []
     for path, lease in live_leases(store, now):
@@ -550,14 +818,16 @@ def release(store: Path, session: str, scope: str, command: str, now: float) -> 
 # --- reading the record ----------------------------------------------------
 
 
-def record_body(question: str, given: str, by: str, at: str) -> str:
+def _cell(text: str) -> str:
+    # ⛔ One line: a newline inside a cell cuts the row in two, and a refusal that
+    # does not parse would leave the approval before it standing.
+    return " ".join(text.split()).replace(PIPE, PIPE_ESCAPED)
+
+
+def record_body(question: str, given: str, by: str, at: str, head: str = "",
+                verdict: str = "") -> str:
     """The comment a recorded answer is, in the form the surface states."""
-    cells = [
-        question,
-        given.replace(PIPE, PIPE_ESCAPED),
-        by.replace(PIPE, PIPE_ESCAPED),
-        at,
-    ]
+    cells = [question, verdict, _cell(given), _cell(by), _cell(at), head]
     return "\n".join([
         RECORD_MARKER,
         "",
@@ -572,13 +842,14 @@ def record_body(question: str, given: str, by: str, at: str) -> str:
 def answers_in(text: str) -> list[dict]:
     """Every recorded answer in one comment body.
 
-    ⛔ The marker is required. A table of four columns is an ordinary shape in a
+    ⛔ The marker is required. A table of a few columns is an ordinary shape in a
     change's conversation, and reading one as a record would let a guard be
     satisfied by somebody's notes.
     """
     if RECORD_MARKER not in text:
         return []
     found = []
+    columns: list[str] = []
     for line in text.splitlines():
         if not line.strip().startswith(PIPE):
             continue
@@ -586,11 +857,20 @@ def answers_in(text: str) -> list[dict]:
             cell.strip().replace(PIPE_ESCAPED, PIPE)
             for cell in re.split(r"(?<!\\)\|", line.strip().strip(PIPE))
         ]
-        if len(cells) != len(RECORD_COLUMNS):
+        named = [name for name in RECORD_COLUMNS
+                 if name in cells or name not in OPTIONAL_COLUMNS]
+        if cells == named:
+            columns = cells
             continue
-        if cells == RECORD_COLUMNS or set("".join(cells)) <= set("-: "):
+        if set("".join(cells)) <= set("-: "):
             continue
-        found.append(dict(zip(RECORD_COLUMNS, cells)))
+        if len(cells) != len(columns):
+            # ⛔ Kept with nothing in it rather than skipped: a row that cannot be
+            # read may be a refusal, and skipping it leaves the one before standing.
+            cells = [cells[0], *[""] * (len(RECORD_COLUMNS) - 1)]
+            found.append(dict(zip(RECORD_COLUMNS, cells)))
+            continue
+        found.append({**dict.fromkeys(OPTIONAL_COLUMNS, ""), **dict(zip(columns, cells))})
     return found
 
 
@@ -599,15 +879,19 @@ def recorded_answer(comments: list[str], question: str) -> dict | None:
 
     ⛔ The last and not the first: an answer recorded twice is a question asked
     again, and the standing answer is the one given most recently -- the same
-    reading `§ An artifact states what is true now` gives every artifact.
+    reading `§ An artifact states what is true now` gives every artifact. ⛔ And
+    chosen before it is judged whole: an incomplete record dropped first would
+    leave an earlier approval standing under a later answer.
     """
-    answered = [
+    recorded = [
         answer
         for text in comments
         for answer in answers_in(text)
-        if answer["question"] == question and answer["answer"] and answer["answered by"]
+        if answer["question"] == question
     ]
-    return answered[-1] if answered else None
+    if not recorded or not recorded[-1]["answer"] or not recorded[-1]["answered by"]:
+        return None
+    return recorded[-1]
 
 
 def host_comments(slug: str, number: str, run=None) -> tuple[list[str], str | None]:
@@ -639,11 +923,99 @@ def host_comments(slug: str, number: str, run=None) -> tuple[list[str], str | No
     return bodies, None
 
 
+def change_head(slug: str, number: str, run=None) -> tuple[str, str, str | None]:
+    """(the change's head commit, the ref it lands on, or why they are unknown)."""
+    runner = run if run is not None else _run_host
+    try:
+        code, out = runner(["api", f"repos/{slug}/pulls/{number}"], HOST_TIMEOUT)
+        loaded = json.loads(out) if code == 0 else None
+        if loaded is None:
+            return "", "", "the host did not say what this change's head commit is"
+        head, base = str(loaded["head"]["sha"]), str(loaded["base"]["ref"])
+    except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+        return "", "", f"{type(error).__name__} while reading this change's head commit"
+    if not COMMIT.match(head) or not base:
+        return "", "", "the host's answer named no head commit"
+    return head, base, None
+
+
+def patch_lines(diff: str) -> list[str] | None:
+    """What a diff changes, with where it sits taken out; None where it cannot say.
+
+    ⛔ What is dropped is the hunk's line numbers and the blob names, the two
+    things a rebase moves without changing a line. Every other character is kept,
+    whitespace included, which is why this is not `git patch-id`.
+
+    ⛔ A file the diff does not show is one nothing can be said about: a binary
+    file's bytes are not in the text, so it answers None rather than *the same*.
+    """
+    kept = []
+    in_hunk = False
+    # ⚠️ Split on the newline alone: `splitlines` also cuts at a form feed or a
+    # carriage return inside a line, and the remainder would read as a header.
+    for line in diff.split("\n"):
+        if line.startswith("diff --git "):
+            in_hunk = False
+        elif line.startswith("@@"):
+            in_hunk = True
+            kept.append("@@")
+            continue
+        if not in_hunk:
+            if line.startswith(("Binary files ", "GIT binary patch")):
+                return None
+            if line.startswith("index "):
+                continue
+        kept.append(line)
+    return kept
+
+
+def same_content(slug: str, base: str, approved: str, head: str, run=None) -> tuple[bool, str]:
+    """(whether both commits carry one change against the base, why not where not)."""
+    runner = run if run is not None else _run_host
+    read = []
+    for commit in (approved, head):
+        try:
+            code, out = runner(
+                ["api", "-H", "Accept: application/vnd.github.diff",
+                 f"repos/{slug}/compare/{quote(base, safe='')}...{commit}"],
+                HOST_TIMEOUT,
+            )
+        except Exception as error:  # noqa: BLE001 -- any failure is a named absence
+            return False, f"{type(error).__name__} while reading what {commit} changes"
+        lines = patch_lines(out) if code == 0 else None
+        if code != 0:
+            return False, f"the host did not say what {commit} changes"
+        if lines is None:
+            return False, f"what {commit} changes includes a binary file the diff does not show"
+        if not any(lines):
+            return False, f"the host's answer about what {commit} changes was empty"
+        read.append(lines)
+    if read[0] != read[1]:
+        return False, "the two commits do not carry the same change against the base"
+    return True, ""
+
+
+def approval_covers(config, slug: str) -> str:
+    """What an approval covers in this repository, by § 2's key.
+
+    ⛔ Read from the root whose repository the change is in, and the narrow value
+    where there is none: a repository the project states nothing about has not
+    widened anything.
+    """
+    for view in [*(getattr(config, "views", None) or {}).values(), config]:
+        try:
+            if view.get("host.repo") == slug:
+                return str(view.get(APPROVAL_COVERS) or COVERS_COMMIT)
+        except Exception:  # noqa: BLE001 -- a read that stops widens nothing
+            continue
+    return COVERS_COMMIT
+
+
 def _run_host(args: list[str], timeout: int) -> tuple[int, str]:
-    proc = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, timeout=timeout,
-    )
-    return proc.returncode, proc.stdout
+    # ⛔ Decoded here and not by `text=True`, which rewrites a carriage return: two
+    # diffs that differ in their line endings alone would come back the same.
+    proc = subprocess.run(["gh", *args], capture_output=True, timeout=timeout)
+    return proc.returncode, proc.stdout.decode("utf-8")
 
 
 # --- which call is a merge -------------------------------------------------
@@ -762,7 +1134,7 @@ def _deny(reason: str) -> dict:
 
 
 def merge_guard(config, command: str, *, host=None) -> dict:
-    """Refuse a merge where the review question has no recorded answer.
+    """Refuse a merge unless the merge ask's last record approves this commit.
 
     ⛔ Refused rather than waved through where the record could not be read at
     all, which is the surface's fail direction for an act that cannot be undone.
@@ -804,23 +1176,84 @@ def merge_guard(config, command: str, *, host=None) -> dict:
             f"({RECORD_CITATION})."
         )
     answer = recorded_answer(comments, MERGE_QUESTION)
-    if answer:
-        return {}
+    head, base, unread = change_head(slug, number, run=host)
+    if unread:
+        return _deny(
+            f"This command merges {slug}#{number} and the commit it would merge could not be "
+            f"established: {unread}. ⛔ Refused rather than allowed: an approval covers the "
+            f"commit it was given for, and a merge is not undone ({RECORD_CITATION}). Re-run "
+            "once the host answers."
+        )
+    known = verdicts()
+    again = (
+        f"  python3 {Path(__file__).resolve()} record \\\n"
+        f"    --change {slug}#{number} --question {MERGE_QUESTION} --head {head} \\\n"
+        f"    --verdict '<{' | '.join(known) or 'the verdict'}>' \\\n"
+        "    --given '<the answer as it came back>' --by '<who answered>'"
+    )
+    if answer and answer["verdict"] == APPROVED:
+        approved = answer["at commit"]
+        if approved == head:
+            return {}
+        why = "the two are not the same commit"
+        if not COMMIT.match(approved):
+            approved = approved or "no commit"
+            why = "the record names no commit to compare"
+        elif approval_covers(config, slug) == COVERS_CONTENT:
+            same, why = same_content(slug, base, approved, head, run=host)
+            if same:
+                return {}
+        return _deny(
+            f"This command merges {slug}#{number} at {head}, and the answer to "
+            f"`{MERGE_QUESTION}` recorded on it was given at {approved}: {why} "
+            f"({RECORD_CITATION}). ⛔ An approval covers the commit it was given for and no "
+            "later one. Put the question to a person again about the commit that would merge, "
+            f"then record their answer:\n{again}"
+        )
     # ⛔ The remedy is named as a command somebody can run, not as a description of
     # one: a refusal whose remedy has to be worked out is a refusal somebody gets
     # past by editing the guard. The path is this file's own, so it names whichever
     # copy of the plugin the session actually loaded.
+    if answer and answer["verdict"] and (not known or answer["verdict"] in known):
+        found = (
+            f"the answer to `{MERGE_QUESTION}` recorded last on it is `{answer['verdict']}`: "
+            f"{answer['answer']!r}, by {answer['answered by']}"
+        )
+    elif answer:
+        found = (
+            f"the answer to `{MERGE_QUESTION}` recorded last on it states "
+            + (f"`{answer['verdict']}`, which is no verdict" if answer["verdict"]
+               else "no verdict")
+            + f": {answer['answer']!r}, by {answer['answered by']}"
+        )
+    else:
+        found = f"no complete answer to `{MERGE_QUESTION}` is the last one recorded on it"
     return _deny(
-        f"This command merges {slug}#{number}, and no answer to `{MERGE_QUESTION}` is "
-        f"recorded on it ({RECORD_CITATION}). ⛔ The question is whether this change goes in "
+        f"This command merges {slug}#{number}, and {found} ({RECORD_CITATION}). ⛔ Only a "
+        f"recorded `{APPROVED}` allows a merge. The question is whether this change goes in "
         "now, put to a person once everything that would have stopped the merge is "
-        "established — and it is procedure rather than a setting, so *later* is an answer and "
-        "so is unanswered. ⛔ Ask it before recording it: an answer written on somebody's "
-        "behalf is a fabricated attestation, which is the one thing this record may not "
-        f"carry. What unblocks this is their answer written onto the change:\n"
-        f"  python3 {Path(__file__).resolve()} record \\\n"
-        f"    --change {slug}#{number} --question {MERGE_QUESTION} \\\n"
-        "    --given '<the answer as it came back>' --by '<who answered>'"
+        "established — and it is procedure rather than a setting. ⛔ Ask it before recording "
+        "it: an answer written on somebody's behalf is a fabricated attestation, which is the "
+        "one thing this record may not "
+        f"carry. What unblocks this is their answer written onto the change:\n{again}"
+    )
+
+
+def unread_merge_guard(command: str, stop: str) -> dict:
+    """Refuse a merge where the project's configuration does not resolve.
+
+    ⛔ The grammar is `merge_target`'s and no second one, so what is a merge here
+    is what is a merge where the configuration resolves. The repository is not
+    supplied: nothing about the change is looked up, and only whether the call
+    merges is asked.
+    """
+    if merge_target(command, None) is None:
+        return {}
+    return _deny(
+        "This command merges a change, and the project's configuration is there and does not "
+        "resolve, so what the merge is held to could not be established. ⛔ A merge is not "
+        f"undone, so it is refused rather than let through ({DIRECTION_CITATION}).{stop} "
+        "Repair the configuration and re-run the merge; no other call is refused for it."
     )
 
 
@@ -832,14 +1265,14 @@ def merge_guard(config, command: str, *, host=None) -> dict:
 # facet cannot hold, each of them about one commit.
 
 
-def in_command_position(call: str, wanted: str) -> bool:
+def in_command_position(call: str, wanted: str, launchers=()) -> bool:
     """Does this call run `wanted`, as a command rather than as text?
 
     ⛔ **The measured defect this exists for**: a predicate matching the raw
     string took a build slot for a text search whose prose merely contained the
-    build command. So the call is parsed into words, cut at the operators that
-    end one command, and each piece is compared from its first word -- which a
-    quoted argument carrying the same text can never reach.
+    build command. Where a command stands in a call is § 19's one statement of
+    it, read through the parser the sibling guards read, so what a listed
+    launcher runs is read here too.
 
     ⚠️ **A prefix and not an equality.** A flagged form of a command is that
     command, and a project that wants one of those left alone names it in
@@ -848,23 +1281,18 @@ def in_command_position(call: str, wanted: str) -> bool:
 
     ⛔ **§ 17's whitespace rule is not spelled again here**: both sides are cut
     into words, and runs of whitespace are gone by the time anything is compared.
-    A third statement of that comparison is what this file would otherwise carry.
+    ⚠️ A compound `wanted` stands in no one position, so it matches nothing. ⚠️ And
+    only the outermost position of each segment is compared: a command behind a
+    runner is not read as the mirrored one, in a project listing launchers or not.
     """
-    wanted_words = _words(wanted)
-    if not wanted_words:
+    stated = position.segments(wanted)
+    if len(stated) != 1:
         return False
-    segment: list[str] = []
-    for word in [*_words(call), ";"]:
-        if word in SEPARATORS:
-            # ⛔ A leading assignment is not the command: `FOO=bar a-command` runs
-            # the command, and a segment read from its first word would miss it.
-            while segment and "=" in segment[0] and not segment[0].startswith("="):
-                segment = segment[1:]
-            if segment[:len(wanted_words)] == wanted_words:
-                return True
-            segment = []
-            continue
-        segment.append(word)
+    for segment in position.segments(call, launchers):
+        # A negation stands before a command and is not one.
+        chain = position.command_chain(segment[1:] if segment[0] == "!" else segment)
+        if chain and [chain[0][0], *chain[0][1]][:len(stated[0])] == stated[0]:
+            return True
     return False
 
 
@@ -1147,10 +1575,11 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
         # means the guard is running against one nothing validated. Holding
         # nothing is the open direction, which is this guard's throughout.
         return {}
+    launchers = position.launchers_of(config)
     records = [
         record for record in config.mirrors()
         if record.get("runs_normalised")
-        and in_command_position(command, record["runs_normalised"])
+        and in_command_position(command, record["runs_normalised"], launchers)
         and _call_is_in_the_root(config, record, cwd)
     ]
     if not records:
@@ -1170,7 +1599,7 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
     records.sort(key=lambda r: -len(r["runs_normalised"]))
     exempt = next(
         (entry for entry in stated
-         if isinstance(entry, str) and in_command_position(command, entry)),
+         if isinstance(entry, str) and in_command_position(command, entry, launchers)),
         None,
     )
     if exempt is not None:
@@ -1312,9 +1741,14 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
     if not stated:
         return {}
     where = store if store is not None else store_for(config.skills_root)
-    refusals, notes, written = [], [], []
-    for entry in stated:
-        if not claims(entry, command):
+    launchers = position.launchers_of(config)
+    refusals, notes, written, waits = [], [], [], []
+    unknown = end_background(
+        [entry for entry in stated if claims(entry, command, launchers)], where, now,
+        config.skills_root, run=probe,
+    )
+    for number, entry in enumerate(stated, 1):
+        if not claims(entry, command, launchers):
             continue
         counted, unestablished = probe_count(entry, config.skills_root, run=probe)
         if unestablished:
@@ -1329,9 +1763,21 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
         if path is not None:
             written.append(path)
         if not taken:
+            whys = sorted({
+                unknown[held] for held, lease in live_leases(where, now)
+                if held in unknown and lease.get("resource") == entry.get("name")
+            })
             refusals.append(
                 f"{entry.get('name')} is at its cap of {cap}, with {standing} held"
+                + (f" ({'; '.join(whys)}, so a backgrounded holder's place counts until it "
+                   "expires)" if whys else "")
             )
+            if entry.get("wait_up_to"):
+                waits.append(
+                    f"`python3 \"{Path(__file__).resolve()}\" wait --resource {number} "
+                    f"--skills-root \"{Path(config.skills_root).resolve()}\"` waits up to "
+                    f"{entry['wait_up_to']}s for one on {entry.get('name')}"
+                )
     if refusals:
         # ⛔ Every place this call took on its way to being refused is given back
         # here. One call may claim several resources, and a place taken for a call
@@ -1345,6 +1791,7 @@ def capacity_guard(config, command: str, session: str, cwd: str, background: boo
             + "; ".join(refusals)
             + f". ⛔ The call is refused rather than queued ({LEASE_CITATION}). What unblocks "
             "it is a place coming back — a holder finishing, or its lease expiring."
+            + (" " + "; ".join(waits) + ", and the call is then made again." if waits else "")
         )
     if notes:
         return {"systemMessage": "Capacity: " + "; ".join(notes) + f". ({LEASE_CITATION})"}
@@ -1369,8 +1816,13 @@ def guard_answer(payload: dict, *, config=None, now: float | None = None,
         return {}
     loaded, stop = (config, "") if config is not None else _read(payload.get("cwd"))
     if loaded is None:
+        # ⛔ A merge is recognised from the call alone, so it is refused here;
+        # § 7 states why, and the arm below is every other call.
+        refused = unread_merge_guard(command, stop)
+        if refused:
+            return refused
         # ⛔ Reported, and the call proceeds, by § 7's table: what a broken
-        # configuration cannot say is whether this call is one the record
+        # configuration cannot say is whether this call is one another arm
         # guards, so the refusing arm would refuse every call in the project --
         # the edit that repairs the configuration included (§ 19).
         # ⛔ And the answer is the reader's own, sent once for the session
@@ -1578,7 +2030,7 @@ def behind_of(where: str, *, remote: str = "origin",
 def behind_answer(payload: dict, *, event: str | None = None, load=None, read=None) -> str:
     """§ 7's report for one exit event, or `""` where this is not one of its points.
 
-    ⛔ **Two of the four release events, and the second one narrowed further.**
+    ⛔ **Two of the release events, and the second one narrowed further.**
     A session ending is a report nobody is left to act on and a subagent stopping
     is not this tree's turn ending; a finished call is one of the two points only
     where the call *merged*, which is read with the merge guard's own grammar
@@ -1588,7 +2040,7 @@ def behind_answer(payload: dict, *, event: str | None = None, load=None, read=No
     # ⛔ The two points are read out of the one place that states them, never
     # matched again here: the first form of this arm compared the event against
     # each name inline and left the list beside it decorative — measured by
-    # widening the list to all four events and watching only the list's own
+    # widening the list to every event and watching only the list's own
     # assertion redden while the arm went on answering at two.
     if fired not in BEHIND_EVENTS:
         return ""
@@ -1633,11 +2085,36 @@ def release_answer(payload: dict, *, config=None, now: float | None = None,
         return {}
     loaded = config if config is not None else _config(payload.get("cwd"))
     said = [
+        _process_recorded(loaded, payload, event, now=now, store=store),
         _places_given_back(loaded, payload, scope, now=now, store=store),
         behind_answer(payload, event=event, load=load, read=read),
     ]
     spoken = [line for line in said if line]
     return {"systemMessage": " ".join(spoken)} if spoken else {}
+
+
+def _process_recorded(loaded, payload: dict, event: str, *, now: float | None,
+                      store: Path | None) -> str:
+    """What a background launch left unidentified, in words, or `""`."""
+    tool_input = payload.get("tool_input") or {}
+    if loaded is None or event != "PostToolUse" or not tool_input.get("run_in_background"):
+        return ""
+    missed = record_process(
+        resources(loaded),
+        store if store is not None else store_for(loaded.skills_root),
+        str(payload.get("session_id") or ""),
+        str(payload.get("cwd") or "."),
+        str(tool_input.get("command") or ""),
+        time.time() if now is None else now,
+        launchers=position.launchers_of(loaded),
+    )
+    if not missed:
+        return ""
+    return (
+        "Capacity: the process this call started was not identified, so its place on "
+        + ", ".join(sorted(set(missed)))
+        + f" counts until it expires. ({LEASE_CITATION})"
+    )
 
 
 def _places_given_back(loaded, payload: dict, scope: str, *, now: float | None,
@@ -1736,7 +2213,8 @@ def _inert(session: str, stop: str) -> dict:
 # --- the arms a role invokes ------------------------------------------------
 
 
-def questions(surface_text: str | None = None) -> list[str]:
+def questions(surface_text: str | None = None,
+              vocabulary: str = QUESTION_VOCABULARY) -> list[str]:
     """The questions an answer may be recorded for, read out of the surface.
 
     ⛔ Through the surface's own reader and never parsed here, which is what makes
@@ -1759,13 +2237,18 @@ def questions(surface_text: str | None = None) -> list[str]:
             if surface_text is not None
             else Path(reader.surface_for()).read_text(encoding="utf-8")
         )
-        return list(reader.surface_facts(text)["enums"].get(QUESTION_VOCABULARY) or [])
+        return list(reader.surface_facts(text)["enums"].get(vocabulary) or [])
     except Exception:  # noqa: BLE001 -- any failure is a named absence to the caller
         return []
 
 
+def verdicts(surface_text: str | None = None) -> list[str]:
+    """The verdicts the merge ask is answered with, read as the questions are."""
+    return questions(surface_text, VERDICT_VOCABULARY)
+
+
 def write_record(address: str, question: str, given: str, by: str, at: str,
-                 run=None) -> tuple[str, int]:
+                 head: str = "", run=None, *, verdict: str = "") -> tuple[str, int]:
     """Write a recorded answer onto a change, and say where it went.
 
     ⛔ A question outside the surface's own vocabulary is refused rather than
@@ -1788,6 +2271,33 @@ def write_record(address: str, question: str, given: str, by: str, at: str,
             f"reads leaves the act refused however it was answered ({RECORD_CITATION}).",
             2,
         )
+    allowed = verdicts()
+    if question == MERGE_QUESTION and not allowed:
+        return (
+            "⛔ Not established: the surface's own list of verdicts could not be read, so "
+            "nothing was recorded.",
+            1,
+        )
+    if question == MERGE_QUESTION and verdict not in allowed:
+        return (
+            f"Refused: an answer to `{MERGE_QUESTION}` is recorded with a verdict, and "
+            f"{verdict!r} is not one ({' | '.join(allowed)}). Nothing was written: add "
+            f"`--verdict` with the one the answer gives, and leave the words as given "
+            f"({RECORD_CITATION}).",
+            2,
+        )
+    if question != MERGE_QUESTION and verdict:
+        return (
+            f"Refused: `{question}` carries no verdict, only `{MERGE_QUESTION}` does "
+            f"({RECORD_CITATION}). Nothing was written.",
+            2,
+        )
+    if not given.strip() or not by.strip():
+        return (
+            "Refused: a record states the answer as it came back and who gave it, and one of "
+            f"the two is empty ({RECORD_CITATION}). Nothing was written.",
+            2,
+        )
     found = CHANGE_ADDRESS.match(address.strip())
     if not found:
         return (
@@ -1796,8 +2306,17 @@ def write_record(address: str, question: str, given: str, by: str, at: str,
             "different change in every repository the route carries.",
             2,
         )
+    if (head or question == MERGE_QUESTION) and not COMMIT.match(head):
+        # ⛔ Stated by the pass that asked and never read from the host here: a
+        # push between the ask and this call would be recorded as approved.
+        return (
+            f"Refused: {head!r} is not the commit the answer was given for. ⛔ Nothing was "
+            f"written: `{MERGE_QUESTION}` covers one commit, so its record names the whole "
+            f"head commit the person was asked about, on `--head` ({RECORD_CITATION}).",
+            2,
+        )
     slug, number = found.group("slug"), found.group("number")
-    body = record_body(question, given, by, at)
+    body = record_body(question, given, by, at, head, verdict)
     runner = run if run is not None else _run_host
     with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as out:
         out.write(body + "\n")
@@ -1815,10 +2334,98 @@ def write_record(address: str, question: str, given: str, by: str, at: str,
             1,
         )
     return (
-        f"Recorded on {slug}#{number}: `{question}` answered {given!r} by {by} at {at}.\n"
+        f"Recorded on {slug}#{number}: `{question}` answered {given!r} by {by} at {at}"
+        + (f", verdict `{verdict}`" if verdict else "") + ".\n"
         f"{printed.strip()}",
         0,
     )
+
+
+def wait_for(config, number: int, *, within: float | None = None, cwd: str = ".",
+             store: Path | None = None, probe=None, clock=time.time,
+             rest=time.sleep) -> tuple[str, int]:
+    """Wait for a place on one resource, up to the bound its project states.
+
+    ⛔ A command and never a hook: what a hook blocks on is killed at the hook's
+    own limit, and a killed guard lets its call through unheld. ⚠️ It holds
+    nothing. A place found free here is taken by the call's own guard, which may
+    still refuse it.
+
+    The resource is named by its position, so that the call waiting for it does
+    not carry the text its own `claimed_by` matches.
+    """
+    stated = resources(config)
+    if not 1 <= number <= len(stated):
+        return (f"No resource {number}: this project states {len(stated)} "
+                "(`branch_model.exclusive_resources`)."), 2
+    if within is not None and not within > 0:
+        return f"`--within` is {within}; it is the seconds this call has, above zero.", 2
+    entry = stated[number - 1]
+    name, cap = entry.get("name"), int(entry.get("cap") or 1)
+    bound = float(entry.get("wait_up_to") or 0)
+    if within is not None:
+        bound = min(bound, within)
+    where = store if store is not None else store_for(config.skills_root)
+    key = _tree_key(cwd) if entry.get("subject") == "tree" else None
+    started = clock()
+    deadline = started + bound
+    full = None
+    # ⛔ A probe is given no longer than the wait has left, so the bound holds
+    # whatever the probe's own limit is. The first reading is always taken, and
+    # is held to what the caller has where the caller says.
+    most = within
+    while True:
+        asked = clock()
+        counted, unestablished = probe_count(entry, config.skills_root, run=probe, most=most)
+        moment = clock()
+        if unestablished and (full is None or moment < deadline):
+            return (f"{name}: {unestablished}, so there is nothing to wait for and no place "
+                    f"is held ({LEASE_CITATION})."), 0
+        if not unestablished:
+            unknown = end_background(
+                [entry], where, moment, config.skills_root, run=probe,
+                most=None if most is None else most - (moment - asked),
+            )
+            leases = live_leases(where, moment)
+            standing, keys, _added = occupancy(entry, leases, counted, moment)
+            if standing < cap or key in keys:
+                return (f"{name}: a place is free after {int(moment - started)}s. ⚠️ It is not "
+                        "held: the call itself takes it."), 0
+            full = (standing, counted, leases, moment, unknown)
+        if moment >= deadline:
+            break
+        rest(min(WAIT_REST, deadline - moment))
+        most = deadline - clock()
+        if most <= 0:
+            break
+    standing, counted, leases, moment, unknown = full
+    lines = [
+        f"Refused: {name} is at its cap of {cap}, with {standing} held, "
+        + (f"after {int(bound)}s of waiting" if bound
+           else "and this project states no wait for it")
+        + f" ({LEASE_CITATION}).",
+        f"  the resource itself reports {counted} held"
+        if entry.get("probe") is not None
+        else "  the resource cannot be asked, so its leases are the whole of the count",
+    ]
+    lines.extend(_holders(entry, leases, moment, counted, unknown))
+    return "\n".join(lines), 1
+
+
+def _holders(entry: dict, leases: list[tuple[Path, dict]], now: float,
+             counted: int | None, unknown: dict[Path, str]) -> list[str]:
+    """One line per lease on this resource: what holds it, and for how long."""
+    _standing, _keys, added = occupancy(entry, leases, counted, now)
+    return [
+        f"    - {lease.get('key')}, session {lease.get('session')} — "
+        f"{int(now - float(lease.get('taken') or 0))}s old of {lease.get('ttl')}s"
+        + (", backgrounded" if lease.get("background") else "")
+        + ("" if str(lease.get("key")) in added
+           else ", past its grace and left to the resource's own count")
+        + (f", counting until it expires: {unknown[path]}" if path in unknown else "")
+        for path, lease in leases
+        if lease.get("resource") == entry.get("name")
+    ]
 
 
 def held_report(config, *, now: float | None = None, store: Path | None = None,
@@ -1836,25 +2443,23 @@ def held_report(config, *, now: float | None = None, store: Path | None = None,
         return "\n".join(lines), 0
     where = store if store is not None else store_for(config.skills_root)
     moment = time.time() if now is None else now
+    unknown = end_background(stated, where, moment, config.skills_root, run=probe)
     leases = live_leases(where, moment)
     for entry in stated:
         counted, unestablished = probe_count(entry, config.skills_root, run=probe)
-        standing, keys = occupancy(entry, leases, counted)
+        standing, _keys, added = occupancy(
+            entry, leases, None if unestablished else counted, moment
+        )
         lines.append("")
         lines.append(f"{entry.get('name')} — cap {entry.get('cap')}, held by {entry.get('subject')}")
         if unestablished:
             lines.append(f"  ⛔ {unestablished}")
         else:
             lines.append(f"  the resource itself reports {counted} held")
-        lines.append(f"  {len(keys)} lease(s) still counting, so {standing} against the cap")
-        for _path, lease in leases:
-            if lease.get("resource") != entry.get("name"):
-                continue
-            age = int(moment - float(lease.get("taken") or 0))
-            lines.append(
-                f"    - {lease.get('key')} — {age}s old of {lease.get('ttl')}s"
-                + (", backgrounded" if lease.get("background") else "")
-            )
+        lines.append(f"  {len(added)} lease(s) still counting, so {standing} against the cap")
+        lines.extend(
+            _holders(entry, leases, moment, None if unestablished else counted, unknown)
+        )
     return "\n".join(lines), 0
 
 
@@ -1881,6 +2486,45 @@ def check_the_surface_still_states_this(text: str) -> list[str]:
                 f"the `{arm}` rule cites `{slug}`, which is not a heading of the surface. "
                 "Either the subsection was reworded or the rule it holds is gone."
             )
+    return problems
+
+
+def check_every_exit_is_held(text: str, mapped: dict[str, str]) -> list[str]:
+    """§ 7's exit table and the events mapped here name the same exits.
+
+    ⛔ Both directions: a row naming an event nothing maps is an exit that holds
+    its place until the next sweep, and a mapped event no row names is a release
+    the surface does not state. A row with no event is the stated expiry case
+    and only that.
+    """
+    rows: list[list[str]] = []
+    inside = False
+    for line in text.splitlines():
+        if line.startswith("#"):
+            inside = _anchor(line.lstrip("#").strip()) == ARM_ANCHORS["lease"]
+        elif inside and line.startswith("|"):
+            rows.append([cell.strip() for cell in line.strip().strip("|").split("|")])
+    rows = rows[2:]
+    if not rows:
+        return ["the lease subsection states no exit table, so no exit is held to anything."]
+    problems = []
+    named: set[str] = set()
+    for row in rows:
+        if len(row) != 3:
+            problems.append(f"the exit {row[0]!r} does not state what releases it and the "
+                            "events registered for it.")
+            continue
+        events = re.findall(r"`([^`]+)`", row[2])
+        named.update(events)
+        if not events and (row[2] != "none" or "`background_end`" not in row[1]
+                           or "expiry" not in row[1]):
+            problems.append(f"the exit {row[0]!r} names no event and is not the backgrounded case.")
+        for event in events:
+            if event not in mapped:
+                problems.append(f"the exit {row[0]!r} is released on {event}, which no release "
+                                "arm maps.")
+    for event in sorted(set(mapped) - named):
+        problems.append(f"{event} releases a place here and no exit of the surface names it.")
     return problems
 
 
@@ -1912,7 +2556,7 @@ def check_the_carrier_still_calls_this(text: str) -> list[str]:
                 "event covers is covered by nothing."
             )
             continue
-        if event in (GUARD_EVENT, "PostToolUse"):
+        if event == GUARD_EVENT or RELEASE_EVENTS.get(event) == "call":
             matcher = called.get("matcher") or ""
             if GUARDED_TOOL not in matcher:
                 problems.append(
@@ -1967,12 +2611,28 @@ def _a_resource(**overrides) -> dict:
     return entry
 
 
-def _a_host(comments: list[str] | None = None, number: int | None = 7, code: int = 0):
-    """A stand-in for the host, answering the two reads the merge guard makes."""
+A_HEAD = "a" * 40
+A_LATER_HEAD = "b" * 40
+
+
+def _a_diff(added: str = "+a line", at: int = 1, blob: str = "1111111") -> str:
+    return (f"diff --git a/a-file b/a-file\nindex {blob}..2222222 100644\n--- a/a-file\n"
+            f"+++ b/a-file\n@@ -{at},2 +{at},3 @@ a heading\n a kept line\n{added}\n a last line\n")
+
+
+def _a_host(comments: list[str] | None = None, number: int | None = 7, code: int = 0,
+            head: str | None = A_HEAD, diffs: dict | None = None):
+    """A stand-in for the host, answering the reads the merge guard makes."""
 
     def run(args, _timeout):
         if code:
             return code, ""
+        if args[0] == "api" and re.fullmatch(r"repos/[^/]+/[^/]+/pulls/\d+", args[-1]):
+            return (0, json.dumps({"head": {"sha": head}, "base": {"ref": "a-base/ref"}})) \
+                if head is not None else (1, "")
+        if args[0] == "api" and "/compare/a-base%2Fref..." in args[-1]:
+            found = (diffs or {}).get(args[-1].rpartition("...")[2])
+            return (0, found) if found is not None else (1, "")
         if args[:2] == ["api", "--paginate"]:
             return 0, json.dumps([{"body": body} for body in (comments or [])])
         if args[:2] == ["pr", "view"]:
@@ -2371,12 +3031,69 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               guard_answer(_call("claims-the-first"), config=two, now=1000.0,
                            store=fresh("differential-2")) == {})
 
-        # --- the six exit paths -------------------------------------------
+        # --- what claims a place ------------------------------------------
+        out.append("")
+        out.append("A list of claiming commands is read where a command stands:")
+        listed = _a_resource(
+            claimed_by=[{"command": "./a-wrapper"},
+                        {"command": "a-tool", "args_match": r"^compose (.* )?up\b"}],
+            never_claims=[{"command": "./a-wrapper", "args_match": r"(^| )--status\b"},
+                          {"command": "a-tool", "args_match": r"--dry-run\b"}],
+        )
+
+        def takes(command: str, entry=listed, launchers=None) -> bool:
+            loaded = _a_config([entry])
+            if launchers:
+                loaded.data["command_position"] = {"launchers": launchers}
+            at = Path(tempfile.mkdtemp(dir=directory))
+            guard_answer(_call(command), config=loaded, now=1000.0, store=at)
+            return bool(live_leases(at, 1000.0))
+
+        for command in (
+            "./a-wrapper build", "./a-wrapper", "a-wrapper build", "a-tool compose -f x up -d",
+            "A=1 ./a-wrapper build", "cd x && ./a-wrapper build", "ls; a-tool compose up",
+            "ls\n./a-wrapper build", "ls | ./a-wrapper build", "timeout 5 ./a-wrapper build",
+            "env A=1 ./a-wrapper build", "! ./a-wrapper build", "echo $(./a-wrapper build)",
+            "if ./a-wrapper build; then ls; fi", "while ! a-tool compose up; do ls; done",
+            "until ./a-wrapper build; do ls; done",
+            "cat > f <<'EOF'\nit's text\nEOF\n./a-wrapper build",
+            "cat <<EOF | ./a-wrapper build\nit's text\nEOF",
+            # A form that never claims spares its own position alone.
+            "./a-wrapper --status && ./a-wrapper build", "./a-wrapper build; ./a-wrapper --status",
+        ):
+            check(f"a place is taken by: {command!r}", takes(command))
+        for command in (
+            "cat ./a-wrapper", "ls -l a-wrapper", "echo a-tool compose up",
+            "grep -rn 'a-tool compose up' .", "printf '%s' './a-wrapper build'",
+            'git commit -m "x; a-tool compose up"', "a-tool compose ps",
+            "cat <<'EOF'\na-tool compose up\nEOF", "cat <<'EOF'\nit's\na-tool compose up\nEOF",
+            "./a-wrapper --status", "timeout 5 ./a-wrapper --status",
+            "a-tool compose --dry-run up", "another-a-wrapper build",
+        ):
+            check(f"no place is taken by: {command!r}", not takes(command))
+        check("a listed launcher's inner command takes a place",
+              takes("a-shell -c 'ls; ./a-wrapper build'",
+                    launchers=[{"command": "a-shell", "string_flags": ["-c"]}]))
+        check("a full resource refuses a claiming command and passes one that never claims",
+              denied(guard_answer(_call("./a-wrapper build"), config=_a_config(
+                  [{**listed, "cap": 1, "probe": "a-count"}]), now=1000.0,
+                  store=fresh("listed-full"), probe=_a_probe(1)))
+              and guard_answer(_call("./a-wrapper --status"), config=_a_config(
+                  [{**listed, "cap": 1, "probe": "a-count"}]), now=1000.0,
+                  store=fresh("listed-full"), probe=_a_probe(1)) == {})
+        check("a single pattern is still searched for in the whole call",
+              takes("echo a-claiming-command", entry=_a_resource())
+              and takes("cd x && a-claiming-command", entry=_a_resource())
+              and not takes("ls", entry=_a_resource()))
+
+        # --- the exit paths -----------------------------------------------
         out.append("")
         out.append("Every exit path either gives the place back or is covered by the sweep:")
         paths = [
             ("the call finished", "PostToolUse", False),
+            ("the call failed", "PostToolUseFailure", False),
             ("the turn ended", "Stop", False),
+            ("an API error ended the turn", "StopFailure", False),
             ("the session ended", "SessionEnd", False),
             ("a subagent stopped", "SubagentStop", False),
         ]
@@ -2394,6 +3111,21 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check(f"{label}: and the place comes back on `{event}`",
                   guard_answer(_call("a-claiming-command", session="another"),
                                config=config, now=1001.0, store=where) == {})
+
+        check("and every release event is one of those paths",
+              {event for _label, event, _background in paths} == set(RELEASE_EVENTS))
+
+        # ⛔ A failure is the exit of one call, so it gives back that call's place
+        # and leaves its sibling's, rather than sweeping the session.
+        where = fresh("exit-failed-sibling")
+        config = _a_config([_a_resource(cap=2, subject="call")])
+        guard_answer(_call("a-claiming-command --one"), config=config, now=1000.0, store=where)
+        guard_answer(_call("a-claiming-command --two"), config=config, now=1000.0, store=where)
+        release_answer(_exit("PostToolUseFailure", outside, command="a-claiming-command --one"),
+                       config=config, now=1000.0, store=where)
+        left = [lease.get("command") for _path, lease in live_leases(where, 1000.0)]
+        check("a failed call gives back its own place and not its sibling's",
+              left == ["a-claiming-command --two"], repr(left))
 
         # ⛔ The path the harness publishes no event for. What is asserted is
         # not that an event fires: it is that the sweep at the end of the turn
@@ -2429,6 +3161,220 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               guard_answer(_call("a-claiming-command", session="another"), config=config,
                            now=1121.0, store=where) == {})
 
+        # --- how the end of background work is established -----------------
+        out.append("")
+        out.append("A backgrounded call's place is freed when its work has ended, as stated:")
+
+        def left_at(config, where, at, probe=None):
+            held, _status = held_report(config, now=at, store=where, probe=probe)
+            return len(live_leases(where, at)), held
+
+        # ⛔ A process the suite starts, so that what is read is the machine's own
+        # table and not the shape a fixture gave one.
+        quoted = "sleep 60; echo \"it's a-claiming-command\""
+        for subject in ("call", "tree"):
+            where = fresh(f"background-process-{subject}")
+            config = _a_config([_a_resource(cap=1, subject=subject, background_end="process")])
+            guard_answer(_call(quoted, background=True), config=config, now=1000.0, store=where)
+            launched = _exit("PostToolUse", ".", command=quoted)
+            launched["tool_input"]["run_in_background"] = True
+            work = subprocess.Popen(
+                ["sh", "-c", "eval " + shlex.quote(quoted)], start_new_session=True,
+                stdout=subprocess.DEVNULL,
+            )
+            try:
+                said = _process_recorded(config, launched, "PostToolUse", now=1000.0, store=where)
+                check(f"{subject}: the launched process is identified", said == "", said)
+                count, held = left_at(config, where, 1500.0)
+                check(f"{subject}: the place is held while the process runs",
+                      count == 1 and "until it expires" not in held, held)
+                check(f"{subject}: and another session is refused", denied(guard_answer(
+                    _call("a-claiming-command", session="another", cwd=directory),
+                    config=config, now=1500.0, store=where)))
+                release_answer(_exit("Stop", outside), config=config, now=1500.0, store=where)
+                check(f"{subject}: and no sweep frees it", len(live_leases(where, 1500.0)) == 1)
+            finally:
+                with contextlib.suppress(ProcessLookupError):
+                    os.killpg(work.pid, signal.SIGKILL)
+                work.wait()
+            check(f"{subject}: and it is free on the next reading once the process has ended",
+                  guard_answer(_call("a-claiming-command", session="another", cwd=directory),
+                               config=config, now=1500.0, store=where) == {})
+
+        where = fresh("background-waited")
+        config = _a_config([_a_resource(cap=1, background_end="process", wait_up_to=5)])
+        guard_answer(_call("a-claiming-command", background=True), config=config, now=1000.0,
+                     store=where)
+        path, lease = live_leases(where, 1000.0)[0]
+        lease.update(processes=[[os.getpid(), "another start"]], space=_process_space())
+        _rewrite(path, lease)
+        printed, status = wait_for(config, 1, store=where, clock=itertools.count(1001).__next__,
+                                   rest=lambda _seconds: None)
+        check("an identifier reused by an unrelated process holds no place", status == 0, printed)
+
+        line = {9: (1, "s", "an ancestor"), 10: (9, "s", "the hook")}
+        shell = "sh -c eval 'a-claiming-command --it'\"'\"'s' < /dev/null"
+        same = lambda _pid, listed: listed  # noqa: E731
+        command = "a-claiming-command --it's"
+        check("a child of the harness carrying the command is the process",
+              launched_process(command, {**line, 11: (9, "t", shell)}, set(), 10, same)
+              == [11, "t"])
+        check("one belonging to another session is not",
+              launched_process(command, {**line, 11: (7, "t", shell)}, set(), 10, same) is None)
+        check("two that match identify neither",
+              launched_process(command, {**line, 11: (9, "t", shell), 12: (9, "t", shell)},
+                               set(), 10, same) is None)
+        check("and one already recorded is not matched again",
+              launched_process(command, {**line, 11: (9, "t", shell), 12: (9, "t", shell)},
+                               {(11, "t")}, 10, same) == [12, "t"])
+
+        where = fresh("background-two")
+        config = _a_config([_a_resource(cap=1, subject="tree", background_end="process")])
+        guard_answer(_call(command, background=True), config=config, now=1000.0, store=where)
+        table = {**line, 11: (9, "t", shell)}
+        record_process(resources(config), where, "a-session", ".", command, 1000.0,
+                       table, 10, same)
+        table[12] = (9, "t", shell)
+        record_process(resources(config), where, "a-session", ".", command, 1000.0,
+                       table, 10, same)
+        del table[12]
+        end_background(resources(config), where, 1001.0, ".", table=table, started=same)
+        check("a tree's place outlives the second of two pieces of work, the first still running",
+              len(live_leases(where, 1001.0)) == 1)
+        del table[11]
+        end_background(resources(config), where, 1001.0, ".", table=table, started=same)
+        check("and is freed once both have ended", not live_leases(where, 1001.0))
+
+        for label, change, reason_given in (
+            ("a process never identified", {}, "not identified"),
+            ("one of two never identified",
+             {"processes": [[1, "s"]], "unidentified": True, "space": _process_space()},
+             "not identified"),
+            ("an identifier from another process space",
+             {"processes": [[1, "s"]], "space": "another"}, "identifier means another"),
+        ):
+            where = fresh(f"background-{label}")
+            config = _a_config([_a_resource(cap=1, ttl=120, background_end="process")])
+            guard_answer(_call("a-claiming-command", background=True), config=config,
+                         now=1000.0, store=where)
+            path, lease = live_leases(where, 1000.0)[0]
+            lease.update(change)
+            _rewrite(path, lease)
+            count, held = left_at(config, where, 1100.0)
+            check(f"{label}: the place is held and the report says it waits for expiry",
+                  count == 1 and "counting until it expires" in held and reason_given in held,
+                  held)
+            refusal = guard_answer(_call("a-claiming-command", session="another"), config=config,
+                                   now=1100.0, store=where)
+            check(f"{label}: and the refusal says so",
+                  denied(refusal) and "until it expires" in reason(refusal), reason(refusal))
+            count, _held = left_at(config, where, 1121.0)
+            check(f"{label}: and its lifetime frees it", count == 0)
+
+        unread = _process_ended(
+            {"processes": [[1, "s"]], "space": _process_space()}, None, same)
+        check("a process table that cannot be read ends nothing",
+              unread[0] is False and "could not be read" in unread[1], repr(unread))
+
+        where = fresh("background-unfound")
+        config = _a_config([_a_resource(cap=1, background_end="process")])
+        guard_answer(_call("a-claiming-command", background=True), config=config, now=1000.0,
+                     store=where)
+        launched = _exit("PostToolUse", outside, command="a-claiming-command")
+        launched["tool_input"]["run_in_background"] = True
+        said = release_answer(launched, config=config, now=1000.0, store=where)
+        check("a launch whose process is not found is reported at the launch",
+              "counts until it expires" in said.get("systemMessage", ""), repr(said))
+
+        where = fresh("background-launcher")
+        config = _a_config([_a_resource(cap=1, background_end="process",
+                                        claimed_by=[{"command": "a-claiming-command"}])])
+        config.data["command_position"] = {
+            "launchers": [{"command": "a-shell", "string_flags": ["-c"]}]}
+        inner = "a-shell -c 'a-claiming-command'"
+        guard_answer(_call(inner, background=True), config=config, now=1000.0, store=where)
+        launched = _exit("PostToolUse", outside, command=inner)
+        launched["tool_input"]["run_in_background"] = True
+        said = release_answer(launched, config=config, now=1000.0, store=where)
+        check("a launch that claims through a listed launcher is looked for too",
+              "counts until it expires" in said.get("systemMessage", ""), repr(said))
+        path, lease = live_leases(where, 1000.0)[0]
+        lease.update(processes=[[os.getpid(), "another start"]], unidentified=False,
+                     space=_process_space())
+        _rewrite(path, lease)
+        check("and its ended work frees the place for a call through one",
+              guard_answer(_call(inner, session="another"), config=config, now=1001.0,
+                           store=where) == {})
+
+        asked: list = []
+
+        def answering(code, printed):
+            def run(_command, _root, _limit, told):
+                asked.append(told)
+                return code, printed
+            return run
+
+        config = _a_config([_a_resource(cap=1, ttl=120, background_end="probe", background_grace=10,
+                                        background_probe="a-command-that-says")])
+        for label, code, printed, at, kept, said_so in (
+            ("ended, past the grace", 0, "ended\n", 1011.0, 0, False),
+            ("ended, inside the grace", 0, "ended\n", 1010.0, 1, False),
+            ("running", 0, "running\n", 1011.0, 1, False),
+            ("nothing printed", 0, "", 1011.0, 1, True),
+            ("ended, and a failed exit", 1, "ended\n", 1011.0, 1, True),
+            ("running, past the lifetime", 0, "running\n", 1120.0, 0, False),
+        ):
+            where = fresh(f"background-probe-{label}")
+            guard_answer(_call("a-claiming-command", background=True), config=config,
+                         now=1000.0, store=where)
+            count, held = left_at(config, where, at, answering(code, printed))
+            check(f"a probe saying {label}: {'kept' if kept else 'freed'}",
+                  count == kept and ("counting until it expires" in held) == said_so, held)
+        check("and the probe is told which place it is asked about",
+              asked and all(told["MJOLNIR_PLACE_COMMAND"] == "a-claiming-command"
+                            and told["MJOLNIR_PLACE_KEY"] for told in asked), repr(asked))
+        check("what the probe is told reaches a command run for real",
+              _run_in_shell('printf %s "$MJOLNIR_PLACE_KEY"', ".", 5,
+                            {"MJOLNIR_PLACE_KEY": "a-key"}) == (0, "a-key"))
+        where = fresh("background-probe-waited")
+        spent = _a_config([_a_resource(cap=1, wait_up_to=60, probe="a-count", ttl=120,
+                                       background_end="probe", background_grace=1,
+                                       background_probe="a-command-that-says")])
+        guard_answer(_call("a-claiming-command", background=True), config=spent, now=1000.0,
+                     store=where, probe=lambda *_a: (0, "0"))
+        at, limits = [1010.0], []
+
+        def slow(_command, _root, limit, told=None):
+            if told is None:
+                at[0] += 4
+                return 0, "1"
+            limits.append(limit)
+            return 0, "running"
+
+        def rests(seconds):
+            at[0] += seconds
+
+        wait_for(spent, 1, within=5, store=where, probe=slow, clock=lambda: at[0], rest=rests)
+        check("a wait gives the background probe only the time its count left",
+              bool(limits) and max(limits) <= 1, repr(limits))
+        where = fresh("background-probe-foreground")
+        guard_answer(_call("a-claiming-command"), config=config, now=1000.0, store=where)
+        check("a call not put in the background is not asked about",
+              left_at(config, where, 1050.0, answering(0, "ended"))[0] == 1)
+
+        for stated in ({}, {"background_end": "expiry"}):
+            where = fresh(f"background-expiry-{len(stated)}")
+            config = _a_config([_a_resource(cap=1, ttl=120, **stated)])
+            guard_answer(_call("a-claiming-command", background=True), config=config,
+                         now=1000.0, store=where)
+            launched = _exit("PostToolUse", outside, command="a-claiming-command")
+            launched["tool_input"]["run_in_background"] = True
+            check("expiry alone, stated or not: nothing is said at launch",
+                  release_answer(launched, config=config, now=1000.0, store=where) == {})
+            count, held = left_at(config, where, 1119.0)
+            check("and it is held to the end of its lifetime, with nothing reported",
+                  count == 1 and "until it expires" not in held, held)
+
         # --- the sum, and the maximum that let a third through -------------
         out.append("")
         out.append("What is compared against the cap is the sum, never the maximum:")
@@ -2442,10 +3388,168 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and the next is refused: one reported plus one young lease is the cap",
               denied(third), repr(third)[:140])
         leases = live_leases(where, 1000.0)
-        standing, keys = occupancy(config.get("branch_model.exclusive_resources")[0], leases, 1)
+        standing, keys, _added = occupancy(
+            config.get("branch_model.exclusive_resources")[0], leases, 1, 1000.0)
         check("the sum is what reached the cap", standing == 2, f"was {standing}")
         check("and a maximum would have left a place free, which is the measured defect",
               max(1, len(keys)) < 2, f"maximum was {max(1, len(keys))}")
+
+        out.append("")
+        out.append("A holder is counted once, whether its lease, the probe or both report it:")
+
+        def second_call(label: str, at: float, count: int = 1, session: str = "another",
+                        cwd: str | None = None, **stated):
+            where = fresh(label)
+            config = _a_config([_a_resource(**stated)])
+            first = _call("a-claiming-command")
+            later = _call("a-claiming-command", session=session)
+            if cwd is not None:
+                first["cwd"] = later["cwd"] = cwd
+            guard_answer(first, config=config, now=1000.0, store=where, probe=_a_probe(count=0))
+            answer = guard_answer(later, config=config, now=at, store=where,
+                                  probe=_a_probe(count=count))
+            return answer, where, config
+
+        probed = {"cap": 2, "probe": "a-command-that-counts-them", "grace": 60}
+        check("a lease past its grace is not added to the probe's count",
+              second_call("grace-past", 1061.0, **probed)[0] == {})
+        check("one exactly at its grace still is",
+              denied(second_call("grace-at", 1060.0, **probed)[0]))
+        check("a build started outside the loop and a just-launched one count as two",
+              denied(second_call("grace-young", 1001.0, **probed)[0]))
+        check("a project stating no grace adds every live lease, however old",
+              denied(second_call("grace-unstated", 1500.0, **{**probed, "grace": None})[0]))
+        check("a resource with no probe is counted by its leases alone, grace or none",
+              denied(second_call("grace-no-probe", 1061.0, cap=1, probe=None, grace=60)[0]))
+        check("a tree past its grace still holds its own place at a full cap",
+              second_call("grace-own", 1061.0, cwd=str(outside),
+                          **{**probed, "cap": 1, "subject": "tree"})[0] == {})
+        _answer, where, config = second_call("grace-report", 1061.0, **probed)
+        printed, _ = held_report(config, now=1061.0, store=where, probe=_a_probe(count=1))
+        check("the report adds only the young lease and names the one left out",
+              "1 lease(s) still counting, so 2 against" in printed
+              and printed.count("past its grace") == 1, " ".join(printed.split())[:200])
+        printed, _ = held_report(config, now=1061.0, store=where, probe=_a_probe(code=1))
+        check("and leaves none out where the count could not be established",
+              "2 lease(s) still counting" in printed and "past its grace" not in printed,
+              " ".join(printed.split())[:200])
+
+        limits = []
+
+        def _a_timed_probe(_command, _root, timeout):
+            limits.append(timeout)
+            return 0, "0\n"
+
+        probe_count(_a_resource(probe="a-command", probe_timeout=7), outside, run=_a_timed_probe)
+        probe_count(_a_resource(probe="a-command"), outside, run=_a_timed_probe)
+        check("a stated probe time limit is the one used, and an unstated one is unchanged",
+              limits == [7, 5], repr(limits))
+
+        out.append("")
+        out.append("A wait is bounded, holds nothing, and refuses naming who holds the places:")
+
+        class _Clock:
+            def __init__(self):
+                self.at, self.rests = 1000.0, []
+
+            def now(self):
+                return self.at
+
+            def rest(self, seconds):
+                self.rests.append(seconds)
+                self.at += seconds
+
+        def waited(label: str, probe=None, within=None, held=True, cwd=".", on_rest=None,
+                   **entry):
+            where = fresh(label)
+            config = _a_config([_a_resource(cap=1, **entry)])
+            if held:
+                guard_answer(_call("a-claiming-command", cwd=cwd), config=config, now=1000.0,
+                             store=where, probe=_a_probe(count=0))
+            clock = _Clock()
+
+            def rest(seconds):
+                clock.rest(seconds)
+                if on_rest:
+                    on_rest(where, clock)
+
+            report, status = wait_for(config, 1, within=within, cwd=cwd, store=where,
+                                      probe=probe(clock) if probe else _a_probe(count=0),
+                                      clock=clock.now, rest=rest)
+            return report, status, clock, where
+
+        report, status, clock, where = waited("wait-out", wait_up_to=7)
+        check("a wait that runs out refuses", status == 1, report[:140])
+        check("naming who holds the place", "session a-session" in report, report[:200])
+        check("and never past its bound", clock.at == 1007.0, str(clock.at))
+        check("and it wrote no lease of its own", len(live_leases(where, 1000.0)) == 1)
+        _r, _s, clock, _w = waited("wait-within", wait_up_to=60, within=3)
+        check("a caller with less time waits that long and no longer", clock.at == 1003.0,
+              str(clock.at))
+        _r, _s, clock, _w = waited("wait-within-more", wait_up_to=5, within=60)
+        check("and one with more is still held to the bound", clock.at == 1005.0, str(clock.at))
+        report, status, clock, _w = waited(
+            "wait-freed", wait_up_to=60,
+            on_rest=lambda where, _c: release(where, "a-session", "session", "", 1000.0))
+        check("a place given back ends the wait", status == 0 and clock.at == 1002.0, report)
+        report, status, clock, _w = waited("wait-expired", wait_up_to=60, ttl=5)
+        check("and so does a lease that expires", status == 0 and clock.at < 1010.0, report)
+        report, status, clock, _w = waited("wait-none")
+        check("a resource stating no wait is refused at once", status == 1 and not clock.rests
+              and "states no wait" in report, report)
+        report, status, clock, _w = waited("wait-null", wait_up_to=None)
+        check("and one stating refuse is the same", status == 1 and not clock.rests, report)
+        report, status, clock, _w = waited("wait-free", held=False, wait_up_to=60)
+        check("a free place is answered without resting", status == 0 and not clock.rests, report)
+        report, status, clock, _w = waited("wait-own", wait_up_to=60, subject="tree",
+                                           cwd=str(outside))
+        check("a tree already holding its place is not made to wait",
+              status == 0 and not clock.rests, report)
+        given = []
+
+        def slow(clock):
+            def run(_command, _root, limit):
+                given.append(limit)
+                clock.at += 4
+                return 0, "1\n"
+            return run
+
+        where = fresh("wait-slow")
+        config = _a_config([_a_resource(cap=1, probe="a-command", wait_up_to=9)])
+        clock = _Clock()
+        report, status = wait_for(config, 1, store=where, probe=slow(clock), clock=clock.now,
+                                  rest=clock.rest)
+        check("a probe is given no longer than the wait has left",
+              status == 1 and given == [5, 3.0], f"{status} {given}")
+        report, status = wait_for(config, 1, store=where, probe=_a_probe(code=1),
+                                  clock=_Clock().now, rest=_Clock().rest)
+        check("a count nobody can read is reported and not waited on",
+              status == 0 and "no place" in report, report)
+        given.clear()
+        clock = _Clock()
+        wait_for(config, 1, within=3, store=where, probe=slow(clock), clock=clock.now,
+                 rest=clock.rest)
+        check("and the first one no longer than its caller has", given == [3], repr(given))
+        for seconds in (0, -1, float("nan")):
+            check(f"a caller with {seconds} seconds is misuse",
+                  wait_for(config, 1, within=seconds, store=where)[1] == 2)
+        check("a resource that is not stated is misuse",
+              wait_for(config, 2, store=where)[1] == 2)
+
+        # ⛔ The guard answers at once whatever a resource states: waiting in a
+        # hook is what its own time limit ends.
+        for label, stated, named in (("wait-guard", {"wait_up_to": 600}, True),
+                                     ("wait-guard-none", {}, False)):
+            where = fresh(label)
+            config = _a_config([_a_resource(cap=1, **stated)])
+            guard_answer(_call("a-claiming-command"), config=config, now=1000.0, store=where)
+            before = time.monotonic()
+            answered = guard_answer(_call("a-claiming-command", session="another"),
+                                    config=config, now=1000.0, store=where)
+            check(f"{label}: a full resource is refused without waiting",
+                  denied(answered) and time.monotonic() - before < 5)
+            check(f"{label}: the wait is " + ("named" if named else "not named"),
+                  ("wait --resource 1" in reason(answered)) is named, reason(answered)[-160:])
 
         out.append("")
         out.append("A count that could not be established holds nothing, and says so:")
@@ -2530,15 +3634,54 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
              record_body(MERGE_QUESTION, "second", "a-person", "y")],
             MERGE_QUESTION,
         )
+        check("and an incomplete last record leaves no earlier one standing",
+              recorded_answer([record_body(MERGE_QUESTION, "yes", "a-person", "x",
+                                           verdict=APPROVED),
+                               record_body(MERGE_QUESTION, "", "a-person", "y",
+                                           verdict="declined")],
+                              MERGE_QUESTION) is None)
+        approval = record_body(MERGE_QUESTION, "yes", "a-person", "x", verdict=APPROVED)
+        broken = record_body(MERGE_QUESTION, "no", "a-person", "y", verdict="declined")
+        check("nor does a last record whose row cannot be read",
+              recorded_answer([approval, broken.replace("| no |", "| no | way |")],
+                              MERGE_QUESTION) is None)
+        check("and a time of several lines does not cut the row",
+              [a["verdict"] for a in answers_in(
+                  record_body(MERGE_QUESTION, "no", "a-person", "y\nz", verdict="declined"))]
+              == ["declined"])
+        lines = recorded_answer(
+            [record_body(MERGE_QUESTION, "no\nnot\r\nthis week", "a\nperson", "x",
+                         verdict="later")],
+            MERGE_QUESTION)
+        check("an answer of several lines is still one row",
+              lines is not None and lines["answer"] == "no not this week"
+              and lines["verdict"] == "later", repr(lines))
         check("and the standing answer is the last one recorded",
               later and later["answer"] == "second", repr(later))
         check("an address with no repository in it is refused",
-              write_record("7", MERGE_QUESTION, "yes", "a-person", "x")[1] == 2)
+              write_record("7", MERGE_QUESTION, "yes", "a-person", "x", A_HEAD,
+                           verdict=APPROVED)[1] == 2)
         # ⛔ The vocabulary is the surface's, so a near-miss spelling is refused
         # rather than written under a name no guard reads.
         refused, status = write_record("an-owner/a-repository#7", "merge-now", "yes",
                                        "a-person", "x")
         check("a question outside the surface's own list is refused", status == 2)
+        for label, question, verdict, given in (
+            ("a merge answer with no verdict", MERGE_QUESTION, "", "yes"),
+            ("a merge answer with a verdict outside the list", MERGE_QUESTION, "yes", "yes"),
+            ("a verdict under another question", "review_depth", APPROVED, "quick"),
+            ("a merge answer with no words", MERGE_QUESTION, APPROVED, " "),
+        ):
+            stopped: list[str] = []
+            said, status = write_record(
+                "an-owner/a-repository#7", question, given, "a-person", "x", A_HEAD,
+                run=lambda args, _t: (stopped.append(args), (0, ""))[1], verdict=verdict)
+            check(f"{label} is refused and nothing reaches the host",
+                  status == 2 and not stopped, said[:140])
+            if question == MERGE_QUESTION and given != " ":
+                check(f"{label}: the refusal says how to record one",
+                      "--verdict" in said and all(word in said for word in verdicts()),
+                      said[:200])
         check("and the refusal names the list it is not in",
               MERGE_QUESTION in refused, refused[:140])
         # ⛔ A retired question is refused by the same arm and for the same
@@ -2563,7 +3706,8 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
 
         printed, status = write_record("an-owner/a-repository#7", MERGE_QUESTION,
                                        "yes, merge it now", "a-person",
-                                       "2026-01-01T00:00:00Z", run=_records)
+                                       "2026-01-01T00:00:00Z", A_HEAD, run=_records,
+                                       verdict=APPROVED)
         check("a well-formed record is written, and the arm says where", status == 0
               and "an-owner/a-repository#7" in printed, printed[:140])
         check("and what reached the host parses back as the answer that was given",
@@ -2595,7 +3739,32 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                   "--question" in reason(answered) and MERGE_QUESTION in reason(answered),
                   reason(answered)[:160])
         recorded = [record_body(MERGE_QUESTION, "yes, merge it now", "a-person",
-                                "2026-01-01T00:00:00Z")]
+                                "2026-01-01T00:00:00Z", A_HEAD, APPROVED)]
+        # ⛔ The words say yes in every one of these, so what refuses is the verdict.
+        for verdict in [*(word for word in verdicts() if word != APPROVED), "", "Approved"]:
+            answered = guard_answer(
+                _call("gh pr merge 7"), config=config, now=1000.0, store=fresh("merge"),
+                host=_a_host(comments=[*recorded, record_body(
+                    MERGE_QUESTION, "yes, merge it now", "a-person", "y", A_HEAD, verdict)]))
+            check(f"a last record whose verdict is {verdict!r} refuses the merge",
+                  denied(answered), repr(answered)[:140])
+            check(f"{verdict!r}: and the refusal says what is recorded and how to record one",
+                  (f"`{verdict}`" if verdict else "no verdict") in reason(answered)
+                  and "--verdict" in reason(answered), reason(answered)[:200])
+        before = [record_body(MERGE_QUESTION, "not yet", "a-person", "x", A_HEAD, "later"),
+                  *recorded]
+        check("and an approval recorded after a later allows it",
+              guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
+                           store=fresh("merge"), host=_a_host(comments=before)) == {})
+        bare = "\n".join([
+            RECORD_MARKER, "", "| " + " | ".join(
+                name for name in RECORD_COLUMNS if name != "verdict") + " |",
+            "|---|---|---|---|---|", f"| {MERGE_QUESTION} | yes | a-person | x | {A_HEAD} |"])
+        answered = guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
+                                store=fresh("merge"), host=_a_host(comments=[bare]))
+        check("a record with no verdict column is refused as stating none",
+              denied(answered) and "no verdict" in reason(answered)
+              and "--verdict" in reason(answered), reason(answered)[:200])
         check("allowed once the person's own merge answer is on the change",
               guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
                            store=fresh("merge"), host=_a_host(comments=recorded)) == {})
@@ -2615,6 +3784,97 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               MERGE_QUESTION in reason(guard_answer(
                   _call("gh pr merge 7"), config=config, now=1000.0,
                   store=fresh("merge"), host=_a_host(comments=retired_only))))
+        out.append("")
+        out.append("An approval covers the commit it was given for and no later one:")
+
+        def merging(project=config, comments=recorded, **host):
+            return guard_answer(_call("gh pr merge 7"), config=project, now=1000.0,
+                                store=fresh("merge"), host=_a_host(comments=comments, **host))
+
+        answered = merging(head=A_LATER_HEAD)
+        check("a head pushed after the answer is refused", denied(answered), repr(answered)[:140])
+        check("and the refusal names both commits",
+              A_HEAD in reason(answered) and A_LATER_HEAD in reason(answered),
+              reason(answered)[:200])
+        check("and how to ask again, about the commit that would merge",
+              "again" in reason(answered)
+              and f"--question {MERGE_QUESTION} --head {A_LATER_HEAD}" in reason(answered),
+              reason(answered)[-300:])
+        for label, unsaid in (("no answer about the head", None),
+                              ("an answer naming no commit", "")):
+            answered = merging(head=unsaid)
+            check(f"{label}: refused", denied(answered) and "could not be established"
+                  in reason(answered), repr(answered)[:140])
+        answered = merging(comments=recorded + [record_body(
+            MERGE_QUESTION, "yes", "a-person", "y", A_LATER_HEAD, APPROVED)],
+            head=A_LATER_HEAD)
+        check("asked again at the later commit, it is allowed", answered == {},
+              repr(answered)[:140])
+        four = "\n".join([RECORD_MARKER, "", "| question | answer | answered by | answered at |",
+                          "|---|---|---|---|", f"| {MERGE_QUESTION} | yes | a-person | x |"])
+        check("a record of four columns is read, and once",
+              [a["at commit"] for a in answers_in(four)] == [""], repr(answers_in(four)))
+        without = "\n".join([
+            RECORD_MARKER, "", "| " + " | ".join(
+                name for name in RECORD_COLUMNS if name != "at commit") + " |",
+            "|---|---|---|---|---|", f"| {MERGE_QUESTION} | {APPROVED} | yes | a-person | x |"])
+        answered = merging(comments=[without])
+        check("and an approval with no commit column covers no commit",
+              denied(answered) and "no commit" in reason(answered), reason(answered)[:200])
+        for label, stated in (("no commit", ""), ("an abbreviated one", A_HEAD[:7])):
+            check(f"a merge answer recorded with {label} is refused",
+                  write_record("an-owner/a-repository#7", MERGE_QUESTION, "yes", "a-person",
+                               "x", stated, run=_records, verdict=APPROVED)[1] == 2)
+        moved = {A_HEAD: _a_diff(), A_LATER_HEAD: _a_diff(at=40, blob="3333333")}
+        wide = _a_config([])
+        wide.data["host"]["landing"] = {"approval_covers": COVERS_CONTENT}
+        check("a push changing no content is refused where nothing is stated",
+              denied(merging(head=A_LATER_HEAD, diffs=moved)))
+        answered = merging(wide, head=A_LATER_HEAD, diffs=moved)
+        check("and keeps the approval where the project states it", answered == {},
+              repr(answered)[:200])
+        for label, diffs in (
+            ("a changed line", {**moved, A_LATER_HEAD: _a_diff("+another line")}),
+            ("a line changed in its whitespace alone",
+             {**moved, A_LATER_HEAD: _a_diff("+a  line")}),
+            ("a line changed in its line ending alone",
+             {**moved, A_LATER_HEAD: _a_diff("+a line\r")}),
+            ("a changed line carrying a form feed and a hunk header",
+             {A_HEAD: _a_diff("+x\f@@ one"), A_LATER_HEAD: _a_diff("+x\f@@ two")}),
+            ("a binary file", {key: "diff --git a/x b/x\nindex 1..2\nBinary files a/x and b/x "
+                                    "differ\n" for key in moved}),
+            ("an empty answer", {key: "" for key in moved}),
+            ("an approved commit the host no longer answers for",
+             {A_LATER_HEAD: moved[A_LATER_HEAD]}),
+        ):
+            answered = merging(wide, head=A_LATER_HEAD, diffs=diffs)
+            check(f"{label}: refused even there, naming both commits",
+                  denied(answered) and A_HEAD in reason(answered)
+                  and A_LATER_HEAD in reason(answered), repr(answered)[:200])
+        # ⛔ The stand-in above cannot reach what the real runner does to the bytes,
+        # so the runner itself is asked, against a client that prints both endings.
+        client = fresh("client")
+        client.mkdir(parents=True, exist_ok=True)
+        (client / "gh").write_text("#!/bin/sh\nprintf 'a\\r\\nb\\n'\n", encoding="utf-8")
+        (client / "gh").chmod(0o755)
+        path_held = os.environ.get("PATH", "")
+        os.environ["PATH"] = f"{client}{os.pathsep}{path_held}"
+        try:
+            ran = _run_host(["api"], HOST_TIMEOUT)
+        finally:
+            os.environ["PATH"] = path_held
+        check("and the client's own line endings reach the comparison as printed",
+              ran == (0, "a\r\nb\n"), repr(ran))
+        check("a repository the project states nothing about widens nothing",
+              approval_covers(wide, "another-owner/a-repository") == COVERS_COMMIT)
+        allowed = next(
+            hook_entry["timeout"]
+            for group in json.loads(CARRIER.read_text(encoding="utf-8"))["hooks"][GUARD_EVENT]
+            for hook_entry in group["hooks"]
+            if Path(__file__).name in " ".join(hook_entry.get("args") or [])
+        )
+        check("and every read it may make fits inside the carrier's own timeout",
+              HOST_TIMEOUT * MERGE_READS < allowed, f"{HOST_TIMEOUT} x {MERGE_READS}, {allowed}")
         check("a record that could not be read is refused, not read as absent",
               denied(guard_answer(_call("gh pr merge 7"), config=config, now=1000.0,
                                   store=fresh("merge"), host=_a_host(code=1))))
@@ -2970,6 +4230,16 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
                              jobs=[{"name": "a-job", "status": "in_progress",
                                     "steps": []}])))
 
+        listed = _a_project(A_MIRRORED_RUN)
+        listed.data["command_position"] = {"launchers": [
+            {"command": "a-shell", "string_flags": ["-c"], "operands": "command"}]}
+        check("a mirrored command inside a listed launcher is refused",
+              denied(already("a-shell -c 'a-mirrored-command'", project=listed)))
+        check("and one it only prints is not", not denied(already(
+            "a-shell -c 'a-printing-command a-mirrored-command'", project=listed)))
+        check("and an unlisted launcher's text is not read",
+              not denied(already("a-shell -c 'a-mirrored-command'")))
+
         # --- the two ways a refusal stands down -----------------------------
         out.append("")
         out.append("The two ways a refusal stands down, and the way that is not one:")
@@ -3138,6 +4408,39 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               all(bool(guard_answer(_call("a-claiming-command", session="", cwd=unreadable),
                                     now=1000.0, store=fresh("once")).get("systemMessage"))
                   for _ in range(2)))
+        out.append("")
+        out.append("A merge is refused under a configuration that does not resolve:")
+        for merge in ("gh pr merge 7", "gh pr merge", "gh pr merge a-branch --squash",
+                      "gh pr merge 7 --repo an-owner/a-name",
+                      "cd elsewhere && gh pr merge 7",
+                      "gh api -X PUT repos/an-owner/a-name/pulls/7/merge"):
+            answer = guard_answer(_call(merge, cwd=unreadable), now=1000.0,
+                                  store=fresh("unreadable-merge"), host=_a_host())
+            said = str((answer.get("hookSpecificOutput") or {}).get("permissionDecisionReason"))
+            check(f"`{merge}` is refused, carrying the reader's own stop",
+                  denied(answer) and stop in said and DIRECTION_CITATION in said, said[:200])
+        twice = _call("gh pr merge 7", session="a-session-that-merges", cwd=unreadable)
+        check("every time it is made, the cadence being the report's and not the refusal's",
+              all(denied(guard_answer(twice, now=1000.0, store=fresh("unreadable-merge")))
+                  for _ in range(2)))
+        check("and the session's one report is still owed to the next other call",
+              bool(guard_answer(_call("a-claiming-command", session="a-session-that-merges",
+                                      cwd=unreadable), now=1000.0,
+                                store=fresh("unreadable-merge")).get("systemMessage")))
+        for other_call in ("gh pr view 7", "gh pr merge-queue", "git merge a-branch",
+                           "gh api repos/an-owner/a-name/pulls/7/merge",
+                           "sed -i s/a/b/ .claude/mjolnir.yaml"):
+            check(f"`{other_call}` proceeds",
+                  not denied(guard_answer(_call(other_call, cwd=unreadable), now=1000.0,
+                                          store=fresh("unreadable-other"))))
+        edit = _call("", cwd=unreadable)
+        edit.update(tool_name="Edit", tool_input={"command": "gh pr merge 7"})
+        check("and a call to any other tool proceeds whatever it carries, the repairing edit among them",
+              guard_answer(edit, now=1000.0, store=fresh("unreadable-other")) == {})
+        check("a merge in a project stating no configuration is unguarded and silent",
+              guard_answer(_call("gh pr merge 7", cwd=str(outside)), now=1000.0,
+                           store=fresh("unconfigured-merge")) == {})
+
         check("while a merge whose record could not be read is refused",
               denied(guard_answer(_call("gh pr merge 7"), config=_a_config([]), now=1000.0,
                                   store=fresh("merge"), host=_a_host(code=1))))
@@ -3387,6 +4690,9 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         for label, payload in (
             ("the session ended", _exit("SessionEnd", outside)),
             ("a subagent stopped", _exit("SubagentStop", outside)),
+            ("an API error ended the turn", _exit("StopFailure", outside)),
+            ("a merge call failed",
+             {**_call("gh pr merge 7"), "hook_event_name": "PostToolUseFailure"}),
             ("a call that merged nothing finished",
              {**_call("a-command-of-some-kind"), "hook_event_name": CALL_FINISHED}),
             ("a read of the same change finished",
@@ -3424,6 +4730,24 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check(f"and reddens when the `{arm}` subsection is reworded",
               bool(check_the_surface_still_states_this(_reword_heading(surface, slug))))
 
+    problems = check_every_exit_is_held(surface, RELEASE_EVENTS)
+    check("every exit the surface states is held to a mapped event or to expiry",
+          not problems, "; ".join(problems))
+    for event in sorted(RELEASE_EVENTS):
+        without = {name: scope for name, scope in RELEASE_EVENTS.items() if name != event}
+        check(f"and reddens when `{event}` stops being mapped",
+              bool(check_every_exit_is_held(surface, without)))
+        check(f"and reddens when the surface stops naming `{event}`",
+              bool(check_every_exit_is_held(
+                  surface.replace(f"`{event}`", "`Reworded`"), RELEASE_EVENTS)))
+    for stated in ("as the resource's `background_end` establishes it", ", and expiry. ⛔"):
+        check(f"and reddens when the backgrounded case stops stating {stated!r}",
+              bool(check_every_exit_is_held(
+                  _plant_in(surface, stated, "a sweep."), RELEASE_EVENTS)))
+    check("and reddens when the table is gone",
+          bool(check_every_exit_is_held(
+              _reword_heading(surface, ARM_ANCHORS["lease"]), RELEASE_EVENTS)))
+
     # ⛔ The question the guard matches is the surface's own word, held by this
     # run rather than by whoever edits either file. A rename there with no rename
     # here leaves every merge refused and every record ignored, green.
@@ -3433,6 +4757,13 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
     check("and reddens when the surface stops stating it",
           MERGE_QUESTION not in questions(
               surface.replace(MERGE_QUESTION, "something_else", 1)))
+    check("the verdict the guard allows a merge on is one the surface states",
+          APPROVED in verdicts(surface), f"the surface states {verdicts(surface)}")
+    check("and the verdicts that refuse one are the surface's too",
+          {"declined", "later", "unanswered"} <= set(verdicts(surface)))
+    check("and reddens when the surface stops stating it",
+          APPROVED not in verdicts(
+              surface.replace(f"verdict: {APPROVED} |", "verdict: something_else |")))
 
     # ⛔ The four answer names and the word a probe is compared against are a
     # vocabulary § 18 publishes, carried here as strings because the code needs
@@ -3558,23 +4889,48 @@ def main(argv: list[str]) -> int:
                          help="the change, keyed the way a record is: <owner>/<repo>#<number>")
     writing.add_argument("--question", required=True, help="which question was answered")
     writing.add_argument("--given", required=True, help="the answer, as it came back")
+    writing.add_argument("--verdict", default="",
+                         help=f"what the answer comes to, required on {MERGE_QUESTION} and "
+                              "refused on any other question")
     writing.add_argument("--by", required=True, help="who answered it")
     writing.add_argument("--at", default=None, help="when; now where omitted")
+    writing.add_argument("--head", default="",
+                         help="the change's head commit when the question was put, in full; "
+                              f"required for {MERGE_QUESTION}")
 
     reporting = sub.add_parser("held", help="report what is held right now, and by what")
     reporting.add_argument("--skills-root", default=".",
                            help="the root the configuration is resolved relative to")
 
+    waiting = sub.add_parser("wait", help="wait for a place on a resource, up to its bound")
+    waiting.add_argument("--resource", type=int, required=True,
+                         help="its position in `branch_model.exclusive_resources`, from one")
+    waiting.add_argument("--within", type=float, default=None,
+                         help="the seconds this call has, where fewer than the bound stated")
+    waiting.add_argument("--skills-root", default=".",
+                         help="the root the configuration is resolved relative to")
+    waiting.add_argument("--cwd", default=".", help="the tree the call would be made from")
+
     args = parser.parse_args(argv)
     if args.self_test:
         return self_test()
+    if args.arm == "wait":
+        loaded = _config(args.skills_root)
+        if loaded is None:
+            print("⛔ Not established: the project's configuration could not be read, so there "
+                  "is nothing to wait for.")
+            return 2
+        report, status = wait_for(loaded, args.resource, within=args.within, cwd=args.cwd)
+        print(report)
+        return status
     if args.arm == "guard":
         return hook(sys.stdin, guard_answer)
     if args.arm == "release":
         return hook(sys.stdin, release_answer)
     if args.arm == "record":
         stamp = args.at or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        report, status = write_record(args.change, args.question, args.given, args.by, stamp)
+        report, status = write_record(args.change, args.question, args.given, args.by, stamp,
+                                      args.head, verdict=args.verdict)
         print(report)
         return status
     if args.arm == "held":

@@ -110,7 +110,13 @@ FIELDS = [
     # A custom field, with the site-specific id that is the whole reason a field
     # is addressed by name: readable by name, and refused for a write because
     # this implementation has no shape for its type.
-    {"id": "customfield_10020", "name": "Sprint", "schema": {"type": "array"}},
+    {"id": "customfield_10020", "name": "Sprint", "schema": {"type": "array", "items": "json"}},
+    # One list field per element type a write is shaped for.
+    {"id": "components", "name": "Parts", "schema": {"type": "array", "items": "component"}},
+    {"id": "fixVersions", "name": "Ships in", "schema": {"type": "array", "items": "version"}},
+    {"id": "customfield_10050", "name": "Areas", "schema": {"type": "array", "items": "option"}},
+    {"id": "customfield_10051", "name": "Readers", "schema": {"type": "array", "items": "user"}},
+    {"id": "customfield_10052", "name": "Words", "schema": {"type": "array", "items": "string"}},
     # A number field, which is shaped, so the refusal above is about the type
     # and not about the field being custom.
     {"id": "customfield_10030", "name": "Story points", "schema": {"type": "number"}},
@@ -191,7 +197,10 @@ def _example_configuration():
     """
     path = os.path.join(config.EXAMPLES, f"{KIND}.yaml")
     with open(path, encoding="utf-8") as handle:
-        return config.load_text(handle.read(), config.EXAMPLES)
+        loaded = config.load_text(handle.read(), config.EXAMPLES)
+    # The example requires a field of every filing; the cases about that state their own.
+    loaded.data["tracker"].pop("create_fields", None)
+    return loaded
 
 
 def _statuses(configuration) -> list[dict]:
@@ -249,6 +258,7 @@ ROUTES = [
     ("GET", r"^/issue/[^/]+/transitions$", "transitions"),
     ("POST", r"^/issue/[^/]+/transitions$", "transition"),
     ("POST", r"^/issue/[^/]+/comment$", "comment"),
+    ("GET", r"^/issue/[^/]+/comment$", "conversation"),
     ("PUT", r"^/issue/[^/]+/assignee$", "assignee"),
     ("GET", r"^/issue/[^/]+$", "issue"),
     ("PUT", r"^/issue/[^/]+$", "update"),
@@ -366,6 +376,14 @@ class _Host:
 
     def _answer_issue(self, path: str, params: dict, _body) -> dict:
         issue = self.item(path)
+        # A user is written by `id` and answered as `accountId`.
+        for name, value in issue["fields"].items():
+            if isinstance(value, list):
+                issue["fields"][name] = [
+                    {"accountId": one["id"]}
+                    if isinstance(one, dict) and one.get("id") in (ME, SOMEBODY) else one
+                    for one in value
+                ]
         wanted = {name for name in str(params.get("fields") or "").split(",") if name}
         fields = (
             issue["fields"]
@@ -446,6 +464,9 @@ class _Host:
             labels=list(fields.get("labels") or []),
         )
         issue["fields"]["description"] = fields.get("description")
+        for name, value in fields.items():
+            if name not in issue["fields"]:
+                issue["fields"][name] = value
         issue["fields"]["issuetype"] = {"name": str((fields.get("issuetype") or {}).get("name"))}
         self.issues[issue["key"]] = issue
         return {"id": issue["id"], "key": issue["key"], "self": "<the item's own address>"}
@@ -507,6 +528,7 @@ class _Host:
             "update": self._do_update,
             "assignee": self._do_assignee,
             "comment": lambda *_: {"id": "comment-1"},
+            "conversation": lambda *_: {"total": 0, "comments": []},
             "create": self._do_create,
             "link": self._do_link,
             "search": self._answer_search,
@@ -933,6 +955,7 @@ def self_test() -> int:
     # operation resolves its key through `read_item` first.
     for label, call in (
         ("comment", lambda: comment(foreign(1), "a note")),
+        ("read_comments", lambda: under_test.read_comments(foreign(1))),
         ("set_labels", lambda: set_labels(foreign(1), ["alpha"])),
         ("assign", lambda: assign(foreign(1))),
         ("set_state", lambda: set_state(foreign(1), status=second)),
@@ -1270,6 +1293,138 @@ def self_test() -> int:
         reported == "tracker.fields.Sprint" and not unshaped.writes(),
         f"reported {reported!r}",
     )
+    check(
+        "and a list whose elements have no shape is refused by the element's own type",
+        "`json`" in with_host(
+            host(),
+            lambda: str(ran(lambda: set_field(key(1), "Sprint", ["a"])).get("<raised>")),
+        ),
+    )
+    # --- a field holding several values --------------------------------------
+    for name, identifier, given, wire in (
+        ("Parts", "components", ["One", "Two"], [{"name": "One"}, {"name": "Two"}]),
+        ("Ships in", "fixVersions", ["1.0"], [{"name": "1.0"}]),
+        ("Areas", "customfield_10050", ["A", "B"], [{"value": "A"}, {"value": "B"}]),
+        ("Readers", "customfield_10051", [ME, SOMEBODY],
+         [{"id": ME}, {"id": SOMEBODY}]),
+        ("Words", "customfield_10052", ["x", "y z"], ["x", "y z"]),
+        ("Words", "customfield_10052", "a, b", ["a, b"]),
+        ("Parts", "components", '["One", "Two"]', [{"name": "One"}, {"name": "Two"}]),
+        ("Parts", "components", [], []),
+    ):
+        listed = host()
+        listed.issues[key(1)]["fields"][identifier] = [{"name": "held before"}]
+        answered = with_host(
+            listed, lambda name=name, given=given: set_field(key(1), name, given)
+        )
+        read_back = [
+            {"accountId": one["id"]} if isinstance(one, dict) and "id" in one else one
+            for one in wire
+        ]
+        check(
+            f"`{name}` handed {given!r} is written as the whole list its elements take",
+            (body_of(listed, "update").get("fields") or {}).get(identifier) == wire
+            and (got(answered, "fields") or {}).get(name) == read_back,
+            f"sent {listed.sent_for('update')!r} and read {answered!r}",
+        )
+    recased = host({"update": lambda *_: None})
+    recased.issues[key(1)]["fields"]["components"] = [{"id": "7", "name": "ONE"}]
+    check(
+        "a member the host answers in its own spelling has landed",
+        "<raised>" not in with_host(
+            recased, lambda: ran(lambda: set_field(key(1), "Parts", ["One"]))
+        ),
+    )
+    reported = with_host(
+        recased, lambda: unavailable(lambda: set_field(key(1), "Parts", ["One", "Two"]))
+    )
+    check(
+        "a member that did not read back is reported by name",
+        reported is not None and "`Two` in `Parts`" in reported and "`One`" not in reported,
+        f"got {reported!r}",
+    )
+    for label, name, given in (
+        ("a member that is not text", "Parts", ["One", 2]),
+        ("an empty member", "Parts", ["One", " "]),
+        ("text that opens a list and is not one", "Parts", "[One"),
+        ("a list handed to a field holding one value", "Priority", ["High"]),
+    ):
+        wrong = host()
+        reported = with_host(
+            wrong, lambda name=name, given=given: refused(lambda: set_field(key(1), name, given))
+        )
+        check(
+            f"{label} is refused before any write",
+            reported == f"tracker.fields.{name}" and not wrong.writes(),
+            f"reported {reported!r} after {wrong.calls}",
+        )
+
+    # --- the fields a filing sends with the create ----------------------------
+    a_type = _a_type(configuration)
+    requiring = _example_configuration()
+    requiring.data["tracker"]["create_fields"] = [
+        {"field": "Parts"}, {"field": "Areas", "value": ["A"]},
+    ]
+    bind(requiring)
+    unsupplied = host()
+    reported = with_host(
+        unsupplied, lambda: refused(lambda: create_item("t", "b", type=a_type))
+    )
+    check(
+        "a required field nobody supplied is refused before the create",
+        reported == "tracker.create_fields" and unsupplied.calls == [],
+        f"reported {reported!r} after {unsupplied.calls}",
+    )
+    for label, given, areas in (
+        ("the configured value is sent beside the filing's", {"Parts": ["One"]}, "A"),
+        ("the filing's value wins over the configured one",
+         {"Parts": ["One"], "Areas": ["B"]}, "B"),
+        ("a filing states its fields as text, as the command line passes them",
+         '{"Parts": ["One"]}', "A"),
+    ):
+        supplied = host()
+        answered = with_host(
+            supplied, lambda given=given: ran(lambda: create_item("t", "b", "[]", a_type, given))
+        )
+        sent = body_of(supplied, "create").get("fields") or {}
+        check(
+            label,
+            sent.get("components") == [{"name": "One"}]
+            and sent.get("customfield_10050") == [{"value": areas}]
+            and (got(answered, "fields") or {}).get("Parts") == [{"name": "One"}]
+            and supplied.writes() == ["create"],
+            f"sent {sent!r} and read {answered!r}",
+        )
+    overwriting = host()
+    reported = with_host(overwriting, lambda: refused(lambda: create_item(
+        "t", "b", type=a_type, fields={"Parts": ["One"], "Summary": "another"}
+    )))
+    check(
+        "a field the filing already states is refused rather than written over",
+        reported == "tracker.fields.Summary" and not overwriting.writes(),
+        f"reported {reported!r} after {overwriting.calls}",
+    )
+    dropped = host({"create": {"id": "10404", "key": key(1)}})
+    reported = with_host(dropped, lambda: unavailable(lambda: create_item(
+        "t", "b", type=a_type, fields={"Parts": ["One"]}
+    )))
+    check(
+        "a create that came back without a field's member is reported and not retried",
+        reported is not None and "`One` in `Parts`" in reported
+        and dropped.calls.count("create") == 1,
+        f"got {reported!r} after {dropped.calls}",
+    )
+    bind(configuration)
+    plain = host()
+    with_host(plain, lambda: create_item("t", "b", type=a_type))
+    check(
+        "a project stating none sends what a filing states and reads no catalogue",
+        set(body_of(plain, "create").get("fields") or {})
+        == {"project", "issuetype", "summary", "description"}
+        and "fields" not in plain.calls,
+        f"sent {plain.sent_for('create')!r} after {plain.calls}",
+    )
+
     bodied = host()
     with_host(bodied, lambda: set_field(key(1), "Description", A_BODY))
     check(
@@ -1297,6 +1452,67 @@ def self_test() -> int:
         all(bool(owner) for owner in OWNED_ELSEWHERE.values()),
         f"owns {OWNED_ELSEWHERE!r}",
     )
+
+    # --- `read_comments` ------------------------------------------------------
+    def _said(number, **other) -> dict:
+        return {
+            "id": str(number), "author": {"displayName": "A Writer", "accountId": "a"},
+            "body": as_document(f"note {number}"),
+            "created": "2026-10-01T00:00:00.000+0000",
+            "updated": "2026-10-01T00:00:00.000+0000", **other,
+        }
+
+    def _in_pages(of, total=None):
+        def answer(_path, params, _body):
+            start = int(params["startAt"])
+            return {
+                "total": (len(of) if total is None else total(start)),
+                "comments": of[start:start + 2],
+            }
+        return answer
+
+    three = [
+        _said(1),
+        _said(2, updated="2026-10-02T00:00:00.000+0000", author=None),
+        _said(3, body={"type": "doc", "content": [{"type": "paragraph", "content": [
+            {"type": "mention", "attrs": {"id": "a", "text": "@A Writer"}},
+            {"type": "text", "text": " see "},
+            {"type": "inlineCard", "attrs": {"url": "https://example.invalid/d"}},
+        ]}]}),
+    ]
+    conversing = host({"conversation": _in_pages(three)})
+    answered = with_host(conversing, lambda: under_test.read_comments(f" {key(1)} "))
+    check(
+        "every page of the comments is read, with writer, time and words",
+        got(answered, "key") == key(1) and [
+            (c["id"], c["author"], c["created"], c["edited"], c["body"])
+            for c in got(answered, "comments") or []
+        ] == [
+            ("1", "A Writer", "2026-10-01T00:00:00.000+0000", None, "note 1"),
+            ("2", None, "2026-10-01T00:00:00.000+0000", "2026-10-02T00:00:00.000+0000", "note 2"),
+            ("3", "A Writer", "2026-10-01T00:00:00.000+0000", None,
+             "@A Writer see https://example.invalid/d"),
+        ],
+        f"answered {answered!r}",
+    )
+    for label, planted in (
+        ("an answer with no list", lambda *_: {"total": 0}),
+        ("an answer with no total", lambda *_: {"comments": []}),
+        ("an entry that is not a comment", lambda *_: {"total": 1, "comments": ["x"]}),
+        ("a page that ends early", _in_pages(three, lambda start: 5)),
+        ("a total that moves", _in_pages(three, lambda start: 3 if start else 4)),
+        ("an entry read twice", _in_pages([_said(1), _said(2), _said(2)])),
+        ("a comment with no text", _in_pages([_said(1, body=None)])),
+        ("a comment whose text is no document", _in_pages([_said(1, body={"a": 1})])),
+        ("a comment with no time", _in_pages([_said(1, created=None)])),
+    ):
+        reported = with_host(
+            host({"conversation": planted}),
+            lambda: unavailable(lambda: under_test.read_comments(key(1))),
+        )
+        check(f"{label} is a failed read and never a shorter list",
+              isinstance(reported, str) and not reported.startswith("<"),
+              f"got {reported!r}")
 
     # --- `comment`, `assign` --------------------------------------------------
     noted = host()
@@ -1921,6 +2137,11 @@ def self_test() -> int:
         )),
         ("comment", lambda: comment(key(1), PLANTS["branch_names"])),
         ("set_field", lambda: set_field(key(1), "Description", PLANTS["branch_names"])),
+        ("set_field, of a list", lambda: set_field(key(1), "Words", [PLANTS["branch_names"]])),
+        ("create_item, of a field", lambda: create_item(
+            "a title", "a body", type=_a_type(configuration),
+            fields={"Words": [PLANTS["branch_names"]]},
+        )),
     ):
         guarded = host()
         reported = with_host(guarded, lambda call=call: refused(call))
