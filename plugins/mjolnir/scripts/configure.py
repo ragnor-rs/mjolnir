@@ -771,7 +771,9 @@ ANSWERED_BY: dict[str, Answer] = {
         "And a billing period's line items, for whoever pays the invoice?",
     ),
     "language.artifacts.hours_breakdown": ask(
-        "And a period's hours broken down over the work it shipped?",
+        "And a period's hours broken down over the work it shipped -- and is a "
+        "duration there counted in hundredths of an hour, written as decimals, or "
+        "in minutes, written as hours and minutes in which unit words?",
     ),
 
     # --- § 9. Day log ------------------------------------------------------

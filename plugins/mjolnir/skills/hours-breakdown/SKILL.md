@@ -26,7 +26,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py"
 | input | where it comes from |
 |---|---|
 | the period | the invocation, as a first and a last day |
-| the total | the invocation. It is never read from a store, never derived from the changes, and never adjusted |
+| the total | the invocation. It is never read from a store and never derived from the changes. Its one adjustment is rounding to the resolution, reported beside it |
+| the resolution, and how a duration is written | the triple's `duration` ([§ 8](../../config/schema.md#8-language-register-audience--per-artifact-not-per-project)), read by the carrier. Absent, parts are hundredths of an hour written as decimals |
 | where the artifact goes | the invocation. Nothing on the surface addresses it |
 | the changes the period shipped | the repository, read by the carrier in § 3. Never a list handed over on the invocation |
 | who reads the artifact | [`§ 8`](../../config/schema.md#8-language-register-audience--per-artifact-not-per-project)'s `hours_breakdown` triple |
@@ -59,8 +60,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hours_breakdown.py" --from <the first day
 
 | exit | what it means | what this pass does |
 |---|---|---|
-| 0 | the total was distributed, and the parts sum back to it | writes the artifact from what was printed |
-| 1 | a stop, named — a period that shipped nothing, a total finer than a hundredth of an hour, a weight or a fold naming no change of the period | reports the stop as it came back |
+| 0 | the total was distributed, and the parts sum back to it at the resolution | writes the artifact from what was printed |
+| 1 | a stop, named — a period that shipped nothing, a total that rounds to nothing at the resolution, a `duration` the carrier cannot read, a weight or a fold naming no change of the period | reports the stop as it came back |
 | 2 | the invocation itself was malformed, which is the argument parser's own status | corrects the invocation |
 | 3 | no total was given, so one was offered or none could be | § 2: asks for the total, with the offer |
 | 4 | the configuration could not be read | reports the refusal |
@@ -124,11 +125,16 @@ day and its root, or every root its changes landed in where the line holds sever
 comes a narrative of what each line was, written in § 8's triple for the reader that triple names,
 so a line is described by what it did rather than by its identifiers. Under `--per-item`, an item's
 line is described as the one piece of work its changes landed. Every figure is copied from the
-carrier's output, and the artifact states the total beside the sum of its parts. The two are equal
-by the carrier's construction; an artifact on which they differ was edited by hand.
+carrier's output, and the artifact states the total at the resolution beside the sum of its parts.
+The two are equal by the carrier's construction; an artifact on which they differ was edited by
+hand.
 
 - The total is the one handed over. A total the reader expected to be different is still reported
-  as given.
+  as given. Where the carrier reports it `rounded`, the artifact states the total as handed over
+  and the figure at the resolution (`total_at_resolution`) side by side, and the parts sum to the
+  second.
+- Every duration is copied in the form the carrier wrote it, which is the triple's: decimal hours,
+  or hours and minutes in the triple's unit words. It is not converted by hand.
 - A change with no work item is shown with none, not attached to a nearby item and not left out.
 - The remainder line is worded in the artifact's language, and the artifact names every change it
   holds.
@@ -144,7 +150,8 @@ Register and language are [§ 8](../../config/schema.md#the-reply-to-the-person-
 with a table where the content enumerates. The reply carries:
 
 - the project resolved, and the period by its first and last day;
-- the total as given, and the sum of the parts beside it — or, on § 2's arm, that no total was
+- the total as given, the figure at the resolution where the carrier rounded it, and the sum of
+  the parts beside them — or, on § 2's arm, that no total was
   given, the figure offered with the days the store could not read, and the question asking for the
   total;
 - every line, with its day, its root, the item it names or that it names none, the changes it
