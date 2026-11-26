@@ -488,8 +488,18 @@ ANSWERED_BY: dict[str, Answer] = {
     "work_item.estimate.band": ask(
         "Above which value is an item too big to take as one piece?",
     ),
+    "work_item.estimate.writer": ask(
+        "Who writes the estimate? Leave it unstated to have whoever moves an item "
+        "into the committed status write it; state `procedure` to have the gate "
+        "write it even where a person makes that move (§ 4.2).",
+    ),
     "work_item.due_date.carrier": ask(
         "How is the date a gate writes carried on an item here?",
+    ),
+    "work_item.due_date.writer": ask(
+        "Who writes the committed date? Leave it unstated to have whoever moves an "
+        "item into the committed status write it; state `procedure` to have the "
+        "gate write it even where a person makes that move (§ 4.2).",
     ),
     "work_item.due_date.field": skip(
         "the field's name is this facet's own carrier question answered: that "
@@ -579,6 +589,22 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "work_item.template.sections.reproduction": ask(
         "Which heading does a body state a reproduction under?",
+    ),
+    "work_item.template.declared.name": ask(
+        "Which section must an item carry beyond the outcome, the acceptance check "
+        "and the reproduction -- an implementation plan, say -- and what is it called?",
+    ),
+    "work_item.template.declared.heading": ask(
+        "Which heading does a body state it under?",
+    ),
+    "work_item.template.declared.fills": ask(
+        "What goes under it?",
+    ),
+    "work_item.template.declared.source": ask(
+        "Is it written from the request, or from reading the code?",
+    ),
+    "work_item.template.declared.required": ask(
+        "Must every item carry it, or only where it applies?",
     ),
     "work_item.code_root.carrier": ask(
         "How does an item say which code repository it belongs to? ⛔ Asked "
@@ -846,6 +872,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "Should a tree also be cleaned up right after a merge the session makes with a "
         "bare command, once the host confirms it? Unstated, the next session's sweep "
         "does it.",
+    ),
+    "branch_model.prune_on_open": ask(
+        "Should the sweep as a session opens remove landed trees, or only say which it "
+        "would remove? Unstated, it removes them.",
     ),
     "branch_model.regenerable": ask(
         "Which ignored paths does a rebuild write again? ⚠️ A new tree carries "

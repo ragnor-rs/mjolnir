@@ -2391,6 +2391,42 @@ writer is.
 A status stating `writer` is asked for no path, and one handed over is not read. What a grouping's
 close needs of a classed status is [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s.
 
+#### A commitment written apart from the move
+
+The two values an item is committed with — [§ 4.3](#43-estimate)'s estimate and
+[§ 4.5](#45-due-date)'s date — each take a `writer` of their own, from the set above:
+
+```yaml
+statuses:
+  - { name: "…", role: ready, writer: orderer }
+work_item:
+  estimate: { carrier: field, field: "…", writer: procedure }
+  due_date: { carrier: native, writer: procedure }
+```
+
+⛔ **A value stating no `writer` has the writer of the status whose role is `ready`**, so a project
+that states none behaves as it always did: where a person admits the item, the gating role writes
+neither value. ⚠️ A `ready` status stating `writers` has no one writer before any work exists, so a
+value under it with no `writer` of its own is written by nobody.
+
+⛔ **The gating role writes a value whose writer is `procedure`, and makes the move only where the
+status's writer is `procedure` too.** Where the move is somebody else's, it writes the values, then
+reports the move for that writer and names who it is. ⛔ **Where the move is the procedure's and a
+carried value is somebody else's, the move waits for that value** and the report names it: an item
+admitted without its commitment reads as gated to every role after it. ⚠️ **What a person's move
+costs is an item carrying its commitment and still outside the committed set** until the person
+moves it. A project stating the key has accepted that cost; one that states nothing still gets the
+all-or-nothing rule.
+
+⛔ **A value written `procedure` under a `ready` status written `never` is refused when the
+configuration is read**, naming the value's key. `never` states that the tracker credential acts as
+a person, so any write would read as that person speaking. A field writer cannot override that.
+⛔ So is a `writer` on a value whose carrier is `none`, which names a writer for nothing, and one on
+a project that maps no `ready` status, where no gate commits anything.
+
+What the gating role reads is one answer, not three keys: `config.py --commitment` reports each
+carried value with its writer and where that writer came from, and the move with its own writer.
+
 ### 4.3 Estimate
 
 ```yaml
@@ -2401,12 +2437,14 @@ work_item:
     values: [1, 2, 5, 8, 13]
     label_prefix: "E:"           # when carrier is label
     band: top                    # when each rung is the top of a band
+    writer: "…"
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
 
 Four carriers observed, plus a deliberate absence. `carrier: none` with a stated reason is a
-first-class setting; an unset carrier is a misconfiguration.
+first-class setting; an unset carrier is a misconfiguration. Who writes the estimate is covered in
+[§ 4.2 → A commitment written apart from the move](#a-commitment-written-apart-from-the-move).
 
 ⛔ **One rule here is procedure, not configuration, and holds everywhere:** an estimate is a
 bound written before the work, and a logged hour is a measurement written after. **Never move a
@@ -2425,6 +2463,7 @@ work_item:
       outcome: "…"
       acceptance: "…"
       reproduction: "…"
+    declared: []                 # the sections this project requires beyond those three; default: []
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2449,6 +2488,59 @@ text is shared by construction, so it cannot tell two templates apart.
 template keyed to a type the project cannot assign is a template nothing selects, and the
 cross-check above would be holding a body against a file no item can legitimately have used.
 
+**A project may require sections of its own beyond those three, and `declared` is where it says
+so.** The measured case is an implementation plan an adopter's filing wrote from a scan of the
+code, which no key asked for and nothing checked. Each entry draws on this vocabulary, stated under
+the key it belongs to for the reason [§ 20](#20-the-sections-a-pull-request-body-must-carry) gives
+for its own: a member of a list sits at no path a marker can reach.
+
+```yaml
+work_item:
+  template:
+    declared:
+      name:     "<the semantic name the project gives the section>"
+      heading:  "<the heading a body states it under, in the item's language (§ 8)>"
+      fills:    "<what the filing role writes under it>"
+      source:   request | code
+      required: true | false
+```
+
+- ⛔ **Every key the fence states is written on every entry, and a key it does not state is
+  refused with its own name**, by § 20's rule for a body section.
+- **`name`** is what a role calls the section, and ⛔ **it is none of the three the procedure
+  names**: a project redeclaring `outcome` would be stating a second heading for a section `sections`
+  already maps.
+- **`heading`** is the text a body carries, matched as § 20 matches one — the text alone, at any
+  level, cased however the body cases it. ⛔ **Two entries under one heading, or an entry under a
+  heading `sections` already maps, are refused**: either leaves a reader choosing between two
+  statements of what one section is for.
+- **`fills`** says what goes under the heading, so the filing role writes it from a statement
+  rather than from the heading's wording.
+- **`source`** says where the content comes from. `request` is the person's own account of the
+  work. ⛔ **`code` means the filing role read the code to write it, and the section then names
+  every file it read**, written as a repository-relative path in backticks. A plan sourced from the
+  code that names no file cannot be checked against the code it claims to describe.
+- **`required`** decides whether a body that lacks the section is refused. A section that is not
+  required may be left out, ⛔ **but where a body carries it, it is held to the same rules as a
+  required one**: a heading with nothing under it reads as answered.
+
+⛔ **`declared` holds under either carrier.** With `carrier: file` the template files carry the
+headings. With `carrier: none` the filing role writes each declared heading itself, as it writes the
+procedure's own sections under headings it chooses. ⛔ **`[]` is the stated absence**, and a project
+that declares nothing files exactly as it did before the key existed.
+
+**One consumer holds a body to the declared sections**, and the filing role runs it on the body
+before writing the item:
+
+```bash
+python3 plugins/mjolnir/scripts/item_sections.py check --body-file <the body> [--code-root <root>]
+```
+
+It refuses a required section that is missing or empty, a carried section that is empty, and a
+code-sourced section that names no file. ⚠️ **Given `--code-root`, it also refuses a named file that
+does not exist there.** What it cannot see is whether the files named are the files actually read:
+a reference to a real file passes, whether or not anybody opened it.
+
 **`carrier: none` with a stated reason is a first-class setting here, on § 4.3's terms rather than
 on a second statement of them.** A project whose items already state the sections above has no
 template file to name, and `revisit_when` carries the trigger that would give it one.
@@ -2460,6 +2552,7 @@ work_item:
   due_date:
     carrier: native | field | none           # required; absent_reason
     field: "…"                   # when carrier is field
+    writer: "…"
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2467,7 +2560,9 @@ work_item:
 The date an item is committed for. **Which role writes it is § The loop's statement and is not
 restated here**; what belongs here is why that role and no other: filing writes the item before
 anyone has committed to it and starting is downstream of the commitment, so a date set in either
-place is a promise made where nobody was asked for one.
+place is a promise made where nobody was asked for one. Whether that role writes it where a person
+makes the move is covered in
+[§ 4.2 → A commitment written apart from the move](#a-commitment-written-apart-from-the-move).
 
 `native` is the tracker's own due date and `field` is a named field where the tracker has none.
 ⚠️ **The carrier says where a date is written, never what the date is.** What computes one is not
@@ -3979,6 +4074,7 @@ branch_model:
   resources_running: "<the command that lists every running resource with its tree>"   # may be left unwritten; read only under worktree
   resource_stop: "<the command that stops a resource whose tree is gone>"   # may be left unwritten; refused without resources_running
   prune_on_merge: false                      # may be left unwritten; read only under worktree
+  prune_on_open: remove | list               # may be left unwritten (remove); read only under worktree
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
@@ -4750,6 +4846,8 @@ holding a checkout of the repository. ⛔ **Procedure with no key**, the placeme
 rule and the claim above both have: a project that could switch the second carrier off would
 accumulate trees exactly as the project with no rule at all did. ⚠️ **A third carrier, on a merge
 the session makes with a bare command, is a project's to turn on**, and it is stated below.
+⚠️ **So is a sweep that lists rather than removes**, stated below with it: it still runs on every
+open and names each tree it would remove, so what accumulates is said rather than silent.
 
 ⛔ **The landed reading is [the claim's](#the-claim-on-a-work-item), and nothing here carries a
 second one.** Two oracles for *has this landed* are allowed to disagree, and the reading that ships
@@ -4963,6 +5061,35 @@ branch_model:
   else. The sweep has no key because its absence accumulates trees. This carrier's absence only
   delays a removal until the next session opens, and turning it on adds a host read after every
   merge the session makes.
+- ⚠️ **It is read only under `kind: worktree`**, there being no tree to prune under `in_place`.
+
+⛔ **A sweep can be asked what it would remove, and asking removes nothing.** A person adopting
+this rule in a project that already holds trees needs the verdicts before the first removal, and
+the sweep run by hand gives them on request. The list-only run takes every reading a removing run
+takes, so each tree gets the verdict a removing run would act on. Only the removal is skipped, with
+what it carries: the teardown, the branch, the published ref, the clearing of a registration
+whose directory is gone, and the stop command for a resource whose tree is gone, which is named
+with what a removing sweep would do about it. ⚠️ **The resource check the release asks is read,
+since it writes nothing**, and a tree it would keep is kept in the list. ⛔ **Where a teardown runs
+first, that check reads what the teardown left**, so a list that runs no teardown cannot read it:
+the tree is listed with that proviso stated, and never listed as certain.
+
+```yaml
+branch_model:
+  prune_on_open: list
+```
+
+- **The run by hand lists on request.** Its list-only form prints *would remove* where a removing
+  run prints *removed*, and every other line is the same. ⛔ **One decision serves both runs**, so
+  the list cannot name a tree the removal would keep, or the other way round.
+- **`prune_on_open: list` makes the event that opens a session list rather than remove.** ⛔ **Each
+  tree it would remove reaches the person on every open**, which the table above does not need for
+  a removal: nothing else will remove that tree, so it is a person's to act on.
+- ⚠️ **Removal stays the default.** `remove`, or the key unwritten, is the sweep above. Any other
+  value is refused with the key named, because a misspelt `list` read as `remove` deletes trees
+  the project asked to see first.
+- ⚠️ **The key governs that one event.** A project that also turns `prune_on_merge` on has asked
+  for that removal by name, and the release removes as it always does.
 - ⚠️ **It is read only under `kind: worktree`**, there being no tree to prune under `in_place`.
 
 ```yaml

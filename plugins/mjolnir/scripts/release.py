@@ -274,7 +274,7 @@ def plan(configuration: config.Config, version: str) -> dict | None:
     stated = configuration.release()
     if stated is None:
         return None
-    root = configuration.code_root()
+    root = configuration.code_root
     files = [_plan_entry(root, entry, version) for entry in stated["files"]]
     report = []
     # ⛔ Said rather than skipped, which § 34 makes the rule rather than a
@@ -381,7 +381,7 @@ def _report(configuration: config.Config) -> dict:
                 "(`release.carrier: none`), so there is nothing to cut (§ 34)."
             ],
         }
-    root = configuration.code_root()
+    root = configuration.code_root
     files = []
     for entry in stated["files"]:
         # ⚠️ The same walk the plan takes, in its reading mode: a second reader
@@ -426,11 +426,12 @@ class _Stated:
     """A project's stated facet and code root, with no configuration file.
 
     ⛔ A stand-in at the accessor seam rather than at the reader's: what this
-    module reads is `release()` and `code_root()`, so a fake answering those two
+    module reads is `release()` and `code_root`, so a fake answering those two
     replaces exactly what it has to and leaves every rule the reader performs --
     the capture, the per-kind keys, the booleans -- where it is. ⚠️ Which is why
     the suite below also loads each planted facet **through the reader**, in the
-    arm that asserts a configuration this module accepts is one the reader does.
+    arm that asserts a configuration this module accepts is one the reader does,
+    and drives `plan` and `apply` against a configuration the reader resolved.
     """
 
     def __init__(self, root: str, **facet):
@@ -440,6 +441,10 @@ class _Stated:
     def release(self):
         return dict(self._facet) if self._facet else None
 
+    # ⛔ A property, because the reader's is one: a fake answering a call where
+    # the reader answers an attribute let every arm here pass while `plan` and
+    # `apply` raised on the first real configuration they were given.
+    @property
     def code_root(self):
         return self._root
 
@@ -720,6 +725,40 @@ def self_test() -> int:
         check(f"{label} loads through the reader", refusal is None,
               f"refused with {refusal!r}")
     del facet_with_optional
+
+    print("\nA shipped example, resolved by the reader and driven through this module:")
+    # ⛔ The arm that keeps the stand-in's *seam* honest, where the loop above
+    # keeps its facet honest: every accessor this module reads is read here off
+    # the reader's own `Config`, so a call the reader would refuse reddens it.
+    for name in sorted(os.listdir(config.EXAMPLES)):
+        if not name.endswith((".yaml", ".yml")):
+            continue
+        with open(os.path.join(config.EXAMPLES, name), encoding="utf-8") as handle:
+            text = handle.read()
+        resolved = config.load_text(text, config.EXAMPLES, check_paths=False)
+        if resolved.release() is None:
+            continue
+        for label, act in (("plan", plan), ("apply", apply)):
+            try:
+                answer, raised = act(resolved, "9.9.9"), None
+            except Exception as exc:  # noqa: BLE001 -- the arm reports any raise
+                answer, raised = None, f"{type(exc).__name__}: {exc}"
+            check(f"{name}: `{label}` runs against the reader's configuration",
+                  raised is None and answer is not None, f"raised {raised!r}")
+            if answer is not None:
+                check(f"{name}: `{label}` reads the code root the reader states",
+                      answer["code_root"] == resolved.code_root,
+                      f"read {answer['code_root']!r}")
+                # ⚠️ The example's paths are placeholders, so its files are
+                # absent: what is asserted is that the plan was read rather than
+                # raised, and that it refuses to write rather than writing half.
+                check(f"{name}: `{label}` holds nothing for files that are not there",
+                      not answer["holds"] and not answer.get("written"),
+                      f"answered {answer!r}")
+        break
+    else:
+        check("a shipped example states a file that carries a version", False,
+              "no example states `release.carrier: list`, so nothing was driven")
 
     print("\nThis project's own answer:")
     # ⚠️ This repository's own root rather than the directory this module sits

@@ -2471,6 +2471,83 @@ class Config:
             "report": report,
         }
 
+    def commitment(self) -> dict:
+        """§ 4.2's commitment: who writes each carried value, and who makes the move.
+
+        ⛔ A value stating no writer takes the `ready` status's, so a project
+        stating nothing answers exactly as the all-or-nothing rule did -- and a
+        status stating `writers` gives it nobody, there being no one writer before
+        any work exists. The gating role writes what comes back `procedure` and
+        reports every other writer by name; this answer is the one place that
+        reads the three keys.
+        """
+        status = _committed_status(self.get("statuses"))
+        if status is None:
+            return {
+                "status": None,
+                "values": [],
+                "move": None,
+                "report": [
+                    f"No status maps the `{COMMITTED_ROLE}` role, so nothing gates an "
+                    "item here and no commitment is written (§ 4.2)."
+                ],
+            }
+        if STATUS_WRITERS in status:
+            mover, why = None, (
+                "the status states a writer per class, and no item has a class "
+                "before its work exists"
+            )
+        else:
+            mover, why = status.get("writer") or "procedure", "the status's own"
+        values, report = [], []
+        for value in COMMITMENT_VALUES:
+            carrier = self.get(f"work_item.{value}.carrier")
+            if carrier in (None, "none"):
+                values.append({"value": value, "carried": False})
+                continue
+            stated = self.get(f"work_item.{value}.writer")
+            writer = stated if stated is not None else mover
+            values.append({
+                "value": value,
+                "carried": True,
+                "carrier": carrier,
+                "writer": writer,
+                "from": "stated" if stated is not None else f"the `{COMMITTED_ROLE}` status",
+                "gate_writes": writer == "procedure",
+            })
+            if writer != "procedure":
+                report.append(
+                    f"The {value} is written by {f'`{writer}`' if writer else 'nobody'} "
+                    "here, so the gating role reports it rather than writing it."
+                )
+        # ⛔ The move waits for every carried value the gate does not write: an
+        # item admitted without its commitment reads as gated to every role after
+        # it, which is the gating role's own not-admitted rule.
+        waiting = [v["value"] for v in values if v["carried"] and not v["gate_writes"]]
+        if mover != "procedure":
+            report.append(
+                f"The move into `{status.get('name')}` is made by "
+                f"{f'`{mover}`' if mover else 'nobody named'} ({why}), so the gating "
+                "role reports it as still to be made, naming that writer."
+            )
+        elif waiting:
+            report.append(
+                f"The move into `{status.get('name')}` is the procedure's, and it waits "
+                f"for the {' and the '.join(waiting)}, which the gating role does not "
+                "write here: an item admitted without its commitment reads as gated."
+            )
+        return {
+            "status": status.get("name"),
+            "values": values,
+            "move": {
+                "writer": mover,
+                "from": why,
+                "gate_moves": mover == "procedure" and not waiting,
+                "waits_for": waiting,
+            },
+            "report": report,
+        }
+
     def person_for(self, role: str) -> dict:
         """§ 27's identity for one role, looked up in the project's own map.
 
@@ -7799,6 +7876,60 @@ def _validate_transition_fields(data: dict) -> None:
 RELATION_SIDES = ("outward", "inward")
 
 
+# § 4.2 → A commitment written apart from the move: the values an item is
+# committed with, each of which may state a writer of its own.
+COMMITMENT_VALUES = ("estimate", "due_date")
+COMMITTED_ROLE = "ready"
+
+
+def _committed_status(statuses) -> dict | None:
+    """The one status whose role is § 4.2's `ready`, or None where none maps it."""
+    for status in statuses or []:
+        if isinstance(status, dict) and status.get("role") == COMMITTED_ROLE:
+            return status
+    return None
+
+
+def _validate_commitment_writers(data: dict, facts: dict) -> None:
+    """§ 4.2's writer per commitment value, held where the configuration is read.
+
+    ⛔ Each refusal here is a write that would otherwise happen at the gate: a
+    procedure write through a credential `never` says acts as a person, a writer
+    for a value nothing carries, and a writer where nothing commits an item.
+    """
+    for value in COMMITMENT_VALUES:
+        at = f"work_item.{value}.writer"
+        stated = _get(data, at)
+        if stated is None:
+            continue
+        allowed = vocabulary(facts, "writer", "a commitment value's writer")
+        if stated not in allowed:
+            raise ConfigError(
+                at,
+                f"is {stated!r}; § 4.2 takes one of {', '.join(allowed)}.",
+            )
+        if _get(data, f"work_item.{value}.carrier") == "none":
+            raise ConfigError(
+                at,
+                "names a writer for a value this project carries nowhere "
+                "(`carrier: none`), so nothing is written whoever writes it (§ 4.2).",
+            )
+        status = _committed_status(data.get("statuses"))
+        if status is None:
+            raise ConfigError(
+                at,
+                f"names a writer where no status maps the `{COMMITTED_ROLE}` role: "
+                "nothing gates an item here, so no commitment is written (§ 4.2).",
+            )
+        if stated == "procedure" and (status or {}).get("writer") == "never":
+            raise ConfigError(
+                at,
+                f"is `procedure` while the `{COMMITTED_ROLE}` status is written "
+                "`never`: the tracker credential acts as a person's own account, so "
+                "the procedure writes nothing on it, the commitment included (§ 4.2).",
+            )
+
+
 def _validate_relations(data: dict) -> None:
     """§ 3's non-blocking relations, held to a shape a read-back can name.
 
@@ -9842,6 +9973,123 @@ def _a_named_call(entry, where: str) -> None:
             ) from None
 
 
+DECLARED = "work_item.template.declared"
+
+
+def _validate_declared_sections(data: dict, facts: dict) -> None:
+    """§ 4.4's `declared`: the sections a project requires beyond the procedure's.
+
+    ⛔ The keys an entry may carry, the procedure's own section names and the
+    `source` alternation are each read off the surface rather than listed here,
+    which is the division § 20's walk above already keeps.
+    """
+    declared = _absent_as(_get(data, DECLARED), [])
+    if not isinstance(declared, list):
+        raise ConfigError(
+            DECLARED,
+            f"is {type(declared).__name__}, and § 4.4 states it as the sections a project "
+            "requires beyond the procedure's -- a list of entries, or `[]` where it "
+            "requires none.",
+        )
+    # ⛔ Nothing declared is answered before the fence is asked for: a tree whose
+    # branch predates the key carries a surface with no fence, and `surface_for`
+    # reads that surface, so refusing there would make every such tree's
+    # configuration unreadable the moment the installed reader moved on.
+    if not declared:
+        return
+    prefix = f"{DECLARED}."
+    entry_keys = {path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)}
+    if not entry_keys:
+        raise ConfigError(
+            DECLARED,
+            "the surface declares no key under this one, so an entry could be held to "
+            "nothing. § 4.4 states the entry's keys in a fence of its own, and a surface "
+            "that has lost it is refused rather than read as permitting anything.",
+        )
+    sources = vocabulary(facts, f"{DECLARED}.source", "where a declared section comes from")
+    mapped = "work_item.template.sections."
+    procedure = {path[len(mapped):] for path in facts["declared"] if path.startswith(mapped)}
+    # ⛔ A heading `sections` already maps is one a body states for a procedure
+    # section, so a declared entry under it would be a second reading of it.
+    taken = {
+        str(heading).strip().casefold(): f"work_item.template.sections.{name}"
+        for name, heading in (_get(data, "work_item.template.sections") or {}).items()
+        if isinstance(heading, str) and heading.strip()
+    }
+    names: dict[str, int] = {}
+    for index, entry in enumerate(declared):
+        where = f"{DECLARED}[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}, and has to be a mapping stating the section's `name`, the "
+                "`heading` a body carries, what `fills` it, its `source` and whether it is "
+                "`required` (§ 4.4).",
+            )
+        for stated_key in entry:
+            if stated_key not in entry_keys:
+                raise ConfigError(
+                    f"{where}.{stated_key}",
+                    "is a key § 4.4 does not declare on a section, so it is a fact about "
+                    "the section that nothing reads. The keys it declares are: "
+                    f"{', '.join(sorted(entry_keys))}.",
+                )
+        for key, what in (
+            ("name", "the semantic name the project gives the section"),
+            ("heading", "the heading a body states it under"),
+            ("fills", "what the filing role writes under it"),
+        ):
+            value = entry.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"is {value!r}; § 4.4 states it as {what}, written on every entry. "
+                    "Written blank it reads as a key somebody set while stating nothing.",
+                )
+        if "source" not in entry:
+            raise ConfigError(
+                f"{where}.source",
+                "required (§ 4.4). It says whether the content is the request's or was read "
+                "off the code, and only the second owes the files it read.",
+            )
+        if entry["source"] not in sources:
+            raise ConfigError(
+                f"{where}.source",
+                f"is {entry['source']!r}; the surface states {' | '.join(sources)} (§ 4.4).",
+            )
+        # ⛔ A boolean and nothing else: `"no"` is a non-empty string, and a
+        # string read for its truth would make every such section required.
+        if not isinstance(entry.get("required"), bool):
+            raise ConfigError(
+                f"{where}.required",
+                f"is {entry.get('required')!r}; § 4.4 states it as true or false, written "
+                "on every entry. Read for its truth, a word would require a section its "
+                "author meant to leave optional.",
+            )
+        name = entry["name"].strip()
+        if name in procedure:
+            raise ConfigError(
+                f"{where}.name",
+                f"is {name!r}, which the procedure already names (§ 4.4). `sections` maps "
+                "its heading, so a declared entry would be a second statement of it.",
+            )
+        if name in names:
+            raise ConfigError(
+                f"{where}.name",
+                f"is {name!r}, which {DECLARED}[{names[name]}] already states (§ 4.4).",
+            )
+        names[name] = index
+        folded = entry["heading"].strip().casefold()
+        if folded in taken:
+            raise ConfigError(
+                f"{where}.heading",
+                f"is {entry['heading']!r}, which {taken[folded]} already states (§ 4.4). "
+                "A body is read by the heading's text, so two sections under it leave a "
+                "reader choosing between two statements of what it is for.",
+            )
+        taken[folded] = f"{DECLARED}[{index}].heading"
+
+
 def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⛔ Walked rather than looked up by path, because a retired key may sit
     # inside a list: `_get` descends a dict and returns the default the moment it
@@ -10390,6 +10638,18 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 "is `true` where no tree is ever cut, so no merge has a tree to prune (§ 10).",
             )
 
+    # § 10. Whether the sweep on the event that opens a session removes or only
+    # lists. ⚠️ The two values are the surface's enumeration, which the reader
+    # already holds every key to; what is held here is the kind it is read under.
+    if (
+        _get(data, "branch_model.prune_on_open") == "list"
+        and _get(data, "branch_model.kind") != "worktree"
+    ):
+        raise ConfigError(
+            "branch_model.prune_on_open",
+            "is `list` where no tree is ever cut, so no sweep has a tree to list (§ 10).",
+        )
+
     # § 10. What a rebuild writes again, which is the only half of the pruning
     # oracle a project states. ⛔ Whether the key is *written* is the surface's
     # `# required_when` marker and not a rule here; what is held here is its
@@ -10901,6 +11161,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     _validate_create_fields(data)
     _validate_transition_fields(data)
     _validate_relations(data)
+    _validate_commitment_writers(data, facts)
     _validate_search(data, facts)
     # § 38's lists, in the same position and for the same reason. ⛔ The two rules
     # no marker reaches are the ones about the row set rather than a row: that
@@ -11211,6 +11472,8 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 "and a gate reading either would be right.",
             )
         seen_headings[folded] = index
+
+    _validate_declared_sections(data, facts)
 
     # § 18. The guard on a command the host has already run. Requiredness is the
     # surface's marker and answers whether `never_guard` is written; what these
@@ -16439,6 +16702,67 @@ def self_test() -> int:
     check("a stated grouping with no default is asked for, as before",
           (plain["source"], plain["value"]) == ("ask", None), f"answered {plain!r}")
 
+    # § 4.2 → A commitment written apart from the move, read through the one
+    # answer the gating role acts on.
+    estimate = {"carrier": "label", "label_prefix": "E:"}
+    date = {"carrier": "native"}
+
+    def gate(answer):
+        return {v["value"]: v.get("gate_writes") for v in answer["values"] if v["carried"]}
+
+    plain = _commitment_of("orderer", estimate=estimate, due_date=date)
+    check(
+        "a commitment stating no writer under a person's move is written by nobody here",
+        gate(plain) == {"estimate": False, "due_date": False}
+        and plain["move"]["gate_moves"] is False,
+        f"answered {plain!r}",
+    )
+    split = _commitment_of(
+        "orderer", estimate={**estimate, "writer": "procedure"},
+        due_date={**date, "writer": "procedure"},
+    )
+    check(
+        "a commitment written by the procedure is written while a person makes the move",
+        gate(split) == {"estimate": True, "due_date": True}
+        and split["move"]["gate_moves"] is False,
+        f"answered {split!r}",
+    )
+    check(
+        "the move still to be made is reported with its writer named",
+        any("<committed>" in line and "`orderer`" in line for line in split["report"]),
+        f"reported {split['report']!r}",
+    )
+    held = _commitment_of("never", estimate=estimate, due_date=date)
+    check(
+        "a credential that may write nothing gets nothing written",
+        gate(held) == {"estimate": False, "due_date": False}
+        and held["move"]["gate_moves"] is False,
+        f"answered {held!r}",
+    )
+    whole = _commitment_of("procedure", estimate=estimate, due_date=date)
+    check(
+        "a procedure-written status commits the values and makes the move",
+        gate(whole) == {"estimate": True, "due_date": True}
+        and whole["move"]["gate_moves"] is True and not whole["report"],
+        f"answered {whole!r}",
+    )
+    waits = _commitment_of(
+        "procedure", estimate={**estimate, "writer": "orderer"}, due_date=date
+    )
+    check(
+        "a procedure move waits for a value somebody else writes",
+        gate(waits) == {"estimate": False, "due_date": True}
+        and waits["move"]["gate_moves"] is False
+        and waits["move"]["waits_for"] == ["estimate"],
+        f"answered {waits!r}",
+    )
+    none = _commitment_of(None)
+    check(
+        "a project mapping no ready status commits nothing",
+        none["status"] is None and not none["values"] and none["move"] is None,
+        f"answered {none!r}",
+    )
+
     # ⛔ § 38's scope keys from the green side: an entry stating both loads, and
     # one stating neither loads too -- the scope keys being the only keys of an
     # entry this reader holds as optional, which a refusal of either would undo.
@@ -18080,6 +18404,26 @@ def self_test() -> int:
                 f"reported {stood.unavailable()!r}",
             )
 
+    print("\n§ 4.4, the sections a project declares, against a surface without the fence:")
+    with open(SURFACE, encoding="utf-8") as handle:
+        unfenced = surface_facts(handle.read())
+    unfenced["declared"] = {
+        path for path in unfenced["declared"] if not path.startswith(f"{DECLARED}.")
+    }
+    check(
+        "a surface that has lost § 4.4's entry fence is refused where a section is declared",
+        _refused(_a_declared_section_of()(_a_valid_example()), facts=unfenced) == DECLARED,
+        "an entry was held to no key at all",
+    )
+    # ⛔ The direction `surface_for` exists for: a tree whose branch predates the
+    # key carries a surface with no fence, and a project declaring nothing there
+    # has to stay readable, or every guard reading it holds nothing.
+    check(
+        "and a project declaring nothing still reads against that surface",
+        _refused(_a_valid_example(), facts=unfenced) is None,
+        "a tree cut before the key would read as unconfigured",
+    )
+
     print("\n§ 20, where a collected step falls and who answers it:")
     # ⛔ The arm the plant list cannot reach, the surface's own fence being what it
     # is about rather than a configuration: with no key declared under
@@ -18623,6 +18967,19 @@ def _planted_violations():
         ("an unsided relation beside a sided one on its type", "tracker.relations.also",
          at("tracker.relations", {"related": {"type": "a", "side": "outward"},
                                   "also": {"type": "a"}})),
+        # § 4.2's writer per commitment value, one plant per arm.
+        ("a commitment value's writer outside the set", "work_item.estimate.writer",
+         _committed("orderer", estimate={"carrier": "label", "label_prefix": "E:",
+                                         "writer": "somebody"})),
+        ("a writer on a value carried nowhere", "work_item.due_date.writer",
+         _committed("orderer", due_date={"carrier": "none", "absent_reason": "a",
+                                         "writer": "procedure"})),
+        ("a commitment writer where nothing maps ready", "work_item.estimate.writer",
+         _committed(None, estimate={"carrier": "label", "label_prefix": "E:",
+                                    "writer": "procedure"})),
+        ("a procedure commitment under a never-written ready status",
+         "work_item.due_date.writer",
+         _committed("never", due_date={"carrier": "native", "writer": "procedure"})),
         # § 3's search coverage, one plant per arm.
         ("searched texts that are not a list", "tracker.search.texts",
          at("tracker.search.texts", "title")),
@@ -20200,6 +20557,37 @@ def _planted_violations():
         # the section written exactly where somebody would expect it to be read.
         ("a body-section key § 20 declares nowhere", "body_sections[0].reads_by",
          _a_body_section_of(reads_by="whatever collects it out of the change")),
+        # § 4.4's declared sections, one plant per arm.
+        ("a declared-section list that is not a list", DECLARED,
+         at(DECLARED, "A plan")),
+        ("a declared section that is not a block", f"{DECLARED}[0]",
+         at(DECLARED, ["A plan"])),
+        ("a declared section stating no name", f"{DECLARED}[0].name",
+         _a_declared_section_of(name=_ABSENT)),
+        ("a declared section whose heading is blank", f"{DECLARED}[0].heading",
+         _a_declared_section_of(heading="   ")),
+        ("a declared section saying nothing of what fills it", f"{DECLARED}[0].fills",
+         _a_declared_section_of(fills=_ABSENT)),
+        ("a declared section stating no source", f"{DECLARED}[0].source",
+         _a_declared_section_of(source=_ABSENT)),
+        ("a source outside the surface's alternation", f"{DECLARED}[0].source",
+         _a_declared_section_of(source="memory")),
+        ("a declared section stating no requiredness", f"{DECLARED}[0].required",
+         _a_declared_section_of(required=_ABSENT)),
+        # ⛔ The permissive direction: a word read for its truth requires a
+        # section its author wrote as optional.
+        ("requiredness written as a word", f"{DECLARED}[0].required",
+         _a_declared_section_of(required="no")),
+        ("a declared section under a name the procedure owns", f"{DECLARED}[0].name",
+         _a_declared_section_of(name="outcome")),
+        ("a declared-section key § 4.4 declares nowhere", f"{DECLARED}[0].filled_by",
+         _a_declared_section_of(filled_by="the filing role")),
+        ("two declared sections under one name", f"{DECLARED}[1].name",
+         _a_declared_section_of(second={"heading": "Another heading"})),
+        ("two declared sections under one heading, cased apart", f"{DECLARED}[1].heading",
+         _a_declared_section_of(second={"name": "another", "heading": "implementation PLAN"})),
+        ("a declared section under a heading `sections` maps", f"{DECLARED}[0].heading",
+         _a_declared_section_of(heading="What Is Wanted", mapped="What is wanted")),
         ("a local check list that is not a list", "checks_local",
          at("checks_local", "a-local-command")),
         ("a local check entry that is not a block", "checks_local[0]",
@@ -21764,6 +22152,37 @@ def _collides_with_a_jobs_command(data: dict) -> dict:
     return _a_local_check_of(command="the-third-command")(data)
 
 
+A_DECLARED_SECTION = {
+    "name": "plan",
+    "heading": "Implementation plan",
+    "fills": "the steps the work takes, read off a scan of the code",
+    "source": "code",
+    "required": True,
+}
+
+
+def _a_declared_section_of(*, second=None, mapped=None, **overrides):
+    """§ 4.4's `declared` carried as one entry with the stated keys replaced.
+
+    `second` adds a further entry, the base with those keys replaced, which is
+    what the collision arms need; `mapped` states one heading under `sections`.
+    `_ABSENT` drops a key, for `_a_body_section_of`'s reason.
+    """
+
+    def mutate(data: dict) -> dict:
+        entry = {**A_DECLARED_SECTION, **overrides}
+        entries = [{key: value for key, value in entry.items() if value is not _ABSENT}]
+        if second is not None:
+            entries.append({**A_DECLARED_SECTION, **second})
+        template = data.setdefault("work_item", {}).setdefault("template", {})
+        template["declared"] = entries
+        if mapped is not None:
+            template.setdefault("sections", {})["outcome"] = mapped
+        return data
+
+    return mutate
+
+
 def _a_body_section_of(**overrides):
     """§ 20's facet carried as one entry, with the stated keys replaced.
 
@@ -22279,6 +22698,38 @@ def _refused_or_reported(data: dict) -> list[str]:
         return _resolve(data, EXAMPLES, facts, False).unavailable()
     except ConfigError as error:
         return [f"refused {error.key}"]
+
+
+def _committed(ready_writer, **values):
+    """A mutation giving an example a `ready` status written `ready_writer`, and
+    the commitment value blocks named -- or no `ready` status where it is None.
+
+    ⛔ The status word is a placeholder rather than any example's, so the
+    fixture names no tracker's vocabulary.
+    """
+
+    def mutate(data: dict) -> dict:
+        statuses = [
+            s for s in data.get("statuses") or [] if s.get("role") != COMMITTED_ROLE
+        ]
+        if ready_writer is not None:
+            statuses.insert(
+                1, {"name": "<committed>", "role": COMMITTED_ROLE, "writer": ready_writer}
+            )
+        data["statuses"] = statuses
+        for value, block in values.items():
+            data.setdefault("work_item", {})[value] = block
+        return data
+
+    return mutate
+
+
+def _commitment_of(ready_writer, **values) -> dict:
+    """What `--commitment` answers for an example `_committed` reshaped."""
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    data = _committed(ready_writer, **values)(_a_valid_example())
+    return _resolve(data, EXAMPLES, facts, False).commitment()
 
 
 def _a_valid_example() -> dict:
@@ -23692,6 +24143,14 @@ def main(argv: list[str]) -> int:
         "running this",
     )
     parser.add_argument(
+        "--commitment",
+        action="store_true",
+        help="§ 4.2's commitment: each carried value the gate commits an item "
+        "with, its writer and where that writer came from, and the move into the "
+        "`ready` status with its own writer. The gating role writes what reads "
+        "`procedure` and reports every other writer by name",
+    )
+    parser.add_argument(
         "--grouping-default",
         action="store_true",
         help="the grouping one item goes into under § 4.8: the value given, else "
@@ -23835,6 +24294,10 @@ def main(argv: list[str]) -> int:
         # project's rather than a root's, so either form resolves it, and a role
         # that has narrowed to a root still asks the same question.
         answer = config.person_for(args.person_for) if args.person_for else None
+        # The project's, for § 27's reason above: statuses and the work-item
+        # facets are not stated per root.
+        if args.commitment:
+            answer = config.commitment()
         if args.grouping_default:
             answer = config.grouping_default(
                 args.grouping, from_value=args.from_value, given=args.given

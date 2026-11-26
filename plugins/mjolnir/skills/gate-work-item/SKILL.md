@@ -58,11 +58,26 @@ that maps no such status does not split intake into writing an item and committi
 and stop. That is a configuration and not an error** — the surface states that a project maps a
 subset of the roles, and this is the role the subset most often leaves out.
 
-⛔ **Where the configured writer for that status is not `procedure`, this role writes nothing at
-all** — not the state, not the date, not the estimate. It runs the gate whole, reports the verdict
-and names who moves the item, which is `set_state`'s stated fallback and § 4.2's writer refusal
-arriving together. ⚠️ **Half of it is not an option**: an item carrying a date that nobody admitted
-reads as gated to the next role, and an item admitted with no date reads as ungated.
+⛔ **Who writes each part of the commitment is one answer, read here and never composed:**
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commitment
+```
+
+It reports each carried value — the estimate and the date — with its writer and where that writer
+came from, and the move into the committed status with its own writer. The rule is
+[`§ 4.2 → A commitment written apart from the move`](../../config/schema.md#a-commitment-written-apart-from-the-move)'s:
+
+- ⛔ **A value whose writer is not `procedure` is not written here.** It is reported with its writer
+  named, which is `set_field`'s stated fallback.
+- ⛔ **A move whose writer is not `procedure` is not made here.** The gate still runs whole, the
+  values this role may write are written in step 6, and the reply names the move still to be made
+  and who makes it, which is `set_state`'s stated fallback and § 4.2's writer refusal arriving
+  together.
+- ⚠️ **Where a project states no writer for a value, the value takes the status's writer**, so
+  under a person's move this role writes nothing at all. That is the default because a value
+  written without the move leaves an item carrying its commitment while still outside the
+  committed set, which only a project that stated the key has accepted.
 
 ## 3. Which item
 
@@ -334,9 +349,14 @@ that operation and not for this role.
 **6c. Clear the mark**, where the item carries one from an earlier run, and remove that run's
 verdict from the body. An item that passed must not still read as sent back.
 
-**6d. Admit it.** Ask the port to advance the item to the `ready` **role** and ⛔ **never to a status
-word** — resolving the role to the word is the port's and nobody else's
-([`§ 3`](../../config/schema.md#3-tracker-port)).
+⛔ **6a and 6b write only a value step 2's answer reports as `gate_writes`**; every other carried
+value goes in the reply with the writer that answer named.
+
+**6d. Admit it**, where step 2's answer reports the move as `gate_moves`. Ask the port to advance the
+item to the `ready` **role** and ⛔ **never to a status word** — resolving the role to the word is
+the port's and nobody else's ([`§ 3`](../../config/schema.md#3-tracker-port)). ⛔ **Where the move
+is somebody else's, it is not asked for**: the reply names the move still to be made and the writer
+the answer named, and the item stays where it stands with whatever values this role wrote.
 
 ⛔ **Where a value this project carries could not be written, the item is not admitted.** Take the
 stated fallback — the reply carries the value for whoever does write it — and leave the item where
@@ -378,6 +398,8 @@ the person addressed this role in.
   identity with no provenance reads as one this role knew, which is the state § 27 exists to end;
 - on a pass: the estimate the item carries, the date, **which rule produced the date** and whether
   it replaced one that was already there, and the state the item is now in;
+- ⛔ **every part of the commitment this role did not write, with its writer** — a value, or the
+  move still to be made into the committed status, named as step 2's answer named it;
 - ⚠️ **an estimate that reads oddly against the work described** — as an observation, since 4g
   forbids resolving it here;
 - which port fallback was taken, where one was, and what it cost;
