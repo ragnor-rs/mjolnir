@@ -2671,6 +2671,8 @@ work_item:
     closes_items: false          # required when a grouping is carried
     closed_by: orderer           # required when a grouping is carried; one of § 4.2's writers
     ref_prefix: "release/"       # when a ref is named after the grouping's own value
+    default_from: priority       # under `current: stated` only; a § 4 facet that lists its values
+    default_map: {}              # that facet's value -> this grouping's value; with default_from
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2715,10 +2717,38 @@ really use — the same reason its `field:` values are placeholders.
 ⛔ **`current` is the key a procedure may not do without, and neither value is derivable from the
 other.** A grouping the tracker itself marks as the open or dated one is `discoverable`, and a
 procedure reads it; one the tracker holds several of at once is `stated`, and the grouping arrives
-on the invocation of the role that needs it. ⚠️ **The permissive reading is the expensive one**:
-a procedure that guessed the current grouping under `stated` would put a new item into whichever
-one it picked, and a grouping is the one field whose wrong value is invisible on the item itself —
-every other facet's wrong value reads as wrong where it is written.
+on the invocation of the role that needs it, or from the default the project maps below.
+⚠️ **The permissive reading is the expensive one**: a procedure that guessed the current grouping
+under `stated` would put a new item into whichever one it picked, and a grouping is the one field
+whose wrong value is invisible on the item itself — every other facet's wrong value reads as wrong
+where it is written.
+
+**A stated grouping may have a default the project maps from another facet, and that map is the
+project's answer rather than a guess.** `default_from` names the facet and `default_map` carries
+one entry per value of it, so a project whose release scope follows the tier writes that rule once
+instead of having it asked for on every item. The value is decided in one order, and a role reads
+it through `config.py --grouping-default` rather than applying the map itself:
+
+| what is in hand | the grouping written | what the report says |
+|---|---|---|
+| a value given on the request | that value, whatever the map says | that it was given |
+| no value given, and the source facet's value is a key of the map | the map's value | the rule: which facet, which value, which entry |
+| no value given, and the source value is missing or not a key of the map | nothing until a person answers | that it was asked for, and why the map did not answer |
+
+- ⛔ **Only under `current: stated`.** A `discoverable` grouping is named by the tracker, and a map
+  beside it would be a second answer free to disagree with the first, so the reader refuses it.
+- ⛔ **The source is a facet of § 4 that lists its `values`, and every key of the map is one of
+  them.** The set is read off this section's fences rather than listed here, and a key outside it is
+  an entry no item can ever reach. The source facet has to be carried, since a facet with no carrier
+  has no value to map from.
+- ⛔ **The source value is the one handed or already on the item, never derived.** § 4.6's rule
+  stands: a map from the tier does not license working out the tier, and an item with no tier gets
+  the grouping asked for.
+- ⚠️ **A map can go stale, and that is the cost the project accepts by stating one.** An entry
+  naming a grouping that has since closed fills the field with that grouping's name. The report
+  names the rule every time it is used, so the reader of the item sees where the value came from.
+- ⚠️ **Neither key without the other**: a source with no map, or a map with no source, is refused
+  with both keys named. A project that states neither is asked for the grouping exactly as before.
 
 ⛔ **`closed_by` is [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s writer argument one
 level up: a role that closes a grouping is refused where this is not the writer that role asks
@@ -10195,6 +10225,9 @@ spec_corpus:
   files: ["<a glob the corpus matches>"]  # required_when: spec_corpus.carrier = repository
   load_bearing: ["<a glob read whole>"]   # required_when: spec_corpus.carrier = repository
   grouping: "<the release scope>"         # where the project carries several groupings
+  while_working:                          # optional; absent, the filing role alone reads the corpus
+    roles: ["start | implement"]          # required in the block; a non-empty list of those two
+    files: ["<a glob the corpus matches>"] # optional; narrows what those roles load
   absent_reason: "…"                      # required where the carrier is none
   revisit_when: "…"
 ```
@@ -10209,7 +10242,8 @@ way.
 
 ⛔ **This is a facet and no further leg of [§ The loop](#the-loop)**, which is § 38's own rule
 beside it: nothing is added to that list, no `carriers` key answers for it and no role enters it.
-What is carried is a block of configuration and the read the filing role performs with it.
+What is carried is a block of configuration and the read the filing role performs with it — and,
+where the project names them, the same read performed by the starting and implementing roles.
 
 ### Which copy governs, and why the working tree is never it
 
@@ -10292,6 +10326,56 @@ a marker's question and a shape rule's. An empty corpus is a step that reads not
 as one that reads something, and `carrier: none` is how a project says that instead; an empty
 load-bearing list is a project stating that every document in its corpus is reached by keyword,
 which is a decision rather than an omission.
+
+### The roles that read it while the work is done, and what narrows their read
+
+**The filing role reads the governing copy wherever a corpus is carried; `while_working.roles`
+names which of the starting and implementing roles read it too**, for the item they hold.
+⛔ **An absent block is neither of them**, so a project stating nothing new reads its corpus at
+filing alone. The read is the filing role's own — the same command, the same three outcomes, the
+same ref — with the item's version in place of the request's. ⚠️ **It is opted into rather than
+defaulted** because it costs the window on every item a role takes, and a corpus written for filing
+decisions is not necessarily one the work is held to; the project is what knows which.
+
+- ⛔ **The filing role is not a value of the list.** It reads whenever the carrier is `repository`,
+  so naming it would be a key that changes nothing, and it is refused.
+- ⛔ **The version is the value the item carries for this facet's grouping, read off the item by
+  the role and never worked out** — [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s
+  field whose wrong value is invisible on the item. ⛔ **An item carrying no value is a stop
+  reported as unanswered, and never the fallback**: that arm is for a version with no branch, and
+  taking it here would read *the item names no version* as *the version has no branch yet*.
+- **The starting role reads after its gate and before its claim.** ⛔ **A contradiction between the
+  item and the governing copy stops the start**, reported with the ref it was read at: either the
+  item or the specification is wrong, and which one is a person's decision rather than a claim the
+  session then holds. ⚠️ **The unread outcome is not yet a stop there**: the report names the one
+  fetch that would read it, a fetch is the role's own call, and a second unread answer is the stop.
+- **The implementing role reads with the item, before the work.** ⛔ **A contradiction met there is
+  a decision and is asked**, by [§ Nothing is deferred](#nothing-is-deferred): the work is held to
+  the copy that governs it, and a pass that chose between the two silently has decided the question
+  the stop at the start exists to put.
+- ⛔ **Every run reports which copy it read** — the outcome and the ref — so a fallback read is
+  never mistaken for the version's own, which is this facet's fallback rule arriving at two more
+  roles.
+- ⛔ **What the contradiction is stays the role's reading and not the carrier's**, exactly as it is
+  at filing.
+
+⛔ **Three statements a role at either leg keeps apart**: *no corpus is configured*
+(`carrier: none`, the subsection below); *this project does not have this role read its corpus* (a
+corpus carried, the role not in `roles`); and a verdict about a corpus actually read. ⚠️ **The
+middle one is new to these two roles and is the one most easily printed as the third** — a role
+not asked to read anything has found nothing to disagree with for a reason that says nothing about
+the specification.
+
+**`while_working.files` narrows what those roles load, so the window is not filled.** ⛔ **A
+document is loaded only where it matches both this list and `files`**, so the list can narrow the
+corpus and never widen it — a glob reaching outside the corpus loads nothing outside it.
+`load_bearing` then divides what is left, as it divides the whole corpus at filing. ⚠️ **No size
+cap is offered in its place**, for the carrier's own reason: a truncated specification is the wrong
+copy one step further on, so what is loaded is a project's statement rather than a cut a carrier
+makes. ⛔ **`files: []` here is refused**, by the corpus's own rule: a narrowing to nothing is a read
+that opens nothing while reading as one that opens something, and leaving a role out of `roles` is
+how a project says that instead. ⛔ **A narrowing that matches nothing at the ref is reported as an
+empty corpus**, never as a specification that agrees.
 
 ### `carrier: none`, and the two answers it must not collapse into one
 
