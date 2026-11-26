@@ -119,13 +119,13 @@ one exactly.
 
 ## 4. The artifact
 
-One artifact line per line the carrier printed (one per change by default), carrying its part, its day and
-its root, or every root its changes landed in where the line holds several. Below the lines comes a narrative of what each line was, written in § 8's triple
-for the reader that triple names, so a line is described by what it did rather than by its
-identifiers. Under `--per-item`, an item's line is described as the one piece of work its changes
-landed. Every figure is copied from the carrier's output, and the artifact states the total beside
-the sum of its parts. The two are equal by the carrier's construction; an artifact on which they
-differ was edited by hand.
+One artifact line per line the carrier printed (one per change by default), carrying its part, its
+day and its root, or every root its changes landed in where the line holds several. Below the lines
+comes a narrative of what each line was, written in § 8's triple for the reader that triple names,
+so a line is described by what it did rather than by its identifiers. Under `--per-item`, an item's
+line is described as the one piece of work its changes landed. Every figure is copied from the
+carrier's output, and the artifact states the total beside the sum of its parts. The two are equal
+by the carrier's construction; an artifact on which they differ was edited by hand.
 
 - The total is the one handed over. A total the reader expected to be different is still reported
   as given.
