@@ -146,6 +146,8 @@ SPRINTED_BOARD = "scrum"
 # The element type the field catalogue gives a field holding this project's
 # versions -- the fix version among them -- read off the schema, never the name.
 VERSION_TYPE = "version"
+# The version listing's own order, the one a person drags a version to.
+VERSION_ORDER = "sequence"
 
 # The two variables that address the site. ⛔ A pair rather than one token,
 # because this tracker authenticates as a **person**: the credential and the
@@ -2328,9 +2330,10 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
 
 
 def _agile_pages(path: str, params: dict) -> tuple[list[dict], bool]:
-    """Every value a board listing answers, under this module's page ceiling.
+    """Every value an offset-paged listing answers, under this module's page ceiling.
 
-    ⚠️ This interface pages by offset and says `isLast`, where the search above
+    The board listings and the project's version listing page this way. ⚠️ They
+    page by offset and say `isLast`, where the search above
     pages by token; reaching the ceiling is answered as cut rather than whole.
     """
     found: list[dict] = []
@@ -2460,7 +2463,12 @@ def open_groupings(*, grouping: dict) -> dict:
             "tracker keeps, so a grouping held in another field has nothing for a "
             "position to be counted in.",
         )
-    versions = _call("GET", f"/project/{_project_key()}/versions") or []
+    # ⛔ The paged listing asked for `sequence`, and never the unpaged one: that
+    # one states no order at all, so a read off it would be counting positions
+    # in whatever order a site happened to answer.
+    versions, cut = _agile_pages(
+        f"/project/{_project_key()}/version", {"orderBy": VERSION_ORDER}
+    )
     open_ones = [
         {"value": version.get("name"), "name": version.get("name")}
         for version in versions
@@ -2470,7 +2478,7 @@ def open_groupings(*, grouping: dict) -> dict:
         "grouping": name,
         "field": field,
         "order": "the project's version order",
-        "at_limit": False,
+        "at_limit": cut,
         "open": open_ones,
         "unplaced": [],
     }

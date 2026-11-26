@@ -346,7 +346,7 @@ ROUTES = [
     ("POST", r"^/issue$", "create"),
     ("POST", r"^/issueLink$", "link"),
     ("GET", r"^/project/[^/]+/statuses$", "statuses"),
-    ("GET", r"^/project/[^/]+/versions$", "versions"),
+    ("GET", r"^/project/[^/]+/version$", "versions"),
     ("GET", r"^/project/[^/]+$", "project"),
     ("GET", r"^/rest/agile/1\.0/board/\d+/sprint$", "sprints"),
     ("GET", r"^/rest/agile/1\.0/board$", "boards"),
@@ -596,6 +596,18 @@ class _Host:
         boards = [board for board in self.boards if kind in (None, board["type"])]
         return {"startAt": 0, "isLast": True, "values": boards}
 
+    def _answer_versions(self, _path, params: dict, _body) -> dict:
+        """The paged version listing, in the project's order only when asked for.
+
+        ⚠️ Asked for no order, it answers by id, newest first, which is an order
+        the host is free to use -- so a read that dropped the order it asked for
+        would count positions in that one instead.
+        """
+        held = [dict(version) for version in self.versions]
+        if params.get("orderBy") not in ("sequence", "+sequence"):
+            held.sort(key=lambda version: -int(version["id"]))
+        return {"startAt": 0, "isLast": True, "values": held}
+
     def _answer_sprints(self, path: str, params: dict, _body) -> tuple | dict:
         board = int(path.split("/")[-2])
         held = next(one for one in self.boards if one["id"] == board)
@@ -710,7 +722,7 @@ class _Host:
             "search": self._answer_search,
             "boards": self._answer_boards,
             "sprints": self._answer_sprints,
-            "versions": lambda *_: [dict(version) for version in self.versions],
+            "versions": self._answer_versions,
             # ⛔ Two issue types with **overlapping** state sets, which is what
             # this tracker actually publishes: a vocabulary read that took one
             # type's words would state a set the other half of the backlog
