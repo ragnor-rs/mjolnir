@@ -10349,6 +10349,18 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 "is `true` where no tree is ever cut, so no merge has a tree to prune (§ 10).",
             )
 
+    # § 10. Whether the sweep on the event that opens a session removes or only
+    # lists. ⚠️ The two values are the surface's enumeration, which the reader
+    # already holds every key to; what is held here is the kind it is read under.
+    if (
+        _get(data, "branch_model.prune_on_open") == "list"
+        and _get(data, "branch_model.kind") != "worktree"
+    ):
+        raise ConfigError(
+            "branch_model.prune_on_open",
+            "is `list` where no tree is ever cut, so no sweep has a tree to list (§ 10).",
+        )
+
     # § 10. What a rebuild writes again, which is the only half of the pruning
     # oracle a project states. ⛔ Whether the key is *written* is the surface's
     # `# required_when` marker and not a rule here; what is held here is its

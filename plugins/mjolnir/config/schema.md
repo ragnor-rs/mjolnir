@@ -3979,6 +3979,7 @@ branch_model:
   resources_running: "<the command that lists every running resource with its tree>"   # may be left unwritten; read only under worktree
   resource_stop: "<the command that stops a resource whose tree is gone>"   # may be left unwritten; refused without resources_running
   prune_on_merge: false                      # may be left unwritten; read only under worktree
+  prune_on_open: remove | list               # may be left unwritten (remove); read only under worktree
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
@@ -4750,6 +4751,8 @@ holding a checkout of the repository. ⛔ **Procedure with no key**, the placeme
 rule and the claim above both have: a project that could switch the second carrier off would
 accumulate trees exactly as the project with no rule at all did. ⚠️ **A third carrier, on a merge
 the session makes with a bare command, is a project's to turn on**, and it is stated below.
+⚠️ **So is a sweep that lists rather than removes**, stated below with it: it still runs on every
+open and names each tree it would remove, so what accumulates is said rather than silent.
 
 ⛔ **The landed reading is [the claim's](#the-claim-on-a-work-item), and nothing here carries a
 second one.** Two oracles for *has this landed* are allowed to disagree, and the reading that ships
@@ -4963,6 +4966,35 @@ branch_model:
   else. The sweep has no key because its absence accumulates trees. This carrier's absence only
   delays a removal until the next session opens, and turning it on adds a host read after every
   merge the session makes.
+- ⚠️ **It is read only under `kind: worktree`**, there being no tree to prune under `in_place`.
+
+⛔ **A sweep can be asked what it would remove, and asking removes nothing.** A person adopting
+this rule in a project that already holds trees needs the verdicts before the first removal, and
+the sweep run by hand gives them on request. The list-only run takes every reading a removing run
+takes, so each tree gets the verdict a removing run would act on. Only the removal is skipped, with
+what it carries: the teardown, the branch, the published ref, the clearing of a registration
+whose directory is gone, and the stop command for a resource whose tree is gone, which is named
+with what a removing sweep would do about it. ⚠️ **The resource check the release asks is read,
+since it writes nothing**, and a tree it would keep is kept in the list. ⛔ **Where a teardown runs
+first, that check reads what the teardown left**, so a list that runs no teardown cannot read it:
+the tree is listed with that proviso stated, and never listed as certain.
+
+```yaml
+branch_model:
+  prune_on_open: list
+```
+
+- **The run by hand lists on request.** Its list-only form prints *would remove* where a removing
+  run prints *removed*, and every other line is the same. ⛔ **One decision serves both runs**, so
+  the list cannot name a tree the removal would keep, or the other way round.
+- **`prune_on_open: list` makes the event that opens a session list rather than remove.** ⛔ **Each
+  tree it would remove reaches the person on every open**, which the table above does not need for
+  a removal: nothing else will remove that tree, so it is a person's to act on.
+- ⚠️ **Removal stays the default.** `remove`, or the key unwritten, is the sweep above. Any other
+  value is refused with the key named, because a misspelt `list` read as `remove` deletes trees
+  the project asked to see first.
+- ⚠️ **The key governs that one event.** A project that also turns `prune_on_merge` on has asked
+  for that removal by name, and the release removes as it always does.
 - ⚠️ **It is read only under `kind: worktree`**, there being no tree to prune under `in_place`.
 
 ```yaml
