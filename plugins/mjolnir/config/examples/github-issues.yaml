@@ -553,3 +553,8 @@ verify:
   revisit_when: >-
     A deploy target is stated, which is the first moment there is something for a criterion to be
     measured on.
+
+# § 5 at its default: a request that left a question open is asked about, and nothing is
+# filed until it is answered.
+open_questions:
+  mode: ask

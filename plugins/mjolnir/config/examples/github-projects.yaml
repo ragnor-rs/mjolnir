@@ -634,3 +634,8 @@ verify:
   revisit_when: >-
     A state between code landed and finished is added to the ladder, which is the first moment a
     verdict has somewhere to go.
+
+# § 5 at its default: a request that left a question open is asked about, and nothing is
+# filed until it is answered.
+open_questions:
+  mode: ask

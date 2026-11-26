@@ -832,3 +832,8 @@ verify:
   revisit_when: >-
     The ladder grows a state between code landed and finished, or a release target starts
     refusing to carry an item nobody has judged.
+
+# § 5 at its default: a request that left a question open is asked about, and nothing is
+# filed until it is answered.
+open_questions:
+  mode: ask
