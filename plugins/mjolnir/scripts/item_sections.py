@@ -195,13 +195,20 @@ def exempt_headings(configuration: config.Config) -> set[str]:
             if headings.get(name.strip())}
 
 
-def governed_lines(body: str, exempt: set[str]) -> list[tuple[str, int, str, bool]]:
-    """(the section's heading, the line number, the line, inside a fence) per governed line.
+PROSE, OPENS, FENCED = "prose", "opens", "fenced"
 
-    ⛔ A line is exempt where any heading open above it is exempt, so a section's
-    subsections go with it. Heading lines are the template's and not read here.
+
+def governed_lines(body: str, exempt: set[str]) -> list[tuple[str, int, str, str]]:
+    """(the section's heading, the line number, the line, its state) per governed line.
+
+    The state is `opens` on the line opening a fenced block, `fenced` on every
+    line inside one and on its closing line, and `prose` otherwise. ⛔ A block is
+    closed only by its own marker, so a `~~~` line inside a backtick block is
+    content. A line is exempt where any heading open above it is exempt, so a
+    section's subsections go with it. Heading lines are the template's and not
+    read here.
     """
-    lines: list[tuple[str, int, str, bool]] = []
+    lines: list[tuple[str, int, str, str]] = []
     open_sections: list[tuple[int, str]] = []
     fenced = None
     for number, line in enumerate(body.splitlines(), start=1):
@@ -212,33 +219,32 @@ def governed_lines(body: str, exempt: set[str]) -> list[tuple[str, int, str, boo
             open_sections = [(lvl, text) for lvl, text in open_sections if lvl < level]
             open_sections.append((level, heading.group(2).strip()))
             continue
-        inside = bool(fenced) or bool(fence)
+        state = FENCED if fenced else PROSE
         if fence:
             marker = fence.group(1)[0]
-            fenced = None if fenced == marker else (fenced or marker)
+            if fenced is None:
+                fenced, state = marker, OPENS
+            elif fenced == marker:
+                fenced = None
         if any(text.casefold() in exempt for _lvl, text in open_sections):
             continue
         where = open_sections[-1][1] if open_sections else "(before the first heading)"
-        lines.append((where, number, line, inside))
+        lines.append((where, number, line, state))
     return lines
 
 
 def register_findings(configuration: config.Config, body: str) -> list[dict]:
     """Every code, path or identifier a governed section carries; `[]` where none."""
     findings: list[dict] = []
-    open_fence_reported = None
 
     def finding(section: str, number: int, what: str, text: str) -> None:
         findings.append({"section": section, "line": number, "carries": what, "text": text})
 
-    for section, number, line, inside in governed_lines(body, exempt_headings(configuration)):
-        if inside:
-            # ⚠️ One finding per block, at its opening line, rather than one per line.
-            if open_fence_reported is None:
-                open_fence_reported = number
-                finding(section, number, "a fenced block", line.strip())
-            elif FENCE.match(line):
-                open_fence_reported = None
+    for section, number, line, state in governed_lines(body, exempt_headings(configuration)):
+        # ⚠️ One finding per block, at its opening line, rather than one per line.
+        if state == OPENS:
+            finding(section, number, "a fenced block", line.strip())
+        if state != PROSE:
             continue
         for span in INLINE_CODE.findall(line):
             finding(section, number, "a span in backticks", span)
@@ -475,6 +481,14 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("a fenced block in a governed section is one finding, at its opening line",
               carried(held, fence) == [("Outcome", "a fenced block")],
               str(register_findings(held, fence)))
+        nested_fence = A_BODY.replace(
+            "Something is possible.",
+            "Something is possible.\n\n```text\nfirst\n~~~\nsecond\n```\n\n"
+            "```sh\nagain\n```")
+        check("a fence closes only on its own marker, and two blocks are two findings",
+              [(each["line"], each["carries"]) for each in register_findings(held, nested_fence)]
+              == [(5, "a fenced block"), (11, "a fenced block")],
+              str(register_findings(held, nested_fence)))
         subsection = A_BODY.replace("Something is possible.",
                                     "Something is possible.\n\n#### Why\n\nSee `x`.")
         check("a subsection of a governed section is governed",
