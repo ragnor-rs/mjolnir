@@ -720,6 +720,20 @@ ANSWERED_BY: dict[str, Answer] = {
         "one -- a skill, a command, or a hook? ⚠️ An absent role is a legitimate "
         "configuration rather than a partial install (§ 7).",
     ),
+    "carrier_routes.label": ask(
+        "Is there a label whose items this project works through a carrier of "
+        "its own rather than the loop's implementing leg?",
+    ),
+    "carrier_routes.type": ask(
+        "Or a type whose items go to a carrier of its own -- one of the types "
+        "this project states?",
+    ),
+    "carrier_routes.carrier": ask(
+        "Which carrier takes those items, by its own invocation name?",
+    ),
+    "carrier_routes.kind": ask(
+        "Is that carrier a skill or a command?",
+    ),
 
     # --- § 8. Language, register, audience ---------------------------------
     "language.work_item": ask(
@@ -1281,7 +1295,11 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which deploy targets does this project have?",
     ),
     "deploy.invoke": ask(
-        "How is this target reached -- a command, a dispatch, or by hand?",
+        "How is this target reached -- a command, a dispatch, or by hand? Or is "
+        "it named and not implemented yet?",
+    ),
+    "deploy.reason": ask(
+        "Why does nothing reach this target yet? A deploy of it stops with this.",
     ),
     "deploy.command": ask(
         "Which command?",
@@ -1365,6 +1383,41 @@ ANSWERED_BY: dict[str, Answer] = {
         "And which of the project's own readings must agree -- an exact served "
         "commit, every service's image?",
     ),
+    "deploy.after_verified.name": ask(
+        "Does anything run once this target's deploy is verified -- a tag, a "
+        "fast-forward, a rebase of the next branch? Name each step. ⚠️ Nothing is "
+        "an answer: the key is then omitted and nothing runs after it (§ 33).",
+    ),
+    "deploy.after_verified.command": ask(
+        "Which whole command is that step? It may place the deployed commit and "
+        "this target's choices (§ 33).",
+    ),
+    "deploy.after_verified.performed_by": ask(
+        "Does the procedure run it, or does a person perform it and say so?",
+    ),
+    "deploy.figures.check": ask(
+        "Does a check this target's verification runs report figures -- case "
+        "counts, scores -- that the deploy's reply should carry? Which check? "
+        "⚠️ Nothing is an answer: the key is then omitted and no figure is read "
+        "(§ 33).",
+    ),
+    "deploy.figures.reads": ask(
+        "Which command prints that check's figures, one `<name> <number>` per line?",
+    ),
+    "deploy.figures.names": ask(
+        "Which figures is it expected to print? A named figure it does not print is "
+        "reported as unread.",
+    ),
+    "deploy.figures.bounds.figure": ask(
+        "Should any of those figures decide whether the check passed? ⛔ Asked "
+        "because no figure decides anything unless it is bounded here (§ 33).",
+    ),
+    "deploy.figures.bounds.min": ask(
+        "What is the least value that keeps the check's outcome?",
+    ),
+    "deploy.figures.bounds.max": ask(
+        "And the greatest?",
+    ),
 
     # --- § 34. The files that carry a version ------------------------------
     "release.carrier": ask(
@@ -1402,6 +1455,16 @@ ANSWERED_BY: dict[str, Answer] = {
         "because a dump nothing read is a backup on the strength of an exit "
         "status alone, which is the measured failure (§ 35).",
     ),
+    "deploy.live_data_step.preview.run": ask(
+        "Is there a read-only command that prints the writes this deploy would "
+        "make? ⚠️ Its output is shown in the go before the write, and it is never "
+        "reported as a rehearsal: it runs nothing against the store (§ 35).",
+    ),
+    "deploy.live_data_step.preview.at": ask(
+        "Does that command write its preview to a file rather than print it? "
+        "Where it does, the go names that path rather than carrying the listing "
+        "whole (§ 35).",
+    ),
     "deploy.live_data_step.rehearse": ask(
         "Does the write have a dry variant? ⚠️ An omitted one is reported as no "
         "rehearsal rather than as a clean one, so it is asked rather than left "
@@ -1428,6 +1491,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "Does the dump fall on a different side of the invocation from the "
         "write? ⛔ Never after it: a write is not reached before its own "
         "verified backup, and a placement that would is refused (§ 35).",
+    ),
+    "deploy.live_data_step.sides.preview": ask(
+        "Does the preview fall on a different side of the invocation from the "
+        "write? ⛔ Never after it, the go showing its output (§ 35).",
     ),
     "deploy.live_data_step.sides.rehearse": ask(
         "Does the rehearsal fall on a different side of the invocation from the "

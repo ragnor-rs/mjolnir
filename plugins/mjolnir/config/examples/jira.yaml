@@ -241,6 +241,10 @@ deploy:
         # against the copy that asserts them and the measured incident behind the other one. A
         # project wanting a size test states it inside this command, where it is its own claim.
         verify: "<the command that reads the dump back>"
+      # The pending writes, shown whole in the go before the write. Read-only, and never reported
+      # as the rehearsal below: it runs nothing against the store (§ 35).
+      preview:
+        run: "<a read-only command printing the writes this deploy would make>"
       # ⚠️ Stated here because this project's writes have a dry variant; § 35 lets a block omit
       # the key, and an omitted one is reported as no rehearsal rather than as a clean one.
       rehearse: "<the apply command's own dry variant>"
@@ -359,6 +363,8 @@ carriers:
   review: skill
   deploy: skill                 # split per environment at the project level
   session: skill
+
+carrier_routes: []   # no label or type is worked through a carrier of the project's own (§ 7)
 
 # § 23. All three thirds stated. ⚠️ The memory third is the one a project on a tracker this far
 # from the code would lean on hardest — what the next session needs is rarely on the card.
