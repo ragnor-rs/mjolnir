@@ -5781,6 +5781,7 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
         _validate_advance_requires(where, entry, data, facts)
+        _validate_figures(where, entry, facts)
 
 
 def _stated_tier_names(data: dict) -> set[str]:
@@ -5879,6 +5880,154 @@ def _validate_advance_requires(where: str, entry: dict, data: dict, facts: dict)
                 "one name leave which of them it answers undefined.",
             )
         seen[name] = position
+
+
+def _validate_figures(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `figures` on one target, which no marker can reach.
+
+    ⚠️ Optional: a target that omits it reads no figure, which is every
+    configuration written before the key. ⛔ What a stated list has to *be* is
+    held here, every arm refusing rather than skipping -- a bound a reader could
+    not make sense of is a bound whose skip would move the items anyway.
+    """
+    if FIGURES not in entry:
+        return
+    at = f"{where}.{FIGURES}"
+    blocks = entry[FIGURES]
+    if not isinstance(blocks, list) or not blocks:
+        raise ConfigError(
+            at,
+            "must be a non-empty list, one entry per check whose figures the reply "
+            "carries (§ 33); omit it where the target reads none.",
+        )
+    # ⛔ Both key sets are read off the surface's own entry fence, which is
+    # `_validate_deploy`'s rule two levels down.
+    prefix = f"deploy.{FIGURES}."
+    keys = {
+        path[len(prefix):].split(".")[0]
+        for path in facts["declared"]
+        if path.startswith(prefix)
+    }
+    bound_prefix = f"{prefix}{FIGURE_BOUNDS}."
+    bound_keys = {
+        path[len(bound_prefix):]
+        for path in facts["declared"]
+        if path.startswith(bound_prefix)
+    }
+    if not keys or not bound_keys:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a figure could be held "
+            "to nothing (§ 33).",
+        )
+    checks: dict[str, int] = {}
+    for position, block in enumerate(blocks):
+        here = f"{at}[{position}]"
+        if not isinstance(block, dict):
+            raise ConfigError(
+                here,
+                "must be a mapping naming a check, the command that prints its "
+                "figures and the figures it is expected to report (§ 33).",
+            )
+        for stated_key in block:
+            if stated_key not in keys:
+                raise ConfigError(
+                    f"{here}.{stated_key}",
+                    "is a key § 33 does not declare on a check's figures, so it is "
+                    "a fact nothing reads. The keys it declares are: "
+                    f"{', '.join(sorted(keys))}.",
+                )
+        for key in ("check", "reads"):
+            value = block.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise ConfigError(
+                    f"{here}.{key}", "required, and a non-empty string (§ 33)."
+                )
+        if block["check"] in checks:
+            raise ConfigError(
+                f"{here}.check",
+                f"is {block['check']!r}, which {at}[{checks[block['check']]}] already "
+                "names (§ 33). Two commands for one check leave which figures it "
+                "reported undefined.",
+            )
+        checks[block["check"]] = position
+        names = block.get("names")
+        if not isinstance(names, list) or not names:
+            raise ConfigError(
+                f"{here}.names",
+                "required, and a non-empty list (§ 33): it is what makes a figure "
+                "the command did not print visible as unread.",
+            )
+        for index, name in enumerate(names):
+            if not isinstance(name, str) or not FIGURE_NAME.fullmatch(name):
+                raise ConfigError(
+                    f"{here}.names[{index}]",
+                    f"is {name!r}; a figure's name is one word of letters, digits, "
+                    "`_`, `.` and `-`, the form the command prints it in (§ 33).",
+                )
+        if len(set(names)) != len(names):
+            raise ConfigError(f"{here}.names", "names one figure twice (§ 33).")
+        if FIGURE_BOUNDS not in block:
+            continue
+        if entry.get("advances") == "none":
+            raise ConfigError(
+                f"{here}.{FIGURE_BOUNDS}",
+                "is stated beside `advances: none`, which never reads it (§ 33). A "
+                "target that moves nothing has no outcome for a bound to lower.",
+            )
+        bounds = block[FIGURE_BOUNDS]
+        if not isinstance(bounds, list) or not bounds:
+            raise ConfigError(
+                f"{here}.{FIGURE_BOUNDS}",
+                "must be a non-empty list of bounds (§ 33); omit it where no figure "
+                "of this check decides anything.",
+            )
+        bounded: dict[str, int] = {}
+        for index, bound in enumerate(bounds):
+            there = f"{here}.{FIGURE_BOUNDS}[{index}]"
+            if not isinstance(bound, dict):
+                raise ConfigError(
+                    there,
+                    "must be a mapping naming a figure and its min, max or both (§ 33).",
+                )
+            for stated_key in bound:
+                if stated_key not in bound_keys:
+                    raise ConfigError(
+                        f"{there}.{stated_key}",
+                        "is a key § 33 does not declare on a bound. The keys it "
+                        f"declares are: {', '.join(sorted(bound_keys))}.",
+                    )
+            figure = bound.get("figure")
+            if figure not in names:
+                raise ConfigError(
+                    f"{there}.figure",
+                    f"is {figure!r}, which `names` does not carry (§ 33). A bound on "
+                    "a figure nobody expects is a bound that is never read.",
+                )
+            if figure in bounded:
+                raise ConfigError(
+                    f"{there}.figure",
+                    f"is {figure!r}, which {here}.{FIGURE_BOUNDS}[{bounded[figure]}] "
+                    "already bounds (§ 33). One figure carries one bound.",
+                )
+            bounded[figure] = index
+            limits = [key for key in ("min", "max") if key in bound]
+            if not limits:
+                raise ConfigError(
+                    there, "states neither `min` nor `max`, so it bounds nothing (§ 33)."
+                )
+            for key in limits:
+                value = bound[key]
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    raise ConfigError(
+                        f"{there}.{key}", f"is {value!r}; a bound is a number (§ 33)."
+                    )
+            if len(limits) == 2 and bound["min"] > bound["max"]:
+                raise ConfigError(
+                    there,
+                    f"has `min` {bound['min']!r} above `max` {bound['max']!r}, so no "
+                    "value is inside it (§ 33).",
+                )
 
 
 # § 33's placement grammar, which the surface states in prose as it does § 34's
@@ -8445,6 +8594,13 @@ ADVANCE_OUTCOMES = ("passed", "failed", "skipped", "deselected", "unread", "runn
 ADVANCE_RELEASES = "passed"
 ADVANCE_DEFAULT_HOLDS = "failed"
 ADVANCE_UNREPORTED = "unread"
+FIGURES = "figures"
+FIGURE_BOUNDS = "bounds"
+# ⛔ § 33's figure line: one word, then one number. The name's alphabet is the
+# one `names` is held to at the load, so a name the configuration may carry is a
+# name the command's output can carry and the other way round.
+FIGURE_NAME = re.compile(r"[A-Za-z0-9_.-]+")
+FIGURE_LINE = re.compile(r"([A-Za-z0-9_.-]+)[ \t]+(-?[0-9]+(?:\.[0-9]+)?)")
 
 # Where the command goes inside an `invoke` form (§ 1). ⛔ A form and not a
 # pattern, which is `PLACEHOLDER`'s own reason one facet over: what reads this
@@ -19512,6 +19668,63 @@ def _planted_violations():
         ("one name carried by two checks", f"deploy[0].{ADVANCE_REQUIRES}[1].reading",
          at("deploy", [_an_advancing_target(
              advance_requires=[{"reading": "a reading"}, {"reading": "a reading"}])])),
+        # ⛔ § 33's `figures`, every arm, each on a target that loads without it.
+        ("figures written as something that is not a list", f"deploy[0].{FIGURES}",
+         at("deploy", [_an_advancing_target(figures="cases")])),
+        ("figures stated as an empty list", f"deploy[0].{FIGURES}",
+         at("deploy", [_an_advancing_target(figures=[])])),
+        ("a check's figures that are not a mapping", f"deploy[0].{FIGURES}[0]",
+         at("deploy", [_an_advancing_target(figures=["cases"])])),
+        ("a check's figures carrying a key § 33 does not declare",
+         f"deploy[0].{FIGURES}[0].from",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(**{"from": "x"})])])),
+        ("a check's figures naming no check", f"deploy[0].{FIGURES}[0].check",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(check=_ABSENT)])])),
+        ("a check's figures with no command to read them", f"deploy[0].{FIGURES}[0].reads",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(reads="  ")])])),
+        ("one check given two commands", f"deploy[0].{FIGURES}[1].check",
+         at("deploy", [_an_advancing_target(
+             figures=[_a_figures_block(), _a_figures_block()])])),
+        ("a check's figures expecting no figure", f"deploy[0].{FIGURES}[0].names",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(names=[])])])),
+        ("a figure named in more than one word", f"deploy[0].{FIGURES}[0].names[0]",
+         at("deploy", [_an_advancing_target(
+             figures=[_a_figures_block(names=["case count"])])])),
+        ("one figure expected twice", f"deploy[0].{FIGURES}[0].names",
+         at("deploy", [_an_advancing_target(
+             figures=[_a_figures_block(names=["cases", "cases"])])])),
+        ("a bound beside a target that advances nothing",
+         f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}",
+         at("deploy", [_a_deploy_target(
+             figures=[_a_figures_block(bounds=[{"figure": "cases", "min": 1}])])])),
+        ("bounds stated as an empty list", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(bounds=[])])])),
+        ("a bound that is not a mapping", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0]",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(bounds=["cases"])])])),
+        ("a bound carrying a key § 33 does not declare",
+         f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0].floor",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases", "floor": 1}])])])),
+        ("a bound on a figure `names` does not carry",
+         f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0].figure",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "score", "min": 1}])])])),
+        ("one figure bounded twice", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[1].figure",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases", "min": 1}, {"figure": "cases", "max": 9}])])])),
+        ("a bound stating neither a min nor a max",
+         f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0]",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases"}])])])),
+        ("a bound written as a word", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0].min",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases", "min": "ten"}])])])),
+        ("a bound written as a boolean", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0].max",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases", "max": True}])])])),
+        ("a bound whose min is above its max", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0]",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases", "min": 9, "max": 1}])])])),
         # § 35's block, one plant per arm, every one of them on a target this list
         # has already shown loads — so a refusal here is the block's and never the
         # target's. ⚠️ The block's own absence is **not** planted: § 35 makes an
@@ -22837,6 +23050,21 @@ def _advance_requires_suite(check, facts: dict) -> None:
     check("a target naming a tier its project states loads",
           refusal is None, f"refused on {refusal!r}")
 
+    figured = _a_valid_example()
+    figured["deploy"] = [
+        _a_deploy_target(figures=[_a_figures_block()]),
+    ]
+    refusal = _refused(figured)
+    check("a target that advances nothing may still read a check's figures",
+          refusal is None, f"refused on {refusal!r}")
+    figured["deploy"] = [_an_advancing_target(figures=[
+        _a_figures_block(names=["cases", "score"], bounds=[
+            {"figure": "cases", "min": 1}, {"figure": "score", "min": 0.5, "max": 1}]),
+    ])]
+    refusal = _refused(figured)
+    check("an advancing target bounding two figures, one by both ends, loads",
+          refusal is None, f"refused on {refusal!r}")
+
     surface_rows = _surface_advance_outcomes()
     check(
         "the surface's outcome table and the carrier's outcomes are the same set",
@@ -22927,6 +23155,20 @@ def _advance_requires_suite(check, facts: dict) -> None:
             check(label, True, "")
         else:
             check(label, False, "parsed")
+
+
+def _a_figures_block(**overrides) -> dict:
+    """One § 33 `figures` entry that loads, for the arms that plant one key wrong.
+
+    ⚠️ `_ABSENT` drops a key, which is how an arm plants a key's absence.
+    """
+    block = {"check": "a smoke run", "reads": "printf 'cases 3\\n'", "names": ["cases"]}
+    for key, value in overrides.items():
+        if value is _ABSENT:
+            block.pop(key, None)
+        else:
+            block[key] = value
+    return block
 
 
 def _an_advancing_target(**overrides) -> dict:

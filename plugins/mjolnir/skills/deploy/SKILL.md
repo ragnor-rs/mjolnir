@@ -437,6 +437,19 @@ What a run delivered is read from its **log**, through the port's own operation,
   ([`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)):
   ⛔ **report which ran, by name**, and report
   one that skipped as *the gate did not run* rather than as *the gate passed*.
+- **Then each check's figures, which the carrier reads and this role does not.** Where the target
+  states `figures`, the outcomes read so far are handed over and come back with every figure — its
+  value, or why it is unread — and with the outcomes to hand on, a bound having lowered one where
+  [`§ 33 → A check's figures`](../../config/schema.md#a-checks-figures-and-the-bound-that-lets-one-decide-anything)
+  says it does. ⛔ **The outcomes handed to `--advance-for` below are the ones that came back**,
+  never the ones handed in:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/figures.py" \
+    --target "<the target>" --reading "<check>=<outcome>" --reading "<check>=<outcome>"
+  ```
+
+  ⚠️ Where the target states none, the carrier says so and hands every outcome back unchanged.
 - **Then whether the verification holds the advance, which is the carrier's verdict and not this
   role's reading of *clean*.** Every check the delivery was read for is handed over with its
   outcome, in the vocabulary
@@ -614,6 +627,10 @@ the facts, with a table where the content enumerates.
 - ⛔ **what was not verified**, named rather than omitted
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)): every skipped
   scenario, every tier that did not run, and everything a log did not cover;
+- ⛔ **every check's figures**, as `figures.py` returned them — each figure's value beside its
+  check's outcome, ⛔ **each one unread named as unread with why**, which figures carry a bound, and
+  every outcome a bound lowered; and where the target states no `figures`, that none were read
+  rather than that no check reported any;
 - ⛔ **whether the verification held the advance** — every check `--advance-for` reported, its
   outcome, whether the target requires it, and which hold; and where the target names no check,
   that § 33's default governed rather than that every check passed;
