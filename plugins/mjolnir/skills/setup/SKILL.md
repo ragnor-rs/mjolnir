@@ -90,6 +90,9 @@ the surface marks one, and whether its value is one a repository may not hold.
   tracker's words this project means.
 - ⛔ **A default is offered as the default**, and silence takes it. A key the surface marks none for
   has no default to offer, and silence there is a question still open rather than an answer.
+- ⚠️ **A question carrying `offered` is put with that value as a suggestion**, and it is not a
+  default: silence leaves the question open
+  ([`§ 40`](../../config/schema.md#a-directory-that-outlives-a-checkout-and-the-two-ways-one-goes-missing)).
 - ⛔ **A facet answered as absent is asked for its reason in the same breath**, and for the trigger
   that would revisit it where one exists. An absence is a stated decision here; the carrier refuses
   to write one without its reason, so an answer taken without it comes back as a refusal later.

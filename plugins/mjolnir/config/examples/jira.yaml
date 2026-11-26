@@ -57,6 +57,10 @@ tracker:
   # Transitions are found by name — by the status a transition LEADS TO, which is a separate
   # field from the transition's own name. There is no closing keyword on this tracker.
   transitions: { resolve: by_name }
+  # This site refuses a create without a component, and which one is the item's own fact: no
+  # `value`, so the filing states it.
+  create_fields:
+    - field: "<the field a filing states>"
   # No capability is stated here — schema § 3, `Who declares a capability`.
   policy:
     forbid_on_item: []
@@ -658,6 +662,18 @@ spend_guard:
   # this project's own, and it is written here because a resume into the tier above is the cheapest
   # moment to be told what the session is about to cost.
   resume_bar_usd: 0.25
+
+# The shell this project's scripts are run through, so that a command handed to it is read by every
+# guard that reads a command position. ⛔ The login form is listed beside the plain one: each is a
+# word of its own in a call.
+command_position:
+  launchers:
+    - command: "<the shell that runs this project's scripts>"
+      string_flags: ["-c", "-lc"]
+      valued_flags: ["-o"]
+      operands: command
+    - command: "<the builtin that joins its arguments and runs them>"
+      operands: string
 
 live_guard:
   # The sharp shape of this facet: two commands open a session here, and both are invoked with

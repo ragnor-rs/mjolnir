@@ -1,7 +1,7 @@
 ---
 name: deploy
 description: Put what has landed onto one of the project's own deploy targets and move the items it carried — the target read from configuration rather than from its name, a preflight that writes nothing, one go for this deploy, the project's own invocation, the delivery read from what the run printed rather than from how it exited, a batch assembled from the tracker and narrowed by the project's own command, the steps the batch's own changes owe performed where each one is placed — the ones owed before the script holding the invocation and the ones owed after it holding only the items resting on them — a release's grouping held to the role its items must already stand in, and the grouping marked released or the step handed to a person. Use when asked to deploy, to release, to ship to staging or production, to publish a batch, or to put the current branch on an environment.
-argument-hint: "[<the target's name>]"
+argument-hint: "[<the target's name>] [<a choice>=<a value> ...]"
 ---
 
 # Deploy to one of this project's targets
@@ -55,6 +55,12 @@ and the ref a dispatch is made against, and the runs read in step 7. ⚠️ **Wh
 one repository the entry states none**, which is that subsection's own rule, and what every call
 names is the one root there is.
 
+⛔ **And what this run chooses, where the entry declares `choices`**
+([`§ 33`](../../config/schema.md#a-choice-made-for-one-run-and-how-its-value-reaches-the-target)).
+What the invocation names is handed to the reader in step 3 as it was named, and ⛔ **a choice it
+does not name takes the declared default, never a value this role picked**. No question of its own
+is put for it: step 5's ask shows the values.
+
 What the item side of this is comes from the port, and its absences carry their own fallbacks:
 
 ```bash
@@ -77,9 +83,13 @@ what this step does is run it.
   than this role's:
 
   ```bash
-  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --root "<the entry's code_root>" \
-    --command "<the entry's command>" --command-root "<the entry's command_root>"
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --deploy-target "<the entry's name>" \
+    --choose "<a choice's name>=<a value>"
   ```
+
+  ⛔ **`--choose` is repeated per choice, and per value of a choice that takes several; it is
+  omitted where the run chooses nothing.** A refusal here is a **stop before the go**, naming what
+  the target allows — ⛔ never retried with a value nobody asked for.
 
   What comes back is what to run, the directory to run it in and whether that directory is there —
   ⛔ **and a root reached through a form alone comes back `unestablished` rather than absent**, which
@@ -88,11 +98,8 @@ what this step does is run it.
   whether the host's own registry answers for it. ⛔ **Absent either way is a stop with the thing
   named**, and it comes **before** the target is confirmed rather than after.
 
-  ⚠️ **`--root` is what the entry's `code_root` is for and the flag is omitted where it states
-  none.** [§ 1](../../config/schema.md#a-command-root-is-not-a-code-root) states a command root
-  relative to one repository, so on a project with two the reader **refuses** a read of the block
-  that names no root — measured on the shipped two-root example, where this was the first command
-  of this step and it stopped, with the value that would have answered it in no file.
+  ⚠️ **No `--root` is passed**: the reader reads the entry's own `code_root` and resolves the
+  command in that repository ([§ 1](../../config/schema.md#a-command-root-is-not-a-code-root)).
 - **Every `requires` the entry states is read.**
   [`§ 16`](../../config/schema.md#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)
   states what that list is; what this step does is report each as present or **named as absent**.
@@ -154,6 +161,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
 - ⛔ **A grouping that could not be read is reported unread, never as holding nothing.** § 3's
   fallback for the operation says what happens instead, and ⚠️ **an unread set and an empty set are
   the same list** — which is why the reply says which it was rather than how long it was.
+- ⛔ **What the answer names under `off_board` and `outside` goes in the reply**, by
+  [`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into): an
+  omission nobody reads is one nobody was told about.
 - ⛔ **An item in the batch the grouping does not hold is named and not advanced**, and an item the
   grouping holds that the batch never named is named too: the batch stays the only source of
   candidates, and the grouping is what narrows them.
@@ -247,9 +257,14 @@ another batch is not one for this.
 | any target reached by `dispatch` | **asks regardless**, because § 29's refusal sits on the operation and reads no facet |
 
 **Show, in the question:** the target and that the entry states it live, what is being deployed,
-every item in the batch, every candidate step 4a could not place, and ⛔ **every `after` step the
-deploy will still owe once it has run** — the `before` ones having been performed or stopped on in
-step 4b, so a go reached at all is a go over a target nothing is holding.
+every choice with the value taken and whether it was chosen or is the default, ⛔ **every warning
+step 3's answer carries**, every item in the batch, every candidate step 4a could
+not place, and ⛔ **every `after` step the deploy will still owe once it has run** — the `before` ones
+having been performed or stopped on in step 4b, so a go reached at all is a go over a target nothing
+is holding.
+
+⛔ **A go is for the values it showed.** Anybody asking for another value is asking for another
+deploy: step 3 resolves it and this question is put again.
 
 ⛔ **A go that goes to the port carries what it is for.** Where the shape is `dispatch`, the port
 refuses a go that does not name this workflow, this ref and every input — and ⛔ **the words are
@@ -330,8 +345,8 @@ is written here**, the alternation being the statement.
 
 | the entry says | what happens here |
 |---|---|
-| `command` | the command is run **whole**, in the root the entry names; nothing is prefixed to it and nothing is read out of it |
-| `dispatch` | the run is asked for through the port, against the entry's `ref` and carrying its `inputs` |
+| `command` | the command **step 3 printed** is run **whole**, in the directory it printed; nothing is prefixed to it, nothing is read out of it, and ⛔ no choice is put into it by hand |
+| `dispatch` | the run is asked for through the port, against the entry's `ref` and carrying every input step 3 printed |
 | `by_hand` | ⛔ **nothing is run.** The workflow, the ref and every input are handed over, and the reply reports **no deploy made** |
 
 ⚠️ **A dispatch made inside the port is not a shell call**, so the rails that read one — § 19's and
@@ -419,6 +434,11 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
   --advance-to "<the entry's advances>" --argument "<the item>" --as-writer deploy
 ```
 
+⛔ **Where that status states several writers**
+([`§ 4.2`](../../config/schema.md#a-status-several-writers-reach-a-class-of-item-each)), the call
+also carries `--path <path>` once per path the item's own closing changes touched, repository-relative.
+⚠️ Where a change could not be read, none is passed and the refusal goes in the reply with the item.
+
 ⛔ **That flag is the only route to the move, and naming the operation underneath it is refused** —
 the writer guard sits inside the role resolution, so an invocation that named `set_state` would be
 writing a status word this role chose, which is what
@@ -499,6 +519,8 @@ the facts, with a table where the content enumerates.
   was written to;
 - **what was invoked**, in the shape the entry states, and for `by_hand` ⛔ **that no deploy was
   made** along with everything handed over;
+- **every choice, the value taken, whether it was chosen or is the default, and any warning declared
+  for it** — ⚠️ which on a target asked for no go is the only place they are shown;
 - **how the delivery was established** — what was read, and from where. ⛔ Never an exit status
   standing in for it;
 - **every item advanced**, and **every item in the batch that was not**, with what held it —

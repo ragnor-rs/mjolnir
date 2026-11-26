@@ -872,6 +872,9 @@ def memory(configuration: config.Config, standing_in: str) -> dict:
             resolved = os.path.join(os.path.abspath(configuration.skills_root), resolved)
         out["store"] = os.path.normpath(resolved)
         out["index"] = os.path.join(out["store"], named)
+        stale = configuration.harness_derived_directories().get(f"{MEMORY_KEY}.store")
+        if stale:
+            out["report"].append(stale)
         out["unclosed"].append(
             "The store the project pinned is the store the procedure writes, and "
             "nothing here holds it to being the store the harness writes: two of "
@@ -1742,6 +1745,16 @@ def _memory_arms(check) -> None:
             == os.path.join(os.path.expanduser("~"), "a-store"),
             f"resolved {memory(_resolved(tilde), tree)['store']!r}",
         )
+
+        derived_store = {**pinned_data, MEMORY_KEY: {
+            **pinned_data[MEMORY_KEY], "store": "/h/a/.claude/projects/-h-a-checkout"}}
+        for stated, reported in ((derived_store, True), (tilde, False)):
+            lines = memory(_resolved(stated), tree)["report"]
+            check(
+                f"a store the harness derived is reported only where it is one: {reported}",
+                any("goes stale" in line for line in lines) is reported,
+                f"reported {lines!r}",
+            )
 
         # ⛔ The same configuration with the one key changed, so the decision is
         # asserted against the key that makes it rather than against a second
