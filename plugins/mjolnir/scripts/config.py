@@ -3031,7 +3031,9 @@ class Config:
             "graph": [dict(entry) for entry in self.get("documents.graph") or ()],
             "forbidden": [dict(entry) for entry in self.get("documents.forbidden") or ()],
             "quoted": [dict(entry) for entry in self.get("documents.quoted") or ()],
-            # ⛔ The one key under `documents` that may be absent, and absence comes
+            # Absent is `[]`: an omitted exemption list exempts nothing.
+            "exempt_targets": list(self.get("documents.exempt_targets") or ()),
+            # ⛔ A key under `documents` that may be absent, and absence comes
             # back as `None` rather than as a block reading `held: false`: the
             # carrier reports *no diagram is held* either way, and a reader
             # handed a fabricated block could not say which the project wrote.
@@ -3146,6 +3148,9 @@ class Config:
             "reached_by": entry["invoke"],
             DEPLOY_CODE_ROOT: entry.get(DEPLOY_CODE_ROOT),
             "choices": shown,
+            # ⚠️ Empty where the entry states none, which is a stated absence the
+            # carrier reading it reports rather than a list of conditions all met.
+            "tree": [dict(one) for one in entry.get("tree") or ()],
         }
         if entry["invoke"] != "command":
             # ⚠️ The two halves cannot meet: a name in both is refused at the load.
@@ -3161,6 +3166,58 @@ class Config:
         root = entry.get(DEPLOY_CODE_ROOT)
         view = self.root(root) if root is not None else self.only_root
         return {**answer, **view.command(command, entry.get(COMMAND_ROOT_REF))}
+
+    def deploy_batch(
+        self, target: str, chosen: list[str] | None = None, commit: str | None = None
+    ) -> dict:
+        """One § 33 target's `batch` command, as each of its purposes runs it.
+
+        ⛔ The choices are the run's, resolved by `deploy_target` and refused
+        there, so the batch is handed exactly the values the go shows. What the
+        command is handed on its input is the caller's -- the tracker's answer,
+        which no reader of this file holds.
+        """
+        shown = self.deploy_target(target, chosen)
+        entry = next(one for one in self.get("deploy") if one.get("name") == target)
+        answer = {
+            "target": target,
+            "advances": entry.get("advances"),
+            "requires_role": entry.get("requires_role"),
+            "grouping": entry.get("grouping"),
+            "choices": shown["choices"],
+            "commit": commit,
+        }
+        batch = entry.get("batch")
+        if batch is None:
+            return {**answer, "batch": None, "purposes": []}
+        placed = set(_BATCH_PLACED.findall(batch))
+        if commit is not None and not _OBJECT_NAME.fullmatch(commit):
+            raise ConfigError(
+                "deploy.batch",
+                f"was handed the commit {commit!r}, which is not an object name "
+                "(§ 33): seven to sixty-four lowercase hexadecimal characters.",
+            )
+        if BATCH_COMMIT in placed and commit is None:
+            raise ConfigError(
+                "deploy.batch",
+                f"places {{deploy:{BATCH_COMMIT}}} on the target {target!r}, and no "
+                "commit was handed over (§ 33). The commit is the one this deploy "
+                "serves, as the run established it.",
+            )
+        if entry.get("choices"):
+            values = {one["name"]: one["value"] for one in shown["choices"]}
+            batch = _CHOICE_PLACED.sub(lambda found: values[found.group(1)], batch)
+        root = entry.get(DEPLOY_CODE_ROOT)
+        view = self.root(root) if root is not None else self.only_root
+        # ⚠️ The command root is `command`'s, which a `command` target alone may
+        # state: a batch runs where the target's own act runs.
+        where = entry.get(COMMAND_ROOT_REF) if entry.get("invoke") == "command" else None
+        purposes = []
+        for purpose in batch_purposes(entry):
+            words = {BATCH_TARGET: target, BATCH_COMMIT: commit or "", BATCH_PURPOSE: purpose}
+            text = _BATCH_PLACED.sub(lambda found: words[found.group(1)], batch)
+            purposes.append({"purpose": purpose, **view.command(text, where)})
+        return {**answer, "batch": entry["batch"], "purposes": purposes}
 
     def live_data_step(self, target: str) -> dict:
         """§ 35's block on one § 33 target, with which answer it is said out loud.
@@ -5132,6 +5189,8 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
                         f"{where}.inputs", "names an input that is not a string (§ 33)."
                     )
         _validate_choices(where, entry, facts)
+        _validate_batch_placements(where, entry)
+        _validate_tree(where, entry, facts)
         # ⛔ § 16's list, cited rather than given a second grammar here -- the
         # division § 17 already has with the same section. What this facet does
         # with it is hold its shape and name it; evaluating a precondition is
@@ -5296,6 +5355,69 @@ _CHOICE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_-]*")
 _PLAIN_VALUE = re.compile(r"[A-Za-z0-9_./][A-Za-z0-9_./:@%+,=-]*")
 _PLAIN_JOIN = re.compile(r"[A-Za-z0-9_./:@%+,=-]+")
 
+# § 33's placements in a target's `batch`: what the run hands the command beside the
+# identifiers on its input. Stated in prose on the surface for the reason a choice's
+# placement is, and each word here is one row of that subsection's table.
+_BATCH_PLACED = re.compile(r"\{deploy:([^}]*)\}")
+BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE = "target", "commit", "purpose"
+BATCH_PLACEMENTS = (BATCH_TARGET, BATCH_COMMIT, BATCH_PURPOSE)
+# § 33's three purposes a batch command is run for, one run each.
+ADVANCE, PRECONDITION, REPORT = "advance", "precondition", "report"
+# ⛔ An object name and nothing else: hexadecimal is a word every shell reads as
+# itself, and anything a caller hands over that is not one is refused before it
+# reaches a command.
+_OBJECT_NAME = re.compile(r"[0-9a-f]{7,64}")
+
+
+def batch_purposes(entry: dict) -> list[str]:
+    """The purposes § 33 runs one target's `batch` command for, in the order run.
+
+    ⛔ Derived from the entry's own keys and never stated: `advance` where it moves
+    an item, `precondition` where it holds a bar over no grouping -- a grouping's
+    own items being that bar's set otherwise -- and `report` where it does neither.
+    """
+    purposes = []
+    if entry.get("advances", "none") != "none":
+        purposes.append(ADVANCE)
+    if entry.get("requires_role", "none") != "none" and entry.get("grouping") == "none":
+        purposes.append(PRECONDITION)
+    return purposes or [REPORT]
+
+
+def _validate_batch_placements(where: str, entry: dict) -> None:
+    """§ 33's placements in `batch`, held where the entry is written.
+
+    ⚠️ A command placing nothing is held to nothing here: it is handed the
+    identifiers on its input whether it reads them or not, which is what keeps a
+    project stating nothing new exactly where it was.
+    """
+    batch = entry.get("batch")
+    if not isinstance(batch, str):
+        return
+    for name in _BATCH_PLACED.findall(batch):
+        if name not in BATCH_PLACEMENTS:
+            raise ConfigError(
+                f"{where}.batch",
+                f"places {{deploy:{name}}}, which § 33 does not state. A batch "
+                f"command is handed {', '.join(f'{{deploy:{one}}}' for one in BATCH_PLACEMENTS)}"
+                " and the run's choices.",
+            )
+        if name == BATCH_TARGET and not (
+            isinstance(entry.get("name"), str) and _PLAIN_VALUE.fullmatch(entry["name"])
+        ):
+            raise ConfigError(
+                f"{where}.batch",
+                f"places {{deploy:{BATCH_TARGET}}} while the target's name "
+                f"{entry.get('name')!r} is not one plain word a shell reads as itself "
+                "(§ 33). Name the target in the command instead.",
+            )
+    for path, name in _placed_elsewhere(entry, where):
+        if path.startswith(f"{where}.batch") and "choices" not in entry:
+            raise ConfigError(
+                path,
+                f"places the choice {name!r}, and this target declares no choice (§ 33).",
+            )
+
 
 def _one_line(value) -> bool:
     return isinstance(value, str) and bool(value.strip()) and value.isprintable()
@@ -5341,6 +5463,13 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
             "to nothing; § 33 states a choice's keys in the entry's own fence.",
         )
     shell = entry.get("invoke") == "command"
+    # ⛔ A choice the batch places reaches a shell whatever the target's own shape,
+    # so its values are held to the plain words a `command` target's are.
+    batched = (
+        set(_CHOICE_PLACED.findall(entry["batch"]))
+        if isinstance(entry.get("batch"), str)
+        else set()
+    )
     always = entry["inputs"] if isinstance(entry.get("inputs"), dict) else {}
     names: list[str] = []
     for index, choice in enumerate(choices):
@@ -5386,13 +5515,13 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                     f"is {value!r}; it must be a string on one line, quoted where "
                     "the file would read it as anything else (§ 33).",
                 )
-            if shell and not _PLAIN_VALUE.fullmatch(value):
+            if (shell or name in batched) and not _PLAIN_VALUE.fullmatch(value):
                 raise ConfigError(
                     f"{here}.values[{position}]",
                     f"is {value!r}, which a shell would not read as one plain word "
-                    "(§ 33). On a `command` target a value is letters, digits and "
-                    "`_ . / : @ % + , = -`, opening with a letter, a digit, `_`, "
-                    "`.` or `/`.",
+                    "(§ 33). On a `command` target, and for a choice its `batch` "
+                    "places, a value is letters, digits and `_ . / : @ % + , = -`, "
+                    "opening with a letter, a digit, `_`, `.` or `/`.",
                 )
             if value in values[:position]:
                 raise ConfigError(
@@ -5407,7 +5536,7 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                     "must be the text between two chosen values (§ 33); omit it "
                     "where a run chooses one.",
                 )
-            if shell and not _PLAIN_JOIN.fullmatch(join):
+            if (shell or name in batched) and not _PLAIN_JOIN.fullmatch(join):
                 raise ConfigError(
                     f"{here}.joined_by",
                     f"is {join!r}, which a shell would not read as part of one "
@@ -5472,14 +5601,107 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                     f"{where}.command",
                     f"places {name!r}, which no choice of this target declares (§ 33).",
                 )
+    for name in sorted(batched):
+        if name not in names:
+            raise ConfigError(
+                f"{where}.batch",
+                f"places {name!r}, which no choice of this target declares (§ 33).",
+            )
     for key, value in entry.items():
-        if key == "choices" or (key == "command" and shell):
+        if key in ("choices", "batch") or (key == "command" and shell):
             continue
         for path, name in _placed_elsewhere(value, f"{where}.{key}"):
             raise ConfigError(
                 path,
                 f"places the choice {name!r}, which is read in a `command` target's "
-                "`command` and nowhere else (§ 33).",
+                "`command` and in a `batch`, and nowhere else (§ 33).",
+            )
+
+
+def _validate_tree(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `tree` on one entry, which no marker on the surface can reach.
+
+    ⚠️ An entry that omits the key is held to nothing here: a target stating no
+    condition reports what is uncommitted and holds nothing on it, as before.
+    """
+    if "tree" not in entry:
+        return
+    at = f"{where}.tree"
+    # ⛔ The shape before the list, for the reason `command` and `ref` are refused
+    # in both directions above: a dispatch is built by the host from `ref`, so a
+    # condition on a local tree beside one is a fact nothing reads.
+    if entry.get("invoke") != "command":
+        raise ConfigError(
+            at,
+            f"is stated beside `invoke: {entry.get('invoke')}`, which builds from "
+            "`ref` on the host and runs from no local tree (§ 33). Only a `command` "
+            "target states one.",
+        )
+    conditions = entry["tree"]
+    if not isinstance(conditions, list) or not conditions:
+        raise ConfigError(
+            at,
+            "must be a non-empty list of the conditions the tree is held to (§ 33); "
+            "omit it where nothing is required of the tree.",
+        )
+    prefix = "deploy.tree."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a condition could be "
+            "held to nothing; § 33 states a condition's keys in the entry's own fence.",
+        )
+    kinds = vocabulary(facts, "deploy.tree.condition", "a deploy tree condition")
+    holds = vocabulary(facts, "deploy.tree.holds", "what a tree condition holds")
+    seen: list[str] = []
+    for index, stated in enumerate(conditions):
+        here = f"{at}[{index}]"
+        if not isinstance(stated, dict):
+            raise ConfigError(
+                here, "must be a mapping stating a condition and what it holds (§ 33)."
+            )
+        for key in stated:
+            if key not in declared:
+                raise ConfigError(
+                    f"{here}.{key}",
+                    "is a key § 33 does not declare on a tree condition, so nothing "
+                    f"reads it. The keys it declares are: {', '.join(sorted(declared))}.",
+                )
+        kind = stated.get("condition")
+        if kind not in kinds:
+            raise ConfigError(
+                f"{here}.condition",
+                f"is {kind!r}; the surface states {' | '.join(kinds)} (§ 33).",
+            )
+        if kind in seen:
+            raise ConfigError(
+                f"{here}.condition",
+                f"states {kind!r} a second time (§ 33), so one reading would hold two "
+                "things and the list would say which only by its order.",
+            )
+        seen.append(kind)
+        if stated.get("holds") not in holds:
+            raise ConfigError(
+                f"{here}.holds",
+                f"is {stated.get('holds')!r}; the surface states {' | '.join(holds)} "
+                "(§ 33). What a condition not met stops is the entry's to state.",
+            )
+        if kind == "on_branch":
+            branch = stated.get("branch")
+            if not isinstance(branch, str) or not branch.strip():
+                raise ConfigError(
+                    f"{here}.branch",
+                    "required, and a non-empty branch name, where the condition is "
+                    "`on_branch` (§ 33).",
+                )
+        elif "branch" in stated:
+            raise ConfigError(
+                f"{here}.branch",
+                f"is stated beside the condition {kind!r}, which never reads it "
+                "(§ 33). It is read where the condition is `on_branch`.",
             )
 
 
@@ -6104,6 +6326,7 @@ def _validate_documents(data: dict, facts: dict) -> None:
             key
             for key in (
                 "files", "entry_points", "graph", "forbidden", "quoted", "box_diagrams",
+                "exempt_targets",
             )
             if key in _absent_as(_get(data, "documents"), {})
         ]
@@ -6140,6 +6363,23 @@ def _validate_documents(data: dict, facts: dict) -> None:
             )
         for index, glob in enumerate(value):
             _a_document(glob, f"documents.{key}[{index}]", "a glob a document matches")
+
+    # ⛔ The one key of the block that may be omitted, and omitting it exempts
+    # nothing -- the strict direction (§ 38). Stated, it is held to the shape
+    # the globs above are, `[]` included: an empty list exempts nothing too.
+    exempt = _absent_as(_get(data, "documents"), {}).get("exempt_targets")
+    if "exempt_targets" in _absent_as(_get(data, "documents"), {}):
+        if not isinstance(exempt, list):
+            raise ConfigError(
+                "documents.exempt_targets",
+                "must be a list of globs relative to the code root (§ 38), each a "
+                "link target the build produces rather than the index holds. One "
+                "glob is a list of one.",
+            )
+        for index, glob in enumerate(exempt):
+            _a_document(
+                glob, f"documents.exempt_targets[{index}]", "a glob a link target matches"
+            )
 
     graph = _get(data, "documents.graph")
     if not isinstance(graph, list):
@@ -15442,6 +15682,94 @@ def self_test() -> int:
             and got[DEPLOY_CODE_ROOT] == entry[DEPLOY_CODE_ROOT],
             f"answered {got!r}, where the root answers {direct!r}",
         )
+    print("\n§ 33's batch command, as each purpose runs it:")
+
+    def batching(*handed, commit=None, **overrides):
+        loaded = _a_valid_example()
+        loaded["deploy"] = [_a_deploy_target(**overrides)]
+        with open(SURFACE, encoding="utf-8") as handle:
+            facts = surface_facts(handle.read())
+        try:
+            return _resolve(loaded, EXAMPLES, facts, False).deploy_batch(
+                loaded["deploy"][0]["name"], list(handed), commit
+            )
+        except ConfigError as error:
+            return error.key
+
+    role = _a_role_some_status_maps()
+    sha = "0123abc"
+    whole = {
+        "command": "ship {choose:scope}", "choices": [_a_choice()],
+        "batch": "carried {deploy:target} {deploy:commit} {deploy:purpose} {choose:scope}",
+    }
+    for label, overrides, wanted in (
+        ("a target that moves nothing and holds no bar runs it once, to report",
+         {}, ["report"]),
+        ("a target that advances runs it for the advance",
+         {"advances": role}, ["advance"]),
+        ("a bar over no grouping runs it for the precondition too",
+         {"advances": role, "requires_role": role}, ["advance", "precondition"]),
+        ("a bar alone runs it for the precondition alone",
+         {"requires_role": role}, ["precondition"]),
+        ("a bar over a grouping is that grouping's to answer, not the batch's",
+         {"advances": role, "requires_role": role,
+          "grouping": _a_grouping_the_example_plans_in()}, ["advance"]),
+    ):
+        got = batching("scope=all", commit=sha, **whole, **overrides)
+        check(
+            label,
+            isinstance(got, dict) and [one["purpose"] for one in got["purposes"]] == wanted,
+            f"answered {got!r}",
+        )
+    got = batching("scope=all", commit=sha, **whole, advances=role)
+    check(
+        "the target, the commit, the purpose and the run's own choice reach the command",
+        isinstance(got, dict)
+        and got["purposes"][0]["command"] == f"carried a-target {sha} advance all",
+        f"answered {got!r}",
+    )
+    got = batching(commit=sha, **whole, advances=role)
+    check(
+        "a choice the run left out reaches the batch as its default",
+        isinstance(got, dict) and got["purposes"][0]["command"].endswith(" some"),
+        f"answered {got!r}",
+    )
+    got = batching(batch="carried", advances=role)
+    check(
+        "a batch placing nothing is run as written, with no commit asked for",
+        isinstance(got, dict) and got["purposes"][0]["command"] == "carried",
+        f"answered {got!r}",
+    )
+    got = batching()
+    check(
+        "a target with no batch has no purpose to run",
+        isinstance(got, dict) and got["batch"] is None and got["purposes"] == [],
+        f"answered {got!r}",
+    )
+    for label, commit, key in (
+        ("a placed commit nobody handed over", None, "deploy.batch"),
+        ("a commit that is not an object name", "main; rm", "deploy.batch"),
+        ("a commit too short to name one object", "abc", "deploy.batch"),
+    ):
+        got = batching(commit=commit, **whole)
+        check(f"{label} is a stop", got == key, f"answered {got!r}")
+    got = batching("scope=most", commit=sha, **whole)
+    check(
+        "a choice the target does not allow is refused for the batch as for the go",
+        got == "deploy.choices.scope", f"answered {got!r}",
+    )
+    for shape in ("dispatch", "by_hand"):
+        got = batching(commit=sha, **{
+            "invoke": shape, "command": _ABSENT, "ref": "a-ref",
+            "workflow": _a_workflow_the_example_states(),
+            "choices": [_a_choice()], "batch": "carried {choose:scope}",
+        })
+        check(
+            f"a {shape} target's batch runs at its code root with its choice placed",
+            isinstance(got, dict) and got["purposes"][0]["command"] == "carried some",
+            f"answered {got!r}",
+        )
+
     said = ""
     try:
         _validate_choices("deploy[0]", {"choices": [_a_choice()]}, {"declared": set()})
@@ -15450,6 +15778,44 @@ def self_test() -> int:
     check(
         "a surface that has lost a choice's keys is refused, with the key named",
         said == "deploy[0].choices", f"reported {said!r}",
+    )
+
+    print("\n§ 33's tree conditions, the green side:")
+    every = [
+        _a_tree_condition(),
+        _a_tree_condition(condition="on_branch", branch="main", holds="both"),
+        _a_tree_condition(condition="at_remote_tip", holds="advance"),
+        _a_tree_condition(condition="primary_checkout"),
+        _a_tree_condition(condition="at_commit", holds="advance"),
+    ]
+    loaded = _a_valid_example()
+    loaded["deploy"] = [_a_deploy_target(tree=every)]
+    refusal = _refused(loaded)
+    check(
+        "a target stating every condition, each holding one of the three, loads",
+        refusal is None, f"refused on {refusal!r}",
+    )
+    got = choosing(tree=every)
+    check(
+        "and the resolved target carries its conditions as stated",
+        isinstance(got, dict) and got["tree"] == every, f"answered {got!r}",
+    )
+    got = choosing()
+    check(
+        "a target stating no condition answers an empty list rather than omitting it",
+        isinstance(got, dict) and got["tree"] == [], f"answered {got!r}",
+    )
+    said = ""
+    try:
+        _validate_tree(
+            "deploy[0]", {"invoke": "command", "tree": [_a_tree_condition()]},
+            {"declared": set()},
+        )
+    except ConfigError as refused:
+        said = refused.key
+    check(
+        "a surface that has lost a tree condition's keys is refused, with the key named",
+        said == "deploy[0].tree", f"reported {said!r}",
     )
 
     # ⛔ The one arm the plant list above cannot hold, and it is held on the
@@ -16874,6 +17240,41 @@ def _planted_violations():
                  {"warnings": {"all": " "}}),
             )
         ),
+        # § 33's tree conditions, one plant per arm.
+        *(
+            (label, f"deploy[0].{key}", at("deploy", [_a_deploy_target(**changed)]))
+            for label, key, changed in (
+                ("tree conditions that are not a list", "tree",
+                 {"tree": {"condition": "clean"}}),
+                ("a tree list carrying nothing", "tree", {"tree": []}),
+                ("a tree condition that is not a block", "tree[0]", {"tree": ["clean"]}),
+                ("a tree condition with a key § 33 does not declare", "tree[0].when",
+                 {"tree": [_a_tree_condition(when="always")]}),
+                ("a tree condition outside the vocabulary", "tree[0].condition",
+                 {"tree": [_a_tree_condition(condition="tidy")]}),
+                ("a tree condition with no condition", "tree[0].condition",
+                 {"tree": [_a_tree_condition(condition=_ABSENT)]}),
+                ("a tree condition stated twice", "tree[1].condition",
+                 {"tree": [_a_tree_condition(), _a_tree_condition(holds="advance")]}),
+                ("a tree condition holding something outside the vocabulary",
+                 "tree[0].holds", {"tree": [_a_tree_condition(holds="release")]}),
+                ("a tree condition holding nothing stated", "tree[0].holds",
+                 {"tree": [_a_tree_condition(holds=_ABSENT)]}),
+                ("a branch condition naming no branch", "tree[0].branch",
+                 {"tree": [_a_tree_condition(condition="on_branch")]}),
+                ("a branch condition naming an empty branch", "tree[0].branch",
+                 {"tree": [_a_tree_condition(condition="on_branch", branch=" ")]}),
+                ("a branch beside a condition that never reads it", "tree[0].branch",
+                 {"tree": [_a_tree_condition(branch="main")]}),
+                *(
+                    (f"a tree on a {shape} target, which runs from no local tree", "tree",
+                     {"invoke": shape, "command": _ABSENT, "ref": "a-ref",
+                      "workflow": _a_workflow_the_example_states(),
+                      "tree": [_a_tree_condition()]})
+                    for shape in ("dispatch", "by_hand")
+                ),
+            )
+        ),
         ("choices that are not a list", "deploy[0].choices",
          at("deploy", [_a_deploy_target(choices={"scope": "all"})])),
         ("a choices list carrying nothing", "deploy[0].choices",
@@ -16893,10 +17294,29 @@ def _planted_violations():
         ("a placement no choice declares", "deploy[0].command",
          at("deploy", [_a_deploy_target(command="ship {choose:scope} {choose:other}",
                                         choices=[_a_choice()])])),
-        ("a choice placed in the batch command", "deploy[0].batch",
+        ("a batch placement no choice declares", "deploy[0].batch",
          at("deploy", [_a_deploy_target(command="ship {choose:scope}",
                                         choices=[_a_choice()],
-                                        batch="list {choose:scope}")])),
+                                        batch="list {choose:other}")])),
+        ("a batch placing a choice on a target declaring none", "deploy[0].batch",
+         at("deploy", [_a_deploy_target(batch="list {choose:scope}")])),
+        ("a batch placement § 33 does not state", "deploy[0].batch",
+         at("deploy", [_a_deploy_target(batch="list {deploy:branch}")])),
+        ("a batch placing a target name a shell reads as more", "deploy[0].batch",
+         at("deploy", [_a_deploy_target(name="a target",
+                                        batch="list {deploy:target}")])),
+        ("a dispatch's choice value a shell reads as more, where its batch places it",
+         "deploy[0].choices[0].values[1]",
+         at("deploy", [_a_deploy_target(
+             invoke="dispatch", command=_ABSENT, ref="a-ref",
+             workflow=_a_workflow_the_example_states(), batch="list {choose:scope}",
+             choices=[_a_choice(values=["some", "all of it"])])])),
+        ("a dispatch's join a shell reads as more, where its batch places it",
+         "deploy[0].choices[0].joined_by",
+         at("deploy", [_a_deploy_target(
+             invoke="dispatch", command=_ABSENT, ref="a-ref",
+             workflow=_a_workflow_the_example_states(), batch="list {choose:scope}",
+             choices=[_a_choice(joined_by=" ", default=["some"])])])),
         ("a choice placed inside a nested command", "deploy[0].live_data_step.apply",
          at("deploy", [_a_deploy_target(
              command="ship {choose:scope}", choices=[_a_choice()],
@@ -17358,6 +17778,16 @@ def _planted_violations():
             _a_documents_of(forbidden=[_a_forbidden_name(reason="   ")]))),
         ("a quoted list that is not a list", "documents.quoted",
          at("documents", _a_documents_of(quoted="a sentence"))),
+        # ⛔ The optional key's three arms. Omitting it is accepted and held by
+        # every configuration that does not write it; stated, it is a glob list.
+        ("an exempt-target list stated beside a carrier that reads none",
+         "documents.exempt_targets",
+         at("documents", {"carrier": "none", "absent_reason": "nothing is governed",
+                          "exempt_targets": ["build/**"]})),
+        ("an exempt-target list that is not a list", "documents.exempt_targets",
+         at("documents", _a_documents_of(exempt_targets="build/**"))),
+        ("an exempt target written blank", "documents.exempt_targets[0]",
+         at("documents", _a_documents_of(exempt_targets=["  "]))),
         ("a quoted entry with no sentence", "documents.quoted[0].sentence",
          at("documents",
             _a_documents_of(quoted=[{"document": "a-document.md"}]))),
@@ -19859,6 +20289,13 @@ def _a_choice(**overrides) -> dict:
     if "values" in overrides and "warnings" not in overrides:
         choice.pop("warnings")
     return {key: value for key, value in choice.items() if value is not _ABSENT}
+
+
+def _a_tree_condition(**overrides) -> dict:
+    """One § 33 tree condition, minimal and correct."""
+    condition = {"condition": "clean", "holds": "deploy"}
+    condition.update(overrides)
+    return {key: value for key, value in condition.items() if value is not _ABSENT}
 
 
 def _a_deploy_target(**overrides) -> dict:

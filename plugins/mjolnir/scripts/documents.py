@@ -5,7 +5,8 @@ The rule is `plugins/mjolnir/config/schema.md § 38`, which states it and carrie
 the measurement behind it. Neither is restated here.
 
 ⛔ Every value is **read from the configuration**: the governed set, the entry
-points, the reference graph, the forbidden names and anything quoted. Nothing of
+points, the reference graph, the forbidden names, anything quoted and the link
+targets exempted. Nothing of
 any project is written in this file, and a project whose `documents.carrier` is
 `none` has no subject here -- which is reported as *no subject* rather than as a
 verdict, because a check that holds nothing reports green.
@@ -41,11 +42,13 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import functools
 import os
 import re
 import subprocess
 import sys
 import unicodedata
+from urllib.parse import unquote
 
 # The facet this copy holds a tree to, and where that tree's documents are read
 # from relative to the repository this copy sits in. ⛔ `None` in the toolkit's
@@ -68,6 +71,34 @@ FENCE = re.compile(r"^[ \t]*(?P<delim>`{3,}|~{3,})(?P<info>[^\n]*)$")
 # dash is required, so `|   |   |` is a row with nothing in it rather than the
 # shape that makes the rows above it a table.
 DELIMITER = re.compile(r"^[ \t]*\|[-|: \t]*$")
+
+# --- what the link check reads ---------------------------------------------
+#
+# A link's destination, in each of the forms a renderer follows: inline, with or
+# without angle brackets and a title, and a reference definition on a line of
+# its own. ⛔ A footnote definition (`[^1]: …`) is prose and not a destination.
+# ⚠️ A bare destination may carry balanced parentheses, which the host follows:
+# `a_(b).png` cut at its first `)` is a working link reported missing.
+INLINE_LINK = re.compile(
+    r"\]\(\s*(?:<(?P<angled>[^>\n]*)>|(?P<bare>(?:[^()\s]|\([^()\s]*\))+))"
+    r"(?:\s+[^)\n]*)?\)"
+)
+DEFINITION = re.compile(
+    r"^ {0,3}\[(?!\^)[^\]\n]+\]:[ \t]*(?:<(?P<angled>[^>\n]*)>|(?P<bare>\S+))"
+)
+# What a renderer shows rather than follows: an HTML comment, and a code span
+# held to one line -- an odd backtick otherwise pairs with one a paragraph away
+# and hides every link between them.
+SHOWN = re.compile(
+    r"<!--.*?(?:-->|\Z)|(?P<ticks>`+)(?:(?!(?P=ticks))[^\n])*(?P=ticks)", re.S
+)
+# A fragment the host answers that names no heading: a line range.
+A_LINE_RANGE = re.compile(r"^L\d+(?:C\d+)?(?:-L?\d+(?:C\d+)?)?$")
+HEADING = re.compile(r"^ {0,3}(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$")
+# The underline of a setext heading, which makes the line above it a heading.
+UNDERLINE = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
+EXPLICIT_ANCHOR = re.compile(r"""<a\s[^>]*?\b(?:id|name)\s*=\s*["']([^"']+)["']""", re.I)
+MARKDOWN = (".md", ".markdown")
 
 
 def flat(text: str) -> str:
@@ -205,6 +236,92 @@ def names(text: str, here: str, documents) -> set:
     return found
 
 
+def links(text: str) -> list:
+    """Every link destination a renderer would follow, as (line number, destination).
+
+    ⛔ **What a document shows is not what it links**: a destination inside a
+    fence, a code span or an HTML comment is an example, and reading it as live
+    refuses the prose that documents a link's own syntax. The shown spans are
+    blanked character for character, so every line keeps its number.
+    """
+    inside, _open = fences(text)
+    blanked = SHOWN.sub(lambda found: re.sub(r"[^\n]", " ", found.group(0)), text)
+    out = []
+    for number, line in enumerate(blanked.splitlines(), 1):
+        if number in inside:
+            continue
+        for found in INLINE_LINK.finditer(line):
+            out.append((number, found.group("angled") or found.group("bare") or ""))
+        definition = DEFINITION.match(line)
+        if definition:
+            out.append(
+                (number, definition.group("angled") or definition.group("bare") or "")
+            )
+    return out
+
+
+def slug(heading: str) -> str:
+    """A heading's anchor, the way the code host derives it.
+
+    ⛔ **One hyphen per space and no collapsing**: a heading carrying a dash
+    between two spaces is answered with two hyphens, so a collapsing slug
+    refuses a working link. A link inside a heading contributes its text, which
+    is what the host renders.
+    """
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading)
+    text = re.sub(r"<[^>]+>", "", text).strip().lower().replace("`", "")
+    text = re.sub(r"[^\w\s-]", "", text)
+    return text.replace(" ", "-")
+
+
+@functools.lru_cache(maxsize=None)
+def anchors(text: str) -> frozenset:
+    """Every fragment a document answers: its headings, and the anchors it writes.
+
+    ⚠️ A repeated heading carries the host's `-1`, `-2` suffix, so a link to the
+    second section of a title resolves and the first does not stand in for it.
+    ⚠️ Both heading forms are read -- a `#` line, and a line underlined with `=`
+    or `-` -- since a link into either is a link the host follows. A line inside
+    the opening frontmatter is no heading, whatever follows it.
+
+    ⛔ Cached, because one target is asked about once per link into it: uncached,
+    this repository's own run spent 24 seconds slugging one surface again for
+    each of its two thousand fragments.
+    """
+    inside, _open = fences(text)
+    lines = text.splitlines()
+    front = set()
+    if lines and lines[0].strip() == "---":
+        for number, line in enumerate(lines[1:], 2):
+            if line.strip() == "---":
+                front.update(range(1, number + 1))
+                break
+    found, seen = set(), {}
+
+    def add(title: str) -> None:
+        base = slug(title)
+        nth = seen.get(base, 0)
+        seen[base] = nth + 1
+        found.add(base if nth == 0 else f"{base}-{nth}")
+
+    for number, line in enumerate(lines, 1):
+        if number in inside or number in front:
+            continue
+        heading = HEADING.match(line)
+        if heading:
+            add(heading.group(2))
+            continue
+        above = lines[number - 2] if number > 1 else ""
+        if UNDERLINE.match(line) and above.strip() and number - 1 not in inside \
+                and number - 1 not in front and not HEADING.match(above) \
+                and not UNDERLINE.match(above) \
+                and not above.lstrip().startswith(("|", ">", "- ", "* ", "+ ")):
+            add(above)
+    blanked = SHOWN.sub(lambda shown: re.sub(r"[^\n]", " ", shown.group(0)), text)
+    found.update(anchor.lower() for anchor in EXPLICIT_ANCHOR.findall(blanked))
+    return frozenset(found)
+
+
 class Subject:
     """The governed documents, the graph and the lists, in memory.
 
@@ -233,6 +350,9 @@ class Subject:
         }
         self.forbidden = [dict(entry) for entry in facet.get("forbidden") or ()]
         self.quoted = [dict(entry) for entry in facet.get("quoted") or ()]
+        # ⛔ Absent is `[]`: omitting the key exempts nothing, which is the
+        # strict direction and the only one a default may take here (§ 38).
+        self.exempt = list(facet.get("exempt_targets") or ())
         # ⛔ `None` where the project states no block, kept apart from a block
         # reading `held: false` only so a run can say which; both hold nothing.
         self.box_diagrams = (
@@ -295,8 +415,37 @@ class Subject:
             if path in self.rows and self.rows[path]["may_name"] is None
         ]
 
+    @property
+    def indexed(self) -> set:
+        """Every path a link may resolve to: each tracked file and each directory above one.
+
+        ⛔ **The index and not the disk**, for the reason the governed set is read
+        from it: a file nobody added is a link target the host does not serve.
+        """
+        found = set(self.tracked)
+        for path in self.tracked:
+            parts = path.split("/")[:-1]
+            for depth in range(1, len(parts) + 1):
+                found.add("/".join(parts[:depth]))
+        return found
+
     def read(self, path: str):
         return self.text.get(path, FileNotFoundError("not in the index"))
+
+    def read_target(self, path: str):
+        """A link target's text: the governed set's copy, or the file itself.
+
+        A markdown target the globs do not govern is still a target whose
+        headings a fragment names, so it is read from the tree rather than held
+        to nothing.
+        """
+        if path in self.text:
+            return self.text[path]
+        try:
+            with open(os.path.join(self.root, path), encoding="utf-8") as handle:
+                return handle.read()
+        except (OSError, UnicodeDecodeError) as exc:
+            return exc
 
     def copy(self) -> "Subject":
         clone = Subject.__new__(Subject)
@@ -305,6 +454,7 @@ class Subject:
         clone.rows = {doc: dict(row) for doc, row in self.rows.items()}
         clone.forbidden = [dict(entry) for entry in self.forbidden]
         clone.quoted = [dict(entry) for entry in self.quoted]
+        clone.exempt = list(self.exempt)
         clone.box_diagrams = (
             None if self.box_diagrams is None
             else {
@@ -474,6 +624,69 @@ def check_every_document_is_reachable(subject: Subject) -> list:
                 "arrives at -- have something name it, or state it as an entry point and "
                 "say why it is one."
             )
+    return problems
+
+
+def check_every_link_resolves(subject: Subject) -> list:
+    """Every relative link in a governed document reaching something the index holds.
+
+    ⛔ Computed: the target is resolved against the index and the fragment
+    against the target's own headings, so no reword of the link text reaches it.
+    ⛔ **An address outside the repository is not fetched** -- it names a host
+    this check has no business asking, and a network read would make the verdict
+    a fact about the day it ran. ⚠️ Two fragments are accepted unresolved: a line
+    range, which the host answers and no heading carries, and one on a file that
+    is not markdown, which has no headings to hold it to.
+    """
+    problems = []
+    present = subject.indexed
+    for path in subject.set_now:
+        text = subject.read(path)
+        if isinstance(text, Exception):
+            continue
+        for number, destination in links(text):
+            if not destination or ABSOLUTE.match(destination) \
+                    or destination.startswith("//"):
+                continue
+            target, _hash, fragment = destination.partition("#")
+            target, fragment = unquote(target), unquote(fragment)
+            if not target:
+                resolved = path
+            elif target.startswith("/"):
+                resolved = os.path.normpath(target.lstrip("/") or ".")
+            else:
+                resolved = os.path.normpath(os.path.join(os.path.dirname(path), target))
+            where = f"{path}:{number}: links to {destination!r}"
+            # ⚠️ A link climbing out of the repository needs no arm of its own:
+            # it resolves to a `../` path no index holds, and is reported below.
+            # ⚠️ A link to an exempt directory itself is exempt: `site/**`
+            # covers `site/`, which is the directory a generated index sits in.
+            if resolved == "." or governed(resolved, subject.exempt) \
+                    or governed(resolved + "/", subject.exempt):
+                continue
+            if resolved not in present:
+                problems.append(
+                    f"{where}, which resolves to {resolved!r}, and the index holds no file "
+                    "or directory there. Restore the target, correct the link, or -- for a "
+                    "file the build generates -- exempt it in `documents.exempt_targets`."
+                )
+                continue
+            if not fragment or A_LINE_RANGE.match(fragment) \
+                    or not resolved.lower().endswith(MARKDOWN):
+                continue
+            body = subject.read_target(resolved)
+            if isinstance(body, Exception):
+                problems.append(
+                    f"{where}, and {resolved!r} could not be read ({body}), so whether it "
+                    f"carries {fragment!r} is unanswered rather than passed."
+                )
+                continue
+            if fragment.lower() not in anchors(body):
+                problems.append(
+                    f"{where}, and {resolved!r} carries no heading or anchor whose slug is "
+                    f"{fragment!r}. A heading renamed or removed leaves every link into it "
+                    "landing at the top of the document."
+                )
     return problems
 
 
@@ -899,6 +1112,7 @@ CHECKS = [
      check_a_row_names_only_edges_the_text_carries),
     ("every document is reachable from an entry point", COMPUTED,
      check_every_document_is_reachable),
+    ("every link resolves", COMPUTED, check_every_link_resolves),
     ("no forbidden name appears", FORBIDDING, check_no_forbidden_name_appears),
     ("a table keeps its shape", COMPUTED, check_a_table_keeps_its_shape),
     ("a table row keeps its table", COMPUTED, check_a_table_row_keeps_its_table),
@@ -922,7 +1136,7 @@ def warnings(subject: Subject) -> list:
     """
     said = []
     # ⛔ The rows this project declines to enforce, counted on every run. Where
-    # that is all of them, three of the ten checks hold nothing and this is the
+    # that is all of them, the three graph checks hold nothing and this is the
     # only place that says so -- a project reading their green as its documents
     # agreeing is the one misread the third state invites.
     unenforced = subject.unenforced
@@ -931,8 +1145,8 @@ def warnings(subject: Subject) -> list:
             f"every one of the {len(unenforced)} governed document(s) states "
             "`may_name: null`, so no edge is enforced: the two edge checks and the "
             "reachability check HOLD NOTHING and their green says nothing about whether "
-            "these documents agree. ⛔ What is still held is the governed set, the "
-            "forbidden names and each document's own blocks."
+            "these documents agree. ⛔ What is still held is the governed set, every "
+            "link's target, the forbidden names and each document's own blocks."
         )
     elif unenforced:
         said.append(
@@ -988,6 +1202,8 @@ def hold(subject: Subject) -> int:
     # there, and the sentence asserted they had passed.
     held = [
         f"all {len(subject.set_now)} governed document(s) have a row",
+        "every relative link reaches a file and a heading the index holds"
+        + (f" or {len(subject.exempt)} exempt glob(s) cover" if subject.exempt else ""),
         "no forbidden name appears",
         "and every one keeps its own blocks"
         + (
@@ -1221,6 +1437,65 @@ def _plant_no_entry_point_matching_anything(subject: Subject) -> Subject:
     return subject
 
 
+def _plant_a_link_to_a_missing_file(subject: Subject) -> Subject:
+    subject.text["README.md"] += "\nThe plan is in [the plan](docs/gone.md).\n"
+    return subject
+
+
+def _plant_a_root_relative_link_to_a_missing_file(subject: Subject) -> Subject:
+    """A leading `/` is the repository's root, not the document's directory."""
+    subject.text["docs/a-document.md"] += "\nSee [the plan](/docs/gone.md).\n"
+    return subject
+
+
+def _plant_a_titled_link_to_a_missing_file(subject: Subject) -> Subject:
+    subject.text["README.md"] += '\nSee [the plan](docs/gone.md "the plan").\n'
+    return subject
+
+
+def _plant_a_definition_of_a_missing_file(subject: Subject) -> Subject:
+    subject.text["README.md"] += "\nSee [the plan][plan].\n\n[plan]: docs/gone.md\n"
+    return subject
+
+
+def _plant_a_link_out_of_the_repository(subject: Subject) -> Subject:
+    subject.text["README.md"] += "\nSee [a sibling](../a-sibling/README.md).\n"
+    return subject
+
+
+def _plant_a_missing_fragment(subject: Subject) -> Subject:
+    subject.text["README.md"] += (
+        "\nSee [a section](docs/a-document.md#a-section-that-was-renamed).\n"
+    )
+    return subject
+
+
+def _plant_a_missing_fragment_within_the_document(subject: Subject) -> Subject:
+    subject.text["README.md"] += "\nSee [below](#a-section-nowhere).\n"
+    return subject
+
+
+def _plant_a_second_heading_nobody_wrote(subject: Subject) -> Subject:
+    """A repeat's suffix where there is no repeat: one `The document`, so no `-1`."""
+    subject.text["README.md"] += "\nSee [it](docs/a-document.md#the-document-1).\n"
+    return subject
+
+
+def _plant_a_fragment_on_a_target_that_cannot_be_read(subject: Subject) -> Subject:
+    """A markdown target outside the globs, indexed and unreadable here."""
+    subject.tracked.append("vendor/notes.md")
+    subject.text["README.md"] += "\nSee [the notes](vendor/notes.md#a-heading).\n"
+    return subject
+
+
+def _plant_a_fragment_naming_frontmatter(subject: Subject) -> Subject:
+    """A frontmatter field above its closing `---` is no setext heading."""
+    subject.text["README.md"] += (
+        "\nThe [role](carriers/a-role/CARRIER.md#name-a-role).\n"
+    )
+    return subject
+
+
 def _plant_a_forbidden_name(subject: Subject) -> Subject:
     subject.text["docs/a-document.md"] += "\nThe ARetiredName module does this.\n"
     return subject
@@ -1390,6 +1665,26 @@ VIOLATIONS = [
      _plant_a_document_nothing_reaches),
     ("every document is reachable from an entry point", "entry points matching no document",
      _plant_no_entry_point_matching_anything),
+    ("every link resolves", "a relative link to a file the index does not hold",
+     _plant_a_link_to_a_missing_file),
+    ("every link resolves", "a root-relative link to a file the index does not hold",
+     _plant_a_root_relative_link_to_a_missing_file),
+    ("every link resolves", "a titled link to a missing file",
+     _plant_a_titled_link_to_a_missing_file),
+    ("every link resolves", "a reference definition of a missing file",
+     _plant_a_definition_of_a_missing_file),
+    ("every link resolves", "a relative link climbing out of the repository",
+     _plant_a_link_out_of_the_repository),
+    ("every link resolves", "a fragment no heading of the target carries",
+     _plant_a_missing_fragment),
+    ("every link resolves", "a fragment within the document that nothing carries",
+     _plant_a_missing_fragment_within_the_document),
+    ("every link resolves", "a repeat's suffix on a heading that is not repeated",
+     _plant_a_second_heading_nobody_wrote),
+    ("every link resolves", "a fragment on a markdown target that cannot be read",
+     _plant_a_fragment_on_a_target_that_cannot_be_read),
+    ("every link resolves", "a fragment naming a frontmatter field",
+     _plant_a_fragment_naming_frontmatter),
     ("no forbidden name appears", "a forbidden name in a governed document",
      _plant_a_forbidden_name),
     ("no forbidden name appears", "a forbidden pattern that cannot be evaluated",
@@ -1586,6 +1881,124 @@ def _plant_a_cell_after_a_literal_backslash(subject: Subject) -> Subject:
     return subject
 
 
+def _plant_a_fragment_the_target_carries(subject: Subject) -> Subject:
+    subject.text["README.md"] += (
+        "\nSee [the document](docs/a-document.md#the-document) and [this](#a-project).\n"
+    )
+    return subject
+
+
+def _plant_a_heading_slugged_the_hosts_way(subject: Subject) -> Subject:
+    """A code span, a dash between spaces and a link, each of which the slug changes.
+
+    ⚠️ The dash is the arm a collapsing slug gets wrong -- two hyphens, not one.
+    """
+    subject.text["docs/a-document.md"] += (
+        "\n## `key` — a rule\n\n## See [a module](../src/a-module.src)\n"
+    )
+    subject.text["README.md"] += (
+        "\n[one](docs/a-document.md#key--a-rule) and "
+        "[two](docs/a-document.md#see-a-module).\n"
+    )
+    return subject
+
+
+def _plant_a_repeated_heading_named_by_its_suffix(subject: Subject) -> Subject:
+    subject.text["docs/a-document.md"] += "\n## Twice\n\nOnce.\n\n## Twice\n\nAgain.\n"
+    subject.text["README.md"] += "\nThe [second](docs/a-document.md#twice-1).\n"
+    return subject
+
+
+def _plant_an_anchor_written_by_hand(subject: Subject) -> Subject:
+    subject.text["docs/a-document.md"] += '\n<a id="a-place"></a>\n\nA place.\n'
+    subject.text["README.md"] += "\nThe [place](docs/a-document.md#a-place).\n"
+    return subject
+
+
+def _plant_a_link_to_a_directory(subject: Subject) -> Subject:
+    """A directory above a tracked file, and the repository's own root."""
+    subject.text["README.md"] += (
+        "\nThe [role](carriers/a-role/) is loaded by name, from [the root](./).\n"
+    )
+    return subject
+
+
+def _plant_a_root_relative_link_that_resolves(subject: Subject) -> Subject:
+    """From a nested document, `/` is the root and not the document's directory."""
+    subject.text["docs/a-document.md"] += "\nThe code is in [it](/src/a-module.src).\n"
+    return subject
+
+
+def _plant_links_outside_the_repository(subject: Subject) -> Subject:
+    """Two schemes and a scheme-relative address: none is fetched."""
+    subject.text["README.md"] += (
+        "\n[a](https://example.invalid/gone.md), [b](ftp://example.invalid/gone.md) "
+        "and [c](//example.invalid/gone.md).\n"
+    )
+    return subject
+
+
+def _plant_fragments_no_heading_answers(subject: Subject) -> Subject:
+    """A line range, and a fragment on a file that is not markdown."""
+    subject.text["README.md"] += (
+        "\n[a](README.md#L3-L5) and [b](src/a-module.src#a-symbol).\n"
+    )
+    return subject
+
+
+def _plant_an_exempt_target(subject: Subject) -> Subject:
+    subject.exempt = ["build/**"]
+    subject.text["README.md"] += "\nThe [report](build/report/index.md) is generated.\n"
+    return subject
+
+
+def _plant_an_angled_destination_with_a_space(subject: Subject) -> Subject:
+    """Angle brackets are what let a destination carry a space.
+
+    ⚠️ A plant pointing angle brackets at a missing file certifies nothing: the
+    bare form reads `<docs/the` off it and reports that missing instead.
+    """
+    subject.tracked.append("assets/a picture.png")
+    subject.text["README.md"] += "\n![a picture](<assets/a picture.png>)\n"
+    return subject
+
+
+def _plant_a_destination_with_parentheses(subject: Subject) -> Subject:
+    subject.tracked.append("assets/a_(b).png")
+    subject.text["README.md"] += "\n![a picture](assets/a_(b).png)\n"
+    return subject
+
+
+def _plant_a_setext_heading(subject: Subject) -> Subject:
+    """The underlined form of a heading, which the host anchors like a `#` one."""
+    subject.text["docs/a-document.md"] += "\nAn underlined heading\n---------------------\n"
+    subject.text["README.md"] += (
+        "\nThe [heading](docs/a-document.md#an-underlined-heading).\n"
+    )
+    return subject
+
+
+def _plant_a_link_to_an_exempt_directory(subject: Subject) -> Subject:
+    subject.exempt = ["site/**"]
+    subject.text["README.md"] += "\nThe [site](site/) is generated.\n"
+    return subject
+
+
+def _plant_an_encoded_path(subject: Subject) -> Subject:
+    subject.tracked.append("assets/a picture.png")
+    subject.text["README.md"] += "\n![a picture](assets/a%20picture.png)\n"
+    return subject
+
+
+def _plant_links_that_are_shown_rather_than_followed(subject: Subject) -> Subject:
+    """A fence, a code span, a comment and a footnote: none is a destination."""
+    subject.text["README.md"] += (
+        "\n```\n[x](docs/gone.md)\n```\n\nWrite `[x](docs/gone.md)` for a link.\n\n"
+        "<!-- [x](docs/gone.md) -->\n\nA claim.[^1]\n\n[^1]: docs/gone.md was retired.\n"
+    )
+    return subject
+
+
 def _plant_a_box_aligned_by_display_width(subject: Subject) -> Subject:
     """Two wide characters in a box four columns wide, which is aligned on screen."""
     return _diagram(subject, "┌────┐\n│漢字│\n└────┘")
@@ -1631,6 +2044,30 @@ def _plant_a_misaligned_box_where_nothing_is_stated(subject: Subject) -> Subject
 
 EXEMPTIONS = [
     ("a path that is not a governed document", _plant_an_ungoverned_path_named),
+    ("a fragment the target carries, in another document and in this one",
+     _plant_a_fragment_the_target_carries),
+    ("a heading slugged the host's way", _plant_a_heading_slugged_the_hosts_way),
+    ("a repeated heading named by its suffix",
+     _plant_a_repeated_heading_named_by_its_suffix),
+    ("an anchor written by hand", _plant_an_anchor_written_by_hand),
+    ("a link to a directory the index holds, and to the root",
+     _plant_a_link_to_a_directory),
+    ("a root-relative link from a nested document",
+     _plant_a_root_relative_link_that_resolves),
+    ("links outside the repository, which are not fetched",
+     _plant_links_outside_the_repository),
+    ("a line range, and a fragment on a file that is not markdown",
+     _plant_fragments_no_heading_answers),
+    ("a target the project exempts", _plant_an_exempt_target),
+    ("a percent-encoded path", _plant_an_encoded_path),
+    ("an angle-bracketed destination carrying a space",
+     _plant_an_angled_destination_with_a_space),
+    ("a destination carrying balanced parentheses",
+     _plant_a_destination_with_parentheses),
+    ("a setext heading", _plant_a_setext_heading),
+    ("a link to an exempt directory itself", _plant_a_link_to_an_exempt_directory),
+    ("links shown rather than followed",
+     _plant_links_that_are_shown_rather_than_followed),
     ("a carrier that no document names", _plant_a_carrier_nothing_names),
     ("a table shown inside a fence", _plant_a_fenced_table_of_pipes),
     ("a tilde fence that closes", _plant_a_tilde_fence_that_closes),
@@ -1889,6 +2326,26 @@ def self_test() -> int:
             f"read {live.set_now}",
         )
         check("and that tree is green", not any(run(live).values()), f"{run(live)}")
+
+        # ⛔ A link resolves against the index, and a markdown target the globs
+        # do not govern is read off the tree for its headings: the two halves
+        # memory cannot assert, each measured on a real repository.
+        os.makedirs(os.path.join(root, "vendor"))
+        with open(os.path.join(root, "vendor", "notes.md"), "w", encoding="utf-8") as handle:
+            handle.write("# Notes\n\n## A heading\n")
+        subprocess.run(
+            ["git", "-C", root, "add", "vendor/notes.md"], check=True, capture_output=True,
+        )
+        with open(os.path.join(root, "README.md"), "a", encoding="utf-8") as handle:
+            handle.write("\nThe [notes](vendor/notes.md#a-heading) are vendored.\n")
+        linked = run(read_subject(root, facet))["every link resolves"]
+        check("an ungoverned markdown target is read off the tree for its headings",
+              linked == [], f"{linked}")
+        with open(os.path.join(root, "README.md"), "a", encoding="utf-8") as handle:
+            handle.write("\nA [draft](docs/unindexed.md) nobody added.\n")
+        linked = run(read_subject(root, facet))["every link resolves"]
+        check("a link to a file on disk that the index does not hold is reported",
+              len(linked) == 1 and "docs/unindexed.md" in linked[0], f"{linked}")
 
     if failures:
         print(
