@@ -2232,9 +2232,14 @@ def _prompt_recorded(loaded, payload: dict, event: str, *, now: float | None,
             f"`{MERGE_QUESTION}` was recorded ({PROMPT_CITATION})."
         )
     at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() if now is None else now))
-    said, code = write_record(f"{slug}#{number}", MERGE_QUESTION, PROMPT_ANSWER,
-                              PROMPT_ANSWERER, at, str(head or ""), run=host,
-                              verdict=APPROVED)
+    try:
+        said, code = write_record(f"{slug}#{number}", MERGE_QUESTION, PROMPT_ANSWER,
+                                  PROMPT_ANSWERER, at, str(head or ""), run=host,
+                                  verdict=APPROVED)
+    except (subprocess.TimeoutExpired, OSError) as error:
+        # ⛔ A write that raised is still reported: a hook that dies here says
+        # nothing, and the record it did not write would then read as written.
+        said, code = f"the host's client did not answer ({type(error).__name__}).", 1
     if code == 0:
         return (f"The merge of {slug}#{number} at {head} was allowed at the prompt, and that "
                 f"answer is recorded on the change ({PROMPT_CITATION}).")
@@ -4154,6 +4159,23 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         said = str(finished(where, code=1).get("systemMessage") or "")
         check("a record the host refused is reported as not recorded",
               "NOT recorded" in said and "record" in said, said[:200])
+
+        def raising(error):
+            def run(args, _timeout):
+                raise error
+            return run
+
+        for label, error in (("a write that times out",
+                              subprocess.TimeoutExpired(["gh"], HOST_TIMEOUT)),
+                             ("a client that is not there", FileNotFoundError("gh"))):
+            where = fresh(f"prompt-raised-{next(notes)}")
+            at_prompt(where=where)
+            said = str(release_answer(
+                {**_call("gh pr merge 7", mode="default"), "hook_event_name": CALL_FINISHED},
+                config=prompting, now=1000.0, store=where, host=raising(error),
+                read=lambda _where, load=None: (None, None, "")).get("systemMessage") or "")
+            check(f"{label}: reported as not recorded rather than raised",
+                  "NOT recorded" in said, said[:200])
         where = fresh("prompt-failed")
         at_prompt(where=where)
         before = len(bodies)
