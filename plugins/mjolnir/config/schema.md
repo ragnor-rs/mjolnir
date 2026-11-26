@@ -1747,6 +1747,13 @@ this kind's implementation alone, as `create_fields` is.
 does, and an empty list clears it. Each member takes the shape of the element type the site states,
 and an element type the implementation has no shape for is refused by name.
 
+**A tracker's own sprint field is the one exception, and it is written by the sprint's id.** On
+`jira` that field is a list of `json` members, recognised by the custom type the tracker gives it
+and never by its name, and a write to it takes one sprint's id. A name handed instead is refused
+rather than looked up, two sprints being free to carry one. Every other `json` member stays refused.
+Which sprint is § 4.8's question: `read_current_grouping` answers the open one with its id and its
+name, the id being what is written and the name what a person and a reply read.
+
 **The test a new kind's block is written against**: a key is required when the adapter cannot
 address the right tracker without it. An address this reader accepts and the tracker rejects is
 the one failure a configuration can be read for; everything past the address, the adapter learns
@@ -1786,6 +1793,7 @@ the operations the survey reached and says which it did not.
 | `create_grouping` | one of § 4.8's groupings brought into existence, by the value that facet keys it on — the one write about a grouping that is made before any item is in it | nothing is created, and the role **names the grouping it would have created** for whoever creates it by hand; ⛔ no file and no record of a grouping is written anywhere else instead, a grouping the tracker does not hold being a grouping no `grouping_items` can read |
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
+| `read_current_grouping` | the value the tracker itself marks open for one of § 4.8's groupings under `current: discoverable`, each open value by what a write takes and by the name a person reads — ⛔ never a choice between several, which the role asks, and never asked under `stated`, where the tracker marks none | the grouping is asked for, as under `stated`, and the report says the tracker's mark went **unread**; never the first value the tracker lists, by § 2's rule that absence of signal is not an answer |
 | `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. The address a person performs it at is the tracker's own and the procedure composes none — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
 | `read_comments` | the item's comments, oldest first and every page of them, each with who wrote it, when, and when it was last edited | the role reports the comments **unread** and never as none, by § 2's rule that absence of signal is not an answer ([below](#an-items-comments-and-what-an-unread-one-is)) |
@@ -2687,16 +2695,17 @@ collection form that holds per entry — a named grouping carried by nothing sta
 and is reported as that absence.
 
 Which of these keys has no reader yet: **`has_own_acceptance` is required and held to its
-vocabulary and is read by nothing else yet**, and **`current` is read in one direction only** —
-every other key in the fence is read where the configuration is read.
-[§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target) reads `current` to
-say *what is unanswered* when a publishing ask arrives with no value for the grouping; **what no
-reader performs is the `discoverable` arm's own read**, so the value arrives on the invocation
-under either value and that section states the limit. Each key is the answer to a question a role
-has to ask before it files an item or publishes a grouping, and neither is derivable from the rest
-of the block. The trigger is the role — the filing role putting a new item somewhere, and whichever
-role comes to read a tracker's own mark — and a key still unread when those roles are written is
-§ 1's retirement argument with a project's own answer behind it.
+vocabulary and is read by nothing else yet** — every other key in the fence is read where the
+configuration is read. **`current` is read in two places.**
+[§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target) reads it to say
+*what is unanswered* when a publishing ask arrives with no value for the grouping, and **the
+`discoverable` arm's own read is [§ 3](#the-operations-and-what-an-absent-capability-does)'s
+`read_current_grouping`**, whose one caller is the filing role putting a new item into the open
+grouping. A publishing ask never reads the mark itself, so there the value arrives on the invocation
+under either value and that section states the limit. `has_own_acceptance` is the answer to a
+question a role has to ask before it publishes a grouping, not derivable from the rest of the block;
+a key still unread when that role is written is § 1's retirement argument with a project's own
+answer behind it.
 
 ## 5. Readiness gate — an ordered predicate list
 
@@ -8519,9 +8528,10 @@ Which grouping's *value* this is about — which release, which time box — arr
 invocation, under either value of § 4.8's `current`. That key states what the value could be read
 from: `stated` means it arrives, and `discoverable` means the tracker itself marks one and a
 procedure reads it. The second read is not performed here: a publishing ask handed no value is
-refused against that key, naming it. No tracker's own grouping has been measured carrying an
-operation that reads the mark, so a target under `discoverable` is handed its value exactly as one
-under `stated` is.
+refused against that key, naming it. § 3's `read_current_grouping` reads the mark where a tracker
+implements it, and only `jira`'s sprint does; it answers the *open* grouping, which is the one
+being filled rather than the one being published. So a target under `discoverable` is handed its
+value exactly as one under `stated` is.
 
 A target naming a grouping under a project whose carrier is `none` is refused with both keys named,
 there being no set for the name to mean.
@@ -9829,9 +9839,9 @@ iteration is current is § 4.8's `current` question, so this key says *which gro
 in* and nothing about which one is open.
 
 ⛔ **Under this carrier the grouping's own value arrives on the role's invocation, and a pass given
-none stops.** § 4.8 states that nothing in the procedure performs the `discoverable` read, so that
-holds under either value of `current`: an order read off whichever grouping a tracker answered with
-is wrong while every figure in the report is correct about the wrong set.
+none stops.** § 4.8 states that the `discoverable` read is the filing role's alone, so that holds
+under either value of `current`: an order read off whichever grouping a tracker answered with is
+wrong while every figure in the report is correct about the wrong set.
 
 The reader refuses `carrier: none` beside a mapped closing-out role, which is
 [§ 25](#the-carrier-and-the-third-have-to-agree-in-both-directions)'s shape between a carrier and

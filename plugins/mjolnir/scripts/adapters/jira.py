@@ -127,6 +127,23 @@ KIND = "jira"
 # bodies accepted as literal text with no error anywhere.
 API = "/rest/api/3"
 
+# Where the board and its sprints live: a second interface on the same site, with
+# its own version. ⛔ A path under it is addressed whole, never under `API` -- the
+# two share the site and nothing else, and a board read under the issue interface
+# answers 404, which this module reads as a fact about an item.
+AGILE = "/rest/agile/1.0"
+ADDRESSED_WHOLE = "/rest/"
+
+# The custom type the tracker gives its own sprint field. ⛔ The one list of
+# `json` members a write is shaped for here, and matched by this type rather than
+# by the field's name, which is the site's and the project's: a list of `json`
+# that is anything else carries a structure nobody measured, and stays refused.
+SPRINT_TYPE = "com.pyxis.greenhopper.jira:gh-sprint"
+
+# The board kind that carries sprints. ⚠️ The other kind answers its sprint list
+# with a refusal rather than an empty one, so a board of it is not asked.
+SPRINTED_BOARD = "scrum"
+
 # The two variables that address the site. ⛔ A pair rather than one token,
 # because this tracker authenticates as a **person**: the credential and the
 # account it belongs to are separate facts and one without the other
@@ -432,6 +449,11 @@ def _credentials() -> str:
     return "Basic " + base64.b64encode(pair).decode("ascii")
 
 
+def _under(path: str) -> str:
+    """A call's path under the interface it belongs to: the issue one, or whole."""
+    return path if path.startswith(ADDRESSED_WHOLE) else f"{API}{path}"
+
+
 def _shown(method: str, path: str, params: dict | None = None) -> str:
     """One call, as a person could re-run it, carrying no credential.
 
@@ -442,7 +464,7 @@ def _shown(method: str, path: str, params: dict | None = None) -> str:
     because neither is in the string this builds.
     """
     query = urllib.parse.urlencode(params or {}, doseq=True)
-    return f"{method} {API}{path}" + (f"?{query}" if query else "")
+    return f"{method} {_under(path)}" + (f"?{query}" if query else "")
 
 
 def _urlopen_request(
@@ -470,7 +492,7 @@ def _urlopen_request(
     for the same reason.
     """
     query = urllib.parse.urlencode(params or {}, doseq=True)
-    url = f"{where}{API}{path}" + (f"?{query}" if query else "")
+    url = f"{where}{_under(path)}" + (f"?{query}" if query else "")
     data = None if body is None else json.dumps(body).encode("utf-8")
     request = urllib.request.Request(url, data=data, method=method)
     request.add_header("Authorization", auth)
@@ -1314,6 +1336,59 @@ def _shaped_list(found: dict, value, *, guard: str, named: str, where: str) -> l
     return [{IDENTIFIED_BY[shape]: member} for member in members]
 
 
+def _is_sprint(found: dict) -> bool:
+    """Whether a resolved field is the tracker's own sprint field, by its type."""
+    return (found.get("schema") or {}).get("custom") == SPRINT_TYPE
+
+
+def _sprint_id(value, *, guard: str) -> int:
+    """A sprint, as the one value its field takes on a write: the sprint's id.
+
+    ⛔ **The id and never the name.** The host takes the number alone, and a name
+    handed here is refused rather than looked up: a name is what a person reads
+    and two sprints may carry one, so resolving it would choose a sprint.
+    `read_current_grouping` answers the open one with both, and the id is the
+    half handed back. ⚠️ Text of digits is the id too, since the port's command
+    line hands every value as text.
+    """
+    if isinstance(value, bool):
+        number = None
+    elif isinstance(value, int):
+        number = value
+    elif isinstance(value, str) and value.strip().isdigit():
+        number = int(value.strip())
+    else:
+        number = None
+    if number is None or number <= 0:
+        raise ConfigError(
+            guard,
+            f"was handed {value!r} for the tracker's own sprint field, which is "
+            "written by the sprint's id -- a positive number. A sprint's name is "
+            "what a person reads and is not resolved here, two sprints being free "
+            "to carry one; `read_current_grouping` answers the open sprint with "
+            "both.",
+        )
+    return number
+
+
+def _sprints_short(wanted: dict, item: dict) -> str:
+    """Which sprint ids did not read back, in words; empty for none.
+
+    ⛔ Read by the id the write sent, since the host answers each sprint as a
+    structure carrying it and the name beside it.
+    """
+    held = item.get("fields") or {}
+    short = []
+    for name, number in wanted.items():
+        answered = held.get(name)
+        back = {
+            one.get("id") for one in answered if isinstance(one, dict)
+        } if isinstance(answered, list) else set()
+        if number not in back:
+            short.append(f"sprint `{number}` in `{name}`")
+    return ", ".join(short)
+
+
 def _shaped_value(found: dict, value, *, guard: str, named: str, where: str):
     """One value, in the shape the resolved field's own type takes."""
     if found["id"] in OWNED_ELSEWHERE:
@@ -1325,6 +1400,8 @@ def _shaped_value(found: dict, value, *, guard: str, named: str, where: str):
             "through a different question.",
         )
     schema = (found.get("schema") or {}).get("type")
+    if _is_sprint(found):
+        return _sprint_id(value, guard=guard)
     if schema == LIST:
         return _shaped_list(found, value, guard=guard, named=named, where=where)
     shape = RICH if found["id"] in RICH_FIELDS else SHAPES.get(str(schema))
@@ -1527,7 +1604,17 @@ def create_item(
             "is reported rather than retried: a second create would file the work "
             "twice."
         )
-    short = _not_landed({name: shaped for name, (_, shaped) in extra.items()}, item)
+    sprints = {
+        name for name in extra
+        if _is_sprint(_field_named(name, key="tracker.operations.create_item"))
+    }
+    short = ", ".join(part for part in (
+        _not_landed(
+            {name: shaped for name, (_, shaped) in extra.items() if name not in sprints},
+            item,
+        ),
+        _sprints_short({name: extra[name][1] for name in sprints}, item),
+    ) if part)
     if short:
         raise HostUnavailable(
             f"item {key} was created and came back without {short}. The item "
@@ -1647,6 +1734,9 @@ def _not_held(wanted: dict, item: dict) -> str:
             landed = isinstance(back, dict) and all(
                 back.get(part) == value for part, value in shaped.items()
             )
+        elif isinstance(back, list) and isinstance(shaped, int):
+            # A sprint, written by its id and answered as the structures carrying it.
+            landed = not _sprints_short({name: shaped}, item)
         else:
             landed = back == shaped
         if not landed:
@@ -1760,10 +1850,14 @@ def set_field(key: str, field: str, value) -> dict:
     shaped = _shaped_value(found, value, guard=guard, named=field, where="set_field")
     read_item(key)
     _call("PUT", f"/issue/{_addressed(key)}", body={"fields": {found["id"]: shaped}})
-    if not isinstance(shaped, list):
+    sprint = _is_sprint(found)
+    if not (sprint or isinstance(shaped, list)):
         return read_item(key)
     item = read_item(key, fields=[field])
-    missing = _not_landed({field: shaped}, item)
+    missing = (
+        _sprints_short({field: shaped}, item) if sprint
+        else _not_landed({field: shaped}, item)
+    )
     if missing:
         raise HostUnavailable(
             f"item {key} was written and came back without {missing}. ⛔ The write "
@@ -2230,6 +2324,102 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
     }
 
 
+def _agile_pages(path: str, params: dict) -> tuple[list[dict], bool]:
+    """Every value a board listing answers, under this module's page ceiling.
+
+    ⚠️ This interface pages by offset and says `isLast`, where the search above
+    pages by token; reaching the ceiling is answered as cut rather than whole.
+    """
+    found: list[dict] = []
+    start, pages = 0, 0
+    while True:
+        answer = _call(
+            "GET", path, params={**params, "startAt": start, "maxResults": PAGE}
+        ) or {}
+        values = list(answer.get("values") or [])
+        found += values
+        pages += 1
+        if answer.get("isLast", True) or not values:
+            return found, False
+        if pages >= PAGES_AT_MOST:
+            return found, True
+        start += len(values)
+
+
+def read_current_grouping(*, grouping: dict) -> dict:
+    """The grouping value this tracker itself marks open, for one of § 4.8's.
+
+    ⛔ **Answered for the tracker's own sprint field and nothing else.** A sprint
+    is the one grouping here the tracker marks open; a version or a field of any
+    other type carries no such mark, so a grouping held in one is refused with
+    its field named rather than answered with a guess.
+
+    ⛔ **Every open sprint on every board of this project, and never a choice
+    between them.** One is the answer; none or several is `value: None` with
+    each one listed, and the role asks -- which is § 4.8's rule for a grouping
+    value it cannot settle. Boards that carry no sprints are not asked, and a
+    sprint two boards share is listed once.
+
+    ⚠️ Each sprint comes back with its id, which is what a write takes, and its
+    name, which is what a person and a reply read.
+    """
+    name = (grouping or {}).get("name")
+    key = f"work_item.grouping.{name}.field"
+    if (grouping or {}).get("carrier") != "field":
+        raise ConfigError(
+            f"work_item.grouping.{name}.carrier",
+            f"is {(grouping or {}).get('carrier')!r}, and the open grouping is read "
+            "here off the tracker's own sprint field. A grouping held anywhere "
+            "else carries no mark this tracker sets.",
+        )
+    field = str((grouping or {}).get("field"))
+    if not _is_sprint(_field_named(field, key=key)):
+        raise ConfigError(
+            key,
+            f"names `{field}`, which is not the tracker's own sprint field on this "
+            "site. The sprint is the one grouping this tracker marks open, so a "
+            "grouping held in another field has no open value to read.",
+        )
+    boards, cut = _agile_pages(
+        f"{AGILE}/board", {"projectKeyOrId": _project_key(), "type": SPRINTED_BOARD}
+    )
+    sprints: dict[int, dict] = {}
+    for board in boards:
+        if board.get("type") not in (None, SPRINTED_BOARD):
+            continue
+        found, short = _agile_pages(
+            f"{AGILE}/board/{int(board['id'])}/sprint", {"state": "active"}
+        )
+        cut = cut or short
+        for sprint in found:
+            if sprint.get("state", "active") == "active" and sprint.get("id") is not None:
+                sprints.setdefault(
+                    int(sprint["id"]), {"value": int(sprint["id"]), "name": sprint.get("name")}
+                )
+    current = [sprints[number] for number in sorted(sprints)]
+    one = current[0] if len(current) == 1 and not cut else None
+    if one:
+        reason = None
+    elif not current:
+        reason = (
+            f"no sprint is open on the {len(boards)} sprint board(s) of this project"
+        )
+    elif cut:
+        reason = "the board listing reached this module's page ceiling, so it is not whole"
+    else:
+        reason = f"{len(current)} sprints are open at once, and which one is a person's answer"
+    return {
+        "grouping": name,
+        "field": field,
+        "boards": len(boards),
+        "at_limit": cut,
+        "current": current,
+        "value": None if one is None else one["value"],
+        "name": None if one is None else one["name"],
+        "ask": reason,
+    }
+
+
 def read_vocabulary() -> dict:
     """What this project states its own words are, before a configuration exists.
 
@@ -2341,6 +2531,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "read_relations": read_relations,
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
+    "read_current_grouping": read_current_grouping,
     # ⛔ The operations this tracker has nothing to implement against are named
     # once, below, and read from there by the suite.
 })

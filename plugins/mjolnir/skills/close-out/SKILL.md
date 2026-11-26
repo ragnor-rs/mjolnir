@@ -43,7 +43,7 @@ this role is mapped at all.
 
 Where the record is a grouping, which grouping arrives on this role's invocation —
 [`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into)'s `current` is
-read by nothing in the procedure under either of its values, so the value is handed over with `--in`
+read by this role under neither of its values, so the value is handed over with `--in`
 and a pass given none **stops naming what it needs**. ⛔ Never resolved to whatever the tracker
 answered with: an order read off the wrong time box is the one wrong answer that looks right.
 
