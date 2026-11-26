@@ -3405,6 +3405,17 @@ is too young.
 `probe: null` is that key's stated absence, and then the leases are the whole of the count. A
 resource that cannot be asked how many are held is ordinary, not a resource whose count is zero.
 
+⛔ **The leases are counted per repository and never per tree**, so `subject: tree` queues two
+trees of one repository against each other from the moment one of them takes a place, rather than
+from the moment the probe sees it. The store is keyed by the repository's common git directory,
+which every work tree of it resolves to alike, and by the skills root's place inside its tree, so
+two projects living in one repository still count apart and two repositories on one machine never
+share a place. Read in the code: keyed by the skills root's own path, each tree counted alone, and
+what held the cap across trees was the probe, which counts nothing during a launch. Where git
+answers nothing about the skills root, the key is the skills root's own path, so a directory with
+no repository behind it has one place as before. Nothing about the key is configured: the store is
+the guard's own scratch, and no project states where it lives.
+
 ⛔ **Every exit path either releases the lease or is proved not to fire, and one path is closed by a
 reading rather than an event.** The proof is per path and is not a reading: a path a guard
 registers nothing for, and a path whose event the harness does not publish, read identically from
