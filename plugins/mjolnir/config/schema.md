@@ -9315,8 +9315,9 @@ configuration wrapper, which is what § 38 refuses for prose by declaring no doc
 heading, no wording and no style. The measured candidate is a role that writes a specification from
 raw sources: its per-project values are a document set, a section list per document, a directory
 convention and a validation pass per document, every one of them arriving as data. Legs of the
-route do read a specification: [§ 39](#39-the-specification-corpus-and-which-copy-of-it-governs)'s
-corpus is read by the filing, starting and implementing roles, and
+route do read a specification: § 39's corpus is read by
+[the roles that section names](#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read),
+and
 [§ 42](#42-whether-the-work-is-already-built-and-where-a-role-asks) reads the code against an item
 that may have been written from one. What each of them reads is the document a project already
 holds, at its ref, and not one of them reads the writer's values — no leg asks which documents a
@@ -9378,7 +9379,7 @@ What the loop still does around it, unchanged by the route:
 
 - [§ 5](#5-readiness-gate--an-ordered-predicate-list)'s gate and
   [§ 10](#the-claim-on-a-work-item)'s claim, on the routed item as on any other;
-- [§ 11](#what-a-source-establishes-and-the-hole-a-distillation-reads-over)'s three source rules,
+- [§ 11](#what-a-source-establishes-and-the-hole-a-distillation-reads-over)'s source rules,
   on the filing leg;
 - the filing role's duplicate search, for every item the breakdown files through that role;
 - § 39's reading of the specification once the project configures it as a corpus — the document
