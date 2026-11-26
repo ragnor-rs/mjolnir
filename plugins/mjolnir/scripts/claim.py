@@ -1585,13 +1585,27 @@ def read_resource_up(
     The rule is § 10's *The resource a tree started* and is not restated here. `left` is how many
     seconds the caller has, unstated where nothing bounds it but the check's own limit.
     """
+    up, why = resources_up(root, tree, command, left)
+    return ", ".join(up), why
+
+
+def resources_up(
+    root: str | Path, tree: str | Path, command: str, left: float | None = None
+) -> tuple[list[str], str | None]:
+    """`(each resource the tree's check prints, one per line, why it went unanswered)`.
+
+    The reading `read_resource_up` joins into one sentence, kept line by line for a caller that
+    acts on each resource rather than naming them.
+    """
     bound = RESOURCE_UP_SECONDS if left is None else min(RESOURCE_UP_SECONDS, left)
     if bound < RESOURCE_UP_FLOOR_SECONDS:
-        return "", f"it was not asked: {max(bound, 0):.0f}s were left of the time this run may take"
+        return [], (
+            f"it was not asked: {max(bound, 0):.0f}s were left of the time this run may take"
+        )
     said, complained, why = _run_for_tree(root, tree, command, bound)
     if why is not None:
-        return "", why + _ended(complained)
-    return ", ".join(" ".join(line.split()) for line in said.splitlines() if line.strip()), None
+        return [], why + _ended(complained)
+    return [" ".join(line.split()) for line in said.splitlines() if line.strip()], None
 
 
 @dataclass(frozen=True)

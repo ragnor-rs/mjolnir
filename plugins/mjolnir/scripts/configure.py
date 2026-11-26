@@ -900,6 +900,11 @@ ANSWERED_BY: dict[str, Answer] = {
         "bare command, once the host confirms it? Unstated, the next session's sweep "
         "does it.",
     ),
+    "branch_model.stop_on_merge": ask(
+        "Should what a change's tree started be stopped right after a merge the session "
+        "makes, once the host confirms it, keeping the tree? Unstated, it runs until the "
+        "tree is released or swept.",
+    ),
     "branch_model.prune_on_open": ask(
         "Should the sweep as a session opens remove landed trees, or only say which it "
         "would remove? Unstated, it removes them.",

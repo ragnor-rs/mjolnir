@@ -875,6 +875,35 @@ def release(store: Path, session: str, scope: str, command: str, now: float) -> 
     return given
 
 
+def release_tree(store: Path, tree: str | Path, now: float) -> list[dict]:
+    """Give back every `subject: tree` place held by `tree` or a directory below it.
+
+    The rule is schema § 10 → *The resource a merged change's tree holds*. ⛔ Whichever session
+    took the place and whether or not its call was backgrounded: the caller has already read the
+    tree's resource back as stopped, which is what a backgrounded place waits on. A `subject: call`
+    place carries a digest and no tree, so it is never matched here.
+    """
+    try:
+        held = os.path.realpath(str(tree))
+    except OSError:
+        return []
+    given = []
+    for path, lease in live_leases(store, now):
+        if lease.get("subject") != "tree":
+            continue
+        stated = str(lease.get("key") or "")
+        # ⚠️ Absolute or nothing: a relative key would resolve against wherever this process
+        # stands, which may be the very tree being released.
+        if not os.path.isabs(stated):
+            continue
+        key = os.path.realpath(stated)
+        if key != held and not key.startswith(held.rstrip(os.sep) + os.sep):
+            continue
+        path.unlink(missing_ok=True)
+        given.append(lease)
+    return given
+
+
 # --- reading the record ----------------------------------------------------
 
 
