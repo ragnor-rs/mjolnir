@@ -72,6 +72,13 @@ publishes, and a path composed here is the guess
 for the memory store beside it. A past session is summarised from the record the invocation hands
 over, or not at all.
 
+⚠️ **This window is not always the whole session.** A window that was compacted holds a summary of
+what came before, and what that summary dropped is gone from it
+([§ 11](../../config/schema.md#11-session-context)). ⛔ **So where this window was compacted, the
+pass says so before writing anything**, and either the person hands over the session's record or
+the summary covers what the window still holds and the reply names the part it could not read —
+never a summary of the compacted half presented as the session.
+
 What is read, and nothing past it:
 
 | what | where it comes from |
@@ -150,8 +157,10 @@ role composes none**: a path chosen here would be a store this toolkit addressed
   legitimate here and is not in the billing role**, because a summary carries none of
   [§ 28](../../config/schema.md#28-a-configured-value-a-repository-may-not-hold)'s values — step 4
   keeps the money out of it.
-- ⚠️ **A destination that already holds a summary is replaced whole**, never appended to: one file
-  is one session.
+- ⚠️ **A destination that already holds a summary of this session is replaced whole**, never
+  appended to: one file is one session. ⛔ **A destination holding anything else is a stop that
+  names it** — another session's summary or a file this role never wrote is somebody's, and
+  replacing it is a loss nothing records.
 
 ## 6. The reply
 
@@ -174,8 +183,9 @@ language and register are step 1's and not these**, so a summary quoted in the r
   the quoted block in this reply**;
 - ⛔ anything that needs the person running this, **asked with the options**
   ([§ Nothing is deferred](../../config/schema.md#nothing-is-deferred)): a triple that is missing or
-  names the build's own people, a destination inside a code root, a session whose record could not
-  be read. Nothing is noted for later — the pass is not finished while a question it raised is open.
+  names the build's own people, a destination inside a code root or holding what this role did not
+  write, a window that was compacted, a session whose record could not be read. Nothing is noted
+  for later — the pass is not finished while a question it raised is open.
 
 ## What this carrier is
 
