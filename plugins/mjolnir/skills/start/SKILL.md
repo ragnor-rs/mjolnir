@@ -182,6 +182,27 @@ carries one root this is the root it has**, whatever an item carries; where the 
 `none` the root arrives on this role's invocation and the reply says so, which is a stated absence
 § 4.7 reports rather than a fault.
 
+**Then the specification copy that governs the item, after the list and before the claim** —
+[`§ 39 → The roles that read it while the work is done`](../../config/schema.md#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read)
+states who reads it, when and what each outcome means, and ⛔ **this file restates none of it**,
+the filing and implementing roles reading the same rule:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/spec_corpus.py" --role start \
+  --version <the value the item carries for the corpus's grouping> [--keyword <a term from the item>]…
+```
+
+- ⛔ **The version is read off the item and never worked out**, and an item carrying none is a stop
+  reported as unanswered — never a run with no version.
+- ⛔ **A contradiction between the item and what comes back stops the start before the claim**,
+  reported with the ref it was read at. Whether there is one is this role's reading of the text and
+  not the carrier's.
+- ⚠️ **An unread answer names one fetch**: run it and read again, and a second unread answer is the
+  stop.
+- ⛔ **The reply carries the first line of the report as it came back** — which copy, the fallback,
+  *no corpus is configured*, or *not asked* — and never turns either of the last two into *nothing
+  contradicts the item*.
+
 ## 4. The claim is the branch
 
 **The claim is the branch, and publishing the ref is what makes it one.** The rule, both arms of

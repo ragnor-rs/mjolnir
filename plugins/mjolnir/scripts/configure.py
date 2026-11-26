@@ -1539,6 +1539,19 @@ ANSWERED_BY: dict[str, Answer] = {
         "the value the item carries — no second key states a branch-naming "
         "scheme (§ 39, § 4.8).",
     ),
+    "spec_corpus.while_working.roles": ask(
+        "Besides the filing role, which always reads it, should the starting "
+        "or implementing role read the copy that governs the item they hold? "
+        "⚠️ Leaving both out is a real answer and keeps the corpus a filing "
+        "read. ⛔ Where the starting role reads it, a contradiction between the "
+        "item and the specification stops the start (§ 39).",
+    ),
+    "spec_corpus.while_working.files": ask(
+        "Should those roles load less than the whole corpus, so the window is "
+        "not filled? ⛔ A document is loaded only where it matches both these "
+        "globs and the corpus's own, so this can narrow and never widen; "
+        "leaving it out loads the whole corpus (§ 39).",
+    ),
 
     # --- § 41. What a deployed item is judged against ----------------------
     "verify.carrier": ask(

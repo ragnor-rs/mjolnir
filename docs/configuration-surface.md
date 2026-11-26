@@ -4157,6 +4157,27 @@ the wrong key, and a plant certifying the wrong arm. ⛔ **The fix was to ask th
 the one function that produces it, which is why this rule sits beside § 5's rather than with the
 facet's own glob arms.
 
+### The roles that hold the item read it too, where the project says so
+
+One adopter loads its version's specification at start and again while implementing, and the
+filing role is the only one here that reads it. ⛔ **The answer is a list of roles and not a second
+read**: `while_working.roles` names which of the starting and implementing roles run the same
+command, at the same ref, for the item they hold —
+[`schema.md § 39 → The roles that read it while the work is done`](../plugins/mjolnir/config/schema.md#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read).
+
+| what was weighed | what the surface says, and why |
+|---|---|
+| reading at every leg wherever a corpus is carried | **opted into instead.** Every project carrying a corpus today would start paying for it in the window on every item, and a corpus written for filing decisions is not necessarily one the work is held to. A project that states nothing reads at filing alone |
+| the filing role as a value of the list | **refused.** It reads wherever a corpus is carried, so the entry would be a key that changes nothing |
+| a size cap on what is loaded | **refused, in favour of a glob list.** A truncated specification is the wrong copy one step further on, which is the carrier's own reason for capping nothing; `while_working.files` lets the project say what is loaded |
+| a narrowing list read as a corpus of its own | **an intersection instead.** A document is loaded only where both lists match it, so a glob reaching outside `files` cannot widen the read |
+| an item carrying no version falling back | **a stop.** The fallback is for a version with no branch; an item naming no version has no governing copy to decide, and reading the integration branch for it would read as the version's own |
+
+⛔ **The two roles add a statement the filing role never needed**: *this project does not have this
+role read its corpus*. It is neither the absent subject nor a verdict, and the carrier prints it in
+its own words so that a role asked to read nothing cannot report that nothing contradicts the item
+([`schema.md § 39 → The roles that read it while the work is done`](../plugins/mjolnir/config/schema.md#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read)).
+
 ## The role that writes a specification: two implementations, and the half already carried
 
 A role that turns raw source material into a specification and then into work items was named as
