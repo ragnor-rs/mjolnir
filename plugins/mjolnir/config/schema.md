@@ -2391,6 +2391,42 @@ writer is.
 A status stating `writer` is asked for no path, and one handed over is not read. What a grouping's
 close needs of a classed status is [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s.
 
+#### A commitment written apart from the move
+
+The two values an item is committed with — [§ 4.3](#43-estimate)'s estimate and
+[§ 4.5](#45-due-date)'s date — each take a `writer` of their own, from the set above:
+
+```yaml
+statuses:
+  - { name: "…", role: ready, writer: orderer }
+work_item:
+  estimate: { carrier: field, field: "…", writer: procedure }
+  due_date: { carrier: native, writer: procedure }
+```
+
+⛔ **A value stating no `writer` has the writer of the status whose role is `ready`**, so a project
+that states none behaves as it always did: where a person admits the item, the gating role writes
+neither value. ⚠️ A `ready` status stating `writers` has no one writer before any work exists, so a
+value under it with no `writer` of its own is written by nobody.
+
+⛔ **The gating role writes a value whose writer is `procedure`, and makes the move only where the
+status's writer is `procedure` too.** Where the move is somebody else's, it writes the values, then
+reports the move for that writer and names who it is. ⛔ **Where the move is the procedure's and a
+carried value is somebody else's, the move waits for that value** and the report names it: an item
+admitted without its commitment reads as gated to every role after it. ⚠️ **What a person's move
+costs is an item carrying its commitment and still outside the committed set** until the person
+moves it. A project stating the key has accepted that cost; one that states nothing still gets the
+all-or-nothing rule.
+
+⛔ **A value written `procedure` under a `ready` status written `never` is refused when the
+configuration is read**, naming the value's key. `never` states that the tracker credential acts as
+a person, so any write would read as that person speaking. A field writer cannot override that.
+⛔ So is a `writer` on a value whose carrier is `none`, which names a writer for nothing, and one on
+a project that maps no `ready` status, where no gate commits anything.
+
+What the gating role reads is one answer, not three keys: `config.py --commitment` reports each
+carried value with its writer and where that writer came from, and the move with its own writer.
+
 ### 4.3 Estimate
 
 ```yaml
@@ -2401,12 +2437,14 @@ work_item:
     values: [1, 2, 5, 8, 13]
     label_prefix: "E:"           # when carrier is label
     band: top                    # when each rung is the top of a band
+    writer: "…"
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
 
 Four carriers observed, plus a deliberate absence. `carrier: none` with a stated reason is a
-first-class setting; an unset carrier is a misconfiguration.
+first-class setting; an unset carrier is a misconfiguration. Who writes the estimate is covered in
+[§ 4.2 → A commitment written apart from the move](#a-commitment-written-apart-from-the-move).
 
 ⛔ **One rule here is procedure, not configuration, and holds everywhere:** an estimate is a
 bound written before the work, and a logged hour is a measurement written after. **Never move a
@@ -2514,6 +2552,7 @@ work_item:
   due_date:
     carrier: native | field | none           # required; absent_reason
     field: "…"                   # when carrier is field
+    writer: "…"
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2521,7 +2560,9 @@ work_item:
 The date an item is committed for. **Which role writes it is § The loop's statement and is not
 restated here**; what belongs here is why that role and no other: filing writes the item before
 anyone has committed to it and starting is downstream of the commitment, so a date set in either
-place is a promise made where nobody was asked for one.
+place is a promise made where nobody was asked for one. Whether that role writes it where a person
+makes the move is covered in
+[§ 4.2 → A commitment written apart from the move](#a-commitment-written-apart-from-the-move).
 
 `native` is the tracker's own due date and `field` is a named field where the tracker has none.
 ⚠️ **The carrier says where a date is written, never what the date is.** What computes one is not
