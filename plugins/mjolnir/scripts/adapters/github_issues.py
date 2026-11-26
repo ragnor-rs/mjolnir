@@ -1132,6 +1132,21 @@ def mark_grouping_released(value: str, *, grouping: dict) -> dict:
     }
 
 
+def open_groupings(*, grouping: dict) -> dict:
+    """The open milestones, in the order of their due dates (§ 3).
+
+    ⛔ The order and the unplaced ones are `_code_host_milestone`'s, shared with
+    the board beside this module. ⚠️ The listing is read whole, through the
+    host's own pagination, so nothing here is cut by a page bound.
+    """
+    _native_milestone(grouping, "open_groupings")
+    return {
+        "grouping": (grouping or {}).get("name"),
+        "at_limit": False,
+        **milestone.open_in_order(_milestones()),
+    }
+
+
 def self_test() -> int:
     """This implementation's suite, which lives in the module beside it.
 
@@ -1233,6 +1248,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
     "create_grouping": create_grouping,
+    "open_groupings": open_groupings,
     "mark_grouping_released": mark_grouping_released,
     # ⛔ The operations this tracker has nothing to implement against are named
     # once, below, and read from there by the suite.

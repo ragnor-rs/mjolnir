@@ -72,3 +72,37 @@ def named(milestones: list, value: str, repo: str) -> dict:
             "is absent.",
         )
     return found
+
+
+def open_in_order(milestones: list) -> dict:
+    """The open milestones in this host's own order, which is the due date.
+
+    ⛔ **Ordered by the date the host holds and never by the title**: a title is
+    the project's word and sorts however its spelling happens to, while the due
+    date is the one order this host states for a milestone. ⚠️ Two milestones
+    due on one date keep the host's creation order, its number.
+
+    ⛔ **A milestone with no due date has no place in that order**, so it is
+    listed under `unplaced` rather than put first or last: either end would be a
+    position the host never stated. Both listings' spellings are read -- the
+    REST `due_on` and the GraphQL `dueOn`, and the state in either case.
+    """
+    open_ones = [
+        one for one in milestones if str(one.get("state", "")).lower() == "open"
+    ]
+
+    def due(one: dict):
+        return one.get("due_on") or one.get("dueOn")
+
+    def entry(one: dict) -> dict:
+        return {"value": one.get("title"), "name": one.get("title"), "due": due(one)}
+
+    dated = sorted(
+        (one for one in open_ones if due(one)),
+        key=lambda one: (str(due(one)), int(one.get("number") or 0)),
+    )
+    return {
+        "order": "the milestone's due date",
+        "open": [entry(one) for one in dated],
+        "unplaced": [entry(one) for one in open_ones if not due(one)],
+    }

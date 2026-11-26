@@ -144,6 +144,11 @@ SPRINT_TYPE = "com.pyxis.greenhopper.jira:gh-sprint"
 # The board kind that carries sprints. ⚠️ The other kind answers its sprint list
 # with a refusal rather than an empty one, so a board of it is not asked.
 SPRINTED_BOARD = "scrum"
+# The element type the field catalogue gives a field holding this project's
+# versions -- the fix version among them -- read off the schema, never the name.
+VERSION_TYPE = "version"
+# The version listing's own order, the one a person drags a version to.
+VERSION_ORDER = "sequence"
 
 # The two variables that address the site. ⛔ A pair rather than one token,
 # because this tracker authenticates as a **person**: the credential and the
@@ -2366,9 +2371,10 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
 
 
 def _agile_pages(path: str, params: dict) -> tuple[list[dict], bool]:
-    """Every value a board listing answers, under this module's page ceiling.
+    """Every value an offset-paged listing answers, under this module's page ceiling.
 
-    ⚠️ This interface pages by offset and says `isLast`, where the search above
+    The board listings and the project's version listing page this way. ⚠️ They
+    page by offset and say `isLast`, where the search above
     pages by token; reaching the ceiling is answered as cut rather than whole.
     """
     found: list[dict] = []
@@ -2459,6 +2465,64 @@ def read_current_grouping(*, grouping: dict) -> dict:
         "value": None if one is None else one["value"],
         "name": None if one is None else one["name"],
         "ask": reason,
+    }
+
+
+def _holds_versions(found: dict) -> bool:
+    """Whether a catalogue field holds this project's versions, one or a list."""
+    schema = found.get("schema") or {}
+    return VERSION_TYPE in (schema.get("type"), schema.get("items"))
+
+
+def open_groupings(*, grouping: dict) -> dict:
+    """This project's unreleased versions, in the project's own version order (§ 3).
+
+    ⛔ **Answered for a field holding versions and nothing else.** A version list
+    is the one grouping here with an order the tracker keeps -- the position a
+    person drags a version to -- and the listing answers in that order, so it is
+    kept and never re-sorted. A field of any other type carries no order, so it
+    is refused with its key named.
+
+    ⛔ **Released and archived versions are not open.** Each comes back by its
+    name, which is what a version field is written by here.
+    """
+    name = (grouping or {}).get("name")
+    key = f"work_item.grouping.{name}.field"
+    if (grouping or {}).get("carrier") != "field":
+        raise ConfigError(
+            f"work_item.grouping.{name}.carrier",
+            f"is {(grouping or {}).get('carrier')!r}, and the open groupings are "
+            "read here off a field holding this project's versions, in the "
+            "project's version order. A grouping held anywhere else has no order "
+            "this tracker keeps.",
+        )
+    field = str((grouping or {}).get("field"))
+    if not _holds_versions(_field_named(field, key=key)):
+        raise ConfigError(
+            key,
+            f"names `{field}`, which does not hold this project's versions on this "
+            "site. A version list is the one grouping here with an order the "
+            "tracker keeps, so a grouping held in another field has nothing for a "
+            "position to be counted in.",
+        )
+    # ⛔ The paged listing asked for `sequence`, and never the unpaged one: that
+    # one states no order at all, so a read off it would be counting positions
+    # in whatever order a site happened to answer.
+    versions, cut = _agile_pages(
+        f"/project/{_project_key()}/version", {"orderBy": VERSION_ORDER}
+    )
+    open_ones = [
+        {"value": version.get("name"), "name": version.get("name")}
+        for version in versions
+        if not version.get("released") and not version.get("archived")
+    ]
+    return {
+        "grouping": name,
+        "field": field,
+        "order": "the project's version order",
+        "at_limit": cut,
+        "open": open_ones,
+        "unplaced": [],
     }
 
 
@@ -2574,6 +2638,7 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
     "read_current_grouping": read_current_grouping,
+    "open_groupings": open_groupings,
     # ⛔ The operations this tracker has nothing to implement against are named
     # once, below, and read from there by the suite.
 })

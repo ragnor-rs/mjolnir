@@ -18,19 +18,23 @@ and is cited rather than argued here. ⚠️ **So the two arms are asymmetric by
 
 ⛔ **The changes are read from the repository, never taken on the invocation.** A change is a
 commit on the first-parent history of a code root's integration branch -- § 10's derivation,
-through the claim carrier -- whose working day falls inside the period. ⚠️ **What one change is
+through the claim carrier -- or of a branch its `host.landing.bases` matches, counted once and
+never for a merge that only moves landed work between them (§ 2), whose working day falls inside
+the period. ⚠️ **What one change is
 follows the root's `host.landing.method`** (§ 2): under `squash` it is one commit; under
 `merge_commit` it is a merge, and its item is read off every commit the merge brought in as well as
 off its own message, the host's merge message naming the pull request rather than the item; under
 `rebase` the host leaves nothing grouping a pull request's commits, so each landed commit is a
 change of its own and the report says that it was read that way. ⚠️ **A change committed to a
-branch other than the integration branch has not shipped until it reaches it**, and arrives then as
-part of whatever change brought it in. ⚠️ **The work item a
+branch other than those has not shipped until it reaches one**, and arrives then as part of
+whatever change brought it in. ⚠️ **The work item a
 change names is read off its message through the reference the tracker port itself composes**
 (`link_for_close`), so this file carries no host's closing grammar. ⛔ **A change naming no item is
 reported as naming none, and is not classified**: § 30 states that no role but two reads the
 exempt facet, so a change committed outside the loop appears here exactly as it landed -- among
-the period's changes, with no work item to name. ⚠️ **Where the port composes no reference, every
+the period's changes, with no work item to name. ⚠️ **Where the port composes no reference, the
+item is read from the references a line of the message opens with, in the root's title form**
+(§ 3's fallback, through `title_form.py`); ⚠️ **where the root states no title form either, every
 change's item is reported unread**, never *none*: a reference nothing could recognise and a change
 that carries none read alike otherwise.
 
@@ -55,6 +59,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import fnmatch
 import json
 import os
 import re
@@ -71,6 +76,7 @@ import boundary as ingestion  # noqa: E402 -- § 11's step, run where text from 
 import claim  # noqa: E402 -- § 10's derivation of the integration branch, not a second one
 import config as reader  # noqa: E402 -- the one reader of the surface
 import port as ports  # noqa: E402 -- the one door to a tracker and to a day log's store
+import title_form  # noqa: E402 -- § 2's title form, read where no closing reference is composed
 
 DISTRIBUTED, STOPPED, OFFERED, UNREADABLE = 0, 1, 3, 4
 
@@ -356,46 +362,79 @@ def shipped(root_name: str, view, first: str, last: str, pattern: re.Pattern | N
                            capture_output=True, text=True).returncode == 0
     ref = remote_ref if known else branch
     method = view.get("host.landing.method")
-    log = _git(code_root, "log", "--first-parent",
-               f"--format=%H{FIELD}%P{FIELD}%cI{FIELD}%s{FIELD}%B{RECORD}", ref)
-    changes = []
-    for record in log.split(RECORD):
-        record = record.strip("\n")
-        if not record:
-            continue
-        commit, parents, stamp, subject, message = record.split(FIELD, 4)
-        day = working_day(stamp, day_start)
-        if not first <= day <= last:
-            continue
-        read = message
-        parents = parents.split()
-        if method == "merge_commit" and len(parents) > 1:
-            # The commits the merge brought in, which is where a closing reference is written.
-            read += "\n" + _git(code_root, "log", "--format=%B", f"{parents[0]}..{commit}")
-        if pattern is None:
-            item = None
-        else:
-            found = sorted({int(m["item"]) for m in pattern.finditer(read)})
-            item = [str(number) for number in found]
-        changes.append({
-            "root": root_name,
-            "commit": commit,
-            "committed": stamp,
-            "day": day,
-            "subject": subject,
-            "message": read.strip(),
-            # ⛔ None is unread and [] is a change naming no item -- two answers, never one.
-            "items": item,
-        })
-    tip = _git(code_root, "rev-parse", ref).strip()
-    return changes, {
+    try:
+        bases = view.landing_bases()
+        titled = None if pattern is not None else view.pull_request_title()
+    except reader.ConfigError as error:
+        raise Stop(f"{root_name}: {error}") from error
+    # ⚠️ § 2's `bases`: every branch the project lands a change on, read beside the integration
+    # branch -- the remote's copies where the integration branch is read there, the local
+    # branches where it is not. ⛔ None where nothing is stated, which reads as before.
+    under = f"refs/remotes/{REMOTE}/" if known else "refs/heads/"
+    landed_on = [ref]
+    if bases:
+        listed = _git(code_root, "for-each-ref", "--format=%(refname)", under)
+        # Named the way the integration branch is: the full ref on the remote, the branch locally.
+        landed_on += sorted(
+            name if known else name[len(under):] for name in listed.split()
+            if name[len(under):] not in (branch, "HEAD")
+            and any(fnmatch.fnmatchcase(name[len(under):], glob) for glob in bases))
+    logs = {where: _git(code_root, "log", "--first-parent",
+                        f"--format=%H{FIELD}%P{FIELD}%cI{FIELD}%s{FIELD}%B{RECORD}", where)
+            for where in landed_on}
+    records = {where: [r.strip("\n").split(FIELD, 4) for r in logs[where].split(RECORD)
+                       if r.strip("\n")] for where in landed_on}
+    # Every commit a read branch's first-parent history holds: a merge whose other parent is one
+    # of them moves work already landed between the branches, and is not a change of its own.
+    moved = {r[0] for where in landed_on for r in records[where]} if bases else set()
+    changes, seen = [], set()
+    for where in landed_on:
+        for commit, parents, stamp, subject, message in records[where]:
+            # ⛔ Once, wherever it is reached from: a fast-forward puts one commit on two branches.
+            if commit in seen:
+                continue
+            seen.add(commit)
+            parents = parents.split()
+            if any(parent in moved for parent in parents[1:]):
+                continue
+            day = working_day(stamp, day_start)
+            if not first <= day <= last:
+                continue
+            read = message
+            if method == "merge_commit" and len(parents) > 1:
+                # The commits the merge brought in, which is where a closing reference is written.
+                read += "\n" + _git(code_root, "log", "--format=%B", f"{parents[0]}..{commit}")
+            if pattern is not None:
+                found = {int(m["item"]) for m in pattern.finditer(read)}
+            elif titled is not None:
+                # § 3's fallback for a port composing no closing reference: the references a
+                # line of the message opens with, in the root's own title form (§ 2).
+                found = {int(number) for line in read.splitlines()
+                         for number in title_form.items_in(view, line.strip()) or ()}
+            else:
+                found = None
+            changes.append({
+                "root": root_name,
+                "commit": commit,
+                "committed": stamp,
+                "day": day,
+                "subject": subject,
+                "message": read.strip(),
+                # ⛔ None is unread and [] is a change naming no item -- two answers, never one.
+                "items": None if found is None else [str(number) for number in sorted(found)],
+            })
+    read_by = ("the tracker's closing reference" if pattern is not None
+               else "the title form" if titled is not None else None)
+    return changes, [{
         "root": root_name,
-        "ref": ref,
-        "at": tip,
+        "ref": where,
+        "at": _git(code_root, "rev-parse", where).strip(),
         "remote_copy": known,
         "landing_method": method,
         "each_commit_a_change": method == "rebase",
-    }
+        "integration_branch": where == ref,
+        "items_read_by": read_by,
+    } for where in landed_on]
 
 
 # --- the offer, which is the only time a store is read ---------------------------------------
@@ -496,7 +535,9 @@ def breakdown(skills_root: str, first: str, last: str, hours: str | None, weight
     for name in configuration.root_keys:
         found, where = shipped(name, configuration.root(name), first, last, pattern, day_start)
         changes.extend(found)
-        read_from.append(where)
+        read_from.extend(where)
+    unread_roots = sorted({where["root"] for where in read_from
+                           if where["items_read_by"] is None})
     # ⛔ Oldest first across every root, so the tie the distribution breaks by position goes to
     # the change that landed first rather than to whichever root is listed first.
     changes.sort(key=lambda change: _moment(change["committed"]))
@@ -544,9 +585,10 @@ def breakdown(skills_root: str, first: str, last: str, hours: str | None, weight
         "sum_of_parts": duration.write(sum(parts)),
         "sum_of_units": sum(parts),
         "item_reference": None if pattern is None else pattern.pattern,
-        "item_reference_unread": None if pattern else
-        "the tracker port composes no closing reference, so every change's item is unread "
-        "(§ 3) -- never a change naming none.",
+        "item_reference_unread": None if not unread_roots else
+        "the tracker port composes no closing reference and "
+        + ", ".join(unread_roots) + " states no title form, so every change's item there is "
+        "unread (§ 3) -- never a change naming none.",
         "changes": changes,
         "ingestion": surfaced_report,
     })
@@ -615,7 +657,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _a_project(base: str, name: str, days=(), *, carrier=True, landing="squash",
-               triple=None) -> str:
+               triple=None, bases=None, example="none.yaml") -> str:
     """One real project over a real git repository, with a day log of its own."""
     import yaml
 
@@ -623,12 +665,14 @@ def _a_project(base: str, name: str, days=(), *, carrier=True, landing="squash",
     os.makedirs(os.path.join(root, ".claude"))
     store = os.path.join(base, name + "-hours")
     os.makedirs(store)
-    with open(os.path.join(reader.EXAMPLES, "none.yaml"), encoding="utf-8") as handle:
+    with open(os.path.join(reader.EXAMPLES, example), encoding="utf-8") as handle:
         data = yaml.safe_load(handle.read())
     if not carrier:
         data["carriers"] = {key: value for key, value in data["carriers"].items()
                             if key != "day_log"}
     data["host"]["landing"]["method"] = landing
+    if bases is not None:
+        data["host"]["landing"]["bases"] = bases
     if triple is not None:
         data["language"].setdefault("artifacts", {})["hours_breakdown"] = triple
     data["day_log"] = dict(data.get("day_log") or {})
@@ -670,13 +714,13 @@ def _merge(root: str, branch: str, message: str, when: str) -> None:
                    check=True, env=env)
 
 
-def _a_clone(base: str, source: str) -> str:
+def _a_clone(base: str, source: str, name: str = "clone", branches=("main",)) -> str:
     """A clone of `source` through a bare remote, carrying the same configuration."""
-    remote = os.path.join(base, "remote.git")
+    remote = os.path.join(base, name + "-remote.git")
     subprocess.run(["git", "init", "-q", "--bare", remote], check=True)
-    subprocess.run(["git", "-C", source, "push", "-q", remote, "main"], check=True)
+    subprocess.run(["git", "-C", source, "push", "-q", remote, *branches], check=True)
     subprocess.run(["git", "-C", remote, "symbolic-ref", "HEAD", "refs/heads/main"], check=True)
-    clone = os.path.join(base, "clone")
+    clone = os.path.join(base, name)
     subprocess.run(["git", "clone", "-q", remote, clone], check=True)
     os.makedirs(os.path.join(clone, ".claude"))
     with open(os.path.join(source, ".claude/mjolnir.yaml"), encoding="utf-8") as handle:
@@ -1004,6 +1048,83 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("under merge_commit a merge names the item its brought-in commits close",
               len(merge) == 1 and merge[0]["items"] == ["5"] and len(report["changes"]) == 3,
               report.get("changes"))
+
+        # § 2's `bases`: every change lands on a grouping branch, and `main` has not moved.
+        def a_grouped_history(name: str, **options) -> tuple[str, list[str]]:
+            project = _a_project(base, name, **options)
+            _commit(project, "Start", "2026-10-01T10:00:00+00:00")
+            _checkout(project, "-b", "release/1.0")
+            landed_there = [_commit(project, f"Change {n}\n\nCloses #{n}.",
+                                    f"2026-11-0{n}T10:00:00+00:00") for n in (2, 3)]
+            _checkout(project, "main")
+            return project, landed_there
+
+        grouping, on_release = a_grouped_history("grouping", bases=["release/*"])
+        try:
+            status, report = breakdown(grouping, "2026-11-01", "2026-11-30", "4", [],
+                                       tracker_from=closes)
+        except Stop as stop:
+            status, report = STOPPED, {"changes": [], "read_from": [], "stop": str(stop)}
+        check("changes landed on a grouping branch, main unmoved, are the period's changes",
+              status == DISTRIBUTED and [c["commit"] for c in report["changes"]] == on_release
+              and [c["items"] for c in report["changes"]] == [["2"], ["3"]],
+              report.get("changes"))
+        check("every branch read is reported, the integration branch first and named as such",
+              [(w["ref"], w["integration_branch"]) for w in report["read_from"]]
+              == [("main", True), ("release/1.0", False)], report.get("read_from"))
+        ungrouped, _ = a_grouped_history("ungrouped")
+        check("a project stating no bases reads the integration branch alone, as before",
+              stopped(lambda: breakdown(ungrouped, "2026-11-01", "2026-11-30", "4", [],
+                                        tracker_from=closes)) is not None
+              and reader.load(ungrouped, check_paths=False).root("code").landing_bases() == [])
+        subprocess.run(["git", "-C", grouping, "merge", "-q", "--ff-only", "release/1.0"],
+                       check=True)
+        status, report = breakdown(grouping, "2026-11-01", "2026-11-30", "4", [],
+                                   tracker_from=closes)
+        check("a change fast-forwarded on to main from its grouping branch is counted once",
+              [c["commit"] for c in report["changes"]] == on_release, report.get("changes"))
+        remote_grouped = _a_clone(base, grouping, "grouped-clone",
+                                  branches=("main", "release/1.0"))
+        status, report = breakdown(remote_grouped, "2026-11-01", "2026-11-30", "4", [],
+                                   tracker_from=closes)
+        check("where the integration branch is read on the remote, so is every base",
+              [w["ref"] for w in report["read_from"]]
+              == ["refs/remotes/origin/main", "refs/remotes/origin/release/1.0"]
+              and [c["commit"] for c in report["changes"]] == on_release,
+              report.get("read_from"))
+
+        # A release merged into main moves landed work; it is not a change of its own.
+        promoted = _a_project(base, "promoted", landing="merge_commit", bases=["release/*"])
+        _commit(promoted, "Start", "2026-10-01T10:00:00+00:00")
+        _checkout(promoted, "-b", "release/2.0")
+        _checkout(promoted, "-b", "topic")
+        _commit(promoted, "The work\n\nCloses #7.", "2026-11-02T10:00:00+00:00")
+        _checkout(promoted, "release/2.0")
+        _merge(promoted, "topic", "Merge pull request #8 from topic", "2026-11-03T10:00:00+00:00")
+        _checkout(promoted, "main")
+        _merge(promoted, "release/2.0", "Merge release/2.0", "2026-11-20T10:00:00+00:00")
+        status, report = breakdown(promoted, "2026-11-01", "2026-11-30", "4", [],
+                                   tracker_from=closes)
+        check("a grouping branch merged into main is no change; the merge into it is one",
+              [(c["subject"], c["items"]) for c in report["changes"]]
+              == [("Merge pull request #8 from topic", ["7"])], report.get("changes"))
+
+        # § 3's fallback on the real Jira port, which composes no closing reference: the item is
+        # read from the title form a line of the change's message opens with.
+        jira = _a_project(base, "jira", example="jira.yaml")
+        _commit(jira, "[KEY-12] A change (#3)", "2026-11-02T10:00:00+00:00")
+        _commit(jira, "[KEY-4][KEY-5] Two at once (#6)", "2026-11-03T10:00:00+00:00")
+        _commit(jira, "A change naming nothing, [KEY-9] later in it", "2026-11-04T10:00:00+00:00")
+        status, report = breakdown(jira, "2026-11-01", "2026-11-30", "3", [])
+        check("on the Jira port each change names its item through the title form",
+              status == DISTRIBUTED
+              and [c["items"] for c in report["changes"]] == [["12"], ["4", "5"], []]
+              and report["read_from"][0]["items_read_by"] == "the title form"
+              and report["item_reference_unread"] is None, report.get("changes"))
+        check("and per item, each line names its item",
+              [line["item"] for line in
+               breakdown(jira, "2026-11-01", "2026-11-30", "3", [], per_item=True)[1]["lines"]]
+              == ["12", None, None])
 
         # The resolution and the unit words are the triple's, read through the configuration.
         stated = _a_project(base, "minutes", triple={

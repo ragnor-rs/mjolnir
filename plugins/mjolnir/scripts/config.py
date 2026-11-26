@@ -1622,6 +1622,19 @@ def _mappable_facets(facts: dict) -> list[str]:
 def _grouping_default(data: dict, facts: dict, entry: dict, at: str) -> None:
     """§ 4.8's stated default: `default_from` and `default_map`, held together."""
     source, mapping = entry.get(DEFAULT_FROM_KEY), entry.get(DEFAULT_MAP_KEY)
+    by = entry.get(DEFAULT_BY_KEY)
+    if by is not None and by not in DEFAULTS_BY:
+        raise ConfigError(
+            f"{at}.{DEFAULT_BY_KEY}",
+            f"is {by!r}; it says what each `{DEFAULT_MAP_KEY}` value names, which "
+            f"is {' | '.join(DEFAULTS_BY)} (§ 4.8).",
+        )
+    if by is not None and mapping is None:
+        raise ConfigError(
+            f"{at}.{DEFAULT_BY_KEY}",
+            f"is stated with no `{DEFAULT_MAP_KEY}`: it says what that map's values "
+            "name, so with no map it describes nothing (§ 4.8).",
+        )
     if source is None and mapping is None:
         return
     if source is None or mapping is None:
@@ -1675,6 +1688,13 @@ def _grouping_default(data: dict, facts: dict, entry: dict, at: str) -> None:
                 f"{at}.{DEFAULT_MAP_KEY}",
                 f"maps {key!r} to {value!r}; each entry names the grouping an item "
                 "with that value goes into, as a non-empty string (§ 4.8).",
+            )
+        if by == BY_POSITION and value not in (*POSITIONS, LAST_POSITION):
+            raise ConfigError(
+                f"{at}.{DEFAULT_MAP_KEY}",
+                f"maps {key!r} to {value!r} under `{DEFAULT_BY_KEY}: {BY_POSITION}`, "
+                "where each entry is a position among the open groupings: "
+                f"{', '.join(POSITIONS)} or {LAST_POSITION} (§ 4.8).",
             )
 
 
@@ -2290,6 +2310,17 @@ class Config:
                     "report": f"`{at}.{DEFAULT_MAP_KEY}` carries no entry for `{source}` "
                     f"{from_value!r}, so the grouping is asked for (§ 4.8)"}
         value = mapping[from_value]
+        if block.get(DEFAULT_BY_KEY) == BY_POSITION:
+            # ⛔ The reader holds no tracker, so the position is handed on rather
+            # than counted here: a value worked out from a list this module never
+            # read would be the guess § 4.8 forbids.
+            return {**answer, "source": BY_POSITION, "position": value,
+                    "rule": {"from": source, "value": from_value,
+                             "entry": f"{at}.{DEFAULT_MAP_KEY}"},
+                    "report": f"mapped from `{source}` {from_value!r} to the {value} "
+                    f"open grouping by `{at}.{DEFAULT_MAP_KEY}`; the position is "
+                    "counted over the tracker's open groupings by `port.py "
+                    "--default-of` (§ 4.8)"}
         return {**answer, "value": value, "source": "map",
                 "rule": {"from": source, "value": from_value, "entry": f"{at}.{DEFAULT_MAP_KEY}"},
                 "report": f"mapped from `{source}` {from_value!r} to {value!r} by "
@@ -2593,14 +2624,14 @@ class Config:
             )
         key = self.get(f"{PEOPLE_KEY}.key")
         source = self.get(f"{PEOPLE_KEY}.source")
-        path = os.path.normpath(os.path.join(self.skills_root, str(source)))
+        path, tried = _untracked_source(self.skills_root, source)
         try:
             with open(path, encoding="utf-8") as handle:
                 mapping = _load_yaml(handle.read(), f"{PEOPLE_KEY}.source")
         except OSError as error:
             raise ConfigError(
                 f"{PEOPLE_KEY}.source",
-                f"names {source!r}, which did not open at {path!r} "
+                f"names {source!r}, which did not open {_tried(tried)} "
                 f"({error.__class__.__name__}). The pointer is the whole of what this "
                 "facet carries (§ 27), so one that does not resolve is reported -- the "
                 "map is not guessed at and the running user is not read instead.",
@@ -3365,6 +3396,12 @@ class Config:
         self.get("host.pull_request_title")
         return host_pull_request_title(self.answering.data)
 
+    def landing_bases(self) -> list[str]:
+        """§ 2's `host.landing.bases`: the branch globs a change lands on beside the
+        integration branch, empty where the project lands on that branch alone."""
+        self.get("host.landing.bases")
+        return host_landing_bases(self.answering.data)
+
     def release(self) -> dict | None:
         """§ 34's `release`, or `None` where no file here carries a version.
 
@@ -3656,6 +3693,7 @@ class Config:
             "advances": entry.get("advances"),
             "requires_role": entry.get("requires_role"),
             "grouping": entry.get("grouping"),
+            "excludes": dict(entry.get(EXCLUDES) or {}),
             "choices": shown["choices"],
             "commit": commit,
         }
@@ -5002,6 +5040,18 @@ GROUPING_REF_CHECK = "grouping_ref_exists"
 # facet's values to the grouping's.
 DEFAULT_FROM_KEY = "default_from"
 DEFAULT_MAP_KEY = "default_map"
+# What each value of that map names: a grouping by its own value, or a position
+# among the groupings the tracker holds open, counted in the tracker's order.
+# ⛔ `value` is the reading where the key is absent, so a project stating nothing
+# new reads its map exactly as before.
+DEFAULT_BY_KEY = "default_by"
+BY_VALUE, BY_POSITION = "value", "position"
+DEFAULTS_BY = (BY_VALUE, BY_POSITION)
+LAST_POSITION = "last"
+POSITIONS = (
+    "first", "second", "third", "fourth", "fifth",
+    "sixth", "seventh", "eighth", "ninth", "tenth",
+)
 
 # The key an entry of either gate check names a grouping by, and the key a
 # `field_present` entry names its field by. ⛔ Spelled here rather than at each
@@ -6180,10 +6230,64 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # one § 33 has with § 16 over `requires` -- the shape is held where the
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
+        _validate_excludes(where, entry, data)
         _validate_advance_requires(where, entry, data, facts)
         _validate_after_verified(where, entry, facts)
         _validate_figures(where, entry, facts)
         _validate_grouping_placed(where, entry)
+
+
+def _validate_excludes(where: str, entry: dict, data: dict) -> None:
+    """§ 33's `excludes` on one target: the stated labels and types it leaves out.
+
+    ⚠️ Optional: a target that omits it leaves nothing out, which is every
+    target before the key existed. ⛔ What a stated block has to *be* is held
+    here, every arm refusing rather than skipping -- an exclusion a reader could
+    not make sense of is one whose skip would hold a release, or advance an item,
+    nobody meant to.
+    """
+    if EXCLUDES not in entry:
+        return
+    at = f"{where}.{EXCLUDES}"
+    block = entry[EXCLUDES]
+    if not isinstance(block, dict) or not block:
+        raise ConfigError(
+            at,
+            f"is {block!r}; it must be a block naming "
+            f"{' and/or '.join(f'`{key}`' for key in EXCLUDES_KEYS)}, each a list of "
+            "the words that leave an item out (§ 33). Omit the key where this "
+            "target leaves nothing out.",
+        )
+    for key, words in block.items():
+        if key not in EXCLUDES_KEYS:
+            raise ConfigError(
+                f"{at}.{key}",
+                f"is not one of {', '.join(f'`{one}`' for one in EXCLUDES_KEYS)} "
+                "(§ 33). An item is left out by a label or a type it states, and "
+                "never by its title, which is prose and changes.",
+            )
+        if (
+            not isinstance(words, list)
+            or not words
+            or not all(isinstance(word, str) and word.strip() for word in words)
+        ):
+            raise ConfigError(
+                f"{at}.{key}",
+                f"is {words!r}; it must be a non-empty list of non-empty words "
+                "(§ 33), each matched whole against what an item carries.",
+            )
+    if entry.get("requires_role") == "none" and entry.get("advances") == "none":
+        raise ConfigError(
+            at,
+            "is stated beside `requires_role: none` and `advances: none`, which "
+            "read no set for it to leave anything out of (§ 33).",
+        )
+    if "types" in block and _get(data, "work_item.type.carrier") == "none":
+        raise ConfigError(
+            f"{at}.types",
+            "is stated while `work_item.type.carrier` is `none`, so no item "
+            "carries a type for it to match (§ 33, § 4.1).",
+        )
 
 
 def _validate_not_implemented(where: str, entry: dict) -> None:
@@ -9737,6 +9841,9 @@ def _not_implemented_refusal(entry: dict) -> "ConfigError | None":
 # disagree. ⛔ `passed` is the one outcome that releases an advance, and
 # `failed` the one the stated default holds on where a target names no check.
 ADVANCE_REQUIRES = "advance_requires"
+# § 33's leaving out of a target's set: the key, and the two things it names.
+EXCLUDES = "excludes"
+EXCLUDES_KEYS = ("labels", "types")
 ADVANCE_OUTCOMES = ("passed", "failed", "skipped", "deselected", "unread", "running")
 ADVANCE_RELEASES = "passed"
 ADVANCE_DEFAULT_HOLDS = "failed"
@@ -10501,6 +10608,35 @@ def host_pull_request_title(data: dict) -> dict | None:
     }
 
 
+def host_landing_bases(data: dict) -> list[str]:
+    """§ 2's `host.landing.bases`, held to its shape: the branches a change lands on.
+
+    ⛔ An empty list where the key is not stated, which is the project landing on the
+    integration branch alone -- the derivation § 10 makes and this key never restates.
+    ⚠️ A single string is refused rather than read as one pattern: this list widens what a
+    reader counts as landed work, so a misspelt shape is reported rather than read as either
+    more or less than the project wrote.
+    """
+    bases = _get(data, "host.landing.bases")
+    if bases is None:
+        return []
+    if not isinstance(bases, list):
+        raise ConfigError(
+            "host.landing.bases",
+            f"is {bases!r}; § 2 states it as a list of the branches a pull request lands "
+            "on beside the integration branch, each a glob matched against the whole "
+            "branch name. Omitted, changes land on the integration branch alone.",
+        )
+    for index, pattern in enumerate(bases):
+        if not isinstance(pattern, str) or not pattern.strip():
+            raise ConfigError(
+                f"host.landing.bases[{index}]",
+                f"is {pattern!r}; each member is one branch pattern, and a blank one "
+                "is the same text as a pattern somebody meant to write.",
+            )
+    return [pattern.strip() for pattern in bases]
+
+
 def _command(mirrors, where: str) -> str:
     """The one command a `mirrors` states, wherever it sits.
 
@@ -10879,20 +11015,80 @@ def _private_blocks(data: dict, facts: dict) -> list[str]:
     return named
 
 
+def _main_checkout_path(skills_root: str, path: str) -> str | None:
+    """Where `path`, inside the tree `skills_root` is in, sits in the main checkout.
+
+    `None` where there is no other place to look: `skills_root` is not in a git
+    tree, the tree is the main checkout itself, the repository is bare, or `path`
+    lies outside the tree. The main checkout is the parent of the repository's
+    common directory, which every tree of one repository shares (§ 28).
+    """
+    import subprocess  # noqa: PLC0415 -- read only where a tree lacks the file
+
+    try:
+        read = subprocess.run(
+            ["git", "-C", skills_root, "rev-parse", "--path-format=absolute",
+             "--show-toplevel", "--git-common-dir"],
+            capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return None
+    lines = read.stdout.splitlines()
+    if read.returncode != 0 or len(lines) != 2:
+        return None
+    top, common = (os.path.realpath(line) for line in lines)
+    if os.path.basename(common) != ".git":
+        return None
+    main = os.path.dirname(common)
+    held = os.path.realpath(path)
+    if main == top or os.path.commonpath([held, top]) != top:
+        return None
+    return os.path.join(main, os.path.relpath(held, top))
+
+
+def _untracked_source(skills_root: str, source) -> tuple[str, list[str]]:
+    """The path an untracked file the configuration points at is read from, and
+    every path tried for it.
+
+    ⛔ **A tree's own copy first, then the main checkout's** (§ 28): the file is
+    git-ignored by design, so a tree the procedure cuts is a fresh checkout that
+    carries none, and the same relative path resolved against the main checkout
+    is the one copy the machine holds. Where neither holds it, the first path is
+    the one to open and both are the ones a refusal names. The main checkout
+    reads exactly the one path it always read.
+    """
+    own = os.path.normpath(os.path.join(skills_root, str(source)))
+    if os.path.isfile(own):
+        return own, [own]
+    other = _main_checkout_path(skills_root, own)
+    if other is None:
+        return own, [own]
+    if os.path.isfile(other):
+        return other, [own, other]
+    return own, [own, other]
+
+
+def _tried(paths: list[str]) -> str:
+    """The paths an untracked file was looked for at, as a refusal names them."""
+    if len(paths) == 1:
+        return f"at {paths[0]!r}"
+    return f"at {paths[0]!r}, nor in the main checkout at {paths[1]!r}"
+
+
 def _read_private_file(skills_root: str, source, supplies: list[str]) -> dict:
     """§ 28's private file as a mapping of dotted path to value. Every failure stops.
 
     One reader for both halves of the facet, so the listed keys and the named
     blocks are held to one statement of what the file is.
     """
-    path = os.path.normpath(os.path.join(skills_root, str(source)))
+    path, tried = _untracked_source(skills_root, source)
     try:
         with open(path, encoding="utf-8") as handle:
             values = _load_yaml(handle.read(), PRIVATE_SOURCE_PATH)
     except OSError as error:
         raise ConfigError(
             PRIVATE_SOURCE_PATH,
-            f"names {source!r}, which did not open at {path!r} "
+            f"names {source!r}, which did not open {_tried(tried)} "
             f"({error.__class__.__name__}). It was to supply "
             f"{', '.join(supplies)} (§ 28), and a layer that is not there is "
             "reported by name rather than resolved to nothing -- a value "
@@ -12506,6 +12702,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⛔ An adopter writing it wrong otherwise learns about it from a generated
     # gate refusing every title the finishing role writes.
     host_pull_request_title(data)
+    host_landing_bases(data)
 
     # § 17. The verdicts no host run produces, and the one facet on this surface
     # whose entries carry a command the procedure runs for a verdict. Requiredness
@@ -18270,6 +18467,28 @@ def self_test() -> int:
         from_value="High")
     check("a stated grouping with no default is asked for, as before",
           (plain["source"], plain["value"]) == ("ask", None), f"answered {plain!r}")
+    # § 4.8's positional map: the reader hands the position on with no value,
+    # since it holds no tracker to count in; a given value still wins.
+    positional = _resolve(
+        _a_stated_default(_a_valid_example(), default_by=BY_POSITION,
+                          default_map={"Highest": "first", "High": LAST_POSITION}),
+        EXAMPLES, default_facts, False,
+    )
+    counted = positional.grouping_default(from_value="High")
+    check("a positional map answers its position and no value",
+          (counted["source"], counted["value"], counted.get("position"))
+          == (BY_POSITION, None, LAST_POSITION)
+          and counted.get("rule", {}).get("value") == "High",
+          f"answered {counted!r}")
+    given = positional.grouping_default(from_value="High", given="a-scope")
+    check("a grouping given wins over a positional map too",
+          (given["source"], given["value"]) == ("given", "a-scope"), f"answered {given!r}")
+    named = _resolve(
+        _a_stated_default(_a_valid_example(), default_by=BY_VALUE), EXAMPLES,
+        default_facts, False,
+    ).grouping_default(from_value="High")
+    check("a map stated as names reads as one with no `default_by`",
+          (named["source"], named["value"]) == ("map", "a-scope"), f"answered {named!r}")
 
     # § 4.2 → A commitment written apart from the move, read through the one
     # answer the gating role acts on.
@@ -19128,6 +19347,12 @@ def self_test() -> int:
           "publishes": True,
           "advances": _a_role_some_status_maps(),
           "batch": "a-batch-command"}),
+        # ⛔ § 33's `excludes`, the shape the item names: a bar over a grouping
+        # leaving the release's own tracking items out by label and by type.
+        ("a precondition leaving the release's own items out by label and type loads",
+         {"grouping": _a_grouping_the_example_plans_in(),
+          "requires_role": _a_role_some_status_maps(),
+          EXCLUDES: {"labels": ["release"], "types": ["Chore"]}}),
     ):
         loaded = _a_valid_example()
         loaded["deploy"] = [_a_deploy_target(**overrides)]
@@ -19140,6 +19365,7 @@ def self_test() -> int:
     _not_implemented_suite(check, surface)
 
     _undeclared_suite(check)
+    _untracked_in_tree_suite(check)
 
     print("\n§ 33's choices, resolved for one run:")
 
@@ -20748,6 +20974,16 @@ def _planted_violations():
          lambda data: _a_stated_default(data, default_map={"High": "  "})),
         ("a grouping map with no entries", f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
          lambda data: _a_stated_default(data, default_map={})),
+        ("a grouping map read as neither names nor positions",
+         f"{GROUPING_KEY}.{DEFAULT_BY_KEY}",
+         lambda data: _a_stated_default(data, default_by="ordinal")),
+        ("a grouping map's reading stated with no map", f"{GROUPING_KEY}.{DEFAULT_BY_KEY}",
+         lambda data: _a_stated_default(data, default_from=_ABSENT, default_map=_ABSENT,
+                                        default_by=BY_POSITION)),
+        ("a positional grouping map naming a grouping rather than a position",
+         f"{GROUPING_KEY}.{DEFAULT_MAP_KEY}",
+         lambda data: _a_stated_default(data, default_by=BY_POSITION,
+                                        default_map={"High": "a-scope"})),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
@@ -21300,6 +21536,26 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(publishes="yes")])),
         ("a target that publishes while naming no grouping", "deploy[0].publishes",
          at("deploy", [_a_deploy_target(publishes=True)])),
+        # ⛔ § 33's `excludes`, every arm the reader refuses.
+        ("an exclusion that is not a block", f"deploy[0].{EXCLUDES}",
+         at("deploy", [_a_deploy_target(
+             requires_role=_a_role_some_status_maps(), batch="a-command",
+             **{EXCLUDES: ["release"]})])),
+        ("an exclusion by title, which is prose", f"deploy[0].{EXCLUDES}.titles",
+         at("deploy", [_a_deploy_target(
+             requires_role=_a_role_some_status_maps(), batch="a-command",
+             **{EXCLUDES: {"titles": ["Release"]}})])),
+        ("an exclusion naming an empty list", f"deploy[0].{EXCLUDES}.labels",
+         at("deploy", [_a_deploy_target(
+             requires_role=_a_role_some_status_maps(), batch="a-command",
+             **{EXCLUDES: {"labels": []}})])),
+        ("an exclusion on a target reading no set", f"deploy[0].{EXCLUDES}",
+         at("deploy", [_a_deploy_target(**{EXCLUDES: {"labels": ["release"]}})])),
+        ("an exclusion by type where no item carries one", f"deploy[0].{EXCLUDES}.types",
+         lambda data: at("work_item.type", {"carrier": "none", "absent_reason": "planted"})(
+             at("deploy", [_a_deploy_target(
+                 requires_role=_a_role_some_status_maps(), batch="a-command",
+                 **{EXCLUDES: {"types": ["Chore"]}})])(data))),
         # ⛔ § 33's `advance_requires`, every arm. ⚠️ The base example states no
         # tier, so the tier plant is the `carrier: none` arm: a project with no
         # tier has none for a check to name.
@@ -22306,6 +22562,10 @@ def _planted_violations():
          "host.pull_request_title.into", _a_title_form_of(into=[])),
         ("a base ref written blank, which matches nothing",
          "host.pull_request_title.into[0]", _a_title_form_of(into=["   "])),
+        ("landing bases written as one string rather than a list", "host.landing.bases",
+         at("host.landing.bases", "release/*")),
+        ("a landing base written blank, which matches nothing", "host.landing.bases[0]",
+         at("host.landing.bases", ["  "])),
         # § 10's entries. ⚠️ The `claimed_by` and `cap` plants are the two whose
         # refusal direction is the permissive one: each of them leaves a reader
         # reporting the resource as configured while no call ever claims it.
@@ -26163,6 +26423,118 @@ def _example_without(path: str, _loaded) -> str | None:
 PLANTED_ROLE = "the role the work is for"
 PLANTED_IDENTITY = "an-identity-no-tracker-resolves"
 PLANTED_MAP_FILE = "a-role-to-person-map.yaml"
+
+
+def _untracked_in_tree_suite(check) -> None:
+    """§ 28's private file and § 27's map, read from a tree that carries neither.
+
+    ⛔ A real repository with a real second tree, because what is under test is
+    where git says the main checkout is: a fake of that answer would test the
+    fake. The files are git-ignored in it, as a project's are.
+    """
+    import subprocess  # noqa: PLC0415 -- the arms need a repository and a tree
+    import tempfile  # noqa: PLC0415
+
+    print("\n§ 28's untracked files, read from a tree that carries none of them:")
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+
+    def git(where: str, *args: str) -> None:
+        subprocess.run(
+            ["git", "-c", "user.name=suite", "-c", "user.email=suite@invalid",
+             "-c", "commit.gpgsign=false", "-C", where, *args],
+            capture_output=True, text=True, check=True, env=env,
+        )
+
+    def write(path: str, payload) -> None:
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(_yaml().safe_dump(payload, allow_unicode=True))
+
+    def refusal(read) -> str:
+        try:
+            read()
+        except ConfigError as error:
+            return f"{error.key}: {error}"
+        return ""
+
+    private_file, people_file = "private.yaml", "people.yaml"
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    with tempfile.TemporaryDirectory() as scratch:
+        main = os.path.join(scratch, "main")
+        tree = os.path.join(scratch, "tree")
+        os.makedirs(main)
+        git(main, "init", "-q")
+        with open(os.path.join(main, ".gitignore"), "w", encoding="utf-8") as handle:
+            handle.write(f"{private_file}\n{people_file}\n")
+        git(main, "add", ".gitignore")
+        git(main, "commit", "-q", "-m", "ignore the untracked files")
+        git(main, "worktree", "add", "-q", "-b", "an-item", tree)
+        write(os.path.join(main, private_file), {"a.key": "the main checkout's"})
+        write(os.path.join(main, people_file), {PLANTED_ROLE: PLANTED_IDENTITY})
+
+        def people_in(root: str):
+            data = _a_valid_example()
+            data[PEOPLE_KEY] = {"carrier": "file", "source": people_file, "key": "handle"}
+            return _resolve(data, root, facts, False).person_for(PLANTED_ROLE)
+
+        read = refusal(lambda: check(
+            "a tree lacking the private file reads the main checkout's",
+            _read_private_file(tree, private_file, ["a.key"])
+            == {"a.key": "the main checkout's"}, "read"))
+        if read:
+            check("a tree lacking the private file reads the main checkout's", False, read)
+        read = refusal(lambda: check(
+            "a tree lacking the people map reads the main checkout's",
+            people_in(tree)["identity"] == PLANTED_IDENTITY, "read"))
+        if read:
+            check("a tree lacking the people map reads the main checkout's", False, read)
+
+        block = sorted(facts.get("private_blocks") or {})[0]
+        write(os.path.join(main, private_file), {
+            "a.key": "the main checkout's", block: {"a": "block the file supplies"}})
+        named = {PRIVATE_KEY: {"carrier": PRIVATE_FILE, "source": private_file,
+                               "keys": [], "blocks": [{"block": block, "reason": "r"}]}}
+        read = refusal(lambda: check(
+            "a tree lacking the private file loads a named block from the main checkout's",
+            _get(_with_private_blocks(named, tree, facts)[0], block)
+            == {"a": "block the file supplies"}, "read"))
+        if read:
+            check("a tree lacking the private file loads a named block from the main "
+                  "checkout's", False, read)
+
+        write(os.path.join(tree, private_file), {"a.key": "the tree's own"})
+        check("a tree's own copy is read before the main checkout's",
+              _read_private_file(tree, private_file, ["a.key"])
+              == {"a.key": "the tree's own"}, "read the main checkout's")
+        os.remove(os.path.join(tree, private_file))
+
+        os.remove(os.path.join(main, private_file))
+        os.remove(os.path.join(main, people_file))
+        mains = os.path.join(os.path.realpath(main), private_file)
+        said = refusal(lambda: _read_private_file(tree, private_file, ["a.key"]))
+        check("held by neither, the private file is refused naming both paths",
+              said.startswith(PRIVATE_SOURCE_PATH)
+              and os.path.join(tree, private_file) in said and mains in said, said)
+        said = refusal(lambda: people_in(tree))
+        check("held by neither, the people map is refused naming both paths",
+              said.startswith(f"{PEOPLE_KEY}.source")
+              and os.path.join(tree, people_file) in said
+              and os.path.join(os.path.realpath(main), people_file) in said, said)
+
+        said = refusal(lambda: _read_private_file(main, private_file, ["a.key"]))
+        check("the main checkout reads and names only its own path",
+              os.path.join(main, private_file) in said
+              and "main checkout" not in said, said)
+        check("the main checkout is asked about no second path",
+              _untracked_source(main, private_file)[1]
+              == [os.path.join(main, private_file)],
+              f"{_untracked_source(main, private_file)}")
+        loose = os.path.join(scratch, "no-repository")
+        os.makedirs(loose)
+        check("a skills root in no repository is asked about no second path",
+              _untracked_source(loose, private_file)[1]
+              == [os.path.join(loose, private_file)],
+              f"{_untracked_source(loose, private_file)}")
 
 
 def _looked_up(role: str, mapping, *, key: str = "handle", written: bool = True,
