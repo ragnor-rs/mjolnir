@@ -95,8 +95,11 @@ baseline**, so it is the one mode that answers for a project whose record does n
 
 The read stops on a project that keeps none, because the four things that have to agree have nothing
 to agree with. ⛔ **The stop is not a bootstrap**: a run taken from the wrong place can fail to find
-a record that exists, and drafting on that stop writes a second ordering nobody reads. Check that
-the record the stop names is the one this project states, then opt in:
+a record that exists, and drafting on that stop writes a second ordering nobody reads.
+⛔ **A stop that names a missing directory is a different answer**
+([`§ 40`](../../config/schema.md#a-directory-that-outlives-a-checkout-and-the-two-ways-one-goes-missing)):
+the record may exist elsewhere, so the value is checked with the person before anything is drafted.
+Check that the record the stop names is the one this project states, then opt in:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/close_out.py" --bootstrap
@@ -116,7 +119,8 @@ blockers all sit above, and every item carries the blockers that hold it.
    ordering is the person's to approve, and the summary is the figures, the places with their
    one-line arguments, and every call that was judgement rather than a constraint. ⛔ Not the
    document's text, which is what the record is for.
-4. On approval, bring the record into existence and run step 2's read against it. The coverage
+4. On approval, create the directory where the report said it is missing and the person confirmed
+   the value, bring the record into existence and run step 2's read against it. The coverage
    block is the check on the draft, and `--stamp` writes the first baseline.
    ⛔ **Where the record is a grouping, the create is the port's and nothing else's** — never a
    file beside the tracker, a grouping the tracker does not hold being one no later pass can read:

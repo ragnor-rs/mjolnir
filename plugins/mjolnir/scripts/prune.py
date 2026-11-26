@@ -493,6 +493,8 @@ def sweep(
     delete_branch: str,
     *,
     tree_dir: str | Path | None = None,
+    teardown: str | None = None,
+    resource_up: str | None = None,
     here: str | None = None,
     remote: str = "origin",
     budget: float = BUDGET_SECONDS,
@@ -513,10 +515,13 @@ def sweep(
     read = read if read is not None else _landed(root, remote, tree_dir)
     occupants = occupants if occupants is not None else claim.foreign_occupants
     standing = standing if standing is not None else (lambda path: claim.standing_in(path, here))
-    remove = remove if remove is not None else _remover(root, remote, delete_branch)
-
     report = Report()
     started = clock()
+    # ⛔ The budget's remainder, asked when a command is about to start: the reserve past it is
+    # what the removal after it still costs.
+    remove = remove if remove is not None else _remover(
+        root, remote, delete_branch, lambda: budget - (clock() - started), teardown, resource_up
+    )
     try:
         trees = registered(root, tree_dir)
     except claim.ClaimError as error:
@@ -694,14 +699,11 @@ def _decide(
         # landed tree the removal refused is the one kept state that is neither ordinary nor
         # self-clearing, and a sweep that swallowed it would keep refusing in silence every time.
         return kept(
-            f"its branch has landed and the release was refused: {failed}", attention=True
+            f"its branch has landed and the release did not complete: {failed}", attention=True
         )
-    # ⛔ **The removal is read back, never inferred from the absence of a refusal.** Measured in
-    # the carrier this calls: a `worktree remove` that fails is not raised and its success
-    # sentence is appended anyway, so a locked tree -- which git refuses unless `--force` is given
-    # twice -- produced *removed* for a tree still on disk whose published ref had already gone.
-    # ⚠️ A destructive act reported as done when it was not is worse than a refusal, because
-    # nothing comes back to it.
+    # ⛔ **The removal is read back, never inferred from the absence of a refusal.** `claim.release`
+    # reads its own removal back and raises, which arrives above as `failed`; this holds the sweep
+    # to the disk whatever remover it was handed.
     if Path(tree.path).exists():
         return kept(
             "its branch has landed and the removal reported success while the tree is still "
@@ -712,7 +714,14 @@ def _decide(
     return Verdict(tree.path, tree.branch, True, done)
 
 
-def _remover(root: str | Path, remote: str, delete_branch: str):
+def _remover(
+    root: str | Path,
+    remote: str,
+    delete_branch: str,
+    left=None,
+    teardown: str | None = None,
+    resource_up: str | None = None,
+):
     """The removal, with `delete_branch` deciding whether the published ref is reached.
 
     ⛔ **Under `host` and under `never` the ref is not this carrier's**, and the two differ in why
@@ -740,6 +749,9 @@ def _remover(root: str | Path, remote: str, delete_branch: str):
                     tree,
                     remote,
                     keep_ref=delete_branch != PROCEDURE_DELETES,
+                    teardown=teardown,
+                    resource_up=resource_up,
+                    seconds_left=left,
                 ),
                 None,
             )
@@ -827,6 +839,8 @@ def answer(payload: dict, *, run=None) -> dict:
             # the sweep — never joined to the code root here, which is the tree this session
             # happens to be standing in.
             tree_dir=stated,
+            teardown=loaded.get("branch_model.teardown"),
+            resource_up=loaded.get("branch_model.resource_up"),
             # ⛔ **The session's directory and not this process's.** The one stop between a live
             # session and the removal of its own tree is *standing in it*, and a hook runs in a
             # process of its own; every other hook in this plugin reads the session's directory
@@ -1055,6 +1069,98 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         suite.ok(
             "and the local branch goes with it, so the claim is not left held",
             not claim._local_branch(work, branch),  # noqa: SLF001 -- the sibling's own reading
+        )
+
+    print("\na tree whose resource is up is kept:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        work, branch, tree = _landed_world(tmp)
+        ran = Path(tmp) / "ran"
+
+        def asked(command: str, **rest) -> Report:
+            return sweep(work, [], "procedure", tree_dir=_trees(tmp), resource_up=command,
+                         occupants=lambda _p: [], **rest)
+
+        report = asked("echo stack-a")
+        suite.ok(
+            "⛔ what is up keeps the landed tree, and the person is told its name",
+            Path(tree).exists() and not report.removed and "stack-a" in report.message(),
+            report.report(),
+        )
+        report = asked("echo away >&2; exit 1")
+        suite.ok(
+            "⛔ a check that fails keeps it, and the person is told it was unanswered",
+            Path(tree).exists() and not report.removed
+            and "unanswered" in report.message() and "away" in report.message(),
+            report.report(),
+        )
+        # A clock that stands at the budget's end once the tree's own readings are done.
+        ticks = iter([0.0, 0.0])
+        report = asked(f"touch '{ran}'", clock=lambda: next(ticks, float(BUDGET_SECONDS)))
+        suite.ok(
+            "⛔ a check the sweep's bound leaves no time for is not asked, and that is reported",
+            Path(tree).exists() and not ran.exists() and "was not asked" in report.message(),
+            report.report(),
+        )
+        report = asked(f'echo "$MJOLNIR_TREE" > \'{ran}\'')
+        suite.ok(
+            "a check that names nothing is told the tree, and the removal follows it",
+            not Path(tree).exists() and len(report.removed) == 1
+            and ran.read_text().strip() == os.path.realpath(_trees(tmp)) + "/1-landed",
+            report.report(),
+        )
+
+    print("\nthe project's teardown runs before the removal:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        work, branch, tree = _landed_world(tmp)
+        ran = Path(tmp) / "ran"
+
+        def torn(command: str, **rest) -> Report:
+            return sweep(work, [], "procedure", tree_dir=_trees(tmp), teardown=command,
+                         occupants=lambda _p: [], **rest)
+
+        report = torn("echo the reason; exit 3")
+        suite.ok(
+            "⛔ a teardown that fails keeps the landed tree, and the person is told why",
+            Path(tree).exists() and not report.removed
+            and "exited 3" in report.message() and "the reason" in report.message(),
+            report.report(),
+        )
+        # A clock that reads one second before the budget once the tree's own readings are done.
+        ticks = iter([0.0, 0.0])
+        report = torn(f"touch '{ran}'", clock=lambda: next(ticks, BUDGET_SECONDS - 1.0))
+        suite.ok(
+            "⛔ a teardown the sweep's bound leaves no time for does not run, and is reported",
+            Path(tree).exists() and not ran.exists() and "did not run" in report.message(),
+            report.report(),
+        )
+        # Five seconds of the same budget left, and a command longer than that.
+        ticks = iter([0.0, 0.0])
+        report = torn("sleep 20", clock=lambda: next(ticks, BUDGET_SECONDS - 5.0))
+        suite.ok(
+            "⛔ and one that outlasts what is left is stopped, and is reported",
+            Path(tree).exists() and "did not finish in 5s" in report.message(),
+            report.report(),
+        )
+        report = torn(f'echo "$MJOLNIR_TREE" > \'{ran}\'')
+        suite.ok(
+            "a teardown that succeeds is told the tree, and the removal follows it",
+            not Path(tree).exists() and len(report.removed) == 1
+            and ran.read_text().strip() == os.path.realpath(_trees(tmp)) + "/1-landed"
+            and "teardown ran" in report.message(),
+            report.report(),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        _origin, work = _world(tmp)
+        tree, ran = str(Path(_trees(tmp)) / "2-in-flight"), Path(tmp) / "ran"
+        claim.take(work, "feature/2-in-flight", tree)
+        sweep(work, [], "never", tree_dir=_trees(tmp), teardown=f"touch '{ran}'",
+              occupants=lambda _p: [])
+        suite.ok(
+            "⛔ a tree the sweep keeps is never torn down",
+            Path(tree).exists() and not ran.exists(),
         )
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -1442,6 +1548,19 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             "⛔ and it reaches the person, rather than being swallowed as an ordinary kept tree",
             "refused" in report.message(),
             report.message(),
+        )
+
+    # Plant: a locked tree through the remover that ships, which git refuses to remove.
+    with tempfile.TemporaryDirectory() as tmp:
+        work, _branch, tree = _landed_world(tmp)
+        claim.git(work, "worktree", "lock", tree)
+        report = sweep(work, [], "never", tree_dir=_trees(tmp), occupants=lambda _p: [])
+        suite.ok(
+            "⛔ a locked tree is kept and the person is told it was not removed",
+            Path(tree).exists()
+            and not report.removed
+            and "**not** removed" in report.message(),
+            report.report(),
         )
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -2031,6 +2150,27 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             f"{handed.get('kwargs')} vs {stated}",
         )
         suite.ok(
+            "a project that states neither command hands the sweep none",
+            handed["kwargs"]["teardown"] is None
+            and handed["kwargs"]["resource_up"] is None,
+            str(handed.get("kwargs")),
+        )
+        configured = where / ".claude" / "mjolnir.yaml"
+        as_shipped = configured.read_text()
+        configured.write_text(
+            as_shipped.replace("branch_model:\n", "branch_model:\n  teardown: a-command\n"
+                               "  resource_up: a-check\n", 1)
+        )
+        answer({"cwd": str(where)}, run=record)
+        suite.ok(
+            "⛔ and a stated one reaches it",
+            handed["kwargs"]["teardown"] == "a-command"
+            and handed["kwargs"]["resource_up"] == "a-check",
+            str(handed.get("kwargs")),
+        )
+        configured.write_text(as_shipped)
+        answer({"cwd": str(where)}, run=record)
+        suite.ok(
             "⛔ and the session's own directory, which is the one stop that protects a live tree",
             handed["kwargs"]["here"] == str(where),
             str(handed.get("kwargs")),
@@ -2193,6 +2333,8 @@ def main(argv: list[str]) -> int:
                 list(loaded.get("branch_model.regenerable") or []),
                 str(loaded.get("host.landing.delete_branch") or ""),
                 tree_dir=stated,
+                teardown=loaded.get("branch_model.teardown"),
+                resource_up=loaded.get("branch_model.resource_up"),
             )
         except claim.ClaimError as error:
             print(f"⛔ the trees of this project could not be listed, so none was examined: {error}")

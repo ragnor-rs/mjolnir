@@ -704,6 +704,7 @@ same questions:
 | what a search costs | a query with **no restriction is refused outright** — *Unbounded JQL queries are not allowed here*. ⛔ So the project restriction is the only shape the host accepts, which is also why the state qualifier the plain-issues implementation has to refuse cannot arrive here: every term is quoted into an operand | a live site |
 | what a body is | a structured document rather than a string, on the interface version the adapter speaks. ⚠️ So no markdown body is simply sent: the adapter renders headings, paragraphs, bullet and ordered lists and fenced code, states that nothing else survives, and reads a document back the same way — a fuller renderer is a markdown parser, which would be the implementation deciding what a template means | both, agreeing |
 | how a custom field is addressed | by an id that is **site-specific**, so a field is named in a configuration and resolved against the site's own catalogue per run. ⚠️ And a name is not unique there, so an ambiguous one is refused rather than resolved by position | both, agreeing |
+| what a field holding several values takes | the whole list under the field's id, which replaces what was there; the catalogue states `array` and the element type beside it. An option is a member named by `value`, a user by `id` (read back as `accountId`), and text is itself. A component or a version is shown by `id` in this interface's own example and by `name` in the self-hosted product's, and `name` is what is written here. ⛔ The reference states no shape for a sprint's elements, so one is refused | the published reference, the `name` form and the replacing in the self-hosted product's alone |
 | who moved an item | the history names an author, and ⛔ **a script running under somebody's token is indistinguishable from that person in it**. So the advance-off-a-merge operation reports whether the last status change was made by something *other than this credential* and refuses to call it automation | the published reference |
 | whether the merge is visible here | **no**: the merge is on the code host, and nothing on this tracker ties a status change to one. ⛔ So `link_for_close` is absent — there is no closing keyword to compose — and the advance operation answers the tracker's half alone, with the other half read from § 2's host | both, agreeing |
 | how a search is paged | a cursor in the answer, followed until the host says it is the last page. ⚠️ A page that fills says nothing about whether more exist, which is the same silent ceiling the board implementation pays a cursor-follower to avoid | the published reference |
@@ -859,8 +860,8 @@ Each but status has a real absent case of its own — which is where the schema'
 absence-is-a-configuration rule comes from: a procedure that treats absence as an unset value
 fails on a project that is correctly configured.
 
-- **Type** — five carriers observed: a native field; a label convention, because a user-owned
-  repository on one host has no type field at all; a bare label whose absence means the other
+- **Type** — five carriers observed: a native field; a label convention, on a
+  user-owned repository; a bare label whose absence means the other
   value; a native field with nine values of which six are used; and a prefixed label mapping onto
   a five-valued branch-type vocabulary. The branch prefix is a **function** of type whose range
   differs — two values in four projects, five in another, with one type resolving to one of two
@@ -2509,12 +2510,12 @@ that the subject is the whole store rather than its loop rulings are
 | assert values, never key sets | review | **promoted**: [`§ What earns a test`](../plugins/mjolnir/config/schema.md#what-earns-a-test-and-what-makes-its-red-believable) |
 | a fixture thinner than the production shape tests the fixture | review | **promoted**: the same subsection |
 | a message may claim a specific cause only where the layer below reported that cause | review | **promoted, already stated** for a role's own report — a precondition's failure is never folded into the conclusion ([`§ 2`](../plugins/mjolnir/config/schema.md#reading-a-runs-answer-and-what-a-failure-is)) and a report names what it could not establish ([`§ 11`](../plugins/mjolnir/config/schema.md#a-report-names-what-it-could-not-establish)) — and **deliberately local** for the artifact the project ships |
-| an absolute in an acceptance condition becomes the thing measured against later | review | ⛔ **residue, named** — see below |
+| an absolute in an acceptance condition becomes the thing measured against later | review | **promoted**: [`§ What an acceptance condition is written as`](../plugins/mjolnir/config/schema.md#what-an-acceptance-condition-is-written-as) |
 | text the user typed and the system silently capped must be said to be capped | review | **deliberately local**: the same report rule as above, applied to a product's own output rather than a role's |
 | structure a provider already reports is read rather than asked for | review | **deliberately local**: the same shape as *detect what is detectable, and read nothing twice* ([`§ What a project is asked`](../plugins/mjolnir/config/schema.md#what-a-project-is-asked-and-the-one-file-the-answers-are-written-into)), applied to a model's output |
 | a schema migration's version is chosen against the order branches merge in | technology | **deliberately local**, and generalising to no other project of the six |
 | an applied migration is immutable, a comment change included | technology | **deliberately local**, same |
-| re-read the shared tracker's list immediately before filing, because other projects' sessions file into it | the toolkit | ⛔ **residue, named** — see below |
+| re-read the shared tracker's list immediately before filing, because other projects' sessions file into it | the toolkit | **promoted**: the filing role's window, in its duplicate check |
 | every item filed here carries at least the second priority value, and the first is never lowered | the toolkit | **configuration**, and already written: [`§ 4.6`](../plugins/mjolnir/config/schema.md#46-priority)'s values and writer, in this repository's own file |
 | a missing facet is its own item; a question inside an open one is an edit to that item | the toolkit | **promoted, already stated**: the filing role's **parent** relationship, whose default is a check item on the parent rather than a new item |
 | this toolkit names no technology and no project | the toolkit | **promoted, already stated**: [`§ What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls), and the sweep that holds it |
@@ -2539,31 +2540,6 @@ repository by a path on the machine. ⛔ **So the direction is not one project's
 store is otherwise a different shape entirely — hundreds of entries, an index whose rows are rolled
 up rather than one line each, and its own language — which is why the inventory above is one store's
 and the class is the finding.
-
-### The two rulings with no home, named
-
-⛔ **Both are procedure by the surface's own test — a value a role reads is a key and a rule it
-follows is not** ([`schema.md § What the procedure models`](../plugins/mjolnir/config/schema.md#what-the-procedure-models-and-what-it-only-names-and-calls))
-— **and neither of them is stated anywhere.**
-
-- **An acceptance condition states the failure being prevented, not an absolute** — #277. An
-  absolute outlives the reasoning that produced it and becomes the thing a later measurement is
-  taken against — measured where it cost a correct, merged change being reported as not meeting its
-  own criterion. ⚠️ **Four legs read an acceptance condition**: the filing role writes it, the gate
-  checks it is present, the starting role bounds the work by it, and *implemented* is defined as it
-  being answered. ⛔ **So it cannot live in one role's carrier**, by the reasoning ruling (11) gives,
-  and [`§ 4.4`](../plugins/mjolnir/config/schema.md#44-template) names the section without saying
-  anything about how it is phrased.
-- **A duplicate search is only as current as the moment before the write** — #278. Measured three
-  times in one day on this repository's own backlog: a listing read, a drafting pass, and six items
-  filed by other projects' sessions in between — once taking three of four gaps a pass was drafting,
-  and one of those ruling against the shape it was about to propose. ⛔ **The filing role states the
-  three search layers and no window**, so a search run an hour before the write reads as a search.
-
-**What happened to each is the item named beside it**, which is where a ruling's outcome lives until
-it is on the surface. ⚠️ That is the convention the inventory above has a row of its own for — a
-missing facet is a numbered item, a question inside an open one is an edit to that item — and it is
-what keeps a named residue from being a note nothing acts on.
 
 ### A disposition is re-taken and never cited
 

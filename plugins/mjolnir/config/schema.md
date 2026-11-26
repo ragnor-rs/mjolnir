@@ -389,7 +389,8 @@ here rather than in the role that carries it.** ⛔ **Two legs read that state**
 reaches it and the one entered on it — so a definition written in either role's own text would be a
 second authority for the other, which is the division this section already makes for finishing and
 reviewing. ⛔ **Implemented** is therefore stated here: **the item's own stated acceptance condition
-is answered in the tree, and nothing that condition raised is waiting on a person.** ⚠️ **It is not
+is answered in the tree, and nothing that condition raised is waiting on a person.** What that
+condition is written as is [below](#what-an-acceptance-condition-is-written-as). ⚠️ **It is not
 the diff looking finished** — an item whose condition nobody can answer yet has not reached this
 state, and the session says so rather than continuing. ⚠️ **Where the item
 states no such condition**, which §4.4 makes a legitimate configuration, that is reported as
@@ -603,6 +604,45 @@ figure in them stale and every standing fact in them already argued in a row of 
 ⛔ **`audit_trail` is the key this surface will never declare.** A rule that is procedure everywhere
 is the rule an adopting project is likeliest to reach for a switch on, and a key accepted in silence
 is the rule gone with nothing refusing it.
+
+### What an acceptance condition is written as
+
+⛔ **An acceptance condition states the failure being prevented, never an absolute.** An absolute —
+*every*, *all*, *never*, or a wording read as one of them — is wider than the failure somebody
+wanted gone, and nothing in the sentence says which part of it was meant.
+
+**What that costs arrives later.** The wording outlives the reasoning that produced it and becomes
+what a later measurement is taken against. ⚠️ **Measured where it cost something**: a condition
+asked that a listing return the entries *other* than the dominant one, which reads as *all of
+them*; the goal was that one entry cannot crowd out the rest. The change that landed capped each
+entry's share, so only some of the others could ever show — and a session that measured the
+wording called the merged change defective and proposed undoing the cap. ⛔ **The condition was
+wrong and the code was right**, which is the direction that gets this backwards: a strict wording
+looks like the safer one to write, and what it produces is correct work reported as failing its own
+criterion.
+
+⛔ **It is not a licence to read a condition down.** A leg that finds the wording and the failure
+apart says so and asks, by [*Nothing is deferred*](#nothing-is-deferred), and the item is rewritten
+by whoever may rewrite it. A reader who decided alone that an unmet condition meant something
+narrower would be the same defect pointed the other way.
+
+⚠️ **The form is stated and the wording is not.** No heading, language or template text comes from
+here, the heading half being [§ 4.4](#44-template)'s. Whether a sentence is *present*, and whether
+anybody can answer it yet, are other rules' questions; so is how much of a condition a check can
+decide, since a condition answered half by a machine and half by a person is phrased under this
+rule whichever half reads it.
+
+⚠️ **Nothing decides this rule, which is its boundary rather than an omission.** Whether a sentence
+names a failure or an absolute is a reading and not a computation: the same word is an absolute in
+one condition and the failure itself in another — *no credential is written to the log* is both
+strict and exactly what is being prevented. So no `readiness:` predicate and no `done:` check is
+answered out of it, and no gate refuses an item by it. What it binds is whoever writes an item and
+whoever reads one.
+
+⛔ **Procedure, and no key on this surface carries it**: a project supplies no value for it, which
+is the test
+[§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls) states.
+It stands here rather than in a role's text because several legs read the one sentence.
 
 ### What earns a test, and what makes its red believable
 
@@ -1492,6 +1532,7 @@ host:
   landing:
     method: squash | merge_commit | rebase     # how a pull request lands; required
     delete_branch: host | procedure | never    # which side deletes the remote ref afterwards; required
+    approval_covers: commit | content          # what a merge approval covers; default: commit
 ```
 
 **Stated, because the roles that land a change read it and the shape of `main` is not a reading.**
@@ -1540,6 +1581,14 @@ nobody wrote.
 [§ 10](#the-claim-on-a-work-item)'s release, which no host setting touches, so nothing reads this
 key as an answer about either; a ref the host deleted is one of the ways a landed claim stops
 existing, and that release's own test is *landed or held here* either way.
+
+**`approval_covers` is read by [§ 7's guard on a merge](#what-a-hook-refuses-and-the-record-it-reads)
+and by nothing else.** `commit` is the rule stated there. `content` keeps an approval across a push
+that leaves the change's diff against its base the same — a rebase onto the base is the case. What
+is compared is every line of the diff but the line numbers and blob names. ⛔ **A diff that could
+not be read whole keeps nothing**: a binary file it does not show, a commit the host no longer
+answers for, or a size the host refuses. ⚠️ **What it does not see is position**: one hunk moved
+between two places whose surrounding lines are identical reads as the same diff.
 
 ⛔ **A reader of this key reads what to expect, never what it may refuse to handle.** The method is
 the project's convention and not a guarantee about a given ref: a check told `merge_commit` still
@@ -1783,6 +1832,9 @@ tracker:
   project_key: "KEY"            # required_when: tracker.kind = jira
   transitions:
     resolve: by_name
+  create_fields:                # the fields the site requires before it will create an item
+    - field: "<the field's name>"
+      value: []                 # absent: the filing states it
 ```
 
 ```yaml
@@ -1814,6 +1866,18 @@ the repository the host facet already names, and the second addresses nothing at
 some do — which is a gap in what holds configurations to this surface rather than a licence, and is
 recorded as such in [`docs/single-source-of-truth.md`](../../../docs/single-source-of-truth.md).
 
+⛔ **A field the site requires at creation goes with the create, and `create_fields` states which.**
+Each entry names the field the way the site does. Its `value` is sent on every filing unless the
+filing states one, and an entry with no `value` is one the filing must state: a create missing it
+is refused before it is sent, naming the field. ⚠️ The filing may state fields this list does not.
+A project writing no such list sends what a filing already sends. ⚠️ **Read by this kind's
+implementation alone**, which is why it is in this block: no other tracker here refuses a create
+for a field.
+
+⛔ **A field holding several values is written whole: the write replaces the list**, as `set_labels`
+does, and an empty list clears it. Each member takes the shape of the element type the site states,
+and an element type the implementation has no shape for is refused by name.
+
 **The test a new kind's block is written against**: a key is required when the adapter cannot
 address the right tracker without it. An address this reader accepts and the tracker rejects is
 the one failure a configuration can be read for; everything past the address, the adapter learns
@@ -1841,7 +1905,7 @@ operations the survey reached and says which it did not.
 | Operation | What the procedure asks for | When the capability is absent |
 |---|---|---|
 | `search_items` | the items matching a query — terms, or a field's value with no terms at all — across every state the tracker holds, the closed ones included | the duplicate check cannot run, so the filing role **asks** before writing and never reports a check it did not perform; an unsearchable tracker is not a tracker with no duplicates, by § 2's rule that absence of signal is not an answer |
-| `create_item` | a new work item, from the body the filing role wrote | nothing is filed, and the run report carries the body and says what it would have created |
+| `create_item` | a new work item, from the body the filing role wrote, carrying [§ 4.1](#41-type)'s type where that is native and the filing states one | nothing is filed, and the run report carries the body and says what it would have created |
 | `read_item` | the item's own facts: its body, its state, its fields | the role proceeds on what its argument and its branch already state, and the report names what could not be read |
 | `set_state` | a move to a **role**, never to a status word (§ 4.2) — an advance, or the step backwards [§ 32](#32-a-status-that-moves-backwards) rules | the move is reported for whoever does make it; § 4.2's writer refusal is the second, stricter reason the same move is not made |
 | `item_number` | the identifier the branch name and the pull request carry | the number is read from the argument the role was given, and a role with neither stops rather than inventing one |
@@ -1849,11 +1913,13 @@ operations the survey reached and says which it did not.
 | `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
 | `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
 | `read_closing_change` | `link_for_close`'s own read, after the fact: the change that closed one item and the commit that change landed as — ⛔ never a verdict about whether the item is done, which is the item's state and is `read_item`'s | the landed record names the item and reports the closing change **unread**: never *no change closed it*, and never the newest change on the branch, by § 2's rule that absence of signal is not an answer |
+| `read_closing_list` | `link_for_close`'s own read, before the fact: the items the host will close when one change lands, and every text in its title, its body, its commit messages and the merge call's own text that could close one — ⛔ never a verdict about which were meant, which is [the comparison](#what-a-merge-closes-and-the-comparison-that-holds-it) below | the report says what the merge closes went **unread**, and never that nothing but the intended items closes, by § 2's rule that absence of signal is not an answer |
 | `create_grouping` | one of § 4.8's groupings brought into existence, by the value that facet keys it on — the one write about a grouping that is made before any item is in it | nothing is created, and the role **names the grouping it would have created** for whoever creates it by hand; ⛔ no file and no record of a grouping is written anywhere else instead, a grouping the tracker does not hold being a grouping no `grouping_items` can read |
 | `advance_on_merge` | the tracker's own automation, moving the item off the merge | the procedure asks for the advance itself, through `set_state` above |
 | `grouping_items` | the items the tracker holds in one of § 4.8's groupings, each with its own state — ⛔ never a verdict about whether the grouping may be published, the bar being [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s and not a tracker's | the publishing set cannot be read, so § 33's precondition reports **no answer** and never *nothing is short*, by § 2's rule that absence of signal is not an answer; the advance is made over the batch's own candidates and the report says the grouping went unread |
 | `mark_grouping_released` | one of § 4.8's groupings marked as published — the one write a release makes that is about the grouping rather than about an item in it | the run names the step and the grouping it is about, by the value this deploy read, **continues**, and the report records the grouping as still open; ⛔ never skipped in silence, and a grouping nothing marked is never reported as marked. ⚠️ **The address a person performs it at is the tracker's own and the procedure composes none** — the boundary's rule, so where the port cannot supply one the report names the grouping and not a link |
 | `comment` | a note on the item, a gate result being the measured case | it goes into the item's description instead |
+| `read_comments` | the item's comments, oldest first and every page of them, each with who wrote it, when, and when it was last edited | the role reports the comments **unread** and never as none, by § 2's rule that absence of signal is not an answer ([below](#an-items-comments-and-what-an-unread-one-is)) |
 | `set_labels` | every label set in one call | one call per label, and a set that is left partial is reported rather than retried silently |
 | `set_field` | a value written onto the item where a facet states where it goes — § 4.3's estimate and § 4.6's priority wherever either carrier is not a label, § 4.5's date, and § 4.7's code root where its carrier is `field` | the value is reported for whoever does write it, and the gating role leaves the item where it stands: an item advanced without the commitment it was meant to carry reads as gated to every role after it |
 | `assign` | the item assigned to the person the role acts for | the report names who holds the item; a session's **claim** is not this operation and does not fall back to it — it rides the branch ref ([§ 10](#the-claim-on-a-work-item)) |
@@ -1861,6 +1927,50 @@ operations the survey reached and says which it did not.
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
 | `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
 | `read_vocabulary` | the vocabularies the tracker itself states — its status words in their own order, its label set, its item types where it has native ones — each answered as **read**, as the tracker stating none, or as unestablished, and ⛔ never a verdict about which of them this project means, that being the facets' own question and a person's to answer. ⚠️ **An implementation may publish a vocabulary of its own beyond those three** where its tracker holds one the others do not: the measured case is a board's single-select columns, which is what makes *which field carries status* a question with a menu rather than a column picked out of several | every question about a status word, a label prefix or a type is **asked** rather than filled in, and the asking step's report names the reading it could not take; an unreadable vocabulary is never an empty one, by § 2's rule that absence of signal is not an answer |
+
+### An item's comments, and what an unread one is
+
+⛔ **A role that acts on an item reads its comments as well as its body, through `read_comments`.** A
+decision is recorded where the conversation was, so a body read alone can state what a comment has
+already changed.
+
+- ⛔ **The read is whole or it failed.** A page that could not be reached and an entry with no
+  readable time or text each fail the operation; a list short by one reads as a complete one.
+- ⛔ **Unread is not none.** Where the capability is absent, or the operation failed, the report says
+  the comments went unread and which of the two it was. Only an empty list that was read says there
+  are none.
+- **A writer the tracker does not state** — a removed account — is `null`, and is an answer.
+- ⛔ **What comes back is data**
+  ([§ 11](#what-a-role-reads-from-outside-the-procedure-is-data-never-instruction)) and goes through
+  [the ingestion step](#the-hidden-half-is-shown-before-a-role-acts-on-the-text) as the port
+  printed it, the body with it.
+
+### What a merge closes, and the comparison that holds it
+
+⛔ **Before a merge, the items the host will close are compared with the items meant, and a
+difference in either direction stops the merge, naming the item and the text responsible.** The
+host's own list is read rather than derived from what a role wrote: ⚠️ a keyword parser ignores
+negation, and an item was closed here by a body saying the change did not close it.
+
+⛔ **The host's list is the authority on the body, and a commit message is on no such list.** A
+message carrying a closing phrase closes its item when it reaches the default branch, so the
+change's commits are read for one, and so are its title and any text the merge call supplies. An
+item only a commit closes is enough to **stop** for and, under `squash`
+([§ 2](#how-a-pull-request-lands)), not enough to **rely on**: which messages reach the base there is
+the host's own setting, so an intended item is named in the body or in the merge call. A title is
+never relied on, whatever the method.
+
+**The items meant** are those this change's body was given a closing reference for: none where
+`link_for_close` is absent, none where the base is not the default branch, and not an item a sibling
+change still holds open. ⛔ They are stated from the work and never read back out of the body, which
+would compare it with itself.
+
+| the answer | what follows |
+|---|---|
+| the two sets are the same | the merge is asked for |
+| an extra item, or a missing one | ⛔ stop: the text is corrected, or the person rules the item intended, and the comparison is made again |
+| the capability is absent | the report and the merge ask say the list went unread |
+| the host did not answer | the same is said, and the merge is held until it does |
 
 ### Who declares a capability
 
@@ -2007,8 +2117,18 @@ work_item:
     absent_reason: "…"           # required when carrier is none
 ```
 
-Native on one tracker, absent on another — a user-owned repository on one host has no issue
-types at all. The procedure asks for "the type" without knowing which carrier answers.
+Native on one tracker, absent on another. The procedure asks for "the type" without knowing which
+carrier answers. ⚠️ **A tracker stating native types is not a project carrying its type in them**:
+one host states types for every repository measured, whoever owns it, so what it states is offered
+as vocabulary and the carrier stays the project's to state.
+
+⛔ **Where the carrier is `native`, the type a filing states goes on with the create, and it is the
+tracker's own word.** On a tracker that also creates items without one, a type it does not state is
+refused by name with nothing filed; one that did not land is a failed filing naming the item that
+now exists, never a create made again; a native type stated under any other carrier is refused, the
+type having one carrier; and a filing that states none is filed without one. ⚠️ **A tracker that
+will not create an item untyped refuses a filing that states none**, since picking one would be
+choosing what the work is.
 
 ```yaml
   type_branch_prefix:
@@ -2091,6 +2211,46 @@ refusing anything.
 where every write reads as that person speaking, so the procedure writes nothing at all and
 reports instead.
 
+#### A status several writers reach, a class of item each
+
+A status two parties reach in two different cases states `writers` in place of `writer`:
+
+```yaml
+statuses:
+  - { name: "…", role: terminal, writers: [{ writer: procedure, paths: ["ci/*"] }, { writer: deploy, rest: true }] }
+```
+
+⛔ **An entry states its writer and exactly one class**: `paths`, in
+[§ 30](#what-a-class-is-and-the-conjunction-that-makes-it-one)'s glob grammar with the forms that
+section refuses, or `rest: true`. Each writer is stated once and `never` is none of them, being
+the absence of a writer rather than a party holding a class.
+
+⛔ **The class is the item's, read off the paths its change touched, and it decides the writer
+before the ask is compared with one.** Every changed path is inside the class and never merely one
+of them, which is § 30's rule; a change split between two classes is therefore inside neither. The
+ask is then held to that one writer exactly as it is to a status's only one, so another writer of
+the same status is refused and the refusal names whose move it is.
+
+⛔ **An item in no class or in two is refused, and the refusal names no writer**: the move is
+reported for a person. ⚠️ **A glob stated by two writers is refused where the configuration is
+read, and two that merely overlap are not**: the reader compares globs as they are written, so an
+overlap is met against the item that is in both.
+
+⛔ **`rest` covers a change no other class covers whole, and at most one entry states it.** A
+change split between a class and anything else falls to it, which is the common change wherever
+one class is a narrow one. ⛔ **It covers no change nobody described**: an ask handed no path is
+refused, since a remainder answering it would claim every item whose paths a role failed to read.
+
+⚠️ **The paths are handed over with the ask, as the writer is**: the port reads no change. What
+supplies them is the change that closed the item, or each of them where it has several; a role
+that could not read one hands over none and the refusal is the answer. ⛔ **Paths from the changes
+it did read are not the item's**, since they answer about a smaller change. ⚠️ **What it does not
+hold is a role handing over paths the change did not touch** — that is trusted as the asked-as
+writer is.
+
+A status stating `writer` is asked for no path, and one handed over is not read. What a grouping's
+close needs of a classed status is [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s.
+
 ### 4.3 Estimate
 
 ```yaml
@@ -2133,6 +2293,10 @@ The procedure names the **semantic** sections it depends on — `outcome`, `acce
 `reproduction` — and each template declares which of its own headings fills each. That keeps the
 heading text, and its language, out of the procedure while letting the procedure still check a
 section is present and tick its items later.
+
+**How the acceptance section's content is phrased is no part of this key**:
+[§ What an acceptance condition is written as](#what-an-acceptance-condition-is-written-as) states
+the form, and it holds where no template is carried too.
 
 ⚠️ **`sections` is declared once for the project rather than once per template**, so every file
 `by_type` names gives one semantic section the same heading. What differs between two templates is
@@ -2382,6 +2546,22 @@ of their own holds the fact there. ⛔ **No operation is added to
 [§ 4.6](#46-priority)'s terms rather than on a second statement of them: a milestone and a field
 each ride `read_item` and `set_field`, and a label rides `read_item` and `set_labels`.
 
+⛔ **Where a tracker plans on a board over the items that carry the milestone, the set is the
+milestone's and the board supplies the status.** A set read that way leaves things out by nature, so
+`grouping_items` says which rather than leaving them unmentioned:
+
+| what it is | where it is reported |
+|---|---|
+| an item in the milestone with no card on the board | in the set, named under `off_board`; with no status to place it by, it holds [§ 33](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)'s precondition as an item nobody could place |
+| an item in the milestone whose card carries no status | in the set, with the reason it could not be placed |
+| a draft, which carries no milestone | `outside`, every draft the board holds |
+| a card from a repository other than the one the milestone is in | `outside` |
+| a change in the milestone, which is not a work item | `outside`, as a count |
+| a card whose content the credential may not see | `outside`, as a count |
+
+⚠️ **What is `outside` holds nothing**: it is the board's whole rather than a candidate list, since
+a card that cannot carry the milestone cannot say whether it was meant to.
+
 ⛔ **A grouping's name is the project's own, and a name spelled like one of the keys above is
 refused by construction rather than by a rule.** The set a named grouping may carry is derived
 from this section's own single-form fence, so a grouping named after a key deletes that key from
@@ -2414,12 +2594,13 @@ against § 4.2's vocabulary, and `closes_items` below is refused against the ter
 writer.
 
 ⛔ **`closes_items` is a second question and not a restatement of the first, and where it is true
-the item's own terminal writer has to be the same actor.** [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)
-carries one writer per status, so a grouping whose close also closes what is still open in it is
-writing the terminal status — and a configuration naming one actor there and another here states
-two writers for one field, which the surface has no form for. The reader refuses that pair with
-both keys named. ⚠️ **It is refused only where `statuses` maps a terminal role at all**: a project
-mapping a subset is § 4.2's legitimate case, and there is then no status for the close to write.
+the item's own terminal writer has to be the same actor.**
+[§ 4.2](#42-status--an-ordered-set-of-name-role-writer) states who writes the terminal status, and a
+grouping whose close also closes what is still open in it writes that status for every item left —
+whatever class each is in. So the closer has to be that status's **only** writer: a configuration
+naming another actor there, or several with a class each, is refused with both keys named. ⚠️ **It
+is refused only where `statuses` maps a terminal role at all**: a project mapping a subset is
+§ 4.2's legitimate case, and there is then no status for the close to write.
 
 ⛔ **`has_own_acceptance` says where the bar lives, which is the one key here that changes what an
 item means.** Where a grouping carries criteria of its own it is a work item with children rather
@@ -2991,10 +3172,12 @@ anything. A rule read by three parties and written in one of their files is a se
 the other two.
 
 ⛔ **A recorded answer is one comment on the change, keyed by the repository and the change's own
-number, stating the question, the answer as it came back, who answered it and when.** The keying
-is the load-bearing half: a bare number names a different change in every repository the route
-carries, so an answer recorded against one is an answer no guard can resolve, and the act stays
-refused however it was answered.
+number, stating the question, the verdict where the question has one, the answer as it came back,
+who answered it, when, and the commit that was the change's head when the question was put.** The
+commit is required on the merge ask, and an answer no guard holds to a commit may leave it empty.
+The keying is the load-bearing half: a bare number names a different change in every repository the
+route carries, so an answer recorded against one is an answer no guard can resolve, and the act
+stays refused however it was answered.
 
 The questions an answer is recorded for are the one ask
 [§ The loop](#what-carries-the-item-forward-and-where-it-stops-to-ask) states and the answers the
@@ -3005,6 +3188,7 @@ settled there:
 ```yaml
     recorded_answer:
       question: review_depth | plan_run_by | merge_now
+      verdict: approved | declined | later | unanswered
 ```
 
 ⛔ **A question outside that list is refused rather than written**, since a record under a name no
@@ -3012,13 +3196,29 @@ guard resolves is a record that reads as absent at exactly the moment it matters
 retires a question**: `read_by_a_person` was in this list, is not now, and an answer offered under it
 is refused with the list named.
 
-⛔ **`unanswered` is an answer and is written down as one.** Silence may narrow the work and never
-license an act, by the section above, so a question nothing answered is recorded as unanswered —
-and a guard reading that as *no record* would hold a change nothing on the route resumes.
+⛔ **The merge ask's record states a verdict, and no other question's does.** The verdict is the
+recording pass's reading of the words, from the list above, and the words stand beside it as given
+so that a reader can hold one against the other. A merge record offered with no verdict, or with one
+outside the list, is refused rather than written; so is a verdict offered under another question.
 
-⛔ **The guard on a merge refuses where the merge ask has no recorded answer.** That is the ask the
-route puts immediately before the act, so the answer that authorizes the merge and the answer the
-guard reads are one record rather than two.
+⛔ **`unanswered` is an answer and is written down as one.** Silence may narrow the work and never
+license an act, by the section above, so an ask nothing answered is recorded with that verdict, and
+it holds the merge as `declined` and `later` do. What resumes the change is the ask put again and
+its own answer recorded.
+
+⛔ **The guard on a merge allows one verdict, `approved`, on the last record the merge ask has, and
+refuses everything else** — no record, another verdict, and a record stating none. That is the ask
+the route puts immediately before the act, so the answer that authorizes the merge and the answer
+the guard reads are one record rather than two. ⛔ **The last record stands even where it cannot be
+used**: an incomplete record is never a reason to fall back to an earlier approval.
+
+⛔ **A merge approval covers the commit it was given for and no later one.** The guard refuses a
+merge whose head is not the recorded commit, naming both and how to ask again; a record naming no
+commit covers none, and a host that cannot say what the head is refuses the merge. ⛔ **The commit is
+stated by the pass that put the question and never read when the answer is written**, since a push
+between the two would be recorded as approved. A project widens this in one way, by
+[§ 2's `approval_covers`](#how-a-pull-request-lands). ⚠️ **What is compared is the head when the
+guard reads it**: a push landing between that read and the host's merge is not seen.
 
 ⚠️ **Keyed on anything else, a guard refuses a merge its own authorization already covers.**
 Measured on this repository: a person authorized a merge, the pass recorded that answer, and the
@@ -3029,11 +3229,11 @@ answer does not satisfy is the guard somebody edits**, which the rule below exis
 leaves the person running the role one route past it, which is editing the guard — and a guard
 edited to get past is a guard nobody ever has to satisfy again.
 
-⛔ **What this guard establishes is that the ask was put and answered — never that a person answered
-it.** The `answered by` column is written by the same pass that writes the answer, so what a guard
-reads it off is a claim rather than an attestation. ⚠️ **Stated rather than left implied, because
-the stronger reading is the one a reader takes**, and a mechanism credited with a guarantee it does
-not have is one nobody checks.
+⛔ **What this guard establishes is that an approval is recorded — never that a person gave it.** The
+verdict and the `answered by` column are written by the same pass that writes the answer, so what a
+guard reads it off is a claim rather than an attestation. ⚠️ **Stated rather than left implied,
+because the stronger reading is the one a reader takes**, and a mechanism credited with a guarantee
+it does not have is one nobody checks.
 
 ⚠️ **The independence a guard reading some other leg's record would have had is available to no
 guard here, under any configuration.** What it reads is the merge ask, and the merging pass is what
@@ -3073,6 +3273,14 @@ settles whether the call proceeds, and both directions have a failure that reads
 | reversible — a call that can be run again | proceeds, and the answer says the guard held nothing | a guard that refuses every call it cannot reason about is a guard somebody turns off, and then nothing is held |
 | irreversible — a merge, a deletion, a publish | refused, naming what could not be established | the same split § The loop makes for an ask nothing answered: silence is not a yes where the answer would license something irreversible |
 
+⛔ **A merge is refused where the configuration is there and does not resolve**, naming the reader's
+stop. What a merge is, is read from the call alone, so the act is known to be irreversible before
+any key is read. ⚠️ **No other call is refused for it**: the calls the project's own keys describe
+cannot be told apart without those keys, and they proceed by
+[§ 19](#the-command-position-and-why-the-whole-call-is-not-one). ⛔ **The refusal is made on every
+such call** and is no part of the once-a-session report. ⚠️ **A shell call that writes a merge as
+unquoted text reads as one**, so a repair carrying such text is made with the harness's file tools.
+
 ⚠️ **A guard that failed before it ran reports nothing at all**, and nothing in the session says
 the act was held to nothing — the residue being irreducible from inside a guard, since saying so is
 itself something the guard has to be running to do. What covers it is the gate: a carrier that
@@ -3088,20 +3296,44 @@ project: a build started outside the loop holds the resource with no lease, whil
 holds a lease the resource does not report yet, and reading the two as a maximum let a third
 through a cap of two.
 
+⛔ **A lease is too young while it is no older than the resource's `grace`**
+([§ 10](#exclusive-resources)), and past that its holder is left to the probe's count, so one that
+both report counts once. ⚠️ **A lease left out of the sum still holds its place**: a call under its
+key takes no second one, and what releases it is unchanged. Where no `grace` is stated, every live
+lease is too young.
+
 ⛔ **`probe: null` is that key's stated absence, and then the leases are the whole of the count.**
 A project whose resource can be asked how many are held and one whose resource cannot are both
 ordinary, and the second is not a project whose count is zero.
 
-⛔ **Every exit path either releases the lease or is proved not to fire, and one path is closed by
-expiry alone.** ⚠️ **The proof is per path and is not a reading**: a path a guard registers nothing
-for, and a path whose event the harness does not publish, read identically from the carrier.
+⛔ **Every exit path either releases the lease or is proved not to fire, and one path is closed by a
+reading rather than an event.** ⚠️ **The proof is per path and is not a reading**: a path a guard
+registers nothing for, and a path whose event the harness does not publish, read identically from
+the carrier.
 
-| the call's exit | what releases the place |
-|---|---|
-| it finished, either way | the event after the call — a failure is an exit like any other |
-| it was refused before it ran | nothing fires, so the end-of-turn sweep is what releases it |
-| the turn ended, the session ended, or a subagent stopped | the sweep, over every place this session holds |
-| it was put in the background | ⛔ **expiry alone.** The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately |
+| the call's exit | what releases the place | the events registered for it |
+|---|---|---|
+| it finished, either way | the event after the call — a failure is an exit like any other, and the harness publishes it as an event of its own | `PostToolUse`, `PostToolUseFailure` |
+| it was refused before it ran | nothing fires, so the end-of-turn sweep is what releases it | `Stop`, `StopFailure` |
+| it was cancelled while it ran | nothing fires for the call or for the turn the cancellation ended, so the next sweep this session reaches is what releases it, and expiry where it reaches none | `Stop`, `StopFailure`, `SessionEnd` |
+| the turn ended, the session ended, or a subagent stopped | the sweep, over every place this session holds — and a turn an API error ended is published as an event of its own | `Stop`, `StopFailure`, `SessionEnd`, `SubagentStop` |
+| it was put in the background | its work ending, as the resource's `background_end` establishes it, and expiry. ⛔ The call itself finishes at launch, so every sweep would hand the place back while the work ran, and each one skips it deliberately | none |
+
+⛔ **A place whose background work has ended is free on the next reading of the resource**, where
+its `background_end` ([§ 10](#exclusive-resources)) is `process` or `probe`. ⛔ **Where the end cannot
+be established the lease counts until its `ttl`, and the report and the refusal say so and why.**
+⛔ **A process is its identifier and when it started**: an identifier handed out again is another
+process and holds nothing. ⚠️ The process is the one the harness started for the call, so work that
+outlives it needs `probe`. ⚠️ **No value lengthens a lease**: work still running at its `ttl` loses
+its place, as under `expiry`.
+
+⛔ **A call over the cap is refused by the guard at once, and what waits is a command a role runs.**
+A wait inside the hook is ended by the hook's own time limit, and a guard ended there lets its call
+through unheld. Where the resource states a `wait_up_to` ([§ 10](#exclusive-resources)) the refusal
+names the command that waits, which rests until a place is free or the bound is reached, and never
+past the time its caller says it has. ⛔ **A wait that runs out refuses and names who holds the
+places.** ⚠️ **It holds nothing**: the call is made again afterwards and its own guard takes the
+place, so another holder may be ahead of it.
 
 ⛔ **So `ttl` bounds what a leak costs rather than merely tidying up after one.** Measured on the
 same project: two leases left behind by calls refused before they ran pinned a cap of two with
@@ -3126,10 +3358,11 @@ here there is no act, and what an unestablished reading costs is a report naming
 read.
 
 ⛔ **It answers at the turn's end and after a merge, and at no other exit.** A session ending is a
-report nobody is left to act on, and a subagent stopping is not this tree's turn ending — it would
-repeat one answer once per subagent in a turn that has not finished. ⚠️ **Both are events a release
-arm is already registered on**, which makes this an arm beside the ones above rather than a carrier
-of its own, by the ordering argument
+report nobody is left to act on, a turn an API error ended is one whose answer the harness discards,
+and a subagent stopping is not this tree's turn ending — it would repeat one answer once per
+subagent in a turn that has not finished. ⚠️ **Both are events a release arm is already registered
+on**, which makes this an arm beside the ones above rather than a carrier of its own, by the
+ordering argument
 [§ A lease](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) makes for the
 third refusal.
 
@@ -3462,6 +3695,8 @@ branch_model:
   parallel_trees: true                       # required
   tree_dir: "<the directory a tree is cut under>"   # required under worktree; null under in_place; relative to the checkout, and under the agent harness's own managed root
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
+  teardown: "<the command that stops what a tree started>"   # may be left unwritten; read only under worktree
+  resource_up: "<the command that prints what a tree started and is still up>"   # may be left unwritten; read only under worktree
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
   exclusive_resources:           # [] where nothing in this project is exclusive; required
     - { name: "…", cap: 1, subject: tree, claimed_by: "…", probe: "…",  ttl: 1800 }
@@ -3495,7 +3730,12 @@ is what distinguishes it from a transitional one.** A tree's setup and teardown 
 project's own build genuinely differs, so there is no shared script for this key to be standing in
 for — which is the condition that was met for § 9's `script`, and that retired it.
 
-⛔ **It is steps and never a location, and `tree_dir` is the location.** The two were conflated
+⛔ **`teardown` is the one step the procedure runs rather than names**, as a command stated whole:
+a removal happens where no role is reading steps. What runs it, and when, is
+[below](#the-teardown-a-removal-runs-first). ⛔ **`resource_up` is a reading and not a step**: it
+answers whether anything a tree started [is still up](#the-resource-a-tree-started-and-the-removal-it-holds).
+
+⛔ **`mechanics` is steps and never a location, and `tree_dir` is the location.** The two were conflated
 while the second key was absent, which left *where a tree goes* stated in no facet and carried by
 each project's standing convention — readable by the person running a role and by nothing shipped.
 A path is not a step: a project with nothing to install and nothing to tear down still has to say
@@ -3807,7 +4047,7 @@ or is not reachable, the refusal still stands: the ref exists, which is the whol
 asserts, and the unestablished half is stated rather than dropped.
 
 **Release is on the item's own exit, not on a call's.** ⛔ A claim is **long-lived by
-construction** — it spans every call the item takes — so the six exit paths an `exclusive_resources`
+construction** — it spans every call the item takes — so the exit paths an `exclusive_resources`
 lease is released on do not apply to it, and a claim wired to them would release itself mid-item.
 What the two share is the failure: a claim released on the happy path alone leaks. So the claim is
 released where the item leaves — the branch landing, or the work being abandoned — and every other
@@ -4032,12 +4272,12 @@ named.
 
 ### Exclusive resources
 
-A resource the trees cannot all help themselves to — a local service stack, a build daemon's
-slots, a machine-wide lock. How many may be held at once is `cap`, and what holds a place is
-`subject`, so neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry is
-stated and none of them is defaulted**, because every one of them is a measurement of the resource
-rather than a preference about it, and a default here would be the procedure describing somebody
-else's machine:
+A resource the trees cannot all help themselves to — a local service stack, a build daemon's slots,
+a machine-wide lock. How many may be held at once is `cap`, and what holds a place is `subject`, so
+neither "one" nor "a tree" is built into the facet. ⛔ **Every key of an entry but `never_claims`,
+`grace`, `probe_timeout`, `wait_up_to` and the `background_` keys is stated and none of them is
+defaulted**, because every one of them is a measurement of the resource rather than a preference
+about it, and a default here would be the procedure describing somebody else's machine:
 
 ```yaml
 branch_model:
@@ -4045,8 +4285,15 @@ branch_model:
       name:       "<what is held>"
       cap:        1
       subject:    tree | call
-      claimed_by: "<what the command a call runs is matched against>"
+      claimed_by: "<a pattern searched for in the call, or a list of claiming commands>"
+      never_claims: []           # the forms that claim nothing; may be left unwritten
       probe:      "<prints how many are held right now, as one number on one line>"
+      grace:      60             # seconds; may be left unwritten
+      probe_timeout: 5           # seconds; may be left unwritten
+      wait_up_to: 300            # seconds, or null; may be left unwritten
+      background_end: process | probe | expiry   # may be left unwritten
+      background_probe: "<prints `running` or `ended` for one call's work>"   # under `probe` only
+      background_grace: 30       # seconds; under `probe` only
       ttl:        1800
 ```
 
@@ -4062,13 +4309,49 @@ branch_model:
   three unrelated commands, and a guard that recognised any of them would be the toolkit branching
   on what the resource is. ⚠️ **It decides whether a place is taken, never how many there are** —
   which is why it is a key beside `cap` rather than a narrowing of it.
+  Its two forms are below.
+- **`never_claims`** — the forms of a claiming command that take no place. ⛔ **Refused beside a
+  `claimed_by` that is one pattern**, which reads no command to spare.
 - **`probe`** — a command that prints how many are held right now, which is the one question the
   procedure cannot answer about somebody else's resource. ⛔ **`null` is a stated absence**, not a
   count of zero, and what each value leaves the arithmetic as is
   [§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)'s.
+- **`grace`** — the seconds after which the probe is taken to have seen a lease's holder, from one
+  to that entry's `ttl`. Unwritten, every live lease is added to the probe's count. ⛔ **Refused
+  beside `probe: null`**, there being no count for it to qualify.
+- **`probe_timeout`** — the seconds the probe may run before its count is unestablished, at most
+  eight, the guard's own budget being shared by every probe one call reaches and its other reads.
+  Unwritten, the guard's own limit applies.
+  ⛔ **Refused beside `probe: null`**, for the same reason.
+- **`wait_up_to`** — the seconds a role may wait for a place that is not free. `null`, and the key
+  left unwritten, each say refuse.
+- **`background_end`** — what establishes that work a call put in the background has ended. Unwritten
+  is `expiry`: nothing is read and the lease counts until its `ttl`.
+- **`background_probe`** — the command `probe` asks, run from the skills root with the place's key
+  in `MJOLNIR_PLACE_KEY` — the tree's path, or a digest under `subject: call` — and the start of its
+  command in `MJOLNIR_PLACE_COMMAND`. ⛔ It exits zero printing `running` or `ended`; anything else
+  is unestablished. Every place one reading asks about shares five seconds.
+- **`background_grace`** — the seconds after a launch before that answer is read, from one to the
+  entry's `ttl`. ⛔ **Both are stated under `probe` and refused elsewhere.**
 - **`ttl`** — the seconds a lease counts for before it expires, which bounds what one leaked lease
-  costs. ⚠️ **It is not a timeout on the work**: the work is not watched, and nothing here stops
-  anything.
+  costs. ⚠️ **It is not a timeout on the work**: nothing here stops anything.
+
+⛔ **Written as a list, `claimed_by` is matched at each command position of a call and never against
+its text**, so printing, searching for or echoing a claiming command takes no place. Where a command
+stands, and how an entry's `command` and `args_match` are compared, are
+[§ 19](#the-command-position-and-why-the-whole-call-is-not-one)'s. An entry of either list carries
+those two keys and no other: `command` is one word, and `args_match` is absent where the command
+alone decides.
+
+- ⛔ **A call claims where any one position matches an entry of `claimed_by` and none of
+  `never_claims`.** A form that never claims spares the position it matches: a status call beside a
+  build leaves the build claiming.
+- ⚠️ **A script that runs a claiming command claims nothing unless it is listed itself**, its body
+  being out of § 19's reach.
+
+⚠️ **Written as one pattern, it is searched for in the whole text of the call**, so a call that only
+names the command takes a place too. That form stays because a project that states it is read as it
+stated it; the list is what does not over-match.
 
 ⛔ **The probe is the third place a project's build tooling is encoded, and that triple is not an
 argument for declaring the toolchain on this surface.** The capacity rule, the spend guard's
@@ -4088,12 +4371,61 @@ not implied — a project may cut a tree per item for isolation while never runn
 and whether a second tree can be live is what decides whether an exclusive resource is ever
 contended.
 
-What happens *on* contention — wait, queue, refuse, or ask — is the enforcing hook's to state, and
-is not configuration here:
+What happens *on* contention is stated once, and this facet adds only that bound to it:
 [§ 7 → A lease on an exclusive resource](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it)
 is where it is stated, along with how the count is read and what releases a place. This facet
 states what is exclusive, how many of it there are, what holds a place, which calls put it at
-stake, what can be asked how many are held, and how long a lease counts.
+stake, what can be asked how many are held and for how long, when that answer covers a lease's
+holder, what shows background work has ended, and how long a lease counts.
+
+### The teardown a removal runs first
+
+⛔ **Where `teardown` is stated, the release and the sweep each run it before removing a tree**, after
+every reading that could keep that tree, the resource check below apart, and before the published
+ref goes. So a tree those readings keep is never torn down, and a teardown that fails leaves the
+claim whole. A project stating none has none run.
+
+- **The tree it is for is `MJOLNIR_TREE`**, an absolute path in its environment. It runs at the
+  repository's main checkout, whichever tree the removal was asked from, so a path in the command
+  reads the same for every tree.
+- ⛔ **A nonzero exit keeps the tree**, and the report names the tree, the exit and the end of what
+  the command printed. No override skips it: what clears it is the command succeeding.
+- ⛔ **It has to be repeatable.** It runs again wherever the removal after it failed, and on every
+  later sweep of a tree it left standing. One stopped part way is started from the top.
+- ⚠️ **Whatever it writes into the tree goes with the tree**, the files having been read before it
+  ran. Who is working there is read again after it.
+- ⚠️ **A process the tree started that works inside the tree reads as another session**, where it is
+  not one of the run's own, and the tree is kept before the teardown is reached. Nothing on the
+  machine tells the two apart. The override a release takes for an occupied tree reaches the
+  teardown; the sweep has none.
+
+⛔ **The release reads the key itself**, from the configuration at the skills root, and no caller
+passes it, and `resource_up` with it. A configuration that does not resolve refuses the release,
+since whether it states either is unknown; one that is absent, or that states no code root in this
+repository, is named in what the release reports.
+
+### The resource a tree started, and the removal it holds
+
+⛔ **Where `resource_up` is stated, the release and the sweep each ask it before removing a tree**,
+after the teardown and before the published ref goes. So it reads what the teardown left, and a tree
+it keeps keeps its claim whole. A project stating none has none asked.
+
+| what the command does | what the removal does |
+|---|---|
+| exits zero and prints nothing | goes ahead |
+| exits zero and prints | keeps the tree, and names each line as a resource that is up |
+| exits nonzero, cannot be started, or does not finish in `10` seconds | keeps the tree, and says the check was unanswered and why |
+
+- **It is told the tree and run as the teardown above is**: `MJOLNIR_TREE`, at the main checkout.
+- ⛔ **Only what it prints to standard output is an answer.** A warning on the error stream is not a
+  resource.
+- ⚠️ **A pipeline exits as its last command does**, so one whose first command failed can print
+  nothing and exit zero, which reads as down. A command written as one has to fail where its source
+  does.
+- ⛔ **No override skips it.** What clears it is the resource being stopped, or the command being
+  made to answer.
+- ⛔ **The sweep asks inside its own bound.** With less than a second of it left the check is not
+  asked, which is the unanswered row.
 
 ### Pruning a tree whose branch has landed
 
@@ -4146,10 +4478,12 @@ one no file oracle can reach**, which is why it is stated rather than left to fo
 above.
 
 ⛔ **The removal is read back, and a removal that reported success while the tree is still there is
-not one.** Measured in the carrier this rule calls: a tree git refuses to remove — a locked one
-needs the override twice — is not raised and the success sentence is appended anyway, so the sweep
-said *removed* for a tree still on disk whose published ref had already gone. ⚠️ **A destructive
-act misreported as done is worse than a refusal**, because nothing ever comes back to it.
+not one.** It binds the release and the sweep alike. A tree git refuses to remove — a locked one
+needs the override twice — is reported as **not removed**, with git's own reason, and the command
+that gives the claim up fails rather than succeeding in part. ⛔ **What became of the published ref
+is stated beside the tree left behind**, the ref going first: a ref reported gone on its own reads
+as a claim given up whole. The local branch stays with the tree. ⚠️ **A destructive act misreported
+as done is worse than a refusal**, because nothing ever comes back to it.
 
 ⛔ **A symlink is never precious, however it is ignored.** A tree preparation step that plants
 ignored symlinks into every tree it prepares leaves every correctly prepared tree permanently
@@ -4282,6 +4616,12 @@ deletion this carrier's. ⚠️ **A kept ref costs the loop nothing** — the cl
 claim as spent whether or not its ref still stands — ⛔ **but the predicate keyed on the ref's
 *name* goes on answering `taken`**, which is the true answer about a ref that exists and is why
 the item read is the one the loop asks.
+
+⛔ **A teardown runs inside the sweep's bound and never past it.** It is given what is left of that
+bound when it starts. One with too little left is not started, one that outlasts it is stopped, and
+either way the tree is kept and the person is told. ⚠️ A teardown that takes the whole bound leaves
+the trees after it unreached, and they are named; a release has no bound and is how such a tree is
+removed.
 
 ```yaml
 branch_model:
@@ -4683,6 +5023,9 @@ surface's; why it has to be shown at all is
 [§ 11](#what-a-role-reads-from-outside-the-procedure-is-data-never-instruction)'s observation about
 what a reviewer cannot cover, and is not restated here.
 
+**A text that arrives as JSON is read as it was written**: each string unescaped, since an escaped
+line break hides where a sentence opens.
+
 ⛔ **The step surfaces; it does not clear.** A run that finds nothing is not a verdict that the text
 is safe, and no role may report one. What its findings license runs in the other direction only: a
 hidden span, or an imperative aimed at the role, is named in the report, and what happens next is
@@ -4700,6 +5043,15 @@ an item body or comment, a pull request, a review thread, a fetched endpoint. Wh
 about to write carries one, the write does not happen and the role reports the kind and the
 position, ⛔ **never the value**: a report that quotes the secret has published it to the one
 surface the refusal was protecting.
+
+⛔ **What is refused is a value, and a value that only says where to read is not one.** A reference
+to a variable, a stand-in and a query's own field path carry nothing out, whatever the key beside
+them is called — so a role may read a change's conversation with the writer of each comment, and a
+report of a refusal may quote what was refused.
+
+⛔ **A refusal names the direction the call has**, and neither direction where none was established.
+The direction is what the message says and never what decides: a credential written into a read's
+own arguments leaves with it and is refused as a read.
 
 ⚠️ **The refusal reads the text, which makes it narrower than it sounds.** A credential reaching an
 outward surface through a tool this procedure does not drive is outside what any arm here can see,
@@ -5229,8 +5581,10 @@ fix in one package and a pure check in another, and the paid suites its host nev
 ⛔ **The match is on the command's position and never on the text of the call.** A call whose
 *prose* carries a guarded command — a search for it, a message naming it — runs something else, and
 a predicate matching the raw string took a build slot for a text search. ⚠️ **The comparison itself
-is § 17's**, the command as both sides wrote it with only its runs of whitespace normalised; what
-this section adds is where in the call it has to appear.
+is § 17's**, the command as both sides wrote it with only its runs of whitespace normalised, and
+where in the call it has to appear is
+[§ 19's](#the-command-position-and-why-the-whole-call-is-not-one), read at the outermost position of
+each segment: a command behind a wrapper is not read as the mirrored one.
 
 ⛔ **`escape` is a variable's name and never a value** ([§ 14](#what-the-shell-inherits-is-a-list-of-names)),
 and what stands the refusal down is the person setting it to a reason. A blank value is not an
@@ -5342,8 +5696,9 @@ was meant, and a report that names the wrong one is worse than none.
 
 ⚠️ **What it does not reach is stated here rather than discovered.** A paid command invoked through
 an interpreter stands in no command position of its own — the interpreter does, and the paid script
-is its argument — so a project that invokes one that way states that spelling as an entry of its
-own. ⛔ **The toolkit names no interpreter**, by
+is its argument — so a project that invokes one that way lists it as a launcher, by
+[the subsection below](#the-launchers-a-project-lists-and-what-each-one-runs), or states that
+spelling as an entry of its own. ⛔ **The toolkit names no interpreter**, by
 [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls): a list
 of them here would be the stack entering the toolkit one token at a time, and the first project
 writing one in another language would be the one it was wrong about.
@@ -5366,6 +5721,42 @@ is cut to a length**, because a refusal interpolates the project's own stated va
 long scalar is not a message, whatever the cadence, and the cut takes the explanation rather than
 the key at the head of it. ⚠️ **How often that answer is sent is the subsection below**, and it is
 not *every call*.
+
+### The launchers a project lists, and what each one runs
+
+```yaml
+command_position:            # absent, or an empty list, where the project lists no launcher
+  launchers:
+    - command: "<a command that runs what it is handed as a command>"
+      string_flags: ["<a flag of it whose value is a command text>"]
+      valued_flags: ["<a flag of it whose value is a separate word and no command>"]
+      operands: command | string   # absent where its plain words are neither
+```
+
+⛔ **A listed launcher's command text is read as a call of its own, and every guard that reads a
+command position reads it.** The separators, the wrappers, the substitutions and the launchers
+inside it are resolved by the subsection above, so a refusal names the inner command and a string
+that only prints or searches for a command is still no call of it. ⛔ **A project that lists none is
+read exactly as the subsection above states**, and the toolkit lists none on anybody's behalf.
+
+- ⛔ **`command` is what stands in the command position**, compared as a deny entry's own `command`
+  is. It is written on every entry, and so is at least one of `string_flags` and `operands` — an
+  entry stating neither launches nothing. One command is listed once.
+- **`string_flags` names each flag whose value is a command text, as it is written in a call.** ⚠️ A
+  cluster is a flag of its own: a shell's option joined to its login option is another word, and a
+  project that writes both lists both. A flag standing between this one and the text is stepped
+  over.
+- **`valued_flags` names the flags whose value is a separate word**, so that value is never read as
+  what the launcher runs.
+- **`operands` states what the plain words are** where no string flag is given: `command` where they
+  are a command and its arguments — a script file, a command a tool runs — and `string` where they
+  are joined by single spaces and read as a command text, which is what an evaluator does.
+
+⚠️ **A launcher inside a launcher is read, to sixteen deep**, and nothing below that is. ⚠️ **What
+stays out of reach**: a text the shell would resolve and this parse cannot — an expansion handed to
+a launcher — a text arriving on standard input, and the commands *inside* a script file, whose
+position is read and whose body is not. ⚠️ **A call whose inner text cannot be parsed is an
+unparseable call**, in the direction each guard already takes for one.
 
 ### How often a configuration that does not resolve is reported
 
@@ -6286,6 +6677,9 @@ nothing inside a store it must not guess at, and all three under `none`, because
 A key naming a file nothing opens is a key read by nothing while reading as a store somebody
 pinned — which is the defect every marker on this surface exists to remove.
 
+⚠️ **A `store` naming a folder the harness derived is reported**, by
+[§ 40](#a-directory-that-outlives-a-checkout-and-the-two-ways-one-goes-missing)'s rule.
+
 ### `write_from`, and the pair of outcomes a refusal is one half of
 
 - **`main_tree`** — the third runs from the shared checkout alone. ⛔ **Run from a tree it refuses,
@@ -6562,6 +6956,9 @@ configuration addresses one store per item, `read_day` answers *not recorded* fo
 beside it holds, and the rule above has the role record that day a second time. ⛔ **A variable the
 role's own environment does not set is refused with the variable named**, rather than written into
 the path: an unset name is a store with no address, never a directory of that name.
+
+⚠️ **A directory the agent harness derived from a checkout's path is reported**, by
+[§ 40](#a-directory-that-outlives-a-checkout-and-the-two-ways-one-goes-missing)'s rule.
 
 ⚠️ **What the entry carries is held to what the kind can read back.** § 9 fixes the two values; a
 kind that writes a figure it cannot parse again has recorded a day and permanently cannot answer
@@ -7192,9 +7589,9 @@ already crosses a separator and a class so written exempts every change — the 
 refusal above wearing a facet. The two-star form, because it is the habit every other tool teaches,
 would mean nothing different here, and a glob quietly matching less than its author meant sends a
 change through the loop that should not have been in it. And a blank one, which matches nothing.
-⛔ **A path handed to the decision is refused on the same rule**: one that is absolute or climbs out
-of the tree is a path no class can be asked about, and the answer it would otherwise be given is
-*exempt*.
+⛔ **A path handed to the decision is refused on the same rule**: one that is absolute, climbs out
+of the tree or carries a step the repository's own spelling does not is a path no class can be asked
+about, and the answer it would otherwise be given is *exempt*.
 
 **The kinds are a closed set, published in the fence above and nowhere else on this surface.**
 ⚠️ **Unlike [§ 27](#27-the-role-to-person-map)'s role names, they are publishable** — which roles a
@@ -7752,6 +8149,16 @@ deploy:
     workflow:     "<a name § 2's `checks` is keyed on, where the shape is not `command`>"
     ref:          "<the ref a dispatch is made against>"
     inputs:       "<the typed inputs this target always sends, as a mapping>"
+    choices:                   # a list; one entry per input a run may choose
+      name:       "<the input's name>"
+      values:     "<the allowed values, as a list of strings>"
+      default:    "<the value a run that chooses nothing takes>"
+      joined_by:  "<what joins several values, where a run may choose more than one>"
+      warnings:   "<a value, mapped to what the go says about choosing it>"
+    tree:                      # a list; one entry per condition the tree is held to
+      condition:  clean | on_branch | at_remote_tip | primary_checkout | at_commit
+      holds:      deploy | advance | both
+      branch:     "<the branch the tree must be on, where the condition is `on_branch`>"
     requires:     "<§ 16's list, cited there and not restated>"
     advances:     "<one of § 4.2's own roles, read there — or `none`>"
     batch:        "<a command printing one item identifier per line>"
@@ -7850,7 +8257,7 @@ table being the statement and the figures the measurement's.
 
 | `invoke` | what the role does | what the entry states |
 |---|---|---|
-| `command` | runs it, in the root `command_root` names | `command`, and `command_root` where it is not the code root |
+| `command` | runs it, in the root `command_root` names, with [each choice](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target) put in its place | `command`, and `command_root` where it is not the code root |
 | `dispatch` | asks [§ 29](#the-run-operations-and-what-each-absence-does) for one, against `ref`, sending `inputs` | `workflow`, `ref`, `inputs` |
 | `by_hand` | runs nothing, names the workflow, the ref and every input, and **reports no deploy made** | `workflow`, `ref`, `inputs` |
 
@@ -7862,8 +8269,8 @@ overriding that project's own rule with a capability. ⚠️ **One target in the
 most irreversible one in it**, which is the whole of the evidence and is stated rather than rounded
 up.
 
-⛔ **`inputs` is the inputs this target *always* sends, and an input a person chooses is asked for
-and named in the go instead.** Measured on the one dispatching target, where the host's own default
+⛔ **`inputs` is the inputs this target *always* sends, and an input a run may choose is
+[`choices`](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target)' instead.** Measured on the one dispatching target, where the host's own default
 for an input is the wrong one: unsent, the run builds the branch production serves from a workflow
 dispatched off another, and reports success throughout. ⚠️ **So the hazard is an input omitted
 rather than an input mistyped**, which is why the always-sent set is configuration and the rest is
@@ -7881,12 +8288,60 @@ it leaves a ref beside a command that takes none: a fact written exactly where s
 it to be read. ⛔ **And a key this section does not declare at all is refused the same way**, by the
 rule [§ 1](#a-command-root-is-not-a-code-root) already states for a named root's blocks.
 
+### A choice made for one run, and how its value reaches the target
+
+⛔ **`choices` declares every input a run may choose, so one target covers every combination of
+them.** Each entry states its `name`, the `values` it may take and the `default` a run choosing
+nothing takes. The key is omitted where a run chooses nothing, and such a target is read and invoked
+exactly as one was before the key existed.
+
+| the key | what it states | what is refused where it is written |
+|---|---|---|
+| `name` | letters, digits, `_` and `-`, opening with a letter or `_` | a name another choice carries, and a name `inputs` always sends |
+| `values` | a list of strings, each on one line | a value written twice, and one that is not a string — a word the file format reads as a boolean or a number is quoted |
+| `default` | one of `values`; a list of them where `joined_by` is stated | a default outside `values` |
+| `joined_by` | that a run may choose several values, and the text between them | an empty one, and one that appears inside a value |
+| `warnings` | what the go says when a value is chosen | a value the choice does not carry |
+
+⛔ **A selection is resolved by the reader, before the go, and nothing outside the declaration is
+resolved at all.** A choice the target does not declare, a value it does not allow, one value where
+several were handed to a choice stating no `joined_by`, and a value named twice are each a stop naming
+what is allowed. Several values are joined in the order `values` states them, whatever order they
+were handed over in, so one selection has one spelling.
+
+**How a value reaches what is invoked:**
+
+| `invoke` | where the value goes |
+|---|---|
+| `command` | in place of `{choose:<name>}`, everywhere the command carries it |
+| `dispatch` | as a typed input of that name, beside the ones `inputs` always sends |
+| `by_hand` | named with the workflow and the ref, as every input is |
+
+⛔ **On a `command` target a value is held to words a shell reads as themselves, and that is the
+quoting.** Every value and every `joined_by` is ASCII letters, digits and `_ . / : @ % + , = -`, and
+a value opens with a letter, a digit, `_`, `.` or `/`; anything else is refused at the load. ⚠️ **Not
+quoted at the substitution instead**, because a command may already place the word inside quotes and
+[§ 1](#a-command-root-is-not-a-code-root)'s form may place the whole command inside another: quotes
+added here would close those. A value needing a space is a word the project's own command maps.
+
+⛔ **The command and the declaration agree in both directions**: a declared choice the command never
+places would be shown in a go and reach nothing, and a placed name no choice declares would reach
+the shell as written. Each is refused with the name. ⚠️ **A choice reaches `command` and no other
+command of the entry**, so a placement written in any other key is refused too.
+
+⛔ **The go shows every choice with the value taken, whether it was chosen or is the default, and
+every warning declared for a value taken.** A go is for the values it showed: a different selection
+is a different deploy and is asked for again. ⚠️ **On a target stating `not_live: true` there is no
+go**, and the values and their warnings are in the reply.
+
 ### What runs before the target is confirmed, and what it may not do
 
-⛔ **The preflight writes nothing.** It reads the tree, the target's stated preconditions and
-whatever the project's own command checks for itself, and it stages nothing, checks nothing out and
-touches no machine — ⚠️ **which one copy states as a rule about a shared workspace** rather than as
-caution: several sessions stand in one checkout, and a deploy needs no working tree of its own.
+⛔ **The preflight writes nothing.** It reads the tree and holds it to what the entry's
+[`tree`](#what-the-tree-must-be-for-the-deploy-and-for-the-advance) states, it reads the target's
+stated preconditions and whatever the project's own command checks for itself, and it stages
+nothing, checks nothing out and touches no machine — ⚠️ **which one copy states as a rule about a
+shared workspace** rather than as caution: several sessions stand in one checkout, and a deploy
+needs no working tree of its own.
 
 ⛔ **`requires` is [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s
 list and this facet writes no second grammar for it**, which is the division § 17 already has with
@@ -7910,6 +8365,51 @@ is about to start asserts the released commit is contained in that branch and re
 with the version already spent. ⛔ **That write is the project's step and not the preflight**, and
 what the surface asks of it is what that copy already does: the window it opens is named, and a
 failed deploy is not repaired by moving the branch back.
+
+### What the tree must be, for the deploy and for the advance
+
+⛔ **`tree` states what the tree a deploy runs from must be, and each condition says what it holds.**
+The key is omitted where nothing is required of the tree, and such a target reports what is
+uncommitted and holds nothing on it — the behaviour every target had before the key existed.
+
+| `condition` | met where |
+|---|---|
+| `clean` | git reports no change in the tree — staged, unstaged or untracked; what the tree ignores is not read |
+| `on_branch` | the branch checked out is the one `branch` names |
+| `at_remote_tip` | the tree's commit is its branch's upstream as last fetched; a branch with no upstream does not meet it |
+| `primary_checkout` | the tree is the repository's primary checkout rather than a linked tree |
+| `at_commit` | the tree's commit is the one the invocation names; an invocation naming none does not meet it |
+
+| `holds` | a condition not met |
+|---|---|
+| `deploy` | stops the deploy in the preflight, before any go is asked for, and nothing is invoked |
+| `advance` | lets the deploy run and holds every item's advance, the grouping's mark included |
+| `both` | does both |
+
+⛔ **The vocabulary is closed, and a condition outside it is refused where it is written.** Every
+condition was measured as a requirement of some adopter's deploy, and one of them stops its deploy
+on these readings where another lets the deploy run and holds the advance — so what a condition
+holds is the entry's to state, and neither is derived from liveness. ⛔ `branch` is stated where the
+condition is `on_branch` and refused beside any other, and one condition stated twice is refused.
+
+⛔ **The tree is the directory the target's command runs in, and only a `command` target states
+one.** A `dispatch` or a `by_hand` target is built by the host from `ref`, so a deploy that uses no
+local tree has no tree to hold, and `tree` beside either is refused with the shape named.
+
+⛔ **The reading writes nothing, and that includes git's own bookkeeping.** No fetch, no pull, and
+the index is not refreshed as a side effect of reading it. ⚠️ **So `at_remote_tip` is read against
+the upstream as last fetched**, and the report says so: bringing the tree up to date stays the
+project's own command, run before the deploy is asked for.
+
+⛔ **A condition not met names itself and what it held** — the condition, what the tree held
+instead, and whether the deploy or the advance is what it stops. ⛔ **A condition that could not be
+read is not met**, by [§ 11](#a-report-names-what-it-could-not-establish): a tree nothing could read
+reads exactly like a tree that met everything otherwise.
+
+⛔ **A condition that holds the advance is read twice**: in the preflight, so the go shows that no
+item will move, and again where the advance is made, for the reason
+[`The batch`](#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong) reads an item's role
+there: a command that changed the tree changes the answer.
 
 ### The batch, and the two ways of assembling one that are wrong
 
@@ -8894,6 +9394,9 @@ documents:
       derived_from: ["docs/requirements.md"] # recorded and held acyclic, never read against the text
   forbidden: []                    # required_when: documents.carrier = list
   quoted: []                       # required_when: documents.carrier = list
+  box_diagrams:                    # optional: absent holds no diagram, as today
+    held: true                     # a boolean; `false` holds no diagram
+    exempt: []                     # `[]` where no block is exempt
   absent_reason: "…"               # required where the carrier is none
 ```
 
@@ -8916,6 +9419,11 @@ documents:
   quoted:
     sentence: "<the sentence quoted back at the document it came from>"
     document: "<the document it is quoted against>"
+  box_diagrams:
+    exempt:
+      document: "<the document the block is in>"
+      block:    "<an expression the fenced block's own text matches>"
+      reason:   "<why this block is not held to the alignment rule>"
 ```
 
 **This states what a project's prose documents are held to, so that something other than a reader's
@@ -9040,6 +9548,49 @@ answered `<p>| 32 | … |</p>` by the host's own renderer while every check over
 green, each of them holding a **line** or holding the document against this surface and none holding
 its blocks.
 
+### A box diagram's edges, held where a project turns the check on
+
+⛔ **A diagram drawn in box characters is held to its own alignment, and it is held as a
+**computed** check.** The defect is a corner or a junction whose arm meets nothing — a box's right
+edge one column off from the corner above it, a horizontal run that stops short of the corner it
+was drawn to — and it is no name and no pattern, so no forbidding entry can express it.
+
+| what is held | what is not read |
+|---|---|
+| every **junction** — a character carrying both a horizontal and a vertical arm: a corner, a tee, a cross — is red where an arm lands on a space, past the block's edge, on either column of a wide character, or on a line that does not reach back | a straight run (`─`, `│` and their dashed and heavy forms) and a half line, either of which may end where the drawing does; and an arm landing on text, which is a line drawn to a label — `tree`'s own output puts each nested `└` under the first letter of its parent's name |
+| inside a fenced block that carries a box-drawing character at all | a block drawn only in ASCII (`+`, `-`, `\|`), and a box character written in running prose |
+| columns measured by **display width**: a wide character counts two, a combining mark or a format character counts none, and a tab advances to the next multiple of eight | a character's code point count, which is what a misaligned box is usually drawn against; and an ambiguous-width character's East Asian rendering — `→`, `▶` and the box characters themselves count one, as a terminal outside an East Asian locale draws them |
+
+⛔ **The red names the line and the column of the junction**, and what its arm met: that is the
+corner the eye has to go to, and the edge it was meant to join is one row or one column from it.
+⚠️ **Measured on twelve diagram blocks in other repositories, before this rule landed**: three were
+red, two of them a vertical line one column to the right of the tee or corner it hangs from and the
+third a bracket's end pointing at the gap between two words — and none of the twelve, `tree`-shaped
+listings among them, was red for a reason its author would not call a misalignment.
+
+⛔ **Which character is a junction is read off the character's own Unicode name** and never listed:
+the box-drawing block names each character by its arms — `UP`, `DOWN`, `LEFT`, `RIGHT`, and
+`VERTICAL` and `HORIZONTAL` for the pairs — so a light, heavy, double, arc or mixed form is read by
+the same rule and no table of them can drift from the block.
+
+⛔ **The check is the project's to turn on**, by `box_diagrams.held: true`, and a project that states
+no `box_diagrams` block holds no diagram — which makes it the one key directly under `documents`
+that is not required, and the exception is stated rather than slipped in: the key arrived after
+every configuration in § 1's sense had been written, and a required key would refuse each of them
+for a check none of them asked for. ⚠️ **`held: false` and the block absent are the same answer**,
+and the run says no diagram is held rather than reporting the diagrams as aligned.
+
+⛔ **A block is exempted by a row of `exempt`, and the row names the block by its own text** — an
+expression searched in the fenced block's content, inside the document the row names — ⚠️ **never
+by a line number**, which every edit above the block moves. `reason` is required, for `forbidden`'s
+reason one key over: an exemption whose reason nobody wrote down is one nobody can tell from a
+misaligned diagram somebody silenced.
+
+⛔ **An exemption that matches no block is a red, and so is one whose expression does not compile.**
+The first is an exemption outliving the diagram it was written for, which then silently covers
+whatever is drawn there next; the second is an exemption that can never be evaluated, which is
+never *matches nothing*.
+
 ### Every check carries a violation it reddens on
 
 ⛔ **A check ships with a recorded violation, and the suite asserts the red rather than claiming
@@ -9064,12 +9615,12 @@ this is what happened.
 
 ⛔ **A project's own domain-specific computed checks stay in that project's own script, and this
 facet neither carries them nor names them.** What a shared mechanism can hold is the graph, the file
-set, the forbidden names and a document's block structure; whether a project's five request shapes
-each have a home in its layout is a property of that project's subject matter, and a key pointing at
-a command that answers it would satisfy
+set, the forbidden names, a document's block structure and its box diagrams' alignment; whether a
+project's five request shapes each have a home in its layout is a property of that project's
+subject matter, and a key pointing at a command that answers it would satisfy
 [§ 36](#why-a-utility-has-no-home-on-this-surface-from-either-direction)'s letter and deliver
 nothing. ⚠️ **So the facet's coverage is a boundary and not a claim of completeness**: a project's
-document rules are expressible here to the extent that they are the four things above.
+document rules are expressible here to the extent that they are the five things above.
 
 ### `carrier: none`, and the configurations this key refuses
 
@@ -9082,10 +9633,10 @@ asked what holds a document answers *nothing is stated* rather than *the documen
 and has not written its rows yet, which is this facet at its most drifted and the state it most
 needs to tell apart from the other.
 
-⛔ **Stated as a list, the block states every key and none is defaulted.** `forbidden: []` and
-`quoted: []` are a project forbidding and quoting nothing, written; `files`, `entry_points` and
-`graph` carry no empty form, a governed set with nothing in it being a check that never fires while
-reading as one that does.
+⛔ **Stated as a list, the block states every key and none is defaulted**, `box_diagrams` alone
+excepted for the reason its own subsection states. `forbidden: []` and `quoted: []` are a project
+forbidding and quoting nothing, written; `files`, `entry_points` and `graph` carry no empty form, a
+governed set with nothing in it being a check that never fires while reading as one that does.
 
 ⛔ **This key is required of every project, so it invalidates every configuration written before
 it** — [§ 1](#the-surface-is-resolved-beside-the-configuration)'s own
@@ -9333,6 +9884,43 @@ reason:**
   `document` carrier's rather than the facet's**: a project that could reword it would be a project
   whose ordering the shared role cannot read, which is the one thing the carrier is for. It is
   stated with the carrier's implementation, where the parser is.
+
+### A directory that outlives a checkout, and the two ways one goes missing
+
+⛔ **A configured directory that outlives a checkout is addressed by nothing a checkout decides.**
+The agent harness keeps a store per project, in a folder whose name encodes the whole path of one
+checkout, the account included — so a moved or renamed checkout, a tree, another account and another
+machine each derive a different folder, and a literal copied from one of them goes stale with
+nothing announcing it. ⚠️ **The keys this binds are `ordering.record.dir`, `memory.store` and
+`day_log.destination.out_dir`**: what each addresses is read by a pass no checkout here outlives.
+
+⛔ **A value inside that store is reported, and not refused.** The reader names the key, why the
+value goes stale and what to write instead, beside what it reports as unavailable, where every role
+reads it. ⛔ **The report names the key and never the value**, by
+[§ 28](#28-a-configured-value-a-repository-may-not-hold). ⚠️ **A project whose memory is meant to be
+the harness's own states [§ 25](#25-the-memory-store-and-the-tree-a-save-may-refresh-it-from)'s
+`derived`**, which is that fact without a path.
+
+⛔ **It is recognised and never composed**, for the reason § 25 gives for composing no store:
+
+| what is recognised | how |
+|---|---|
+| the form | the harness's configuration directory, its per-project store, and a folder named for an absolute path — a leading `-`, or a drive letter and two. ⚠️ Under any account's home, which is what reaches a value written on another machine |
+| the harness's own root | anything inside that store, where the environment states a relocated configuration directory |
+
+Both are asked of the value as written and of what it resolves to.
+
+⛔ **An absent directory and an absent document are two answers with two remedies.** A directory that
+is not there stops the pass under either carrier, naming the key and what it resolved to, and saying
+that the record may exist elsewhere: the remedy is to check the value. A document absent from a
+directory that is there is an ordering that does not exist yet, and the remedy is the bootstrap.
+⛔ **A directory that could not be asked about is neither**, and stops as unestablished.
+⚠️ **Absence alone does not refuse the bootstrap**, a first adoption having no directory either: it
+says that the directory is missing before it reports a layer, and creates nothing.
+
+⚠️ **What [the asking step](#what-a-project-is-asked-and-the-one-file-the-answers-are-written-into)
+offers for these keys is under `~` and named by the code host's repository**, so it carries neither
+an account nor a checkout's path. ⛔ An offer and not a default: silence does not take it.
 
 ### An ordering that does not exist yet, and the one act that is the person's
 

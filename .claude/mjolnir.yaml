@@ -154,6 +154,9 @@ host:
     - workflow: "Executed count"
       mirrors: "python3 plugins/mjolnir/scripts/executed.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    - workflow: "Filing window"
+      mirrors: "python3 plugins/mjolnir/scripts/file_window.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     # ⚠️ The one entry of this list whose own run reads the list. Its suite answers from planted
     # configurations rather than from this one, so the circularity is confined to a single
     # assertion — that every entry here states a trigger the consumer can parse, which is the
@@ -193,6 +196,11 @@ host:
     # and makes one change in, because its in-memory arms say nothing about the diff.
     - workflow: "Live data carrier"
       mirrors: "python3 plugins/mjolnir/scripts/live_data.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ And on § 33's tree conditions: no target here states one, so this run holds the carrier's
+    # readings against repositories its suite builds.
+    - workflow: "Deploy tree carrier"
+      mirrors: "python3 plugins/mjolnir/scripts/deploy_tree.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Live data record"
       mirrors: "python3 plugins/mjolnir/scripts/check_live_data_record.py --self-test"
@@ -827,6 +835,11 @@ spend_guard:
   # No `resume_bar_usd`: a resume here pays to rewrite a prompt cache like any other, and there is
   # no spend beside it for the figure to be worth interrupting a person about. The key is
   # legitimately unset, and the arm that would read it says nothing.
+
+# No launcher is listed: the lists the guards read are empty here, so there is no command for one to
+# hide.
+command_position:
+  launchers: []
 
 live_guard:
   # ⛔ No command this repository runs opens a session anywhere else. Every check here is a suite

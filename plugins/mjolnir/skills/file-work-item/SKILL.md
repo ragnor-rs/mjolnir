@@ -211,6 +211,13 @@ and otherwise the most recently updated, bounded and with the bound reported. �
 not optional and it is the one that gets dropped** — it is the only layer that can catch a
 duplicate whose wording shares nothing with the request, which is what a reworded duplicate is.
 
+**The first of this section's two readings is taken with the sweep**, once per item and before
+anything is drafted. What it is for is 2e's:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/file_window.py" read --out <the first reading>
+```
+
 **2c. Tier by meaning, not by shared words.** Pool 2a and 2b, drop the repeats, and read each
 promising candidate's own body before judging it:
 
@@ -235,6 +242,31 @@ on their own.
 ⛔ **Only a search that came back empty on every query — and no open item whose acceptance the
 request would serve — files without asking.** Say so in one line, naming both halves: that is the
 claim the reply is making.
+
+**2e. The window: the search is only as current as the moment before the write.** ⛔ **A stale
+search reads exactly like a clean one** — the queries come back empty and the reply says the check
+was performed, while a backlog several sessions file into has moved under the drafting. So the
+listing is read again immediately before section 5's create, and judged against the first reading:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/file_window.py" compare --first <the first reading> \
+  --out <the reading now>
+```
+
+- **It exits 0** ⇒ the count and the highest identifier stand where they stood, and so does the set
+  behind them. Write the item with nothing between this command and the create.
+- **It exits 1** ⇒ the backlog moved. ⛔ **Every item it names as appeared is read and put through
+  2c, 2d and § 3 before anything is written**; the rest of the search is not run again. Then compare
+  again, against the same first reading, and write once everything that last run named has already
+  been judged.
+- **It exits 3** ⇒ this tracker has no search, which the fallback above already governs. The window
+  is unmeasured, and the reply says that rather than that it was met.
+- **It exits 2** ⇒ a reading could not be taken. ⛔ **Nothing is written on it**: a search that
+  failed is not a tracker without one, and the stop names what the command reported.
+
+⚠️ **What it cannot see is an item reworded in place**: the readings are of which items exist. ⚠️
+**And it narrows the race rather than closing it** — an item created between the last comparison
+and the create is seen by neither.
 
 ## 3. The three relationships, and the parent case that reads like a clean check
 
@@ -313,7 +345,9 @@ template's, and an item that states neither is a note rather than work.
 
 **The body is written to be validated by whoever ordered the work**, not by whoever will do it. The
 acceptance condition is the whole point of the item: work can only be rejected against what was
-agreed when it was assigned, so a vague condition now is protection given away.
+agreed when it was assigned, so a vague condition now is protection given away. ⛔ **Its form is
+[`§ What an acceptance condition is written as`](../../config/schema.md#what-an-acceptance-condition-is-written-as)'s**,
+read before the section is written.
 
 ⛔ **Observe `tracker.policy.forbid_on_item`**
 ([`§ 3`](../../config/schema.md#a-write-forbidden-by-policy-rather-than-by-capability)). Where a
@@ -343,7 +377,14 @@ An identifier is owed only where the source has one.
 
 ## 5. Write it, and record the relations
 
-Write the item through `create_item`. ⚠️ **An item exists the moment that call returns**: a later
+⛔ **The fields the tracker requires at creation go in that call**, where
+[`§ 3`](../../config/schema.md#what-each-kinds-block-carries) has the project state them: an entry
+with no value of its own is asked for before the create, and never invented.
+
+Write the item through `create_item`. ⛔ **Where § 4.1's carrier is `native`, the filing states its
+type** — the port's `--type` beside `--invoke create_item`, in the tracker's own word — and a type
+refused by name is corrected before the create is asked for again, nothing having been filed.
+⚠️ **An item exists the moment that call returns**: a later
 label, relation or field call that fails leaves an item that is on the tracker and incomplete, not
 absent. Say that, and fix it — never retry the create.
 
@@ -404,6 +445,17 @@ Then report, in the register
   clone does not hold and so left **unread**. ⛔ **And where the project carries no corpus, that no
   corpus is configured** — never that nothing contradicts the request, which is a verdict the
   absence cannot support ([`§ 39`](../../config/schema.md#39-the-specification-corpus-and-which-copy-of-it-governs));
+- **both of 2e's readings, per item filed**, as the two lines the last comparison printed, with
+  every item that appeared between them and how it was judged — or, where the tracker has no search,
+  the line `Backlog window: unmeasured`. ⛔ **The reply is held to that before it is sent**, so a
+  pass that skipped the second reading cannot report as one that took it. An item that ended in
+  § 3's duplicate or parent outcome was not created and carries neither line, and a reply over no
+  created item is not put through the check:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/file_window.py" check --reply <the reply>
+  ```
+
 - the type and the template used, or that the project carries neither;
 - **which code repository each item was written against**, where the project carries several — and
   where its carrier is `none`, that the item states none and the root reaches a later role on its

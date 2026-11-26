@@ -1022,6 +1022,83 @@ def _opens_with(text: str, value: str) -> bool:
     return text.startswith(value) and not WORD_CHARACTER.match(text[len(value):])
 
 
+def _changed_paths(paths: list[str], key: str) -> list[str]:
+    """The changed paths a class is asked about, refused where one is not a path.
+
+    ⛔ **One statement for both facets that match a change against § 30's globs**
+    -- the exemption, and § 4.2's classed writers -- because the permissive
+    direction is the same in both: a path dropped or misread answers about a
+    different change than the one the caller described.
+
+    ⛔ **Refused rather than filtered**, and that is a reproduction rather than a
+    preference: `['docs/a.md', 123, None, {'app/main.py': 1}]` answered exempt
+    with the dict dropped.
+
+    ⛔ **And repository-relative**, which the glob rule states and this performs:
+    under a `*.md` glob an absolute path outside the repository and
+    `../outside/thing.md` each matched.
+
+    Deduplicated, because *wholly inside* compares what a class covers against
+    what the change touches, and a path named twice is one file.
+    """
+    for position, path in enumerate(paths):
+        if not isinstance(path, str) or not path.strip():
+            raise ConfigError(
+                key,
+                f"was handed {path!r} as changed path {position}, which is not a "
+                "path. ⛔ Not dropped from the list: a change described wrongly "
+                "in part would be answered about in part (§ 30, § 11).",
+            )
+        # ⚠️ The third arm is a path the repository does not hold under that
+        # spelling: `ci/../app/a` matched a `ci/*` glob, and `./ci/a` matched none.
+        if (
+            os.path.isabs(path)
+            or path.split("/")[0] == os.pardir
+            or os.path.normpath(path) != path
+        ):
+            raise ConfigError(
+                key,
+                f"was handed {path!r}, which is not repository-relative. § 30 "
+                "matches a class's globs against the path as the repository "
+                "holds it, so an absolute path, one climbing out of the tree or "
+                "one carrying a step the repository does not is a path no class "
+                "can be asked about.",
+            )
+    return list(dict.fromkeys(paths))
+
+
+def classed_writers(status: dict, paths: list[str]) -> list[str]:
+    """The writers whose class covers one change whole (§ 4.2).
+
+    One member is the writer this item's move belongs to; none and several are
+    each a refusal the port words. ⛔ `every` changed path and never `any`, which
+    is § 30's rule and is why `rest` exists: a change split between two classes
+    is inside neither. ⛔ And `rest` answers only where a path was handed over --
+    an empty change is inside no class, the remainder included, since the
+    remainder would otherwise claim every item nobody described.
+    """
+    entries = status[STATUS_WRITERS]
+    held = _changed_paths(paths, f"statuses.{STATUS_WRITERS}")
+    if not held:
+        return []
+    covering = [
+        entry["writer"]
+        for entry in entries
+        if "paths" in entry
+        and all(any(_matches(p, g) for g in entry["paths"]) for p in held)
+    ]
+    if covering:
+        return covering
+    return [entry["writer"] for entry in entries if entry.get(CLASS_REST)]
+
+
+def writers_of(status: dict) -> list[str]:
+    """Every writer one status states, whichever of § 4.2's two forms it uses."""
+    if STATUS_WRITERS in status:
+        return [entry["writer"] for entry in status[STATUS_WRITERS]]
+    return [status.get("writer")]
+
+
 def _matches(path: str, glob: str) -> bool:
     """Whether one changed path is inside one of § 30's globs.
 
@@ -1636,14 +1713,15 @@ def _grouping_facet(data: dict, facts: dict) -> dict[str, dict]:
                 ),
                 None,
             )
-            if terminal is not None and terminal.get("writer") != closed_by:
+            if terminal is not None and writers_of(terminal) != [closed_by]:
                 raise ConfigError(
                     f"{at}.closes_items",
                     f"is true while `closed_by` is {closed_by!r} and the status "
                     f"holding § 4.2's terminal role is written by "
-                    f"{terminal.get('writer')!r}. Closing the grouping writes that "
-                    "status, so the configuration names two actors for one field "
-                    "and the surface carries one writer per status (§ 4.8, § 4.2).",
+                    f"{' and '.join(repr(w) for w in writers_of(terminal))}. "
+                    "Closing the grouping writes that status for every item still "
+                    "open in it, whatever its class, so its writer has to be the "
+                    "status's only one (§ 4.8, § 4.2).",
                 )
 
     # ⛔ The gate's own two checks, each refused where the facet has nothing for
@@ -2376,40 +2454,7 @@ class Config:
         and `person_for`'s rule arriving at the facet where the permissive
         reading is a commit that skipped every check the loop owns.
         """
-        # ⛔ **Refused rather than filtered**, and that is the reproduction rather
-        # than a preference: a list filtered down to its well-formed members
-        # answers about a *different change* than the one the caller described,
-        # and the answer it gives is `exempt`. Measured by review on this change
-        # -- `['docs/a.md', 123, None, {'app/main.py': 1}]` answered exempt with
-        # the dict dropped, which is the permissive direction § 11 names.
-        for position, path in enumerate(paths):
-            if not isinstance(path, str) or not path.strip():
-                raise ConfigError(
-                    EXEMPT_CLASSES_PATH,
-                    f"was handed {path!r} as changed path {position}, which is not a "
-                    "path. ⛔ Not dropped from the list: a change described wrongly "
-                    "in part would be answered about in part, and the part that "
-                    "survives is the part that gets exempted (§ 30, § 11).",
-                )
-            # ⛔ § 30 states the glob is matched against the **repository-relative**
-            # path, and that precondition is performed here or by nothing. Measured
-            # by review: under the shipped `*.md` glob, an absolute path outside the
-            # repository and `../outside/thing.md` each answered `exempt` -- an
-            # exemption granted over a file the repository does not contain.
-            if os.path.isabs(path) or path.split("/")[0] == os.pardir:
-                raise ConfigError(
-                    EXEMPT_CLASSES_PATH,
-                    f"was handed {path!r}, which is not repository-relative. § 30 "
-                    "matches a class's globs against the path as the repository "
-                    "holds it, so an absolute path or one climbing out of the tree "
-                    "is a path no class can be asked about -- and the answer it "
-                    "would otherwise get is `exempt`.",
-                )
-        # ⛔ Deduplicated, because the *wholly inside* test below compares what the
-        # class covers against what the change touches, and a path named twice is
-        # one file. Measured by review: the comparison was a set's size against a
-        # list's, so one repeated path turned an exemption into a question.
-        held = list(dict.fromkeys(p for p in paths if isinstance(p, str)))
+        held = _changed_paths(paths, EXEMPT_CLASSES_PATH)
         # ⛔ A decision with no changed path is a stop and never *exempt*: the
         # permissive reading of an empty list is a class whose `paths` are
         # vacuously all matched, which exempts every change a caller forgets to
@@ -2986,6 +3031,14 @@ class Config:
             "graph": [dict(entry) for entry in self.get("documents.graph") or ()],
             "forbidden": [dict(entry) for entry in self.get("documents.forbidden") or ()],
             "quoted": [dict(entry) for entry in self.get("documents.quoted") or ()],
+            # ⛔ The one key under `documents` that may be absent, and absence comes
+            # back as `None` rather than as a block reading `held: false`: the
+            # carrier reports *no diagram is held* either way, and a reader
+            # handed a fabricated block could not say which the project wrote.
+            "box_diagrams": (
+                dict(self.get("documents.box_diagrams"))
+                if self.get("documents.box_diagrams") is not None else None
+            ),
         }
 
     @property
@@ -3020,6 +3073,97 @@ class Config:
             "grouping": grouping["name"],
             "ref_prefix": grouping.get("ref_prefix"),
         }
+
+    def deploy_target(self, target: str, chosen: list[str] | None = None) -> dict:
+        """One § 33 target as a run would invoke it, its choices resolved.
+
+        `chosen` is `name=value` strings, a name repeated where its choice may
+        take several. ⛔ Every refusal is made here, ahead of any go: what comes
+        back is the whole of what the go shows and the whole of what is run.
+        """
+        entries = [one for one in self.get("deploy") or () if isinstance(one, dict)]
+        entry = next((one for one in entries if one.get("name") == target), None)
+        if entry is None:
+            raise ConfigError(
+                "deploy",
+                f"names no target {target!r}. It names "
+                f"{', '.join(repr(one.get('name')) for one in entries) or 'none'} (§ 33).",
+            )
+        choices = {choice["name"]: choice for choice in entry.get("choices") or ()}
+        asked: dict[str, list[str]] = {}
+        for stated in chosen or ():
+            name, equals, value = stated.partition("=")
+            if not equals:
+                raise ConfigError(
+                    "deploy.choices", f"was handed {stated!r}; a choice is `name=value` (§ 33)."
+                )
+            if name not in choices:
+                raise ConfigError(
+                    "deploy.choices",
+                    f"names no choice {name!r} on the target {target!r}. It names "
+                    f"{', '.join(repr(one) for one in choices) or 'none'} (§ 33).",
+                )
+            allowed = choices[name]["values"]
+            if value not in allowed:
+                raise ConfigError(
+                    f"deploy.choices.{name}",
+                    f"does not allow {value!r}. It allows "
+                    f"{', '.join(repr(one) for one in allowed)} (§ 33).",
+                )
+            held = asked.setdefault(name, [])
+            if value in held:
+                raise ConfigError(
+                    f"deploy.choices.{name}", f"was handed {value!r} twice (§ 33)."
+                )
+            if held and "joined_by" not in choices[name]:
+                raise ConfigError(
+                    f"deploy.choices.{name}",
+                    "takes one value, its choice stating no `joined_by`, and was "
+                    f"handed {held[0]!r} and {value!r} (§ 33).",
+                )
+            held.append(value)
+        shown = []
+        sent: dict[str, str] = {}
+        for name, choice in choices.items():
+            default = choice["default"]
+            taken = asked.get(name) or (default if isinstance(default, list) else [default])
+            taken = [value for value in choice["values"] if value in taken]
+            sent[name] = choice.get("joined_by", "").join(taken)
+            warnings = choice.get("warnings") or {}
+            shown.append(
+                {
+                    "name": name,
+                    "value": sent[name],
+                    "chosen": name in asked,
+                    "warnings": [warnings[value] for value in taken if value in warnings],
+                }
+            )
+        answer = {
+            "target": target,
+            "not_live": entry["not_live"],
+            # ⚠️ Not `invoke`: the command's own resolution carries a key of that
+            # name for § 1's form, and the two are different facts.
+            "reached_by": entry["invoke"],
+            DEPLOY_CODE_ROOT: entry.get(DEPLOY_CODE_ROOT),
+            "choices": shown,
+            # ⚠️ Empty where the entry states none, which is a stated absence the
+            # carrier reading it reports rather than a list of conditions all met.
+            "tree": [dict(one) for one in entry.get("tree") or ()],
+        }
+        if entry["invoke"] != "command":
+            # ⚠️ The two halves cannot meet: a name in both is refused at the load.
+            return {
+                **answer,
+                "workflow": entry["workflow"],
+                "ref": entry["ref"],
+                "inputs": {**(entry.get("inputs") or {}), **sent},
+            }
+        command = entry["command"]
+        if choices:
+            command = _CHOICE_PLACED.sub(lambda found: sent[found.group(1)], command)
+        root = entry.get(DEPLOY_CODE_ROOT)
+        view = self.root(root) if root is not None else self.only_root
+        return {**answer, **view.command(command, entry.get(COMMAND_ROOT_REF))}
 
     def live_data_step(self, target: str) -> dict:
         """§ 35's block on one § 33 target, with which answer it is said out loud.
@@ -3169,6 +3313,53 @@ class Config:
                 "memory third to run from. A stated key rather than an inert one "
                 "-- the branch model is the project's and may change under a "
                 "configuration that already carries this (§ 25)."
+            )
+        return out
+
+    def outliving_directories(self) -> dict[str, str | None]:
+        """Each directory § 40 says outlives a checkout, by key, as this project states it.
+
+        ⛔ Only under the carrier that reads it, and `None` where the value could not be read --
+        a listed key whose private layer is absent is unestablished rather than clean (§ 11).
+        """
+        out: dict[str, str | None] = {}
+        for key, carrier, words in OUTLIVING_DIRECTORIES:
+            try:
+                if self.get(carrier) not in words:
+                    continue
+                value = self.get(key)
+            except (ConfigError, OSError):
+                out[key] = None
+                continue
+            if isinstance(value, str) and value.strip():
+                out[key] = value.strip()
+        return out
+
+    def harness_derived_directories(self) -> dict[str, str]:
+        """What to say about each such directory the harness derived, or that went unread.
+
+        ⛔ Names the key and never the value, the key being one § 28 may keep out of a report.
+        """
+        out: dict[str, str] = {}
+        for key, value in self.outliving_directories().items():
+            if value is None:
+                out[key] = (
+                    f"`{key}` could not be read, so whether it names a directory the agent "
+                    "harness derived is unestablished (§ 40)."
+                )
+                continue
+            if not derived_by_the_harness(value):
+                continue
+            out[key] = (
+                f"`{key}` names a directory inside the agent harness's own per-project "
+                "store. That folder's name encodes the whole path of one checkout, the "
+                "account included, so a moved or renamed checkout, a tree and another "
+                "machine each derive a different one and the value goes stale. Write a "
+                "directory that depends on neither, such as "
+                f"`{offered_directory(key, None)}`"
+                + ("; or, where the harness's own store is what is meant, "
+                   f"`{MEMORY_KEY}.carrier: derived`" if key == f"{MEMORY_KEY}.store" else "")
+                + " (§ 40)."
             )
         return out
 
@@ -3808,7 +3999,8 @@ class Config:
             for key in self.private_keys:
                 _place_marker(shown, key, f"<private: {PRIVATE_SOURCE_PATH}>")
             out["config"] = shown
-        out["unavailable"] = self.unavailable()
+        out["unavailable"] = [
+            *self.unavailable(), *self.harness_derived_directories().values()]
         return out
 
 
@@ -3993,6 +4185,11 @@ SPEC_CORPUS_GROUPING = f"{SPEC_CORPUS_KEY}.{GROUPING_ENTRY_KEY}"
 # way every other block's are in this module: a constant for one of them and
 # literals for the rest would be the mixed spelling a constant exists against.
 CLOSE_OUT_ROLE = "close_out"
+
+# § 4.2's classed form: the key several writers of one status are stated under,
+# and the class that covers what no other entry does.
+STATUS_WRITERS = "writers"
+CLASS_REST = "rest"
 
 # § 30's block and the three keys under it. ⛔ The two facets a class is built out
 # of are named here because a class entry's keys are **not** walked off the
@@ -4950,6 +5147,8 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
                     raise ConfigError(
                         f"{where}.inputs", "names an input that is not a string (§ 33)."
                     )
+        _validate_choices(where, entry, facts)
+        _validate_tree(where, entry, facts)
         # ⛔ § 16's list, cited rather than given a second grammar here -- the
         # division § 17 already has with the same section. What this facet does
         # with it is hold its shape and name it; evaluating a precondition is
@@ -5101,6 +5300,291 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # one § 33 has with § 16 over `requires` -- the shape is held where the
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
+
+
+# § 33's placement grammar, which the surface states in prose as it does § 34's
+# capture: not a key, not a default, and not a member of an alternation.
+_CHOICE_PLACED = re.compile(r"\{choose:([^}]*)\}")
+_CHOICE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_-]*")
+# ⛔ Words a shell reads as themselves, inside quotes of either kind and outside
+# them, which is why nothing is quoted at the substitution. The first character is
+# narrower: a leading `-` is an option, and `=`, `%` and `~` each mean something
+# at the front of a word to some shell.
+_PLAIN_VALUE = re.compile(r"[A-Za-z0-9_./][A-Za-z0-9_./:@%+,=-]*")
+_PLAIN_JOIN = re.compile(r"[A-Za-z0-9_./:@%+,=-]+")
+
+
+def _one_line(value) -> bool:
+    return isinstance(value, str) and bool(value.strip()) and value.isprintable()
+
+
+def _placed_elsewhere(value, at: str):
+    """Every (path, name) a choice is placed at, anywhere below `value`."""
+    if isinstance(value, str):
+        for name in _CHOICE_PLACED.findall(value):
+            yield at, name
+    elif isinstance(value, dict):
+        for key, inner in value.items():
+            yield from _placed_elsewhere(inner, f"{at}.{key}")
+    elif isinstance(value, list):
+        for index, inner in enumerate(value):
+            yield from _placed_elsewhere(inner, f"{at}[{index}]")
+
+
+def _validate_choices(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `choices` on one entry, which no marker on the surface can reach.
+
+    ⚠️ An entry that omits the key is held to nothing here, its command's own text
+    included: a project that declares no choice keeps every command it had.
+    """
+    if "choices" not in entry:
+        return
+    at = f"{where}.choices"
+    choices = entry["choices"]
+    if not isinstance(choices, list) or not choices:
+        raise ConfigError(
+            at,
+            "must be a non-empty list of the inputs a run may choose (§ 33); omit "
+            "it where a run chooses nothing.",
+        )
+    prefix = "deploy.choices."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a choice could be held "
+            "to nothing; § 33 states a choice's keys in the entry's own fence.",
+        )
+    shell = entry.get("invoke") == "command"
+    always = entry["inputs"] if isinstance(entry.get("inputs"), dict) else {}
+    names: list[str] = []
+    for index, choice in enumerate(choices):
+        here = f"{at}[{index}]"
+        if not isinstance(choice, dict):
+            raise ConfigError(
+                here, "must be a mapping stating a name, its values and a default (§ 33)."
+            )
+        for key in choice:
+            if key not in declared:
+                raise ConfigError(
+                    f"{here}.{key}",
+                    "is a key § 33 does not declare on a choice, so nothing reads "
+                    f"it. The keys it declares are: {', '.join(sorted(declared))}.",
+                )
+        name = choice.get("name")
+        if not isinstance(name, str) or not _CHOICE_NAME.fullmatch(name):
+            raise ConfigError(
+                f"{here}.name",
+                f"is {name!r}; it must be letters, digits, `_` and `-`, opening "
+                "with a letter or `_` (§ 33).",
+            )
+        if name in names:
+            raise ConfigError(
+                f"{here}.name", f"is {name!r}, which another choice already carries (§ 33)."
+            )
+        if name in always:
+            raise ConfigError(
+                f"{here}.name",
+                f"is {name!r}, which `inputs` always sends (§ 33): one input would "
+                "carry two values.",
+            )
+        names.append(name)
+        values = choice.get("values")
+        if not isinstance(values, list) or not values:
+            raise ConfigError(
+                f"{here}.values", "required, and a non-empty list of the allowed values (§ 33)."
+            )
+        for position, value in enumerate(values):
+            if not _one_line(value):
+                raise ConfigError(
+                    f"{here}.values[{position}]",
+                    f"is {value!r}; it must be a string on one line, quoted where "
+                    "the file would read it as anything else (§ 33).",
+                )
+            if shell and not _PLAIN_VALUE.fullmatch(value):
+                raise ConfigError(
+                    f"{here}.values[{position}]",
+                    f"is {value!r}, which a shell would not read as one plain word "
+                    "(§ 33). On a `command` target a value is letters, digits and "
+                    "`_ . / : @ % + , = -`, opening with a letter, a digit, `_`, "
+                    "`.` or `/`.",
+                )
+            if value in values[:position]:
+                raise ConfigError(
+                    f"{here}.values[{position}]", f"states {value!r} a second time (§ 33)."
+                )
+        several = "joined_by" in choice
+        if several:
+            join = choice["joined_by"]
+            if not isinstance(join, str) or not join or not join.isprintable():
+                raise ConfigError(
+                    f"{here}.joined_by",
+                    "must be the text between two chosen values (§ 33); omit it "
+                    "where a run chooses one.",
+                )
+            if shell and not _PLAIN_JOIN.fullmatch(join):
+                raise ConfigError(
+                    f"{here}.joined_by",
+                    f"is {join!r}, which a shell would not read as part of one "
+                    "plain word (§ 33).",
+                )
+            for value in values:
+                if join in value:
+                    raise ConfigError(
+                        f"{here}.joined_by",
+                        f"is {join!r}, which the value {value!r} carries, so two "
+                        "selections would read as one (§ 33).",
+                    )
+        if "default" not in choice:
+            raise ConfigError(
+                f"{here}.default", "required: the value a run that chooses nothing takes (§ 33)."
+            )
+        default = choice["default"]
+        if several != isinstance(default, list):
+            raise ConfigError(
+                f"{here}.default",
+                "must be a list where `joined_by` is stated and one value where it "
+                "is not (§ 33).",
+            )
+        taken = default if several else [default]
+        if not taken or any(one not in values for one in taken) or any(
+            one in taken[:position] for position, one in enumerate(taken)
+        ):
+            raise ConfigError(
+                f"{here}.default",
+                f"is {default!r}; it must be drawn from {values!r}, each once (§ 33).",
+            )
+        warnings = choice.get("warnings", {})
+        if not isinstance(warnings, dict) or ("warnings" in choice and not warnings):
+            raise ConfigError(
+                f"{here}.warnings",
+                "must be a non-empty mapping from a value to its warning (§ 33); "
+                "omit it where there is none.",
+            )
+        for value, text in warnings.items():
+            if value not in values:
+                raise ConfigError(
+                    f"{here}.warnings",
+                    f"warns about {value!r}, which this choice does not carry, so "
+                    "nothing would ever show it (§ 33).",
+                )
+            if not isinstance(text, str) or not text.strip():
+                raise ConfigError(
+                    f"{here}.warnings", f"states nothing about {value!r} (§ 33)."
+                )
+    if shell:
+        placed = _CHOICE_PLACED.findall(entry["command"])
+        for name in names:
+            if name not in placed:
+                raise ConfigError(
+                    f"{where}.command",
+                    f"never places the choice {name!r}, written {{choose:{name}}}, "
+                    "so its value would be shown in a go and reach nothing (§ 33).",
+                )
+        for name in placed:
+            if name not in names:
+                raise ConfigError(
+                    f"{where}.command",
+                    f"places {name!r}, which no choice of this target declares (§ 33).",
+                )
+    for key, value in entry.items():
+        if key == "choices" or (key == "command" and shell):
+            continue
+        for path, name in _placed_elsewhere(value, f"{where}.{key}"):
+            raise ConfigError(
+                path,
+                f"places the choice {name!r}, which is read in a `command` target's "
+                "`command` and nowhere else (§ 33).",
+            )
+
+
+def _validate_tree(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `tree` on one entry, which no marker on the surface can reach.
+
+    ⚠️ An entry that omits the key is held to nothing here: a target stating no
+    condition reports what is uncommitted and holds nothing on it, as before.
+    """
+    if "tree" not in entry:
+        return
+    at = f"{where}.tree"
+    # ⛔ The shape before the list, for the reason `command` and `ref` are refused
+    # in both directions above: a dispatch is built by the host from `ref`, so a
+    # condition on a local tree beside one is a fact nothing reads.
+    if entry.get("invoke") != "command":
+        raise ConfigError(
+            at,
+            f"is stated beside `invoke: {entry.get('invoke')}`, which builds from "
+            "`ref` on the host and runs from no local tree (§ 33). Only a `command` "
+            "target states one.",
+        )
+    conditions = entry["tree"]
+    if not isinstance(conditions, list) or not conditions:
+        raise ConfigError(
+            at,
+            "must be a non-empty list of the conditions the tree is held to (§ 33); "
+            "omit it where nothing is required of the tree.",
+        )
+    prefix = "deploy.tree."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a condition could be "
+            "held to nothing; § 33 states a condition's keys in the entry's own fence.",
+        )
+    kinds = vocabulary(facts, "deploy.tree.condition", "a deploy tree condition")
+    holds = vocabulary(facts, "deploy.tree.holds", "what a tree condition holds")
+    seen: list[str] = []
+    for index, stated in enumerate(conditions):
+        here = f"{at}[{index}]"
+        if not isinstance(stated, dict):
+            raise ConfigError(
+                here, "must be a mapping stating a condition and what it holds (§ 33)."
+            )
+        for key in stated:
+            if key not in declared:
+                raise ConfigError(
+                    f"{here}.{key}",
+                    "is a key § 33 does not declare on a tree condition, so nothing "
+                    f"reads it. The keys it declares are: {', '.join(sorted(declared))}.",
+                )
+        kind = stated.get("condition")
+        if kind not in kinds:
+            raise ConfigError(
+                f"{here}.condition",
+                f"is {kind!r}; the surface states {' | '.join(kinds)} (§ 33).",
+            )
+        if kind in seen:
+            raise ConfigError(
+                f"{here}.condition",
+                f"states {kind!r} a second time (§ 33), so one reading would hold two "
+                "things and the list would say which only by its order.",
+            )
+        seen.append(kind)
+        if stated.get("holds") not in holds:
+            raise ConfigError(
+                f"{here}.holds",
+                f"is {stated.get('holds')!r}; the surface states {' | '.join(holds)} "
+                "(§ 33). What a condition not met stops is the entry's to state.",
+            )
+        if kind == "on_branch":
+            branch = stated.get("branch")
+            if not isinstance(branch, str) or not branch.strip():
+                raise ConfigError(
+                    f"{here}.branch",
+                    "required, and a non-empty branch name, where the condition is "
+                    "`on_branch` (§ 33).",
+                )
+        elif "branch" in stated:
+            raise ConfigError(
+                f"{here}.branch",
+                f"is stated beside the condition {kind!r}, which never reads it "
+                "(§ 33). It is read where the condition is `on_branch`.",
+            )
 
 
 # § 35's two commands that may not carry their own answer, and the one shape a
@@ -5865,7 +6349,9 @@ def _validate_documents(data: dict, facts: dict) -> None:
         # governed and nothing holds.
         stated = [
             key
-            for key in ("files", "entry_points", "graph", "forbidden", "quoted")
+            for key in (
+                "files", "entry_points", "graph", "forbidden", "quoted", "box_diagrams",
+            )
             if key in _absent_as(_get(data, "documents"), {})
         ]
         if stated:
@@ -6104,6 +6590,107 @@ def _validate_documents(data: dict, facts: dict) -> None:
                         "set is a check over a file nothing else here reads.",
                     )
 
+    _validate_box_diagrams(data, facts, rows)
+
+
+def _validate_box_diagrams(data: dict, facts: dict, rows: dict) -> None:
+    """§ 38's `box_diagrams`, the one key under `documents` that may go unstated.
+
+    ⛔ **Absent is admitted and every stated form is held**: the key arrived after
+    every configuration had been written, so requiring it would refuse each of
+    them for a check none asked for -- while a block that *is* stated and could
+    not be read is a diagram rule somebody turned on and nothing performs.
+    """
+    block = _get(data, "documents.box_diagrams")
+    if block is None:
+        return
+    if not isinstance(block, dict):
+        raise ConfigError(
+            "documents.box_diagrams",
+            "must be a mapping stating `held` and `exempt` (§ 38), or be left out "
+            "where no diagram is held.",
+        )
+    declared = _documents_entries(_get(data, "documents"), "box_diagrams", facts)
+    # The surface's two fences both reach under this key: the block's own two
+    # keys, and the exemption entry's keys one level further down.
+    own = {key for key in declared if "." not in key}
+    for stated_key in block:
+        if stated_key not in own:
+            raise ConfigError(
+                f"documents.box_diagrams.{stated_key}",
+                "is a key § 38 does not declare on this block, so it is a fact "
+                "about the diagrams that nothing reads. The keys it declares are: "
+                f"{', '.join(sorted(own))}.",
+            )
+    for needed in ("held", "exempt"):
+        if needed not in block:
+            raise ConfigError(
+                f"documents.box_diagrams.{needed}",
+                "required once the block is stated (§ 38). The block may be left "
+                "out whole; stated, it says whether diagrams are held and which "
+                "block is exempt, `[]` where none is.",
+            )
+    if not isinstance(block["held"], bool):
+        raise ConfigError(
+            "documents.box_diagrams.held",
+            f"is {block['held']!r}, where § 38 states `true` or `false`. A string "
+            "here would read as turned on whatever it says.",
+        )
+    exempt = block["exempt"]
+    if not isinstance(exempt, list):
+        raise ConfigError(
+            "documents.box_diagrams.exempt",
+            "must be a list, `[]` where no block is exempt (§ 38).",
+        )
+    entry_keys = {
+        key[len("exempt."):] for key in declared if key.startswith("exempt.")
+    }
+    for index, entry in enumerate(exempt):
+        where = f"documents.box_diagrams.exempt[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(where, "must be a mapping (§ 38).")
+        for stated_key in entry:
+            if stated_key not in entry_keys:
+                raise ConfigError(
+                    f"{where}.{stated_key}",
+                    "is a key § 38 does not declare on an exemption. The keys it "
+                    f"declares are: {', '.join(sorted(entry_keys))}.",
+                )
+        for needed in sorted(entry_keys):
+            if needed not in entry:
+                raise ConfigError(
+                    f"{where}.{needed}",
+                    "required (§ 38). An exemption names its document, the block "
+                    "by its own text, and why -- one whose reason nobody wrote down "
+                    "cannot be told from a misaligned diagram somebody silenced.",
+                )
+            stated = entry[needed]
+            if not isinstance(stated, str) or not stated.strip():
+                raise ConfigError(
+                    f"{where}.{needed}",
+                    "must be non-empty text (§ 38); a blank value reads as stated "
+                    "and says nothing.",
+                )
+        document = _a_document(
+            entry["document"], f"{where}.document", "the document the block is in"
+        )
+        if document not in rows:
+            raise ConfigError(
+                f"{where}.document",
+                f"is {document!r}, which no row of `graph` declares (§ 38). A block "
+                "exempted in a document outside the governed set is an exemption "
+                "over a file this check never reads.",
+            )
+        try:
+            re.compile(entry["block"])
+        except re.error as exc:
+            raise ConfigError(
+                f"{where}.block",
+                f"is not a usable expression ({exc}) (§ 38). An exemption that "
+                "cannot be evaluated is refused here rather than read as matching "
+                "nothing.",
+            ) from None
+
 
 def _validate_spec_corpus(data: dict) -> None:
     """§ 39's two glob lists, and the keys stated beside a carrier that reads none.
@@ -6285,6 +6872,40 @@ def _derivation_cycle(edges: dict) -> list | None:
             if found:
                 return found
     return None
+
+
+def _validate_create_fields(data: dict) -> None:
+    """§ 3's list of the fields a filing sends, held to a shape a filing can read.
+
+    ⛔ Refused at load: every one of these otherwise surfaces at the first filing,
+    which is a role holding a finished body and no item.
+    """
+    entries = _get(data, "tracker.create_fields")
+    if entries is None:
+        return
+    if not isinstance(entries, list):
+        raise ConfigError(
+            "tracker.create_fields",
+            f"is {entries!r}; § 3 states it as a list of entries, each naming a "
+            "`field` and optionally the `value` every filing sends in it.",
+        )
+    seen = set()
+    for index, entry in enumerate(entries):
+        where = f"tracker.create_fields[{index}]"
+        name = entry.get("field") if isinstance(entry, dict) else None
+        if not isinstance(name, str) or not name.strip():
+            raise ConfigError(
+                where,
+                f"is {entry!r}, which names no `field`. A value with no field is "
+                "one nothing can send (§ 3).",
+            )
+        if name in seen:
+            raise ConfigError(
+                where,
+                f"names `{name}`, which an entry above already states. Two values "
+                "for one field have no reading of which a filing sends (§ 3).",
+            )
+        seen.add(name)
 
 
 def _validate_billing(data: dict) -> None:
@@ -7754,6 +8375,167 @@ def _workflows_anywhere(data: dict, facts: dict) -> set[str]:
     return {name for name in out if name}
 
 
+def _held_to_the_class_globs(globs: list, at: str) -> None:
+    """The glob forms § 30 refuses, for every class written in its grammar.
+
+    ⛔ Called from § 30's classes and from § 4.2's classed writers rather than
+    written twice: a form refused under one key and read under the other is one
+    spelling with two meanings.
+    """
+    for position, glob in enumerate(globs):
+        where = f"{at}.paths[{position}]"
+        if not isinstance(glob, str) or not glob.strip():
+            raise ConfigError(
+                where, f"is {glob!r} and a glob is a non-empty string (§ 30)."
+            )
+        # ⛔ The glob that matches every path: `*` crosses a directory separator
+        # here, so a class whose glob is a bare star narrows nothing. ⚠️ § 15's
+        # `cases` carries the same refusal.
+        if set(glob.strip()) <= set("*"):
+            raise ConfigError(
+                where,
+                f"is {glob!r}, which matches every path this project has: `*` "
+                "crosses a directory separator here (§ 30), so this class "
+                "covers every change rather than narrowing anything.",
+            )
+        # ⛔ Refused rather than read: `*` already crosses a directory separator
+        # here, so this form means nothing different.
+        if CROSSING_GLOB in glob:
+            raise ConfigError(
+                where,
+                f"is {glob!r}, and `{CROSSING_GLOB}` is refused: § 30 matches a "
+                "glob against the repository-relative path with `*` already "
+                "crossing a directory separator, so `docs/*` covers that subtree "
+                "whole and this form states a rule nothing here performs.",
+            )
+
+
+def _held_to_a_status_writers(status: dict, where: str, facts: dict) -> None:
+    """§ 4.2's classed form: several writers of one status, a class each."""
+    at = f"{where}.{STATUS_WRITERS}"
+    if "writer" in status:
+        raise ConfigError(
+            at,
+            "is written beside `writer`. § 4.2 states a status's writer in one of "
+            "two forms, and a status carrying both names two answers to who may "
+            "make the same move.",
+        )
+    entries = status[STATUS_WRITERS]
+    if not isinstance(entries, list) or len(entries) < 2:
+        raise ConfigError(
+            at,
+            f"is {entries!r}; § 4.2 takes two or more writers with a class each. A "
+            "status with one writer states `writer`.",
+        )
+    allowed = [w for w in vocabulary(facts, "writer", "a status writer") if w != "never"]
+    seen: set[str] = set()
+    claimed: dict[str, str] = {}
+    remainder = None
+    for index, entry in enumerate(entries):
+        each = f"{at}[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(each, "must be a mapping of a writer and its class (§ 4.2).")
+        for key in entry:
+            if key not in ("writer", "paths", CLASS_REST):
+                raise ConfigError(
+                    f"{each}.{key}",
+                    "is not a key of a classed writer; § 4.2 states `writer` and "
+                    f"one of `paths` and `{CLASS_REST}`. A key nothing reads is a "
+                    "narrowing nothing performs.",
+                )
+        writer = entry.get("writer")
+        if writer not in allowed:
+            raise ConfigError(
+                f"{each}.writer",
+                f"is {writer!r}; a classed writer is one of {' | '.join(allowed)}. "
+                "`never` is the absence of a writer, so it holds no class (§ 4.2).",
+            )
+        if writer in seen:
+            raise ConfigError(
+                f"{each}.writer",
+                f"is {writer!r}, which another entry already states. One writer "
+                "has one class, and its globs belong in one list (§ 4.2).",
+            )
+        seen.add(writer)
+        if ("paths" in entry) == (CLASS_REST in entry):
+            raise ConfigError(
+                each,
+                f"states {'both' if 'paths' in entry else 'neither'} of `paths` and "
+                f"`{CLASS_REST}`; § 4.2 takes exactly one, the class being what "
+                "separates this writer from the others.",
+            )
+        if CLASS_REST in entry:
+            if entry[CLASS_REST] is not True:
+                raise ConfigError(
+                    f"{each}.{CLASS_REST}",
+                    f"is {entry[CLASS_REST]!r}; it takes `true` and is otherwise "
+                    "left out (§ 4.2).",
+                )
+            if remainder is not None:
+                raise ConfigError(
+                    f"{each}.{CLASS_REST}",
+                    f"is stated by {remainder!r} already. Two remainders are one "
+                    "class with two writers (§ 4.2).",
+                )
+            remainder = writer
+            continue
+        globs = entry["paths"]
+        if not isinstance(globs, list) or not globs:
+            raise ConfigError(
+                f"{each}.paths",
+                f"is {globs!r}; § 4.2 takes a non-empty list of § 30's globs.",
+            )
+        _held_to_the_class_globs(globs, each)
+        for position, glob in enumerate(globs):
+            if claimed.get(glob, writer) != writer:
+                raise ConfigError(
+                    f"{each}.paths[{position}]",
+                    f"is {glob!r}, which {claimed[glob]!r} states too. The classes "
+                    "are disjoint (§ 4.2), and an item under this glob would be "
+                    "in two.",
+                )
+            claimed[glob] = writer
+
+
+def _a_named_call(entry, where: str) -> None:
+    """One `command`, with `args_match` where the command alone does not decide (§ 10)."""
+    if not isinstance(entry, dict):
+        raise ConfigError(
+            where,
+            f"is {entry!r}; § 10 states each as a block carrying `command`, and `args_match` "
+            "where the command alone does not decide.",
+        )
+    unknown = sorted(str(key) for key in set(entry) - {"command", "args_match"})
+    if unknown:
+        raise ConfigError(
+            where,
+            f"carries {', '.join(unknown)}; § 10 states `command` and `args_match` and no "
+            "other key. A misspelled pattern narrows nothing.",
+        )
+    command = entry.get("command")
+    if not isinstance(command, str) or len(command.split()) != 1:
+        raise ConfigError(
+            f"{where}.command",
+            f"is {command!r}; it is the one word standing in a command position, its "
+            "arguments being `args_match`'s (§ 10). Anything else matches no call.",
+        )
+    if "args_match" in entry:
+        pattern = entry["args_match"]
+        if not isinstance(pattern, str) or not pattern.strip():
+            raise ConfigError(
+                f"{where}.args_match",
+                f"is {pattern!r}; it is the pattern the arguments carry, and absent where the "
+                "command alone decides (§ 10). Blank, it matches every call of that command.",
+            )
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise ConfigError(
+                f"{where}.args_match",
+                f"does not compile as a pattern -- {error}. ⛔ It would match no call (§ 10).",
+            ) from None
+
+
 def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⛔ Walked rather than looked up by path, because a retired key may sit
     # inside a list: `_get` descends a dict and returns the default the moment it
@@ -8170,40 +8952,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                     "left out, while an empty list reads as a facet that constrains "
                     "nothing.",
                 )
-        for position, glob in enumerate(globs or []):
-            if not isinstance(glob, str) or not glob.strip():
-                raise ConfigError(
-                    f"{at}.paths[{position}]",
-                    f"is {glob!r} and a glob is a non-empty string (§ 30).",
-                )
-            # ⛔ Refused rather than read, which § 30 states and this performs: `*`
-            # already crosses a directory separator here, so this form means
-            # nothing different -- and a glob quietly matching less than its author
-            # meant is one spelling read two ways, with nothing reporting the
-            # difference.
-            # ⛔ And the glob that matches every path, which is the same refusal as
-            # the stating-neither-facet one above wearing a facet: `*` crosses a
-            # directory separator here, so a class whose only glob is a bare star
-            # exempts this project's every change. Found by review, which measured
-            # the three spellings of *exempt everything* and found two refused and
-            # the shortest accepted -- while the `**` refusal's own message coaches
-            # an author toward it. ⚠️ § 15's `cases` carries the same refusal.
-            if set(glob.strip()) <= set("*"):
-                raise ConfigError(
-                    f"{at}.paths[{position}]",
-                    f"is {glob!r}, which matches every path this project has: `*` "
-                    "crosses a directory separator here (§ 30), so this class "
-                    "exempts every change rather than narrowing anything -- the "
-                    "whole loop switched off by a block that reads like a class.",
-                )
-            if CROSSING_GLOB in glob:
-                raise ConfigError(
-                    f"{at}.paths[{position}]",
-                    f"is {glob!r}, and `{CROSSING_GLOB}` is refused: § 30 matches a "
-                    "glob against the repository-relative path with `*` already "
-                    "crossing a directory separator, so `docs/*` covers that subtree "
-                    "whole and this form states a rule nothing here performs.",
-                )
+        _held_to_the_class_globs(globs or [], at)
         # ⛔ Asked only of a class that states `kinds`, and ⚠️ **the phrase is a
         # noun phrase** -- `vocabulary_list` supplies *would be unchecked* itself,
         # so the first form of this read "unchecked would be unchecked". Both found
@@ -8252,6 +9001,42 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
             "this is readable by a person and by nothing shipped (§ 10).",
         )
 
+    # § 10. The command a removal runs first. ⛔ Absent is the ordinary answer and
+    # is never refused; what is refused is a value that reads as one and runs
+    # nothing.
+    teardown = _get(data, "branch_model.teardown")
+    if teardown is not None:
+        if not isinstance(teardown, str) or not teardown.strip():
+            raise ConfigError(
+                "branch_model.teardown",
+                f"is {teardown!r}; it is a command, or `null` where this project has "
+                "nothing to take down (§ 10). An empty one exits zero, so every removal "
+                "would report a teardown that ran.",
+            )
+        if _get(data, "branch_model.kind") != "worktree":
+            raise ConfigError(
+                "branch_model.teardown",
+                "is stated where no tree is ever cut, so no removal runs it (§ 10).",
+            )
+
+    # § 10. What answers whether a tree's resource is up. ⛔ Absent is the ordinary
+    # answer and is never refused; what is refused is a value that reads as one and
+    # asks nothing.
+    resource_up = _get(data, "branch_model.resource_up")
+    if resource_up is not None:
+        if not isinstance(resource_up, str) or not resource_up.strip():
+            raise ConfigError(
+                "branch_model.resource_up",
+                f"is {resource_up!r}; it is a command, or `null` where nothing a tree "
+                "starts outlives it (§ 10). An empty one exits zero and prints nothing, "
+                "so every resource would read as down.",
+            )
+        if _get(data, "branch_model.kind") != "worktree":
+            raise ConfigError(
+                "branch_model.resource_up",
+                "is stated where no tree is ever cut, so no removal asks it (§ 10).",
+            )
+
     # § 10. What a rebuild writes again, which is the only half of the pruning
     # oracle a project states. ⛔ Whether the key is *written* is the surface's
     # `# required_when` marker and not a rule here; what is held here is its
@@ -8297,6 +9082,10 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
         subjects = vocabulary(
             facts, "branch_model.exclusive_resources.subject", "what holds a place"
         )
+        endings = vocabulary(
+            facts, "branch_model.exclusive_resources.background_end",
+            "how the end of background work is established",
+        )
         for index, entry in enumerate(resources):
             at = f"branch_model.exclusive_resources[{index}]"
             if not isinstance(entry, dict):
@@ -8331,8 +9120,90 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                         "below one is a resource nothing may ever hold, and a lifetime below "
                         "one is a lease that has expired before the call it covers starts.",
                     )
+            wait = entry.get("wait_up_to")
+            if wait is not None and (
+                isinstance(wait, bool) or not isinstance(wait, int) or wait < 1
+            ):
+                raise ConfigError(
+                    f"{at}.wait_up_to",
+                    f"is {wait!r}; it is a whole number of seconds of at least one, or `null` "
+                    "where a call over the cap is refused and nothing waits (§ 10).",
+                )
+            for key, most in (("grace", entry["ttl"]), ("probe_timeout", 8)):
+                value = entry.get(key)
+                if value is None:
+                    continue
+                if entry.get("probe") is None:
+                    raise ConfigError(
+                        f"{at}.{key}",
+                        "is stated beside `probe: null`. It qualifies a probe's count, and a "
+                        "resource with no probe is counted by its leases alone (§ 10).",
+                    )
+                if (isinstance(value, bool) or not isinstance(value, int)
+                        or not 1 <= value <= most):
+                    raise ConfigError(
+                        f"{at}.{key}",
+                        f"is {value!r}; it is a whole number of seconds from one to {most} "
+                        "(§ 10). A grace past the lease's lifetime leaves no lease out, and a "
+                        "probe shares the guard's own budget with every other read it makes.",
+                    )
+            ending = entry.get("background_end")
+            if ending is not None and ending not in endings:
+                raise ConfigError(
+                    f"{at}.background_end",
+                    f"is {ending!r}; § 10 states {' | '.join(endings)}.",
+                )
+            asked = entry.get("background_probe")
+            settled = entry.get("background_grace")
+            if ending != "probe":
+                for key, value in (("background_probe", asked), ("background_grace", settled)):
+                    if value is not None:
+                        raise ConfigError(
+                            f"{at}.{key}",
+                            "is stated and `background_end` is not `probe`, so nothing would "
+                            "read it (§ 10).",
+                        )
+            else:
+                if not isinstance(asked, str) or not asked.strip():
+                    raise ConfigError(
+                        f"{at}.background_probe",
+                        f"is {asked!r}; `background_end: probe` states the command that says "
+                        "whether the work is running (§ 10).",
+                    )
+                if (isinstance(settled, bool) or not isinstance(settled, int)
+                        or not 1 <= settled <= entry["ttl"]):
+                    raise ConfigError(
+                        f"{at}.background_grace",
+                        f"is {settled!r}; it is a whole number of seconds from one to "
+                        f"{entry['ttl']} (§ 10). A probe asked before the work is up says "
+                        "`ended` about work that has not started.",
+                    )
+            claimed = entry["claimed_by"]
+            spared = entry.get("never_claims")
+            if not isinstance(claimed, (str, list)) or claimed == []:
+                raise ConfigError(
+                    f"{at}.claimed_by",
+                    f"is {claimed!r}; § 10 states it as one pattern, or as a list of at least "
+                    "one claiming command.",
+                )
+            if spared is not None and not isinstance(spared, list):
+                raise ConfigError(
+                    f"{at}.never_claims",
+                    f"is {spared!r}; § 10 states it as a list of the forms that claim nothing, "
+                    "and absent where there is none.",
+                )
+            if spared and not isinstance(claimed, list):
+                raise ConfigError(
+                    f"{at}.never_claims",
+                    "is stated beside a `claimed_by` written as one pattern, which is searched "
+                    "for in the call and reads no command to spare (§ 10). State `claimed_by` "
+                    "as a list.",
+                )
+            for key, listed in (("claimed_by", claimed), ("never_claims", spared)):
+                for place, one in enumerate(listed if isinstance(listed, list) else []):
+                    _a_named_call(one, f"{at}.{key}[{place}]")
             try:
-                re.compile(str(entry["claimed_by"]))
+                re.compile(claimed if isinstance(claimed, str) else "")
             except re.error as error:
                 raise ConfigError(
                     f"{at}.claimed_by",
@@ -8568,7 +9439,10 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
         where = f"statuses[{index}]"
         if not isinstance(status, dict):
             raise ConfigError(where, "must be a mapping of name, role and writer.")
-        for field in ("role", "writer"):
+        classed = STATUS_WRITERS in status
+        if classed:
+            _held_to_a_status_writers(status, where, facts)
+        for field in ("role",) if classed else ("role", "writer"):
             allowed = vocabulary(facts, field, f"a status {field}")
             if field not in status:
                 raise ConfigError(f"{where}.{field}", "required (§ 4.2).")
@@ -8671,6 +9545,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # written absolutely is a rule the surface states in prose, there being no
     # marker for it, and it is the one arm whose permissive reading is money.
     _validate_billing(data)
+    _validate_create_fields(data)
     # § 38's lists, in the same position and for the same reason. ⛔ The two rules
     # no marker reaches are the ones about the row set rather than a row: that
     # every edge names a declared document, and that the derivation record stays
@@ -9395,6 +10270,74 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                     "never refused (§ 19).",
                 ) from None
 
+    # § 19's launchers. ⛔ Permissive again in every refusal: an entry the parse
+    # cannot act on leaves the command inside it read by no guard at all.
+    launchers = _absent_as(_get(data, "command_position.launchers"), [])
+    if not isinstance(launchers, list):
+        raise ConfigError(
+            "command_position.launchers",
+            f"is {launchers!r}; § 19 states it as a list of entries, and absent where "
+            "the project lists no launcher.",
+        )
+    listed: set[str] = set()
+    for index, entry in enumerate(launchers):
+        where = f"command_position.launchers[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}, and has to be a mapping stating the `command` and what "
+                "it runs (§ 19).",
+            )
+        command = entry.get("command")
+        if not isinstance(command, str) or not command.strip():
+            raise ConfigError(
+                f"{where}.command",
+                f"is {command!r}; § 19 states one command per entry, matched against a "
+                "command position.",
+            )
+        if command.strip() in listed:
+            raise ConfigError(
+                f"{where}.command",
+                f"lists {command!r} a second time; § 19 lists one command once, and the "
+                "entry after the first is read by nothing.",
+            )
+        listed.add(command.strip())
+        for key in ("string_flags", "valued_flags"):
+            if key not in entry:
+                continue
+            flags = entry[key]
+            if not isinstance(flags, list) or not flags:
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"is {flags!r}; § 19 states it as a list of flags, and absent where "
+                    "there is none.",
+                )
+            for at_flag, flag in enumerate(flags):
+                if (
+                    not isinstance(flag, str)
+                    or not flag.startswith("-")
+                    or len(flag.split()) != 1
+                    or flag != flag.strip()
+                ):
+                    raise ConfigError(
+                        f"{where}.{key}[{at_flag}]",
+                        f"is {flag!r}; § 19 states each as one word written with its "
+                        "dashes. Anything else matches no word of any call.",
+                    )
+        operands = entry.get("operands")
+        if "operands" in entry and operands not in ("command", "string"):
+            raise ConfigError(
+                f"{where}.operands",
+                f"is {operands!r}; § 19 states `command` or `string`, and absent where "
+                "its plain words are neither.",
+            )
+        if "string_flags" not in entry and "operands" not in entry:
+            raise ConfigError(
+                where,
+                "states neither `string_flags` nor `operands`, so it launches nothing "
+                "and reads no call (§ 19).",
+            )
+
     # § 19's other key. The bar is compared against a figure the harness states in
     # its own units, so what is refused here is a value that cannot be compared to
     # one. ⚠️ The boolean arm runs first, for the reason § 16's floor states: a
@@ -9990,7 +10933,8 @@ def inert_report(session: str, stop: str) -> dict:
     """
     said = (
         "The project's configuration could not be read, so every guard that reads it is "
-        "inert: each call here is held to nothing and proceeds unguarded. Said once for this "
+        "inert but for the refusal of a merge: each other call here is held to nothing and "
+        "proceeds unguarded. Said once for this "
         f"session rather than on every call. ({INERT_CITATION}){stop}"
     )
     return {"systemMessage": said} if said_once(session, said) else {}
@@ -10647,6 +11591,69 @@ def _surface_without_retirements() -> str:
         )
 
 
+# --- § 40's directories that outlive a checkout ------------------------------
+#
+# ⛔ § 40's list, held once here: the key, the carrier that decides whether anything reads it, and
+# the words under which it is read.
+OUTLIVING_DIRECTORIES = (
+    ("ordering.record.dir", "ordering.record.carrier", ("document", "grouping")),
+    ("memory.store", "memory.carrier", ("path",)),
+    ("day_log.destination.out_dir", "day_log.destination.kind", ("file",)),
+)
+
+# What each offered directory ends in, so that two stores never share one.
+OFFERED_LEAF = {
+    "ordering.record.dir": "ordering",
+    "memory.store": "memory",
+    "day_log.destination.out_dir": "day-log",
+}
+
+# The harness's own names: what relocates its configuration directory, that directory's name under
+# a home, and the per-project store inside it. A convention of the harness, and no path on
+# anybody's machine.
+HARNESS_CONFIG_DIR = "CLAUDE_CONFIG_DIR"
+HARNESS_DIR = ".claude"
+HARNESS_STORE = "projects"
+
+# A folder named for an absolute path, whose separators the harness writes as `-`: a leading `-`,
+# or a drive letter and two.
+_ENCODED_CHECKOUT = re.compile(r"^(-|[A-Za-z]--)")
+
+
+def derived_by_the_harness(stated: str) -> bool:
+    """Whether a stated directory is inside the harness's per-project store (§ 40).
+
+    ⛔ **Recognised and never composed.** Two readings: the form, which holds for another account's
+    home as well as this one's, and the harness's own root where the shell states a relocated one.
+    Both are asked of the path as written and of what it resolves to, a link being one more way
+    to arrive there.
+    """
+    expanded = os.path.expanduser(os.path.expandvars(stated.strip()))
+    relocated = (os.environ.get(HARNESS_CONFIG_DIR) or "").strip()
+    stores = []
+    if relocated:
+        store = os.path.join(os.path.expanduser(relocated), HARNESS_STORE)
+        stores = [os.path.normpath(store), os.path.realpath(store)]
+    for path in (os.path.normpath(expanded), os.path.realpath(expanded)):
+        parts = path.replace(os.sep, "/").split("/")
+        for at in range(len(parts) - 2):
+            if (parts[at:at + 2] == [HARNESS_DIR, HARNESS_STORE]
+                    and _ENCODED_CHECKOUT.match(parts[at + 2])):
+                return True
+        if any(path.startswith(store + os.sep) for store in stores):
+            return True
+    return False
+
+
+def offered_directory(key: str, repo: str | None) -> str:
+    """A directory for one of § 40's keys that names no account and no checkout.
+
+    ⚠️ `~` is expanded by whatever reads the key, so the text written is the same on every machine.
+    """
+    named = str(repo or "").strip().strip("/") or "<the project's name>"
+    return "/".join(("~", ".local", "state", "mjolnir", named, OFFERED_LEAF[key]))
+
+
 def self_test() -> int:
     failures = 0
 
@@ -10661,10 +11668,79 @@ def self_test() -> int:
     paths = _examples()
     check("the examples directory holds configurations", bool(paths))
 
-    # ⛔ What a guard's answer carries about a configuration that did not
-    # resolve (§ 19), asserted here rather than left to the four callers.
     import tempfile  # noqa: PLC0415 -- one of the arms that needs a directory
 
+    # --- § 40's directories that outlive a checkout ---------------------------
+    standing = os.environ.pop(HARNESS_CONFIG_DIR, None)
+    try:
+        for stated, derived in (
+            ("/h/an-account/.claude/projects/-h-an-account-a-checkout", True),
+            ("/u/another/.claude/projects/-u-another-x/memory", True),
+            (os.path.join("~", HARNESS_DIR, HARNESS_STORE, "-a-checkout", ""), True),
+            ("/a/./.claude/x/../projects/C--a-checkout", True),
+            ("/h/an-account/.claude/projects", False),
+            ("/a-checkout/.claude/projects/a-name", False),
+            ("/h/an-account/.claude/plans/-a", False),
+            (offered_directory("memory.store", "an-owner/a-name"), False),
+        ):
+            check(f"{stated!r} {'is' if derived else 'is not'} a harness-derived directory",
+                  derived_by_the_harness(stated) is derived)
+        with tempfile.TemporaryDirectory() as under:
+            inside = os.path.join(under, "moved", HARNESS_STORE, "any-name")
+            os.makedirs(inside)
+            link = os.path.join(under, "a-link")
+            os.symlink(inside, link)
+            check("a relocated harness root is not recognised where nothing states it",
+                  not derived_by_the_harness(inside))
+            os.environ[HARNESS_CONFIG_DIR] = os.path.join(under, "moved")
+            check("and is where the environment does, through a link as well",
+                  derived_by_the_harness(inside) and derived_by_the_harness(link))
+            check("a sibling whose name opens the same way is not inside it",
+                  not derived_by_the_harness(
+                      os.path.join(under, "moved", HARNESS_STORE + "-other", "x")))
+            del os.environ[HARNESS_CONFIG_DIR]
+    finally:
+        os.environ.pop(HARNESS_CONFIG_DIR, None)
+        if standing is not None:
+            os.environ[HARNESS_CONFIG_DIR] = standing
+    a_stale = "/h/an-account/.claude/projects/-h-an-account-a-checkout"
+    for key, carrier, words in OUTLIVING_DIRECTORIES:
+        for word in words:
+            found = _example_meeting(carrier, word)
+            check(f"an example states `{carrier}: {word}`", found is not None)
+            if found is None:
+                continue
+            for value, reported in ((a_stale, True), ("/srv/a-place", False)):
+                with open(SURFACE, encoding="utf-8") as handle:
+                    facts = surface_facts(handle.read())
+                held = _resolve(copy.deepcopy(found), EXAMPLES, facts, False)
+                # Listed against a layer that is not there, then not listed at all.
+                held.data["private"] = {"carrier": "file", "source": "no-such-layer.yaml",
+                                        "keys": [key]}
+                held._private_listed, held._private_read = [key], None
+                check(f"`{key}` under `{word}` whose private layer is absent is reported unread",
+                      "could not be read" in held.harness_derived_directories().get(key, ""))
+                held.data["private"] = {"carrier": "none", "absent_reason": "a fixture"}
+                held._private_listed = []
+                node = held.data
+                *above, leaf = key.split(".")
+                for part in above:
+                    node = node.setdefault(part, {})
+                node[leaf] = value
+                said = held.harness_derived_directories().get(key)
+                check(
+                    f"`{key}` under `{word}` {'is' if reported else 'is not'} reported",
+                    (bool(said) and key in said and "goes stale" in said
+                     and offered_directory(key, None) in said and a_stale not in said)
+                    if reported else said is None,
+                    f"said {said!r}",
+                )
+                check(f"and the reader's report {'carries' if reported else 'omits'} it",
+                      any("per-project store" in one and key in one
+                          for one in held.to_dict()["unavailable"]) is reported)
+
+    # ⛔ What a guard's answer carries about a configuration that did not
+    # resolve (§ 19), asserted here rather than left to the four callers.
     with tempfile.TemporaryDirectory() as directory:
         stated = os.path.join(directory, CONFIG_PATH)
         os.makedirs(os.path.dirname(stated))
@@ -12349,6 +13425,27 @@ def self_test() -> int:
             broken == f"{GROUPING_KEY}.{named[0]}.closes_items",
             f"reported {broken!r}",
         )
+        # § 4.2's classed form on that status: two writers are never one closer,
+        # even where the closer is among them.
+        terminal.pop("writer")
+        terminal["writers"] = [
+            {"writer": "orderer", "paths": ["ci/*"]},
+            {"writer": "deploy", "rest": True},
+        ]
+        broken = _refused(disagreeing)
+        check(
+            "and so is one whose closer holds one class of the terminal status",
+            broken == f"{GROUPING_KEY}.{named[0]}.closes_items",
+            f"reported {broken!r}",
+        )
+        # The green side of the form itself, which no shipped example writes: on a
+        # project with no closing grouping the same status loads.
+        _get(disagreeing, f"{GROUPING_KEY}.{named[0]}")["closes_items"] = False
+        check(
+            "and the classed status loads where no close writes it",
+            _refused(disagreeing) is None,
+            f"refused on {_refused(disagreeing)!r}",
+        )
         agreeing = _a_grouping_collection()
         _get(agreeing, f"{GROUPING_KEY}.{named[0]}").update(
             closes_items=True, closed_by="orderer")
@@ -12953,6 +14050,8 @@ def self_test() -> int:
          ["/elsewhere/notes.md"], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
         ("a decision handed a path climbing out of the tree",
          ["../outside/thing.md"], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
+        ("a decision handed a path that steps out of the class it is written under",
+         ["docs/../app/main.py"], None, by_path, f"stop {EXEMPT_CLASSES_PATH}"),
         # ⛔ And the kind held to the published set at decision time, which is a
         # different act from holding a configuration's kinds: a misspelling
         # answered `through_the_loop`, which is safe, silent, and drops the
@@ -13726,6 +14825,21 @@ def self_test() -> int:
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
 
+    # ⛔ § 38's `box_diagrams`, the green side of the arms planted above: the
+    # block stated with an exemption loads, and so does a facet stating no block
+    # at all -- which is every configuration written before the key, and which
+    # § 38 makes the one absence in this facet that is not refused.
+    for label, block in (
+        ("a diagram block held, with an exemption", _a_box_diagrams(
+            exempt=[_a_diagram_exemption()])),
+        ("a diagram block stated as not held", _a_box_diagrams(held=False)),
+        ("no diagram block at all", _ABSENT),
+    ):
+        tree = _a_valid_example()
+        tree["documents"] = _a_documents_of(box_diagrams=block)
+        broken = _refused(tree)
+        check(f"{label} loads", broken is None, f"refused {broken!r}")
+
     # ⛔ § 37 against § 28's list, both directions. ⚠️ The list is how a project
     # states a key without writing it, and this facet read that rule in one
     # direction only -- so the arm below is the green side and the one under it
@@ -14454,6 +15568,174 @@ def self_test() -> int:
         loaded["deploy"] = [_a_deploy_target(**overrides)]
         refusal = _refused(loaded)
         check(label, refusal is None, f"refused on {refusal!r}")
+
+    print("\n§ 33's choices, resolved for one run:")
+
+    def choosing(*handed, **overrides):
+        loaded = _a_valid_example()
+        loaded["deploy"] = [_a_deploy_target(**overrides)]
+        with open(SURFACE, encoding="utf-8") as handle:
+            facts = surface_facts(handle.read())
+        try:
+            return _resolve(loaded, EXAMPLES, facts, False).deploy_target(
+                loaded["deploy"][0]["name"], list(handed)
+            )
+        except ConfigError as error:
+            return error.key
+
+    placed = {
+        "command": "ship {choose:scope} --only={choose:parts} '{choose:scope}'",
+        "choices": [
+            _a_choice(),
+            _a_choice(name="parts", values=["one", "two", "three"],
+                      default=["three", "one"], joined_by=",", warnings=_ABSENT),
+        ],
+    }
+    for label, handed, wanted in (
+        ("a run that chooses nothing takes every default, in the declared order", (),
+         "ship some --only=one,three 'some'"),
+        ("a chosen value is put everywhere the command places it", ("scope=all",),
+         "ship all --only=one,three 'all'"),
+        ("several values are joined in the declared order",
+         ("parts=three", "parts=two"), "ship some --only=two,three 'some'"),
+    ):
+        got = choosing(*handed, **placed)
+        check(label, isinstance(got, dict) and got["command"] == wanted, f"answered {got!r}")
+    got = choosing("scope=all", **placed)
+    check(
+        "the answer carries each value, whether it was chosen, and its warning alone",
+        isinstance(got, dict) and got["choices"] == [
+            {"name": "scope", "value": "all", "chosen": True, "warnings": ["slow"]},
+            {"name": "parts", "value": "one,three", "chosen": False, "warnings": []},
+        ],
+        f"answered {got!r}",
+    )
+    got = choosing(**placed)
+    check(
+        "and a value nothing was declared about carries no warning",
+        isinstance(got, dict) and not got["choices"][0]["warnings"], f"answered {got!r}",
+    )
+    warned = {**placed, "choices": [_a_choice(default="all"), placed["choices"][1]]}
+    got = choosing(**warned)
+    check(
+        "a default a warning is declared for carries it",
+        isinstance(got, dict) and got["choices"][0]["warnings"] == ["slow"],
+        f"answered {got!r}",
+    )
+    for label, handed, key in (
+        ("a value outside the declaration", ("scope=most",), "deploy.choices.scope"),
+        ("a value that would run a second command", ("scope=all; rm",),
+         "deploy.choices.scope"),
+        ("an empty value", ("scope=",), "deploy.choices.scope"),
+        ("a choice the target does not declare", ("other=all",), "deploy.choices"),
+        ("a choice with no value", ("scope",), "deploy.choices"),
+        ("two values for a choice that takes one", ("scope=all", "scope=some"),
+         "deploy.choices.scope"),
+        ("one value handed over twice", ("parts=one", "parts=one"),
+         "deploy.choices.parts"),
+    ):
+        got = choosing(*handed, **placed)
+        check(f"{label} is a stop", got == key, f"answered {got!r}")
+    dispatched = {
+        "invoke": "dispatch", "command": _ABSENT, "ref": "a-ref",
+        "workflow": _a_workflow_the_example_states(),
+    }
+    for shape in ("dispatch", "by_hand"):
+        got = choosing("scope=all of it", **{
+            **dispatched, "invoke": shape, "inputs": {"always": "sent"},
+            "choices": [_a_choice(values=["some", "all of it"], warnings=_ABSENT)],
+        })
+        check(
+            f"a {shape} carries the chosen input beside the ones it always sends",
+            isinstance(got, dict)
+            and got["inputs"] == {"always": "sent", "scope": "all of it"}
+            and got["workflow"] == dispatched["workflow"] and got["ref"] == "a-ref",
+            f"answered {got!r}",
+        )
+        check(
+            f"and the answer says it is reached by {shape}",
+            isinstance(got, dict) and got["reached_by"] == shape, f"answered {got!r}",
+        )
+    got = choosing(**placed)
+    check(
+        "and a command's answer says the same beside its root's own form",
+        isinstance(got, dict) and got["reached_by"] == "command", f"answered {got!r}",
+    )
+    # A project that states no choice keeps every command it had, the placement's
+    # own spelling included.
+    got = choosing(command="ship {choose:scope}")
+    check(
+        "a target declaring no choice has its command run as written",
+        isinstance(got, dict) and got["command"] == "ship {choose:scope}"
+        and got["choices"] == [],
+        f"answered {got!r}",
+    )
+    got = choosing("scope=all", command="ship it")
+    check("and is handed no choice", got == "deploy.choices", f"answered {got!r}")
+    collected = _a_collection_example()
+    if collected is not None and _a_target_stating(COMMAND_ROOT_REF) >= 0:
+        entry = _get(collected, "deploy")[_a_target_stating(COMMAND_ROOT_REF)]
+        entry["command"] = "ship {choose:scope}"
+        entry["choices"] = [_a_choice()]
+        with open(SURFACE, encoding="utf-8") as handle:
+            whole = _resolve(collected, EXAMPLES, surface_facts(handle.read()), False)
+        got = whole.deploy_target(entry["name"])
+        direct = whole.root(entry[DEPLOY_CODE_ROOT]).command(
+            "ship some", entry[COMMAND_ROOT_REF]
+        )
+        check(
+            "the command is resolved in the repository and the root the target names",
+            {key: got.get(key) for key in direct} == direct
+            and got[DEPLOY_CODE_ROOT] == entry[DEPLOY_CODE_ROOT],
+            f"answered {got!r}, where the root answers {direct!r}",
+        )
+    said = ""
+    try:
+        _validate_choices("deploy[0]", {"choices": [_a_choice()]}, {"declared": set()})
+    except ConfigError as refused:
+        said = refused.key
+    check(
+        "a surface that has lost a choice's keys is refused, with the key named",
+        said == "deploy[0].choices", f"reported {said!r}",
+    )
+
+    print("\n§ 33's tree conditions, the green side:")
+    every = [
+        _a_tree_condition(),
+        _a_tree_condition(condition="on_branch", branch="main", holds="both"),
+        _a_tree_condition(condition="at_remote_tip", holds="advance"),
+        _a_tree_condition(condition="primary_checkout"),
+        _a_tree_condition(condition="at_commit", holds="advance"),
+    ]
+    loaded = _a_valid_example()
+    loaded["deploy"] = [_a_deploy_target(tree=every)]
+    refusal = _refused(loaded)
+    check(
+        "a target stating every condition, each holding one of the three, loads",
+        refusal is None, f"refused on {refusal!r}",
+    )
+    got = choosing(tree=every)
+    check(
+        "and the resolved target carries its conditions as stated",
+        isinstance(got, dict) and got["tree"] == every, f"answered {got!r}",
+    )
+    got = choosing()
+    check(
+        "a target stating no condition answers an empty list rather than omitting it",
+        isinstance(got, dict) and got["tree"] == [], f"answered {got!r}",
+    )
+    said = ""
+    try:
+        _validate_tree(
+            "deploy[0]", {"invoke": "command", "tree": [_a_tree_condition()]},
+            {"declared": set()},
+        )
+    except ConfigError as refused:
+        said = refused.key
+    check(
+        "a surface that has lost a tree condition's keys is refused, with the key named",
+        said == "deploy[0].tree", f"reported {said!r}",
+    )
 
     # ⛔ The one arm the plant list above cannot hold, and it is held on the
     # refusal's **text** rather than on its key. Two rules refuse
@@ -15521,6 +16803,13 @@ def _planted_violations():
 
     return [
         ("a value outside an alternation", "tracker.kind", at("tracker.kind", "gitlab")),
+        # § 3's creation fields, one plant per arm.
+        ("creation fields that are not a list", "tracker.create_fields",
+         at("tracker.create_fields", "Components")),
+        ("a creation field with no name", "tracker.create_fields[0]",
+         at("tracker.create_fields", [{"value": ["a"]}])),
+        ("a creation field stated twice", "tracker.create_fields[1]",
+         at("tracker.create_fields", [{"field": "a"}, {"field": "a"}])),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
@@ -15677,6 +16966,40 @@ def _planted_violations():
          at("statuses", [{"name": "x", "role": "sideways", "writer": "procedure"}])),
         ("a status writer outside the vocabulary", "statuses[0].writer",
          at("statuses", [{"name": "x", "role": "initial", "writer": "the cat"}])),
+        # § 4.2's classed form, one plant per refusal.
+        ("a status stating both forms of its writer", "statuses[0].writers",
+         at("statuses", [{"name": "x", "role": "initial", "writer": "deploy",
+                          "writers": [dict(w) for w in TWO_WRITERS]}])),
+        ("a classed status naming one writer alone", "statuses[0].writers",
+         _classed(TWO_WRITERS[0])),
+        ("a classed writer that is not a block", "statuses[0].writers[1]",
+         _classed(TWO_WRITERS[0], "deploy")),
+        ("a classed writer carrying a key nothing reads",
+         "statuses[0].writers[1].kinds",
+         _classed(TWO_WRITERS[0], {"writer": "deploy", "paths": ["app/*"],
+                                   "kinds": ["tooling"]})),
+        ("a classed writer outside the vocabulary", "statuses[0].writers[1].writer",
+         _classed(TWO_WRITERS[0], {"writer": "the cat", "rest": True})),
+        ("a class written by nobody", "statuses[0].writers[1].writer",
+         _classed(TWO_WRITERS[0], {"writer": "never", "rest": True})),
+        ("one writer with two classes", "statuses[0].writers[1].writer",
+         _classed(TWO_WRITERS[0], {"writer": "procedure", "rest": True})),
+        ("a classed writer stating no class", "statuses[0].writers[1]",
+         _classed(TWO_WRITERS[0], {"writer": "deploy"})),
+        ("a classed writer stating paths and the remainder", "statuses[0].writers[1]",
+         _classed(TWO_WRITERS[0],
+                  {"writer": "deploy", "paths": ["app/*"], "rest": True})),
+        ("a remainder that is not `true`", "statuses[0].writers[1].rest",
+         _classed(TWO_WRITERS[0], {"writer": "deploy", "rest": "yes"})),
+        ("two remainders", "statuses[0].writers[1].rest",
+         _classed({"writer": "procedure", "rest": True},
+                  {"writer": "deploy", "rest": True})),
+        ("a class with no glob", "statuses[0].writers[1].paths",
+         _classed(TWO_WRITERS[0], {"writer": "deploy", "paths": []})),
+        ("a class whose glob matches everything", "statuses[0].writers[1].paths[0]",
+         _classed(TWO_WRITERS[0], {"writer": "deploy", "paths": ["*"]})),
+        ("two classes stating one glob", "statuses[0].writers[1].paths[0]",
+         _classed(TWO_WRITERS[0], {"writer": "deploy", "paths": ["ci/*"]})),
         # § 32's shape, and then the one refusal that is about `reversals` and
         # `statuses` **agreeing** rather than about either on its own -- the
         # target-no-status-maps case, last of the three `to_role` plants.
@@ -15805,6 +17128,122 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(
              invoke="dispatch", command=_ABSENT, ref="a-ref",
              workflow=_a_workflow_the_example_states(), inputs={})])),
+        # § 33's choices, one plant per arm. The last group is about the command's
+        # text, where the two directions of the agreement are separate plants.
+        *(
+            (label, f"deploy[0].{key}", at("deploy", [_a_deploy_target(**{
+                "command": "ship {choose:scope}", "choices": [_a_choice(**changed)],
+            })]))
+            for label, key, changed in (
+                ("a choice with a key § 33 does not declare", "choices[0].allow", {"allow": 1}),
+                ("a choice with no name", "choices[0].name", {"name": _ABSENT}),
+                ("a choice name no placement could carry", "choices[0].name", {"name": "a b"}),
+                ("a choice with no values", "choices[0].values", {"values": _ABSENT}),
+                ("choice values that are not a list", "choices[0].values", {"values": "all"}),
+                ("a choice with no value in it", "choices[0].values", {"values": []}),
+                ("a choice value that is not a string", "choices[0].values[1]",
+                 {"values": ["some", True]}),
+                ("a choice value over two lines", "choices[0].values[1]",
+                 {"values": ["some", "a\nb"]}),
+                ("a choice value stated twice", "choices[0].values[1]",
+                 {"values": ["some", "some"]}),
+                *(
+                    (f"a command's choice value a shell reads as more: {value!r}",
+                     "choices[0].values[1]", {"values": ["some", value]})
+                    for value in (
+                        "two words", "a;b", "$(a)", "`a`", "$A", "a|b", "a&b", "a>b",
+                        "it's", 'a"b', "a*", "a?", "[a]", "{a,b}", "a\\b", "~a", "#a",
+                        "!a", "-rf", "=a", "\u0430",
+                    )
+                ),
+                ("a choice with no default", "choices[0].default", {"default": _ABSENT}),
+                ("a default outside the values", "choices[0].default", {"default": "most"}),
+                ("a list default on a choice of one", "choices[0].default",
+                 {"default": ["some"]}),
+                ("one default on a choice of several", "choices[0].default",
+                 {"joined_by": ","}),
+                ("an empty default on a choice of several", "choices[0].default",
+                 {"joined_by": ",", "default": []}),
+                ("a default naming one value twice", "choices[0].default",
+                 {"joined_by": ",", "default": ["some", "some"]}),
+                ("an empty join", "choices[0].joined_by", {"joined_by": ""}),
+                ("a join a shell reads as more", "choices[0].joined_by", {"joined_by": " "}),
+                ("a join a value carries", "choices[0].joined_by", {"joined_by": "l"}),
+                ("warnings that are not a mapping", "choices[0].warnings",
+                 {"warnings": ["slow"]}),
+                ("an empty warnings mapping", "choices[0].warnings", {"warnings": {}}),
+                ("a warning about a value the choice does not carry",
+                 "choices[0].warnings", {"warnings": {"most": "slow"}}),
+                ("a warning stating nothing", "choices[0].warnings",
+                 {"warnings": {"all": " "}}),
+            )
+        ),
+        # § 33's tree conditions, one plant per arm.
+        *(
+            (label, f"deploy[0].{key}", at("deploy", [_a_deploy_target(**changed)]))
+            for label, key, changed in (
+                ("tree conditions that are not a list", "tree",
+                 {"tree": {"condition": "clean"}}),
+                ("a tree list carrying nothing", "tree", {"tree": []}),
+                ("a tree condition that is not a block", "tree[0]", {"tree": ["clean"]}),
+                ("a tree condition with a key § 33 does not declare", "tree[0].when",
+                 {"tree": [_a_tree_condition(when="always")]}),
+                ("a tree condition outside the vocabulary", "tree[0].condition",
+                 {"tree": [_a_tree_condition(condition="tidy")]}),
+                ("a tree condition with no condition", "tree[0].condition",
+                 {"tree": [_a_tree_condition(condition=_ABSENT)]}),
+                ("a tree condition stated twice", "tree[1].condition",
+                 {"tree": [_a_tree_condition(), _a_tree_condition(holds="advance")]}),
+                ("a tree condition holding something outside the vocabulary",
+                 "tree[0].holds", {"tree": [_a_tree_condition(holds="release")]}),
+                ("a tree condition holding nothing stated", "tree[0].holds",
+                 {"tree": [_a_tree_condition(holds=_ABSENT)]}),
+                ("a branch condition naming no branch", "tree[0].branch",
+                 {"tree": [_a_tree_condition(condition="on_branch")]}),
+                ("a branch condition naming an empty branch", "tree[0].branch",
+                 {"tree": [_a_tree_condition(condition="on_branch", branch=" ")]}),
+                ("a branch beside a condition that never reads it", "tree[0].branch",
+                 {"tree": [_a_tree_condition(branch="main")]}),
+                *(
+                    (f"a tree on a {shape} target, which runs from no local tree", "tree",
+                     {"invoke": shape, "command": _ABSENT, "ref": "a-ref",
+                      "workflow": _a_workflow_the_example_states(),
+                      "tree": [_a_tree_condition()]})
+                    for shape in ("dispatch", "by_hand")
+                ),
+            )
+        ),
+        ("choices that are not a list", "deploy[0].choices",
+         at("deploy", [_a_deploy_target(choices={"scope": "all"})])),
+        ("a choices list carrying nothing", "deploy[0].choices",
+         at("deploy", [_a_deploy_target(choices=[])])),
+        ("a choice that is not a block", "deploy[0].choices[0]",
+         at("deploy", [_a_deploy_target(choices=["scope"])])),
+        ("one choice name twice", "deploy[0].choices[1].name",
+         at("deploy", [_a_deploy_target(command="ship {choose:scope}",
+                                        choices=[_a_choice(), _a_choice()])])),
+        ("a choice of an input the target always sends", "deploy[0].choices[0].name",
+         at("deploy", [_a_deploy_target(
+             invoke="dispatch", command=_ABSENT, ref="a-ref",
+             workflow=_a_workflow_the_example_states(),
+             inputs={"scope": "some"}, choices=[_a_choice()])])),
+        ("a choice the command never places", "deploy[0].command",
+         at("deploy", [_a_deploy_target(command="ship it", choices=[_a_choice()])])),
+        ("a placement no choice declares", "deploy[0].command",
+         at("deploy", [_a_deploy_target(command="ship {choose:scope} {choose:other}",
+                                        choices=[_a_choice()])])),
+        ("a choice placed in the batch command", "deploy[0].batch",
+         at("deploy", [_a_deploy_target(command="ship {choose:scope}",
+                                        choices=[_a_choice()],
+                                        batch="list {choose:scope}")])),
+        ("a choice placed inside a nested command", "deploy[0].live_data_step.apply",
+         at("deploy", [_a_deploy_target(
+             command="ship {choose:scope}", choices=[_a_choice()],
+             live_data_step=_a_live_data_step(apply="write {choose:scope}"))])),
+        ("a choice placed in a dispatch's ref", "deploy[0].ref",
+         at("deploy", [_a_deploy_target(
+             invoke="dispatch", command=_ABSENT, ref="{choose:scope}",
+             workflow=_a_workflow_the_example_states(), choices=[_a_choice()])])),
         ("a requires list that is not a list", "deploy[0].requires",
          at("deploy", [_a_deploy_target(requires="a credential")])),
         ("a precondition written blank", "deploy[0].requires[0]",
@@ -16327,6 +17766,50 @@ def _planted_violations():
          "documents.quoted[0].document",
          at("documents", _a_documents_of(
              quoted=[{"sentence": "a claim", "document": "b-document.md"}]))),
+        # § 38's `box_diagrams`, the one key under `documents` a project may leave
+        # unstated. ⛔ Every arm below is a block somebody **did** state: a
+        # diagram rule turned on and read by nothing is the failure, while the
+        # block left out is admitted and asserted below the list.
+        ("a diagram block stated beside a carrier that reads none",
+         "documents.box_diagrams",
+         at("documents", {"carrier": "none", "absent_reason": "nothing is governed",
+                          "box_diagrams": _a_box_diagrams()})),
+        ("a diagram block that is not a block", "documents.box_diagrams",
+         at("documents", _a_documents_of(box_diagrams=True))),
+        ("a key § 38 declares on no diagram block", "documents.box_diagrams.width",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(width=2)))),
+        ("a diagram block not saying whether it is held",
+         "documents.box_diagrams.held",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(held=_ABSENT)))),
+        # ⚠️ A string is its own arm: `"false"` is truthy, so a reader that
+        # coerced it would turn the check on for a project that wrote it off.
+        ("a diagram block held as a string", "documents.box_diagrams.held",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(held="false")))),
+        ("a diagram block omitting its exemptions", "documents.box_diagrams.exempt",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(exempt=_ABSENT)))),
+        ("an exemption list that is not a list", "documents.box_diagrams.exempt",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(exempt="all")))),
+        ("an exemption that is not a block", "documents.box_diagrams.exempt[0]",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=["a-document.md"])))),
+        ("a key § 38 declares on no exemption",
+         "documents.box_diagrams.exempt[0].line",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(line=12)])))),
+        ("an exemption with no reason", "documents.box_diagrams.exempt[0].reason",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(reason=_ABSENT)])))),
+        ("an exemption whose block is blank", "documents.box_diagrams.exempt[0].block",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(block="  ")])))),
+        ("an exemption in a document no row declares",
+         "documents.box_diagrams.exempt[0].document",
+         at("documents", _a_documents_of(box_diagrams=_a_box_diagrams(
+             exempt=[_a_diagram_exemption(document="b-document.md")])))),
+        ("an exemption whose block is not a usable expression",
+         "documents.box_diagrams.exempt[0].block",
+         at("documents", _a_documents_of(
+             box_diagrams=_a_box_diagrams(exempt=[_a_diagram_exemption(block="(ab")])))),
         # § 39, and every arm no marker reaches. ⛔ They fail in one direction:
         # a corpus read at the wrong ref, or at no ref, is a confident wrong
         # answer in the step whose whole value is confidence, and nothing
@@ -16513,14 +17996,105 @@ def _planted_violations():
         ("a claim pattern that does not compile, so no call ever claims it",
          "branch_model.exclusive_resources[0].claimed_by",
          _a_resource_of(claimed_by="a-command-that-claims-it(")),
+        ("a list of claiming commands naming none",
+         "branch_model.exclusive_resources[0].claimed_by", _a_resource_of(claimed_by=[])),
+        ("claiming commands written as a block",
+         "branch_model.exclusive_resources[0].claimed_by",
+         _a_resource_of(claimed_by={"command": "a-command"})),
+        ("a claiming command written as a bare string",
+         "branch_model.exclusive_resources[0].claimed_by[0]",
+         _a_resource_of(claimed_by=["a-command"])),
+        ("a claiming command naming no command",
+         "branch_model.exclusive_resources[0].claimed_by[0].command",
+         _a_resource_of(claimed_by=[{"args_match": "a-pattern"}])),
+        ("a claiming command carrying its arguments, which stands in no position",
+         "branch_model.exclusive_resources[0].claimed_by[0].command",
+         _a_resource_of(claimed_by=[{"command": "a-command build"}])),
+        ("a claiming command with a misspelled key, which would claim every call of it",
+         "branch_model.exclusive_resources[0].claimed_by[0]",
+         _a_resource_of(claimed_by=[{"command": "a-command", "arg_match": "build"}])),
+        ("a claiming command's pattern written blank",
+         "branch_model.exclusive_resources[0].claimed_by[0].args_match",
+         _a_resource_of(claimed_by=[{"command": "a-command", "args_match": " "}])),
+        ("a claiming command's pattern that does not compile",
+         "branch_model.exclusive_resources[0].claimed_by[0].args_match",
+         _a_resource_of(claimed_by=[{"command": "a-command", "args_match": "build("}])),
+        ("forms that never claim, not a list",
+         "branch_model.exclusive_resources[0].never_claims",
+         _a_resource_of(claimed_by=[{"command": "a-command"}], never_claims="--status")),
+        ("a form that never claims naming no command",
+         "branch_model.exclusive_resources[0].never_claims[0].command",
+         _a_resource_of(claimed_by=[{"command": "a-command"}],
+                        never_claims=[{"args_match": "--status"}])),
+        ("forms that never claim beside one pattern",
+         "branch_model.exclusive_resources[0].never_claims",
+         _a_resource_of(never_claims=[{"command": "a-command"}])),
         ("an exclusive entry stating no lifetime", "branch_model.exclusive_resources[0].ttl",
          _a_resource_of(ttl=None)),
         ("a lifetime of zero, which expires before the call it covers starts",
          "branch_model.exclusive_resources[0].ttl", _a_resource_of(ttl=0)),
+        ("a wait of no seconds", "branch_model.exclusive_resources[0].wait_up_to",
+         _a_resource_of(wait_up_to=0)),
+        ("a wait written as a flag, which reads as one second",
+         "branch_model.exclusive_resources[0].wait_up_to", _a_resource_of(wait_up_to=True)),
+        ("a wait with no bound", "branch_model.exclusive_resources[0].wait_up_to",
+         _a_resource_of(wait_up_to="wait")),
+        ("an end of background work outside its alternation",
+         "branch_model.exclusive_resources[0].background_end",
+         _a_resource_of(background_end="whenever")),
+        ("a background probe nothing would read",
+         "branch_model.exclusive_resources[0].background_probe",
+         _a_resource_of(background_end="process", background_probe="a-command")),
+        ("a background grace nothing would read",
+         "branch_model.exclusive_resources[0].background_grace",
+         _a_resource_of(background_grace=5)),
+        ("an end by probe naming no probe",
+         "branch_model.exclusive_resources[0].background_probe",
+         _a_resource_of(background_end="probe", background_grace=5)),
+        ("an end by a probe written blank",
+         "branch_model.exclusive_resources[0].background_probe",
+         _a_resource_of(background_end="probe", background_probe=" ", background_grace=5)),
+        ("an end by probe with no grace",
+         "branch_model.exclusive_resources[0].background_grace",
+         _a_resource_of(background_end="probe", background_probe="a-command")),
+        ("a background grace past the lease's own lifetime",
+         "branch_model.exclusive_resources[0].background_grace",
+         _a_resource_of(background_end="probe", background_probe="a-command",
+                        background_grace=601)),
+        ("a background grace written as a flag",
+         "branch_model.exclusive_resources[0].background_grace",
+         _a_resource_of(background_end="probe", background_probe="a-command",
+                        background_grace=True)),
+        ("a grace of zero", "branch_model.exclusive_resources[0].grace",
+         _a_resource_of(grace=0)),
+        ("a grace written as a flag", "branch_model.exclusive_resources[0].grace",
+         _a_resource_of(grace=True)),
+        ("a grace past the lease's own lifetime", "branch_model.exclusive_resources[0].grace",
+         _a_resource_of(grace=601)),
+        ("a grace with no probe to qualify", "branch_model.exclusive_resources[0].grace",
+         _a_resource_of(grace=60, probe=None)),
+        ("a probe limit the guard's own budget cannot hold",
+         "branch_model.exclusive_resources[0].probe_timeout", _a_resource_of(probe_timeout=9)),
+        ("a probe limit that is not a number",
+         "branch_model.exclusive_resources[0].probe_timeout", _a_resource_of(probe_timeout="5s")),
+        ("a probe limit with no probe to limit",
+         "branch_model.exclusive_resources[0].probe_timeout",
+         _a_resource_of(probe_timeout=5, probe=None)),
         ("a probe written blank, which reads as a command and prints no count",
          "branch_model.exclusive_resources[0].probe", _a_resource_of(probe="   ")),
         ("a probe that is no command at all", "branch_model.exclusive_resources[0].probe",
          _a_resource_of(probe=["a-command-that-counts-them"])),
+        ("a teardown written blank, which exits zero having taken nothing down",
+         "branch_model.teardown", at("branch_model.teardown", "   ")),
+        ("a teardown that is no command at all", "branch_model.teardown",
+         at("branch_model.teardown", ["a-command"])),
+        ("a resource check written blank, which reads every resource as down",
+         "branch_model.resource_up", at("branch_model.resource_up", "   ")),
+        ("a resource check that is no command at all", "branch_model.resource_up",
+         at("branch_model.resource_up", ["a-command"])),
+        ("a resource check stated where no tree is cut", "branch_model.resource_up",
+         lambda _data: _with(
+             _an_in_place_memory_project(), "branch_model.resource_up", "a-command")),
         # ⚠️ Both of these refuse in the permissive direction, which is why each
         # has a plant of its own: a list written as one path exempts nothing and
         # an entry that names nothing exempts nothing, and in either case the
@@ -17197,6 +18771,35 @@ def _planted_violations():
         ("an argument pattern that does not compile, so no call ever matches it",
          "spend_guard.deny[0].args_match",
          _a_denial_of(args_match="--the-paid-tier(")),
+        ("a launcher list that is not a list", "command_position.launchers",
+         at("command_position", {"launchers": "a-launcher"})),
+        ("a launcher that is not a block", "command_position.launchers[0]",
+         at("command_position", {"launchers": ["a-launcher"]})),
+        ("a launcher naming no command", "command_position.launchers[0].command",
+         at("command_position", {"launchers": [{"operands": "command"}]})),
+        ("a launcher listed twice", "command_position.launchers[1].command",
+         at("command_position", {"launchers": [
+             {"command": "a-launcher", "operands": "command"},
+             {"command": "a-launcher", "operands": "string"}]})),
+        ("a string flag written without its dash",
+         "command_position.launchers[0].string_flags[0]",
+         at("command_position", {"launchers": [
+             {"command": "a-launcher", "string_flags": ["c"]}]})),
+        ("a string flag list that is one string",
+         "command_position.launchers[0].string_flags",
+         at("command_position", {"launchers": [
+             {"command": "a-launcher", "string_flags": "-c"}]})),
+        ("a valued flag that is two words",
+         "command_position.launchers[0].valued_flags[0]",
+         at("command_position", {"launchers": [
+             {"command": "a-launcher", "operands": "command",
+              "valued_flags": ["-o a-value"]}]})),
+        ("an operand reading the surface does not state",
+         "command_position.launchers[0].operands",
+         at("command_position", {"launchers": [
+             {"command": "a-launcher", "operands": "script"}]})),
+        ("a launcher that launches nothing", "command_position.launchers[0]",
+         at("command_position", {"launchers": [{"command": "a-launcher"}]})),
         ("a resume bar written as a flag, which reads as a price",
          "spend_guard.resume_bar_usd", at("spend_guard.resume_bar_usd", True)),
         ("a resume bar that is no price at all", "spend_guard.resume_bar_usd",
@@ -17880,6 +19483,25 @@ def _verdict_on(paths, kind=None, **overrides) -> str:
     if answer["destination"]:
         shown += f" onto {answer['destination']}"
     return shown
+
+
+# § 4.2's classed form at its smallest: a class by paths, and the remainder.
+TWO_WRITERS = (
+    {"writer": "procedure", "paths": ["ci/*"]},
+    {"writer": "deploy", "rest": True},
+)
+
+
+def _classed(*writers):
+    """The status list rewritten to one status carrying these classed writers."""
+
+    def mutate(data: dict) -> dict:
+        data["statuses"] = [
+            {"name": "x", "role": "initial", "writers": copy.deepcopy(list(writers))}
+        ]
+        return data
+
+    return mutate
 
 
 def _an_exempt_class_of(*entries) -> dict:
@@ -18625,6 +20247,25 @@ def _a_workflow_the_example_states() -> str:
     return stated[0]
 
 
+def _a_choice(**overrides) -> dict:
+    """One § 33 choice, minimal and correct."""
+    choice = {
+        "name": "scope", "values": ["some", "all"], "default": "some",
+        "warnings": {"all": "slow"},
+    }
+    choice.update(overrides)
+    if "values" in overrides and "warnings" not in overrides:
+        choice.pop("warnings")
+    return {key: value for key, value in choice.items() if value is not _ABSENT}
+
+
+def _a_tree_condition(**overrides) -> dict:
+    """One § 33 tree condition, minimal and correct."""
+    condition = {"condition": "clean", "holds": "deploy"}
+    condition.update(overrides)
+    return {key: value for key, value in condition.items() if value is not _ABSENT}
+
+
 def _a_deploy_target(**overrides) -> dict:
     """§ 33's smallest valid target, to break one key of at a time.
 
@@ -18955,6 +20596,24 @@ def _two_groupings(data: dict, *, names=("one-scope", "another-scope")) -> dict:
     node = data.setdefault("work_item", {})
     node[ONE_GROUPING] = {name: _a_grouping_carrying_a_ref(name) for name in names}
     return data
+
+
+def _a_box_diagrams(**overrides) -> dict:
+    """§ 38's smallest stated diagram block, held and exempting nothing."""
+    block = {"held": True, "exempt": []}
+    block.update(overrides)
+    return {key: value for key, value in block.items() if value is not _ABSENT}
+
+
+def _a_diagram_exemption(**overrides) -> dict:
+    """§ 38's smallest valid exemption, every key of which is stated."""
+    entry = {
+        "document": "a-document.md",
+        "block": "a diagram drawn this way on purpose",
+        "reason": "it reproduces a terminal's own output",
+    }
+    entry.update(overrides)
+    return {key: value for key, value in entry.items() if value is not _ABSENT}
 
 
 def _a_forbidden_name(**overrides) -> dict:
@@ -19675,6 +21334,21 @@ def main(argv: list[str]) -> int:
         "than an answer",
     )
     parser.add_argument(
+        "--deploy-target",
+        metavar="TARGET",
+        help="one of § 33's deploy targets, resolved as a run would invoke it: the "
+        "command and where it runs, or the workflow, the ref and every input, with "
+        "each choice, the value taken and any warning declared for it",
+    )
+    parser.add_argument(
+        "--choose",
+        action="append",
+        metavar="NAME=VALUE",
+        help="a value for one of that target's choices, repeated per choice and per "
+        "value where a choice may take several. One the target does not allow is a "
+        "stop. A choice left out takes its default",
+    )
+    parser.add_argument(
         "--tier",
         metavar="TIER",
         help="the § 31 tier to report: every suite classified under it, what each "
@@ -19748,6 +21422,28 @@ def main(argv: list[str]) -> int:
                 "a *command* runs in, so a name alone asks nothing. Pass "
                 "`--command` with it, or read the roots this project declares "
                 "out of the report this run prints without either.",
+            )
+        if args.deploy_target:
+            # ⛔ The repository is the entry's own fact, so a root handed over
+            # beside the target is a second answer to it.
+            if args.root or args.root_for:
+                raise ConfigError(
+                    f"deploy.{DEPLOY_CODE_ROOT}",
+                    "is the target's own statement of its repository (§ 33), so a "
+                    "root is not passed beside `--deploy-target`.",
+                )
+            if args.command:
+                raise ConfigError(
+                    "deploy.command",
+                    "is the target's own statement of what it runs (§ 33), so a "
+                    "command is not passed beside `--deploy-target`.",
+                )
+            answer = config.deploy_target(args.deploy_target, args.choose)
+        elif args.choose:
+            raise ConfigError(
+                "deploy.choices",
+                "cannot be chosen with no target named: § 33 states a choice per "
+                "target. Pass `--deploy-target` with it.",
             )
         if args.exempt_for:
             answer = config.exempt_for(args.exempt_for, args.of_kind)
