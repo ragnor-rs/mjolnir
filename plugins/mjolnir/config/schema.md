@@ -2624,9 +2624,10 @@ work_item:
 **A project plans in more than one grouping at once, so the collection is the form and not an
 extension of it.** One measured tracker carries an iteration *and* a release scope as two fields
 with two gate checks, each with its own lifecycle and its own closer; another carries one grouping
-that is both the time box and the release scope. So `kind` is a value and not a key name, and the
-lockstep case, where a version tracks an iteration one for one, is two entries whose values happen
-to agree rather than a rule.
+that is both the time box and the release scope. So `kind` is a value and not a key name — two
+facets named `iteration` and `version` would hold neither a project with two versions nor a project
+whose single grouping is both — and the lockstep case, where a version tracks an iteration one for
+one, is two entries whose values happen to agree rather than a rule.
 
 **The single form stays valid and keeps its meaning**, by
 [§ 1](#a-projects-code-is-not-always-one-repository)'s rule for the roots collection: a project
