@@ -11559,6 +11559,85 @@ def _validate_declared_sections(data: dict, facts: dict) -> None:
         taken[folded] = f"{DECLARED}[{index}].heading"
 
 
+ITEM_AUDIENCE = "language.artifacts.work_item"
+ITEM_AUDIENCE_KEYS = ("language", "register", "audience", "exempt")
+
+
+def item_section_headings(data: dict) -> dict[str, str]:
+    """Each section name an item's body can carry, mapped to its heading.
+
+    The procedure's own names where `work_item.template.sections` maps one to a
+    heading, and every declared entry's `name`. ⛔ The one mapping § 8's
+    `exempt` resolves through, for the reader that refuses a name and for the
+    consumer that reads a body against the names that pass.
+    """
+    headings: dict[str, str] = {}
+    for name, heading in (_get(data, "work_item.template.sections") or {}).items():
+        if isinstance(heading, str) and heading.strip():
+            headings[str(name)] = heading.strip()
+    for entry in _absent_as(_get(data, DECLARED), []) or []:
+        if isinstance(entry, dict) and isinstance(entry.get("name"), str):
+            headings[entry["name"].strip()] = str(entry.get("heading") or "").strip()
+    return headings
+
+
+def _validate_item_audience(data: dict) -> None:
+    """§ 8's `work_item` triple: who an item's governed sections are written for."""
+    triple = _get(data, ITEM_AUDIENCE)
+    if triple is None:
+        return
+    if not isinstance(triple, dict):
+        raise ConfigError(
+            ITEM_AUDIENCE,
+            f"is {type(triple).__name__}; § 8 states it as a triple -- `language`, "
+            "`register` and `audience` -- with the `exempt` sections beside them.",
+        )
+    for stated_key in triple:
+        if stated_key not in ITEM_AUDIENCE_KEYS:
+            raise ConfigError(
+                f"{ITEM_AUDIENCE}.{stated_key}",
+                "is a key § 8 does not state on an item's triple, so nothing reads it. "
+                f"The keys it states are: {', '.join(ITEM_AUDIENCE_KEYS)}.",
+            )
+    for key in ("language", "register", "audience"):
+        value = triple.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(
+                f"{ITEM_AUDIENCE}.{key}",
+                f"is {value!r}; § 8 writes it on every triple, this one included.",
+            )
+    written_in = _get(data, "language.work_item")
+    if triple["language"] != written_in:
+        raise ConfigError(
+            f"{ITEM_AUDIENCE}.language",
+            f"is {triple['language']!r} while `language.work_item` is {written_in!r} (§ 8). "
+            "An item is written in one language, so two statements of it leave the filing "
+            "role choosing which one to write in.",
+        )
+    exempt = _absent_as(triple.get("exempt"), [])
+    if not isinstance(exempt, list):
+        raise ConfigError(
+            f"{ITEM_AUDIENCE}.exempt",
+            f"is {type(exempt).__name__}; § 8 states it as a list of section names, or "
+            "`[]` where the triple governs every section.",
+        )
+    headings = item_section_headings(data)
+    seen: set[str] = set()
+    for index, name in enumerate(exempt):
+        where = f"{ITEM_AUDIENCE}.exempt[{index}]"
+        if not isinstance(name, str) or not headings.get(name.strip()):
+            known = ", ".join(sorted(n for n, h in headings.items() if h)) or "none"
+            raise ConfigError(
+                where,
+                f"is {name!r}, which names no section with a heading (§ 8): an exemption "
+                "that resolves to no heading governs nothing. The names that resolve "
+                f"here are: {known}.",
+            )
+        if name.strip() in seen:
+            raise ConfigError(where, f"is {name!r}, which this list already names (§ 8).")
+        seen.add(name.strip())
+
+
 def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⛔ Walked rather than looked up by path, because a retired key may sit
     # inside a list: `_get` descends a dict and returns the default the moment it
@@ -12989,6 +13068,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
         seen_headings[folded] = index
 
     _validate_declared_sections(data, facts)
+    _validate_item_audience(data)
 
     # § 18. The guard on a command the host has already run. Requiredness is the
     # surface's marker and answers whether `never_guard` is written; what these
@@ -18443,6 +18523,14 @@ def self_test() -> int:
         broken = _refused(mutate(_a_valid_example()))
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
+    # And § 8's item triple from the green side: exempting a declared section
+    # loads, and so does a triple exempting nothing.
+    for label, mutate in (
+        ("an item triple exempting a declared plan loads", _with_item_audience()),
+        ("an item triple exempting nothing loads", _with_item_audience(exempt=None)),
+    ):
+        stated = _refused(mutate(_a_valid_example()))
+        check(label, stated is None, f"refused {stated!r}")
     # And § 3's move fields from the green side, so the arms above refuse what
     # they name rather than every entry.
     stated = _refused(_with_move_fields(
@@ -20868,6 +20956,34 @@ def _surface_without_marker(text: str, path: str) -> tuple[str, bool]:
     return "".join(out), landed
 
 
+PLANTED_PLAN = {"name": "plan", "heading": "Implementation plan",
+                "fills": "the plan, from a scan of the code", "source": "code",
+                "required": False}
+
+
+def _with_item_audience(replace=None, **overrides):
+    """A mutation stating § 8's item triple, with a declared plan it may exempt.
+
+    The triple's language is read off the example's own `language.work_item`,
+    so only the plant that overrides it is about the language. `None` drops a key.
+    """
+    def mutate(data: dict) -> dict:
+        data.setdefault("work_item", {}).setdefault("template", {})["declared"] = [
+            dict(PLANTED_PLAN)]
+        triple = {"language": _get(data, "language.work_item"), "register": "business",
+                  "audience": "whoever ordered the work", "exempt": ["plan"]}
+        for key, value in overrides.items():
+            if value is None:
+                triple.pop(key, None)
+            else:
+                triple[key] = value
+        data.setdefault("language", {}).setdefault("artifacts", {})["work_item"] = (
+            triple if replace is None else replace)
+        return data
+
+    return mutate
+
+
 def _planted_violations():
     """(label, the key the refusal must name, how to break a valid example).
 
@@ -23018,6 +23134,23 @@ def _planted_violations():
          _in_tree_and_uncommitted),
         ("a prose width that is not a count of columns", "language.prose_width",
          at("language.prose_width", "wide")),
+        # § 8's item triple, one plant per arm.
+        ("an item triple that is not a mapping", ITEM_AUDIENCE,
+         _with_item_audience(replace="business")),
+        ("an item triple stating a key § 8 does not", f"{ITEM_AUDIENCE}.tone",
+         _with_item_audience(tone="plain")),
+        ("an item triple with no register", f"{ITEM_AUDIENCE}.register",
+         _with_item_audience(register=None)),
+        ("an item triple with a blank audience", f"{ITEM_AUDIENCE}.audience",
+         _with_item_audience(audience="  ")),
+        ("an item triple in another language than the items", f"{ITEM_AUDIENCE}.language",
+         _with_item_audience(language="a-language-no-item-is-written-in")),
+        ("an exemption list that is not a list", f"{ITEM_AUDIENCE}.exempt",
+         _with_item_audience(exempt="plan")),
+        ("an exemption naming no section", f"{ITEM_AUDIENCE}.exempt[0]",
+         _with_item_audience(exempt=["no-such-section"])),
+        ("an exemption naming a section twice", f"{ITEM_AUDIENCE}.exempt[1]",
+         _with_item_audience(exempt=["plan", "plan"])),
         ("a worktree model with nowhere to cut a tree", "branch_model.tree_dir",
          _cuts_trees_nowhere),
         # ⚠️ The block is written whole, § 40's record included: this plant is

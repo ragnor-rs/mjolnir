@@ -785,6 +785,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "duration there counted in hundredths of an hour, written as decimals, or "
         "in minutes, written as hours and minutes in which unit words?",
     ),
+    "language.artifacts.work_item": ask(
+        "And a work item's own sections -- which register and audience are they "
+        "written for, and which sections, such as a plan read off the code, are not?",
+    ),
 
     # --- § 9. Day log ------------------------------------------------------
     "day_log.day_start": ask(

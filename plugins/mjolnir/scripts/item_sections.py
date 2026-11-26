@@ -23,18 +23,25 @@ What it refuses, per declared section:
 reference to a real file passes whether or not anybody opened it; § 4.4 states
 that limit and this module does not narrow it.
 
+`register` reads a body against § 8's item triple instead: every section the
+triple governs is read for a fenced block, a span in backticks, a path and an
+identifier, each reported as a finding for the filing role to judge. Which
+sections are governed, and what the reading cannot see, are § 8's.
+
 Usage:
     item_sections.py [--skills-root DIR]   the sections this project declares
     item_sections.py check --body-file PATH [--code-root DIR]
                                            hold a body to them
+    item_sections.py register --body-file PATH
+                                           read the governed sections for code
     item_sections.py --self-test           assert every answer against planted
                                            bodies, then report this project's own
 
 Exit status: 0 the body holds, 1 it does not, 2 the configuration or the body
-could not be read, 3 this project declares no section. ⚠️ The last is § 11's
-rule at a command line: *nothing to hold a body to* collapsed into 0 reads as a
-body checked and passed, and a filing role reading 3 files as it did before the
-key existed.
+could not be read, 3 this project declares no section -- or, for `register`,
+states no item audience. ⚠️ The last is § 11's rule at a command line: *nothing
+to hold a body to* collapsed into 0 reads as a body checked and passed, and a
+filing role reading 3 files as it did before the key existed.
 """
 
 from __future__ import annotations
@@ -157,10 +164,98 @@ def hold(configuration: config.Config, body: str, code_root: str | None = None) 
     return problems
 
 
+# --- who the governed sections are written for (§ 8) ------------------------
+
+NO_AUDIENCE = 3
+
+INLINE_CODE = re.compile(r"`[^`]+`")
+# A URL, an autolink and a link's target are not prose and § 8 keeps them as
+# they are, so each is taken out before a path or an identifier is looked for.
+URL = re.compile(r"<[^>\s]+>|\]\([^)]*\)|\b[a-z][a-z0-9+.-]*://\S+", re.IGNORECASE)
+PATH = re.compile(r"(?<![\w/])(?:~|\.{1,2})?/?(?:[\w.-]+/)+[\w-]+\.\w+\b")
+IDENTIFIERS = (
+    ("a name joined by underscores", re.compile(r"\b[A-Za-z0-9]+(?:_[A-Za-z0-9]+)+\b")),
+    ("a name with a capital inside a lowercase word",
+     re.compile(r"\b[a-z][a-z0-9]*[A-Z][A-Za-z0-9]*\b")),
+    ("a name followed by ()", re.compile(r"\b[A-Za-z_][\w.]*\(\)")),
+)
+
+
+def audience(configuration: config.Config) -> dict | None:
+    """§ 8's item triple, or None where the project states no reader for an item."""
+    triple = configuration.get(config.ITEM_AUDIENCE)
+    return dict(triple) if isinstance(triple, dict) else None
+
+
+def exempt_headings(configuration: config.Config) -> set[str]:
+    """The headings, folded, of the sections the triple does not govern."""
+    triple = audience(configuration) or {}
+    headings = config.item_section_headings(configuration.data)
+    return {headings[name.strip()].casefold() for name in (triple.get("exempt") or [])
+            if headings.get(name.strip())}
+
+
+def governed_lines(body: str, exempt: set[str]) -> list[tuple[str, int, str, bool]]:
+    """(the section's heading, the line number, the line, inside a fence) per governed line.
+
+    ⛔ A line is exempt where any heading open above it is exempt, so a section's
+    subsections go with it. Heading lines are the template's and not read here.
+    """
+    lines: list[tuple[str, int, str, bool]] = []
+    open_sections: list[tuple[int, str]] = []
+    fenced = None
+    for number, line in enumerate(body.splitlines(), start=1):
+        fence = FENCE.match(line)
+        heading = None if fenced or fence else HEADING.match(line)
+        if heading:
+            level = len(heading.group(1))
+            open_sections = [(lvl, text) for lvl, text in open_sections if lvl < level]
+            open_sections.append((level, heading.group(2).strip()))
+            continue
+        inside = bool(fenced) or bool(fence)
+        if fence:
+            marker = fence.group(1)[0]
+            fenced = None if fenced == marker else (fenced or marker)
+        if any(text.casefold() in exempt for _lvl, text in open_sections):
+            continue
+        where = open_sections[-1][1] if open_sections else "(before the first heading)"
+        lines.append((where, number, line, inside))
+    return lines
+
+
+def register_findings(configuration: config.Config, body: str) -> list[dict]:
+    """Every code, path or identifier a governed section carries; `[]` where none."""
+    findings: list[dict] = []
+    open_fence_reported = None
+
+    def finding(section: str, number: int, what: str, text: str) -> None:
+        findings.append({"section": section, "line": number, "carries": what, "text": text})
+
+    for section, number, line, inside in governed_lines(body, exempt_headings(configuration)):
+        if inside:
+            # ⚠️ One finding per block, at its opening line, rather than one per line.
+            if open_fence_reported is None:
+                open_fence_reported = number
+                finding(section, number, "a fenced block", line.strip())
+            elif FENCE.match(line):
+                open_fence_reported = None
+            continue
+        for span in INLINE_CODE.findall(line):
+            finding(section, number, "a span in backticks", span)
+        prose = URL.sub(" ", INLINE_CODE.sub(" ", line))
+        for path in PATH.findall(prose):
+            finding(section, number, "a path", path)
+        prose = PATH.sub(" ", prose)
+        for what, pattern in IDENTIFIERS:
+            for match in pattern.findall(prose):
+                finding(section, number, f"an identifier: {what}", match)
+    return findings
+
+
 # --- the suite -------------------------------------------------------------
 
 
-def _a_project(tmp: str, entries=None) -> config.Config:
+def _a_project(tmp: str, entries=None, triple=None) -> config.Config:
     """A loadable configuration in a tree of its own, declaring `entries` or nothing.
 
     Built from an example rather than written here, for the reason the sibling
@@ -177,6 +272,9 @@ def _a_project(tmp: str, entries=None) -> config.Config:
         template.pop("declared", None)
     else:
         template["declared"] = entries
+    if triple is not None:
+        data["language"].setdefault("artifacts", {})["work_item"] = {
+            "language": data["language"]["work_item"], **triple}
     os.makedirs(os.path.join(tmp, ".claude"), exist_ok=True)
     with open(os.path.join(tmp, config.CONFIG_PATH), "w", encoding="utf-8") as handle:
         handle.write(yaml.safe_dump(data, allow_unicode=True))
@@ -340,6 +438,84 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("and its declared list reads as empty rather than absent",
               declared(config.load(bare)) == [])
 
+        print()
+        print("who the governed sections are written for (§ 8)")
+        reader = {"register": "business", "audience": "whoever ordered the work"}
+        held = _a_project(os.path.join(tmp, "a"), [A_PLAN], {**reader, "exempt": ["plan"]})
+
+        def carried(project, body) -> list[tuple[str, str]]:
+            return [(each["section"], each["carries"])
+                    for each in register_findings(project, body)]
+
+        check("a body whose governed sections are plain words, its plan exempt, has no finding",
+              carried(held, A_BODY) == [], str(register_findings(held, A_BODY)))
+        check("a subsection of the exempt plan is exempt with it",
+              carried(held, A_BODY.replace("2. Then", "#### Detail\n\n2. Then")) == [])
+        span = A_BODY.replace("Something is possible.", "Something calls `hold`.")
+        check("a span in backticks in a governed section is a finding",
+              carried(held, span) == [("Outcome", "a span in backticks")],
+              str(register_findings(held, span)))
+        path = A_BODY.replace("Something is possible.", "Edit lib/reader.py to do it.")
+        check("a bare path in a governed section is a finding",
+              carried(held, path) == [("Outcome", "a path")], str(register_findings(held, path)))
+        for label, words, what in (
+            ("a name joined by underscores", "Set the work_item key.",
+             "an identifier: a name joined by underscores"),
+            ("a name with a capital inside a lowercase word", "Call readBlockers first.",
+             "an identifier: a name with a capital inside a lowercase word"),
+            ("a name followed by ()", "Then run hold() on it.",
+             "an identifier: a name followed by ()"),
+        ):
+            planted = A_BODY.replace("- It holds.", f"- {words}")
+            check(f"{label} in a governed section is a finding",
+                  carried(held, planted) == [("Acceptance check", what)],
+                  str(register_findings(held, planted)))
+        fence = A_BODY.replace("Something is possible.",
+                               "Something is possible.\n\n```sh\nrun it\nand this\n```")
+        check("a fenced block in a governed section is one finding, at its opening line",
+              carried(held, fence) == [("Outcome", "a fenced block")],
+              str(register_findings(held, fence)))
+        subsection = A_BODY.replace("Something is possible.",
+                                    "Something is possible.\n\n#### Why\n\nSee `x`.")
+        check("a subsection of a governed section is governed",
+              carried(held, subsection) == [("Why", "a span in backticks")],
+              str(register_findings(held, subsection)))
+        linked = A_BODY.replace("Something is possible.",
+                                "See https://example.com/a/b.py and [the page](docs/a.md).")
+        check("a URL and a link's target are not read as a path",
+              carried(held, linked) == [], str(register_findings(held, linked)))
+        prose = A_BODY.replace("Something is possible.", "Open and/or close it, e.g. now.")
+        check("a slash between words and an abbreviation are not findings",
+              carried(held, prose) == [], str(register_findings(held, prose)))
+        preamble = "Read `x` first.\n\n" + A_BODY
+        check("text before the first heading is governed",
+              carried(held, preamble) == [("(before the first heading)", "a span in backticks")],
+              str(register_findings(held, preamble)))
+        governs_all = _a_project(os.path.join(tmp, "b"), [A_PLAN], reader)
+        check("with nothing exempt, the plan's own citations are findings",
+              {what for _s, what in carried(governs_all, A_BODY)} == {"a span in backticks"}
+              and {s for s, _w in carried(governs_all, A_BODY)} == {"Implementation plan"},
+              str(register_findings(governs_all, A_BODY)))
+
+        print()
+        print("the register command line")
+        held_root = os.path.join(tmp, "a")
+        with open(body_file, "w", encoding="utf-8") as handle:
+            handle.write(A_BODY)
+        check("a body with no finding exits 0",
+              main(["register", "--skills-root", held_root, "--body-file", body_file]) == 0)
+        with open(body_file, "w", encoding="utf-8") as handle:
+            handle.write(span)
+        check("a body with a finding exits 1",
+              main(["register", "--skills-root", held_root, "--body-file", body_file]) == 1)
+        check("a body that cannot be read exits 2",
+              main(["register", "--skills-root", held_root, "--body-file",
+                    os.path.join(tmp, "absent.md")]) == 2)
+        check("a project stating no item audience exits 3, reading nothing",
+              main(["register", "--skills-root", bare, "--body-file", body_file])
+              == NO_AUDIENCE)
+        check("and its triple reads as absent", audience(config.load(bare)) is None)
+
     print()
     print("this project's own declaration, read rather than assumed")
     live = config.load(config.REPO_ROOT)
@@ -366,6 +542,34 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
 # --- the command line ------------------------------------------------------
 
 
+def _register(configuration: config.Config, body_file: str) -> int:
+    triple = audience(configuration)
+    if triple is None:
+        print(json.dumps({
+            "audience": None, "findings": [],
+            "report": ["No item audience is configured (`language.artifacts.work_item` is "
+                       "absent), so no section is held to a reader and the item is filed "
+                       "as it was before the key existed (§ 8)."],
+        }, indent=2, ensure_ascii=False))
+        return NO_AUDIENCE
+    try:
+        with open(body_file, encoding="utf-8") as handle:
+            body = handle.read()
+    except OSError as exc:
+        print(f"the body could not be read: {exc}", file=sys.stderr)
+        return 2
+    findings = register_findings(configuration, body)
+    print(json.dumps({
+        "audience": {key: triple.get(key) for key in ("register", "audience")},
+        "exempt": list(triple.get("exempt") or []),
+        "findings": findings,
+        "report": ["⚠️ A finding is for the filing role to judge, not a refusal: a product "
+                   "name can read as an identifier, and a detail written in plain words "
+                   "reads as nothing (§ 8)."],
+    }, indent=2, ensure_ascii=False))
+    return 1 if findings else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Hold a work item's body to the sections this project declares.",
@@ -378,6 +582,10 @@ def main(argv: list[str] | None = None) -> int:
     reading.add_argument("--body-file", required=True)
     reading.add_argument("--code-root", default=None,
                          help="where a code-sourced section's files must exist")
+    register = sub.add_parser("register", help="read the governed sections for code, "
+                                               "a path or an identifier (§ 8)")
+    register.add_argument("--skills-root", default=".")
+    register.add_argument("--body-file", required=True)
 
     args = parser.parse_args(argv)
     if args.self_test:
@@ -388,6 +596,9 @@ def main(argv: list[str] | None = None) -> int:
     except (config.ConfigError, OSError) as exc:
         print(exc, file=sys.stderr)
         return 2
+
+    if args.what == "register":
+        return _register(configuration, args.body_file)
 
     entries = declared(configuration)
     if args.what != "check":
