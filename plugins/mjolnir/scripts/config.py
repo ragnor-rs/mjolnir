@@ -7396,6 +7396,59 @@ def _validate_create_fields(data: dict) -> None:
         seen.add(name)
 
 
+# The two wordings a link type may be read from, as § 3's `tracker.relations`
+# names them. ⛔ A side is which wording the item named first reads, never which
+# position a call puts it in -- the two run opposite ways on the tracker this was
+# written for, and the implementation is what holds the mapping between them.
+RELATION_SIDES = ("outward", "inward")
+
+
+def _validate_relations(data: dict) -> None:
+    """§ 3's non-blocking relations, held to a shape a read-back can name.
+
+    ⛔ Refused at load rather than at the first link: a mapping two names share
+    is one the read half cannot answer, and nothing about the write would show
+    it -- the link goes through and reads back under whichever name came first.
+    """
+    relations = _get(data, "tracker.relations")
+    if relations is None:
+        return
+    if not isinstance(relations, dict):
+        raise ConfigError(
+            "tracker.relations",
+            f"is {relations!r}; § 3 states it as a mapping from the project's own "
+            "name for a relation to the link type it is written as.",
+        )
+    claimed: dict[tuple[str, str | None], str] = {}
+    for name, entry in relations.items():
+        where = f"tracker.relations.{name}"
+        kind = entry.get("type") if isinstance(entry, dict) else None
+        if not isinstance(kind, str) or not kind.strip():
+            raise ConfigError(
+                where,
+                f"is {entry!r}, which names no `type`. A relation with no link type "
+                "is one nothing can write (§ 3).",
+            )
+        side = entry.get("side")
+        if side is not None and side not in RELATION_SIDES:
+            raise ConfigError(
+                f"{where}.side",
+                f"is {side!r}; § 3 states the side as one of "
+                f"{', '.join(RELATION_SIDES)} -- which wording the first item reads.",
+            )
+        # ⛔ An unsided name claims both wordings of its type, which is why it
+        # collides with a sided one as well as with another unsided one.
+        for wording in ((side,) if side else RELATION_SIDES):
+            other = claimed.get((kind, wording))
+            if other is not None:
+                raise ConfigError(
+                    where,
+                    f"maps `{kind}` read {wording}, which `{other}` already maps. "
+                    "The read-back would have two names for one link (§ 3).",
+                )
+            claimed[(kind, wording)] = str(name)
+
+
 def _validate_billing(data: dict) -> None:
     """§ 37's roots, and the one rule about them no marker can state.
 
@@ -9785,6 +9838,35 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 "is stated where no tree is ever cut, so no removal asks it (§ 10).",
             )
 
+    # § 10. What lists every running resource with the tree it belongs to, and what
+    # stops one whose tree is gone. ⛔ Absent is the ordinary answer for both; a stop
+    # with no listing is refused, there being nothing to tell it which resource.
+    listing = _get(data, "branch_model.resources_running")
+    for key, what in (
+        ("branch_model.resources_running", "prints nothing, so every resource would "
+         "read as having its tree"),
+        ("branch_model.resource_stop", "exits zero, so every stop would read as run"),
+    ):
+        value = _get(data, key)
+        if value is None:
+            continue
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(
+                key,
+                f"is {value!r}; it is a command, or `null` where this project states none "
+                f"(§ 10). An empty one {what}.",
+            )
+        if _get(data, "branch_model.kind") != "worktree":
+            raise ConfigError(
+                key, "is stated where no tree is ever cut, so no sweep asks it (§ 10)."
+            )
+    if _get(data, "branch_model.resource_stop") is not None and listing is None:
+        raise ConfigError(
+            "branch_model.resource_stop",
+            "is stated with no `branch_model.resources_running`, so nothing names a "
+            "resource whose tree is gone for it to stop (§ 10).",
+        )
+
     # § 10. Whether the sweep also runs after a merge the session makes with a
     # bare command. ⛔ Absent is `false` and is never refused; what is refused is
     # a value that is not a boolean, since a string like "no" would read as true.
@@ -10311,6 +10393,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # marker for it, and it is the one arm whose permissive reading is money.
     _validate_billing(data)
     _validate_create_fields(data)
+    _validate_relations(data)
     # § 38's lists, in the same position and for the same reason. ⛔ The two rules
     # no marker reaches are the ones about the row set rather than a row: that
     # every edge names a declared document, and that the derivation record stays
@@ -17843,6 +17926,19 @@ def _planted_violations():
          at("tracker.create_fields", [{"value": ["a"]}])),
         ("a creation field stated twice", "tracker.create_fields[1]",
          at("tracker.create_fields", [{"field": "a"}, {"field": "a"}])),
+        # § 3's non-blocking relations, one plant per arm.
+        ("relations that are not a mapping", "tracker.relations",
+         at("tracker.relations", ["related"])),
+        ("a relation with no link type", "tracker.relations.related",
+         at("tracker.relations", {"related": {"side": "outward"}})),
+        ("a relation read from a side that is not one", "tracker.relations.related.side",
+         at("tracker.relations", {"related": {"type": "a", "side": "upward"}})),
+        ("two relations mapping one wording", "tracker.relations.also",
+         at("tracker.relations", {"related": {"type": "a", "side": "inward"},
+                                  "also": {"type": "a", "side": "inward"}})),
+        ("an unsided relation beside a sided one on its type", "tracker.relations.also",
+         at("tracker.relations", {"related": {"type": "a", "side": "outward"},
+                                  "also": {"type": "a"}})),
         ("a carrier outside its alternation", "work_item.type.carrier",
          at("work_item.type.carrier", "telepathy")),
         # § 6's per-role block, one plant per arm. ⛔ The scalar arm is the
@@ -19232,6 +19328,18 @@ def _planted_violations():
         ("a resource check stated where no tree is cut", "branch_model.resource_up",
          lambda _data: _with(
              _an_in_place_memory_project(), "branch_model.resource_up", "a-command")),
+        ("a resource listing written blank, which reads every resource as having its tree",
+         "branch_model.resources_running", at("branch_model.resources_running", "   ")),
+        ("a resource listing that is no command at all", "branch_model.resources_running",
+         at("branch_model.resources_running", ["a-command"])),
+        ("a resource listing stated where no tree is cut", "branch_model.resources_running",
+         lambda _data: _with(
+             _an_in_place_memory_project(), "branch_model.resources_running", "a-command")),
+        ("a stop written blank, which reads every stop as run", "branch_model.resource_stop",
+         lambda data: _with(_with(data, "branch_model.resources_running", "a-listing"),
+                            "branch_model.resource_stop", "   ")),
+        ("a stop with no listing to name what it stops", "branch_model.resource_stop",
+         at("branch_model.resource_stop", "a-command")),
         # ⚠️ Both of these refuse in the permissive direction, which is why each
         # has a plant of its own: a list written as one path exempts nothing and
         # an entry that names nothing exempts nothing, and in either case the

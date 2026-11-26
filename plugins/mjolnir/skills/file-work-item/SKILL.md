@@ -437,6 +437,14 @@ an agreed merge order — all of that is sequencing, and none of it is a relatio
 cosmetic: a readiness gate refuses an item whose blocker is still open, so a merge order written up
 as a relation turns finished work into work that reads as blocked.
 
+**A related item that blocks nothing is linked through `link_relation`, under a name the project
+maps** — the umbrella step 2c relates rather than absorbs into is the measured case.
+[`§ 3 → A relation that blocks nothing`](../../config/schema.md#a-relation-that-blocks-nothing)
+states the rule; ⛔ **where the capability is absent or the project maps no name for the relation,
+it stays the prose line the body already carries**, which is that operation's fallback and not a
+gap to fill. ⛔ **Never as a dependency instead**, which would hold one item back on another nothing
+waits for.
+
 ⚠️ **Tolerating and requiring are different, and the test is each consumer's own acceptance
 condition** ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)). An item every
 consumer can be built *tolerating* is not a blocker, and recording it as one stops work that

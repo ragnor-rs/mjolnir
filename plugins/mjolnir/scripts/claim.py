@@ -1494,8 +1494,22 @@ def _stop_group(proc: subprocess.Popen) -> None:
 def _run_for_tree(
     root: str | Path, tree: str | Path, command: str, bound: float | None, stderr=None
 ) -> tuple[str, str, str | None]:
+    """`run_at_checkout` told which tree it is for, in `MJOLNIR_TREE`."""
+    return run_at_checkout(
+        root, command, bound, {TREE_VARIABLE: os.path.realpath(tree)}, stderr=stderr
+    )
+
+
+def run_at_checkout(
+    root: str | Path,
+    command: str,
+    bound: float | None,
+    variables: dict[str, str] | None = None,
+    stderr=None,
+) -> tuple[str, str, str | None]:
     """`(what it printed, what it complained, why it did not succeed)`, the last None where it did.
 
+    The command runs at the repository's main checkout with `variables` added to its environment.
     `stderr` is where its error stream goes, unstated being a stream of its own.
 
     ⚠️ Its output goes to files and not to pipes: a process the command leaves behind holds a pipe
@@ -1503,7 +1517,7 @@ def _run_for_tree(
     """
     where = main_checkout(root)
     environment = dict(os.environ)
-    environment[TREE_VARIABLE] = os.path.realpath(tree)
+    environment.update(variables or {})
     with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as complaint:
         try:
             # A group of its own, so that stopping it reaches what the shell started.

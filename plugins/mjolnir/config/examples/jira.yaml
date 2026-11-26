@@ -61,6 +61,18 @@ tracker:
   # `value`, so the filing states it.
   create_fields:
     - field: "<the field a filing states>"
+  # The relations this project links that block nothing, each by its own word. One type is
+  # worded the same both ways and states no side; the other is worded twice, so each of its
+  # two names states the side the first item reads.
+  relations:
+    related:
+      type: "<a link type worded the same both ways>"
+    duplicates:
+      type: "<a link type worded twice>"
+      side: outward
+    duplicated_by:
+      type: "<a link type worded twice>"
+      side: inward
   # No capability is stated here — schema § 3, `Who declares a capability`.
   policy:
     forbid_on_item: []
