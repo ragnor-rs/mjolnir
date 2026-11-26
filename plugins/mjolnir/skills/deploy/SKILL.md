@@ -110,6 +110,11 @@ what this step does is run it.
   [`§ 10`](../../config/schema.md#which-tree-a-verdict-belongs-to)'s rule decides what a verdict
   taken here is about. ⚠️ **Several sessions may share one checkout**, so a preflight that staged
   anything would be staging somebody else's work.
+- **The commit this deploy serves is established, written whole**, read where the act itself reads
+  it: the commit the entry's `ref` names on the host for a `dispatch` or a `by_hand` target, and the
+  commit the code root is checked out at for a `command` target. It is what step 5 shows as what is
+  being deployed and what step 4a hands the batch. ⛔ **One nothing could establish is reported
+  unestablished, never guessed.**
 - ⚠️ **A command target may contend on something the project declared exclusive**
   ([`§ 10`](../../config/schema.md#exclusive-resources)). A refusal there is a place to come back
   for rather than a failure: the deploy is retried once one frees, and the reply says it waited.

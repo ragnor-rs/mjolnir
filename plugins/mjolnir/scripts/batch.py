@@ -73,11 +73,9 @@ def backlog(tracker) -> dict | None:
         return None
     answer = outcome.result or {}
     items = list(answer.get("items") or [])
-    ladder = [
-        status.get("role")
-        for status in (tracker.config.get("statuses") or [])
-        if isinstance(status, dict) and status.get("role")
-    ]
+    ladder = tracker.roles()
+    # ⚠️ Any role places every item: what is read off the answer is each item's own
+    # role, and the bar the first role sets is one nothing here reads.
     placed = tracker.short_of(ladder[0], items) if ladder and items else {}
     return {
         "at_limit": bool(answer.get("at_limit")),
