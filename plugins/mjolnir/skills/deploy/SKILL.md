@@ -134,8 +134,27 @@ what this step does is run it.
 the entry's `batch` command names the candidates, and each candidate's **role is read from the
 tracker at the point it is advanced** in step 8 — never from a value read here.
 
-- Run the command, read the identifiers it printed, and ⛔ **say in the reply that it is the only
-  source of candidates**, so that *nothing owed* and *nobody looked* are not one sentence.
+- ⛔ **The command is run through the carrier and never by hand**, because what it is handed is
+  § 33's and the match is mechanical
+  ([`§ 33 → What the batch command is handed`](../../config/schema.md#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against)):
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/batch.py" run --target "<the entry's name>" \
+    --commit "<the commit this deploy serves>" --choose "<a choice's name>=<a value>"
+  ```
+
+  ⛔ **`--choose` is exactly what step 3 was handed**, so the batch is asked about the values the go
+  shows; ⚠️ `--commit` is the object name step 3's preflight established, and it is omitted only
+  where nothing was established — a command placing `{deploy:commit}` is then refused, which is a
+  stop before the go rather than a value to supply.
+- **Each purpose's answer is reported as it came back**: what was handed, what was carried, every
+  item handed and not returned (in the role, and not in what this deploy carries) with its title,
+  every identifier returned and not handed, and every one the port could not place. ⛔ **Where the
+  backlog went unread the reply says the command is the only source of candidates**, so that
+  *nothing owed* and *nobody looked* are not one sentence; ⚠️ and a backlog read at its bound is
+  reported as possibly short.
+- ⛔ **A refusal or a failed run is a stop before the go**, named as it came back: a command that
+  failed is an unread batch and never an empty one.
 - A candidate the tracker does not answer about is reported **unanswered**, never dropped.
 - ⛔ **An entry whose `advances` is `none` still has a batch worth reporting** where the project
   states a command, and has none where it does not — in which case the reply says the deploy
@@ -176,9 +195,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
   --short-of "<the entry's requires_role>" --in-grouping "<the entry's grouping>"
 ```
 
-- ⛔ **Where the entry names no grouping the same question is asked over the batch's own
-  candidates** — `--short-of <role> --argument <each identifier>`, which is § 33's other arm and not
-  a weaker form of this one.
+- ⛔ **Where the entry names no grouping the same question is asked over what the batch's
+  `precondition` run carried** — `--short-of <role> --argument <each identifier>`, which is § 33's
+  other arm and not a weaker form of this one. ⚠️ **Never over the `advance` run's**: that run is
+  handed items the bar may already have passed, which is the precondition that holds nothing.
 - ⛔ **Anything short holds the whole target and nothing is invoked.** The reply names **every** such
   item with the role it stands in, never the first, and ⛔ **the remedy is not this role's**: § 4.2
   maps that role to a status somebody else writes, so the stop is reported and the deploy ends.
@@ -508,8 +528,9 @@ the facts, with a table where the content enumerates.
   standing in for it;
 - **every item advanced**, and **every item in the batch that was not**, with what held it —
   ⛔ including every item left alone because the tracker already held it at or past that role;
-- **every candidate the batch command named that the tracker answered differently about**, and
-  ⛔ **that the command is the batch's only source of candidates**;
+- **every candidate the batch command named that the tracker answered differently about**, every
+  item it was handed and did not return, and ⛔ **where the backlog went unread, that the command is
+  the batch's only source of candidates**;
 - **the grouping this target was scoped to, and whether it was read** — ⛔ never its length alone,
   an unread set and an empty one being the same list; the value it was read at, and where that value
   came from (the tracker's own mark, or this role's invocation);

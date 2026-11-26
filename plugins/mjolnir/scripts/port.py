@@ -1575,6 +1575,23 @@ class Port:
         outcome.grouping = block.get("name")
         return outcome
 
+    def roles_before(self, role: str) -> list[str]:
+        """Every role mapped ahead of `role`, in § 4.2's own order (§ 33).
+
+        ⛔ **Here because the order is `statuses`', which this module alone
+        reads.** § 33 derives the role an advance is drawn from as the one
+        immediately before it and reads a precondition's bar against every role
+        short of it, and both are positions in that one list. ⚠️ A role no status
+        maps has no position, so nothing is before it and the answer is empty --
+        the reader refuses such a role where a target writes it.
+        """
+        ladder = [
+            status.get("role")
+            for status in (self.config.get("statuses") or [])
+            if isinstance(status, dict) and status.get("role")
+        ]
+        return ladder[: ladder.index(role)] if role in ladder else []
+
     def short_of(self, role: str, items: list) -> dict:
         """Which of `items` have not reached a role, in § 4.2's own order (§ 33).
 

@@ -4603,6 +4603,29 @@ commands, so the carrier cannot go uncalled.
   text.
 - **That the create followed the second reading immediately.** Nothing sees the gap between them.
 
+## What a deploy's batch command is handed, and what its answer is matched against
+
+`plugins/mjolnir/scripts/batch.py --self-test` runs in the `Batch carrier` workflow, with no
+credential and no network. ⛔ The rule is
+[`schema.md § 33`](../plugins/mjolnir/config/schema.md#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against),
+and this document states none of it. The placements a `batch` may carry are held by the
+`Config reader` run, which refuses each one § 33 does not state.
+
+What the suite holds: an advance handed the items in the role before the one it advances to, and a
+precondition handed every item short of its bar rather than those; the identifiers arriving on the
+command's input and the target, the commit, the purpose and a choice reaching it where it places
+them; both differences of the match named, an unplaceable item included; a tracker with no search
+kept apart from a search that failed; a command that failed stopped rather than read as empty; and
+that the deploying role names the carrier, so it cannot go uncalled.
+
+### What it deliberately does not hold
+
+- **That the command answers the question § 33 asks it.** Whether an item's code is in what is
+  deployed is the project's command; nothing here reads inside it.
+- **That the commit handed over is the one the deploy serves.** The carrier holds its shape; which
+  commit it is was established by the role's preflight.
+- **That the role reported what the carrier printed.** Nothing reads the reply.
+
 ## What a deployed item is judged against, and the verdict the carrier is barred from
 
 `plugins/mjolnir/scripts/verify.py --self-test`, mirrored by the `Verify carrier` run that
