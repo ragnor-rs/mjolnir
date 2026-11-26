@@ -949,6 +949,11 @@ ANSWERED_BY: dict[str, Answer] = {
         "How many seconds may a role wait for a place that is not free? ⚠️ Unstated, a "
         "call over the cap is refused and nothing waits.",
     ),
+    "branch_model.exclusive_resources.wait_holds_for": ask(
+        "Should waits for it be served in arrival order, each ending holding the place -- "
+        "and for how many seconds is a waiter's place kept with nobody asking for it? ⚠️ "
+        "Unstated, a wait holds nothing and whoever calls first after a place frees takes it.",
+    ),
     "branch_model.exclusive_resources.probe_timeout": ask(
         "How many seconds may asking the resource take?",
     ),
