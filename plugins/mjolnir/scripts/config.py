@@ -4379,7 +4379,32 @@ class Config:
                 "that status's forward writer is: the move is reported for "
                 f"`{writer}` to make rather than made (§ 32)."
             )
+        for path in self.undeclared():
+            out.append(
+                f"`{path}` is a key this configuration carries and the surface "
+                "declares nowhere, so no role reads it and nothing here resolves "
+                "it: declare it on the surface with what reads it, or take it "
+                "out (§ A key the surface declares nowhere)."
+            )
         return out
+
+    def undeclared(self) -> list[str]:
+        """Every key the project's file carries that the surface declares nowhere.
+
+        ⛔ Reported in `unavailable` rather than refused, at any depth, by § A key
+        the surface declares nowhere: a file written against a newer surface
+        carries keys an older one does not declare. The derivation
+        is the setup role's key inventory run the other way, so the two read one
+        statement of what the surface declares. ⚠️ The project's own object
+        answers; a view of one root carries a narrowed copy of the same file.
+        """
+        if self.root_key is not None:
+            return []
+        import configure  # the inventory's own module; it imports this one
+
+        with open(self.surface, encoding="utf-8") as handle:
+            surface_text = handle.read()
+        return configure.undeclared(surface_text, self.data, self.facts)
 
     def to_dict(self) -> dict:
         out = {
@@ -17682,6 +17707,8 @@ def self_test() -> int:
 
     _advance_requires_suite(check, surface)
 
+    _undeclared_suite(check)
+
     print("\n§ 33's choices, resolved for one run:")
 
     def choosing(*handed, **overrides):
@@ -23024,6 +23051,107 @@ def _surface_advance_outcomes() -> dict[str, bool]:
         ):
             rows[cells[0].strip("`")] = cells[2] == "yes"
     return rows
+
+
+def _undeclared_suite(check) -> None:
+    """§ A key the surface declares nowhere: reported, at any depth.
+
+    ⛔ Both directions are held, and the second is the half a check written
+    against a line walk of the surface gets wrong: a key the surface declares
+    only in flow form -- § 5's `stop` and `roles`, § 4.2's `name` -- or only in a
+    fence that opens at an indent stays unreported, and so does an entry of a
+    collection whose keys the project chooses.
+    """
+    print("\nA configured key the surface declares nowhere (§ A key the surface "
+          "declares nowhere):")
+    yaml = _yaml()
+
+    def loaded_from(document: dict) -> Config:
+        return load_text(yaml.safe_dump(document, sort_keys=False), EXAMPLES)
+
+    planted_in_an_entry = 0
+    for path in _examples():
+        name = os.path.basename(path)
+        with open(path, encoding="utf-8") as handle:
+            document = _load_yaml(handle.read(), name)
+        stated = loaded_from(copy.deepcopy(document))
+        check(f"{name} carries no key the surface does not declare",
+              stated.undeclared() == [], f"reported {stated.undeclared()!r}")
+        listed = next(
+            (key for key in ("readiness", "statuses", "done")
+             if isinstance(document.get(key), list) and document[key]
+             and isinstance(document[key][0], dict)),
+            None,
+        )
+
+        for label, plant, named in (
+            ("a block at the head of the file",
+             lambda d: d.__setitem__("a_block_nobody_declares", {"a_key": 1}),
+             "a_block_nobody_declares"),
+            ("a key inside a declared block",
+             lambda d: d["tracker"].__setitem__("a_key_nobody_declares", "a value"),
+             "tracker.a_key_nobody_declares"),
+            ("a key inside a list entry",
+             lambda d: d[listed].__setitem__(0, {**d[listed][0], "a_key_nobody_declares": 1}),
+             f"{listed}[0].a_key_nobody_declares"),
+        ):
+            if listed is None and "list entry" in label:
+                continue  # an example whose every list is empty, which is legitimate
+            planted_in_an_entry += "list entry" in label
+            planted = copy.deepcopy(document)
+            plant(planted)
+            try:
+                held = loaded_from(planted)
+            except ConfigError as exc:
+                check(f"{name}: {label} is reported rather than refused", False, str(exc))
+                continue
+            check(f"{name}: {label} is reported, by its path",
+                  held.undeclared() == [named], f"reported {held.undeclared()!r}")
+            check(f"{name}: and the report reaches `unavailable`",
+                  any(f"`{named}`" in line for line in held.unavailable()))
+
+    check("a key inside a list entry was planted into at least one example",
+          planted_in_an_entry > 0)
+
+    with open(os.path.join(EXAMPLES, "github-issues.yaml"), encoding="utf-8") as handle:
+        document = _load_yaml(handle.read(), "github-issues.yaml")
+    relative = [
+        entry for entry in document.get("readiness") or []
+        if isinstance(entry, dict) and {"stop", "roles"} <= set(entry)
+    ]
+    check("an example carries a readiness entry with `stop` and `roles`, which the "
+          "surface declares only in flow form, out of a line walk's reach", bool(relative))
+    check("and neither key is reported",
+          not any(path.startswith("readiness") for path in loaded_from(document).undeclared()))
+
+    # The indented-fence half on a surface written for it: no configuration key
+    # of the shipped surface is declared *only* in a fence opening at an indent
+    # today, so the rule is held here rather than left to whichever key is the
+    # first to be.
+    import configure  # noqa: PLC0415 -- it imports this module
+
+    fence = "`" * 3
+    a_surface = (
+        f"{fence}yaml\ntracker:\n  kind: a | b\n{fence}\n\n"
+        f"{fence}yaml\n    shown_at_an_indent: \"…\"\n{fence}\n"
+    )
+    for label, document, expected in (
+        ("a key declared only in a fence opening at an indent is not reported",
+         {"tracker": {"kind": "a", "shown_at_an_indent": "x"}}, []),
+        ("while a key beside it that no fence declares is",
+         {"tracker": {"kind": "a", "shown_nowhere": "x"}}, ["tracker.shown_nowhere"]),
+        ("and the indented key is not read as a block of its own at the head",
+         {"shown_at_an_indent": "x"}, ["shown_at_an_indent"]),
+    ):
+        found = configure.undeclared(a_surface, document, {})
+        check(label, found == expected, f"reported {found!r}")
+
+    own = os.path.join(REPO_ROOT, CONFIG_PATH)
+    if os.path.exists(own):
+        with open(own, encoding="utf-8") as handle:
+            mine = load_text(handle.read(), REPO_ROOT)
+        check("this project's own configuration carries no key the surface does not "
+              "declare", mine.undeclared() == [], f"reported {mine.undeclared()!r}")
 
 
 def _advance_requires_suite(check, facts: dict) -> None:

@@ -378,9 +378,13 @@ Stated, because an unstated limit reads later as coverage.
   verified green, then edited again and left out of the commit, so the gate's verdict was about a
   tree that never landed. The host's own run closes it afterwards; nothing here closes it before.
 - **Key subtrees.** Check 5 holds the top level only, so a key inside a block is this check's blind
-  spot whether or not the surface declares it — and `tracker.labels`, which it does not, is the known
-  consequence. The reason is still a per-tracker block: a deeper comparison needs one exception per
-  tracker kind, and **more of them since** the schema's own
+  spot whether or not the surface declares it. ⚠️ What holds one instead is the reader, which
+  reports a configured key the surface declares nowhere at any depth
+  ([schema](../plugins/mjolnir/config/schema.md#a-key-the-surface-declares-nowhere)) — and its
+  own suite asserts this project's configuration and every example carry none. That is a report
+  and not this check's refusal, so a stray in a project's file is a line in `unavailable` rather
+  than a red build. Why this check stays at the top level is still a per-tracker block: a deeper
+  comparison needs one exception per tracker kind, and **more of them since** the schema's own
   [§ 3](../plugins/mjolnir/config/schema.md#what-each-kinds-block-carries) began stating each kind's
   keys — every configuration now lacks every other kind's block by design. A bounded check that is
   sound still beats a deep one that needs carve-outs. ⚠️ What changed is only what the *surface*
@@ -560,7 +564,7 @@ twenty-two singular key names: `closed`, a workflow name and an artifact directo
 while **a configured branch prefix and a configured label both passed**. Those two are the two the
 project invented, and neither is reachable by a key name — the prefix sits under
 `work_item.type_branch_prefix.<one of the project's own types>`, a key the project itself writes,
-and the label sits in `tracker.labels`, a plural whose singular `label` is a readiness check's
+and the label sat in a list under a plural key whose singular `label` is a readiness check's
 argument, a different fact one letter away. ⛔ **And the branch prefix is read by the starting
 role**, whose text is the one place that value must not appear, since reading it from
 configuration is what that role is for.

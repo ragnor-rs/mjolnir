@@ -517,11 +517,11 @@ ABSOLUTE_PATH = re.compile(r"(?<![\w.$}])/(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+")
 # values happen to sit under: measured by planting, a configured branch prefix
 # and a configured label both passed such a list, and neither is reachable by
 # one. The prefix sits under `work_item.type_branch_prefix.<one of the project's
-# own types>` -- a key the project itself names -- and the label sits in
-# `tracker.labels`, a plural whose singular `label` is a readiness check's
-# argument, a different fact one letter away. A list of key names cannot express
-# the line, because the project-invented classes sit under keys no list can
-# anticipate.
+# own types>` -- a key the project itself names -- and a label sits in
+# `work_item.priority.values`, under a key that names no label at all while the
+# singular `label` is a readiness check's argument, a different fact. A list of
+# key names cannot express the line, because the project-invented classes sit
+# under keys no list can anticipate.
 #
 # ⚠️ And the line is not "every value the surface writes" either. The surface
 # *illustrates* some keys with a concrete value -- `label_prefix: "type:"`,
@@ -1848,15 +1848,25 @@ def _plant_a_configured_branch_prefix(tree: Tree) -> Tree:
     return _plant_in_a_carrier(f"\nCut the branch with the `{prefix}` prefix.\n")(tree)
 
 
+def _a_configured_label(tree: Tree) -> str:
+    """A label the project's own configuration states.
+
+    ⛔ Read off § 4.6's priority axis, whose carrier here is `label`: its values
+    are labels the procedure writes onto an item, held under `values` -- a key
+    that names no label -- which is the shape a list of key names cannot reach.
+    """
+    return _a_configured(tree, "work_item", "priority", "values")
+
+
 def _plant_a_configured_label(tree: Tree) -> Tree:
     """A label out of the project's own label vocabulary.
 
-    ⛔ The other shape a list of key names cannot reach: `tracker.labels` is a
-    plural key holding a list, while the singular `label` is a readiness check's
+    ⛔ The other shape a list of key names cannot reach: the label sits under a
+    key that names no label, while the singular `label` is a readiness check's
     argument -- a different fact under a name one letter away, which is how such
     a list reads as covering this and does not.
     """
-    label = _a_configured(tree, "tracker", "labels")
+    label = _a_configured_label(tree)
     return _plant_in_a_carrier(f"\nThe item carries the `{label}` label.\n")(tree)
 
 
@@ -2556,11 +2566,11 @@ VIOLATIONS = [
     # out of the configuration rather than carrying it.
     ("no value is carried in the strict set", "a configured branch prefix, under a key the project names",
      _plant_a_configured_branch_prefix),
-    ("no value is carried in the strict set", "a configured label, under a plural whose singular means something else",
+    ("no value is carried in the strict set", "a configured label, under a key that names no label",
      _plant_a_configured_label),
     ("no value is carried in the strict set", "a configured value as a JSON value",
      lambda tree: _plant_in_a_json_carrier(
-         '{"statusMessage": "%s"}\n' % _a_configured(tree, "tracker", "labels"))(tree)),
+         '{"statusMessage": "%s"}\n' % _a_configured_label(tree))(tree)),
     # ⛔ One per fact § 2's facet holds, because each is a separate thing a
     # carrier could copy and the three have separate homes in an entry. The
     # outcome they assert is #47's: every consumer of the host's checks reads
@@ -2802,7 +2812,7 @@ EXEMPTIONS: list[tuple[str, str, object]] = [
     # value. The value beside it is swept, which is a planted violation above.
     ("no value is carried in the strict set", "a configured value as a JSON object key",
      lambda tree: _plant_in_a_json_carrier(
-         '{"%s": {"type": "command"}}\n' % _a_configured(tree, "tracker", "labels"))(tree)),
+         '{"%s": {"type": "command"}}\n' % _a_configured_label(tree))(tree)),
     # ⛔ One per position the interpreter arm lets through, because each is a
     # different reason and a sweep widened past any of them reddens a shipped
     # carrier. ⚠️ Verified by disabling each arm in turn and watching its own
