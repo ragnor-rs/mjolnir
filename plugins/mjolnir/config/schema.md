@@ -2928,8 +2928,10 @@ and a project stating nothing files as it always has.
   produces a duplicate or a misplaced item, which the mark does not hold back.
 - **The mark comes off when every question it was filed with is answered.** The filing role, run
   again on the answers, writes each answer where its question stands and drops the mark from the
-  item's labels. It removes no mark while any question is unanswered. A project whose gating role
-  sets the same label has that role's removal as well, by the subsection above.
+  item's labels. It removes no mark while any question is unanswered, and **neither does the
+  gating role**: an item carrying a question filed open is held where it stands, with its mark,
+  however its other checks come out. Clearing the mark there would admit an item whose questions
+  nobody answered.
 - **A tracker that cannot write the mark or the questions cannot file an item marked.** Where
   `set_labels`, or `comment` under `comment`, is absent
   ([§ 3](#the-operations-and-what-an-absent-capability-does)), the role asks instead, as under
