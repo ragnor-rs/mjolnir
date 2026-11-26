@@ -392,6 +392,24 @@ there is no template at all, this role writes the semantic sections under headin
 the item's own language — the outcome and the acceptance condition are the procedure's, not the
 template's, and an item that states neither is a note rather than work.
 
+**The sections this project declares beyond those are filled too**, each under the heading its
+entry states and from what its entry says fills it. What an entry carries, and what a section
+sourced from the code owes, are [`§ 4.4`](../../config/schema.md#44-template)'s and ⛔ **not
+restated here**. ⛔ **Where a section is sourced from the code, read the code before writing it,
+and name every file read** — the section is a claim about that code, and the names are what lets
+someone check it. Then hold the body to the declarations before it is written:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" check --body-file <the body> \
+  --code-root <the item's code root>
+```
+
+- **Exit 0** ⇒ the body carries every declared section it owes.
+- **Exit 1** ⇒ each problem is named with its section. ⛔ **Fix the body and run it again**; an item
+  written over a refusal is a section the next role reads as answered.
+- **Exit 3** ⇒ the project declares none, and the item is filed as it was before the key existed.
+- **Exit 2** ⇒ the configuration or the body could not be read, which is not a pass.
+
 **The body is written to be validated by whoever ordered the work**, not by whoever will do it. The
 acceptance condition is the whole point of the item: work can only be rejected against what was
 agreed when it was assigned, so a vague condition now is protection given away. ⛔ **Its form is

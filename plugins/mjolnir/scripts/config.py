@@ -9801,6 +9801,123 @@ def _a_named_call(entry, where: str) -> None:
             ) from None
 
 
+DECLARED = "work_item.template.declared"
+
+
+def _validate_declared_sections(data: dict, facts: dict) -> None:
+    """§ 4.4's `declared`: the sections a project requires beyond the procedure's.
+
+    ⛔ The keys an entry may carry, the procedure's own section names and the
+    `source` alternation are each read off the surface rather than listed here,
+    which is the division § 20's walk above already keeps.
+    """
+    declared = _absent_as(_get(data, DECLARED), [])
+    if not isinstance(declared, list):
+        raise ConfigError(
+            DECLARED,
+            f"is {type(declared).__name__}, and § 4.4 states it as the sections a project "
+            "requires beyond the procedure's -- a list of entries, or `[]` where it "
+            "requires none.",
+        )
+    # ⛔ Nothing declared is answered before the fence is asked for: a tree whose
+    # branch predates the key carries a surface with no fence, and `surface_for`
+    # reads that surface, so refusing there would make every such tree's
+    # configuration unreadable the moment the installed reader moved on.
+    if not declared:
+        return
+    prefix = f"{DECLARED}."
+    entry_keys = {path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)}
+    if not entry_keys:
+        raise ConfigError(
+            DECLARED,
+            "the surface declares no key under this one, so an entry could be held to "
+            "nothing. § 4.4 states the entry's keys in a fence of its own, and a surface "
+            "that has lost it is refused rather than read as permitting anything.",
+        )
+    sources = vocabulary(facts, f"{DECLARED}.source", "where a declared section comes from")
+    mapped = "work_item.template.sections."
+    procedure = {path[len(mapped):] for path in facts["declared"] if path.startswith(mapped)}
+    # ⛔ A heading `sections` already maps is one a body states for a procedure
+    # section, so a declared entry under it would be a second reading of it.
+    taken = {
+        str(heading).strip().casefold(): f"work_item.template.sections.{name}"
+        for name, heading in (_get(data, "work_item.template.sections") or {}).items()
+        if isinstance(heading, str) and heading.strip()
+    }
+    names: dict[str, int] = {}
+    for index, entry in enumerate(declared):
+        where = f"{DECLARED}[{index}]"
+        if not isinstance(entry, dict):
+            raise ConfigError(
+                where,
+                f"is {entry!r}, and has to be a mapping stating the section's `name`, the "
+                "`heading` a body carries, what `fills` it, its `source` and whether it is "
+                "`required` (§ 4.4).",
+            )
+        for stated_key in entry:
+            if stated_key not in entry_keys:
+                raise ConfigError(
+                    f"{where}.{stated_key}",
+                    "is a key § 4.4 does not declare on a section, so it is a fact about "
+                    "the section that nothing reads. The keys it declares are: "
+                    f"{', '.join(sorted(entry_keys))}.",
+                )
+        for key, what in (
+            ("name", "the semantic name the project gives the section"),
+            ("heading", "the heading a body states it under"),
+            ("fills", "what the filing role writes under it"),
+        ):
+            value = entry.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise ConfigError(
+                    f"{where}.{key}",
+                    f"is {value!r}; § 4.4 states it as {what}, written on every entry. "
+                    "Written blank it reads as a key somebody set while stating nothing.",
+                )
+        if "source" not in entry:
+            raise ConfigError(
+                f"{where}.source",
+                "required (§ 4.4). It says whether the content is the request's or was read "
+                "off the code, and only the second owes the files it read.",
+            )
+        if entry["source"] not in sources:
+            raise ConfigError(
+                f"{where}.source",
+                f"is {entry['source']!r}; the surface states {' | '.join(sources)} (§ 4.4).",
+            )
+        # ⛔ A boolean and nothing else: `"no"` is a non-empty string, and a
+        # string read for its truth would make every such section required.
+        if not isinstance(entry.get("required"), bool):
+            raise ConfigError(
+                f"{where}.required",
+                f"is {entry.get('required')!r}; § 4.4 states it as true or false, written "
+                "on every entry. Read for its truth, a word would require a section its "
+                "author meant to leave optional.",
+            )
+        name = entry["name"].strip()
+        if name in procedure:
+            raise ConfigError(
+                f"{where}.name",
+                f"is {name!r}, which the procedure already names (§ 4.4). `sections` maps "
+                "its heading, so a declared entry would be a second statement of it.",
+            )
+        if name in names:
+            raise ConfigError(
+                f"{where}.name",
+                f"is {name!r}, which {DECLARED}[{names[name]}] already states (§ 4.4).",
+            )
+        names[name] = index
+        folded = entry["heading"].strip().casefold()
+        if folded in taken:
+            raise ConfigError(
+                f"{where}.heading",
+                f"is {entry['heading']!r}, which {taken[folded]} already states (§ 4.4). "
+                "A body is read by the heading's text, so two sections under it leave a "
+                "reader choosing between two statements of what it is for.",
+            )
+        taken[folded] = f"{DECLARED}[{index}].heading"
+
+
 def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # ⛔ Walked rather than looked up by path, because a retired key may sit
     # inside a list: `_get` descends a dict and returns the default the moment it
@@ -11182,6 +11299,8 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 "and a gate reading either would be right.",
             )
         seen_headings[folded] = index
+
+    _validate_declared_sections(data, facts)
 
     # § 18. The guard on a command the host has already run. Requiredness is the
     # surface's marker and answers whether `never_guard` is written; what these
@@ -18030,6 +18149,26 @@ def self_test() -> int:
                 f"reported {stood.unavailable()!r}",
             )
 
+    print("\n§ 4.4, the sections a project declares, against a surface without the fence:")
+    with open(SURFACE, encoding="utf-8") as handle:
+        unfenced = surface_facts(handle.read())
+    unfenced["declared"] = {
+        path for path in unfenced["declared"] if not path.startswith(f"{DECLARED}.")
+    }
+    check(
+        "a surface that has lost § 4.4's entry fence is refused where a section is declared",
+        _refused(_a_declared_section_of()(_a_valid_example()), facts=unfenced) == DECLARED,
+        "an entry was held to no key at all",
+    )
+    # ⛔ The direction `surface_for` exists for: a tree whose branch predates the
+    # key carries a surface with no fence, and a project declaring nothing there
+    # has to stay readable, or every guard reading it holds nothing.
+    check(
+        "and a project declaring nothing still reads against that surface",
+        _refused(_a_valid_example(), facts=unfenced) is None,
+        "a tree cut before the key would read as unconfigured",
+    )
+
     print("\n§ 20, where a collected step falls and who answers it:")
     # ⛔ The arm the plant list cannot reach, the surface's own fence being what it
     # is about rather than a configuration: with no key declared under
@@ -20125,6 +20264,37 @@ def _planted_violations():
         # the section written exactly where somebody would expect it to be read.
         ("a body-section key § 20 declares nowhere", "body_sections[0].reads_by",
          _a_body_section_of(reads_by="whatever collects it out of the change")),
+        # § 4.4's declared sections, one plant per arm.
+        ("a declared-section list that is not a list", DECLARED,
+         at(DECLARED, "A plan")),
+        ("a declared section that is not a block", f"{DECLARED}[0]",
+         at(DECLARED, ["A plan"])),
+        ("a declared section stating no name", f"{DECLARED}[0].name",
+         _a_declared_section_of(name=_ABSENT)),
+        ("a declared section whose heading is blank", f"{DECLARED}[0].heading",
+         _a_declared_section_of(heading="   ")),
+        ("a declared section saying nothing of what fills it", f"{DECLARED}[0].fills",
+         _a_declared_section_of(fills=_ABSENT)),
+        ("a declared section stating no source", f"{DECLARED}[0].source",
+         _a_declared_section_of(source=_ABSENT)),
+        ("a source outside the surface's alternation", f"{DECLARED}[0].source",
+         _a_declared_section_of(source="memory")),
+        ("a declared section stating no requiredness", f"{DECLARED}[0].required",
+         _a_declared_section_of(required=_ABSENT)),
+        # ⛔ The permissive direction: a word read for its truth requires a
+        # section its author wrote as optional.
+        ("requiredness written as a word", f"{DECLARED}[0].required",
+         _a_declared_section_of(required="no")),
+        ("a declared section under a name the procedure owns", f"{DECLARED}[0].name",
+         _a_declared_section_of(name="outcome")),
+        ("a declared-section key § 4.4 declares nowhere", f"{DECLARED}[0].filled_by",
+         _a_declared_section_of(filled_by="the filing role")),
+        ("two declared sections under one name", f"{DECLARED}[1].name",
+         _a_declared_section_of(second={"heading": "Another heading"})),
+        ("two declared sections under one heading, cased apart", f"{DECLARED}[1].heading",
+         _a_declared_section_of(second={"name": "another", "heading": "implementation PLAN"})),
+        ("a declared section under a heading `sections` maps", f"{DECLARED}[0].heading",
+         _a_declared_section_of(heading="What Is Wanted", mapped="What is wanted")),
         ("a local check list that is not a list", "checks_local",
          at("checks_local", "a-local-command")),
         ("a local check entry that is not a block", "checks_local[0]",
@@ -21687,6 +21857,37 @@ def _collides_with_a_jobs_command(data: dict) -> dict:
     """
     data.setdefault("host", {})["checks"] = [_four_jobs_behind_one_workflow()]
     return _a_local_check_of(command="the-third-command")(data)
+
+
+A_DECLARED_SECTION = {
+    "name": "plan",
+    "heading": "Implementation plan",
+    "fills": "the steps the work takes, read off a scan of the code",
+    "source": "code",
+    "required": True,
+}
+
+
+def _a_declared_section_of(*, second=None, mapped=None, **overrides):
+    """§ 4.4's `declared` carried as one entry with the stated keys replaced.
+
+    `second` adds a further entry, the base with those keys replaced, which is
+    what the collision arms need; `mapped` states one heading under `sections`.
+    `_ABSENT` drops a key, for `_a_body_section_of`'s reason.
+    """
+
+    def mutate(data: dict) -> dict:
+        entry = {**A_DECLARED_SECTION, **overrides}
+        entries = [{key: value for key, value in entry.items() if value is not _ABSENT}]
+        if second is not None:
+            entries.append({**A_DECLARED_SECTION, **second})
+        template = data.setdefault("work_item", {}).setdefault("template", {})
+        template["declared"] = entries
+        if mapped is not None:
+            template.setdefault("sections", {})["outcome"] = mapped
+        return data
+
+    return mutate
 
 
 def _a_body_section_of(**overrides):

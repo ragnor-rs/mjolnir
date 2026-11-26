@@ -2425,6 +2425,7 @@ work_item:
       outcome: "…"
       acceptance: "…"
       reproduction: "…"
+    declared: []                 # the sections this project requires beyond those three; default: []
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2448,6 +2449,59 @@ text is shared by construction, so it cannot tell two templates apart.
 ⛔ **Every `by_type` key is one of `type.values`, and the reader refuses one that is not.** A
 template keyed to a type the project cannot assign is a template nothing selects, and the
 cross-check above would be holding a body against a file no item can legitimately have used.
+
+**A project may require sections of its own beyond those three, and `declared` is where it says
+so.** The measured case is an implementation plan an adopter's filing wrote from a scan of the
+code, which no key asked for and nothing checked. Each entry draws on this vocabulary, stated under
+the key it belongs to for the reason [§ 20](#20-the-sections-a-pull-request-body-must-carry) gives
+for its own: a member of a list sits at no path a marker can reach.
+
+```yaml
+work_item:
+  template:
+    declared:
+      name:     "<the semantic name the project gives the section>"
+      heading:  "<the heading a body states it under, in the item's language (§ 8)>"
+      fills:    "<what the filing role writes under it>"
+      source:   request | code
+      required: true | false
+```
+
+- ⛔ **Every key the fence states is written on every entry, and a key it does not state is
+  refused with its own name**, by § 20's rule for a body section.
+- **`name`** is what a role calls the section, and ⛔ **it is none of the three the procedure
+  names**: a project redeclaring `outcome` would be stating a second heading for a section `sections`
+  already maps.
+- **`heading`** is the text a body carries, matched as § 20 matches one — the text alone, at any
+  level, cased however the body cases it. ⛔ **Two entries under one heading, or an entry under a
+  heading `sections` already maps, are refused**: either leaves a reader choosing between two
+  statements of what one section is for.
+- **`fills`** says what goes under the heading, so the filing role writes it from a statement
+  rather than from the heading's wording.
+- **`source`** says where the content comes from. `request` is the person's own account of the
+  work. ⛔ **`code` means the filing role read the code to write it, and the section then names
+  every file it read**, written as a repository-relative path in backticks. A plan sourced from the
+  code that names no file cannot be checked against the code it claims to describe.
+- **`required`** decides whether a body that lacks the section is refused. A section that is not
+  required may be left out, ⛔ **but where a body carries it, it is held to the same rules as a
+  required one**: a heading with nothing under it reads as answered.
+
+⛔ **`declared` holds under either carrier.** With `carrier: file` the template files carry the
+headings. With `carrier: none` the filing role writes each declared heading itself, as it writes the
+procedure's own sections under headings it chooses. ⛔ **`[]` is the stated absence**, and a project
+that declares nothing files exactly as it did before the key existed.
+
+**One consumer holds a body to the declared sections**, and the filing role runs it on the body
+before writing the item:
+
+```bash
+python3 plugins/mjolnir/scripts/item_sections.py check --body-file <the body> [--code-root <root>]
+```
+
+It refuses a required section that is missing or empty, a carried section that is empty, and a
+code-sourced section that names no file. ⚠️ **Given `--code-root`, it also refuses a named file that
+does not exist there.** What it cannot see is whether the files named are the files actually read:
+a reference to a real file passes, whether or not anybody opened it.
 
 **`carrier: none` with a stated reason is a first-class setting here, on § 4.3's terms rather than
 on a second statement of them.** A project whose items already state the sections above has no
