@@ -1831,7 +1831,9 @@ The three answers sit where each fact belongs:
 
 ⚠️ **The exemption reads only what the call itself sets.** A variable exported in an earlier call is
 held by the shell, and nothing in the call shows it. A guard reading the environment would exempt
-every later call that never mentions the database.
+every later call that never mentions the database. For the same reason an assignment counts only on
+the mirrored command itself: one standing before another command in the same call reaches that
+command and never the mirrored one.
 
 ## One entry's two events, and the types the pattern could not carry
 

@@ -1311,22 +1311,35 @@ def _outermost(segment: list[str]) -> list[str]:
     return [chain[0][0], *chain[0][1]] if chain else []
 
 
-def _sets(call: str, names, launchers=()) -> str | None:
-    """The first of `names` this call sets, or `None` where it sets none (§ 18).
+def _sets(call: str, names, forms, launchers=()) -> str | None:
+    """The first of `names` this call sets for a command in `forms`, or `None` (§ 18).
 
-    ⛔ **What the call itself sets, and nothing the shell already held.** A
-    variable assigned before a command, an `env` naming it, or an `export` of it
-    are the three ways one call sets one -- and an export made in an earlier call
-    is a fact about the shell rather than about this call, which is the one this
-    guard is asked about.
+    ⛔ **What the call sets for the mirrored command, and nothing else.** Two
+    ways reach it: an assignment standing before that command in its own
+    segment, and an `export` of the variable earlier in the same call. ⚠️ An
+    assignment before another command reaches only that one, an assignment
+    standing alone sets a shell variable no command is handed, and an export
+    after the command or in an earlier call is not this call setting it for
+    this command -- each of those is refused like any call setting nothing.
     """
     wanted = set(names)
+    stated = [_outermost(segment) for form in forms for segment in position.segments(form)]
+    exported: str | None = None
     for segment in position.segments(call, launchers):
         words = segment[1:] if segment[:1] == ["!"] else segment
-        exporting = words[:1] == ["export"]
-        for word in words[1:] if words[:1] in (["export"], ["env"]) else words:
+        if words[:1] == ["export"]:
+            for word in words[1:]:
+                if exported is None and word.partition("=")[0] in wanted:
+                    exported = word.partition("=")[0]
+            continue
+        ran = _outermost(segment)
+        if not ran or not any(want and ran[:len(want)] == want for want in stated):
+            continue
+        if exported is not None:
+            return exported
+        for word in words:
             name, equals, _value = word.partition("=")
-            if not equals and not exporting:
+            if not equals:
                 break
             if name in wanted:
                 return name
@@ -1645,7 +1658,12 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
             f"{REPORT_PREFIX}: `{exempt}` is one of this project's `never_guard` commands, so "
             f"this call was not held to them ({GUARDED_CITATION})."
         )}
-    setting = _sets(command, config.get("already_run.unguarded_when_set") or [], launchers)
+    setting = _sets(
+        command, config.get("already_run.unguarded_when_set") or [],
+        [form for record in records
+         for form in [record["runs_normalised"], *record.get("parts_run", [])]],
+        launchers,
+    )
     if setting is not None:
         # ⛔ The name and never its value, in the report as in the configuration:
         # what the call set it to is the project's own database or account, and
@@ -1715,10 +1733,19 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
             if record.get("command_root")
             else ""
         )
+        # ⚠️ Where the call is one of the command's § 2 parts, the part is what
+        # would run and is named, with the command whose run answers for it: the
+        # whole command is a string this call never contained.
+        ran = record["runs"]
+        if not in_command_position(command, record["runs_normalised"], launchers):
+            part = next((p for p in record.get("parts_run", [])
+                         if in_command_position(command, p, launchers)), None)
+            if part is not None:
+                ran = f"{part}`, a part of `{record['runs']}"
         return _deny(
             f"{REPORT_PREFIX} — {ALREADY_RUN}: {why}, {head[:12]} ({ALREADY_RUN_CITATION}). "
             f"⛔ Its conclusion is not what is read here — the run exists for this code and "
-            f"did not conclude without executing one, so running `{record['runs']}`"
+            f"did not conclude without executing one, so running `{ran}`"
             f"{where} locally spends the time a second time and holds whatever place the call "
             f"puts at stake. {unblocks}."
         )
@@ -4328,6 +4355,10 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               denied(already("a-task-runner one-task", project=parted)))
         check("and the refusal names the workflow whose run answers for it",
               "A workflow" in reason(already("a-task-runner one-task", project=parted)))
+        check("and names the part that would run, as a part of the command",
+              "`a-task-runner one-task`, a part of `a-task-runner every-task`" in reason(
+                  already("a-task-runner one-task", project=parted)),
+              reason(already("a-task-runner one-task", project=parted))[:300])
         check("a part the list does not state is not guarded",
               not denied(already("a-task-runner a-third-task", project=parted)))
         check("and a call that only carries a part's text is not matched",
@@ -4367,7 +4398,6 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         setting = _a_project(A_MIRRORED_RUN, unguarded_when_set=["A_DATABASE"])
         for label, call in (
             ("assigned before the command", "A_DATABASE=a-value a-mirrored-command"),
-            ("handed through `env`", "env A_DATABASE=a-value a-mirrored-command"),
             ("exported earlier in the same call",
              "export A_DATABASE=a-value && a-mirrored-command"),
         ):
@@ -4377,6 +4407,13 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("and the answer names the variable and never its value",
               "A_DATABASE" in said(set_once) and "a-secret-value" not in said(set_once),
               said(set_once)[:200])
+        for label, call in (
+            ("before another command", "A_DATABASE=a-value another-command && a-mirrored-command"),
+            ("standing alone, handed to no command", "A_DATABASE=a-value; a-mirrored-command"),
+            ("exported after the command", "a-mirrored-command && export A_DATABASE=a-value"),
+        ):
+            check(f"an assignment {label} does not reach it, and is refused",
+                  denied(already(call, project=setting)))
         check("an argument spelled like an assignment sets nothing, and is refused",
               denied(already("a-mirrored-command A_DATABASE=a-value", project=setting)))
         check("a variable the project does not name is refused",

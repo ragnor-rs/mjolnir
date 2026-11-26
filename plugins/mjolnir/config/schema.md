@@ -5629,10 +5629,13 @@ a project's own billing or test database is a different run from the host's, and
 in the variable it sets rather than in the command it runs — so the command matches, and the
 verdict it would duplicate is not the one the host produced. ⛔ **The entry is a name and never a
 value** ([§ 14](#what-the-shell-inherits-is-a-list-of-names)), and the answer names the variable
-and not what it was set to. ⚠️ **What counts is what the call itself sets** — an assignment before
-the command, an `env` naming it, or an `export` of it in the same call. A value the shell already
-holds from an earlier call is a fact about the shell rather than about this call, and an assignment
-after the command is an argument like any other.
+and not what it was set to. ⚠️ **What counts is what the call itself sets for the mirrored
+command** — an assignment standing before that command in its own segment, or an `export` of it
+earlier in the same call. An assignment before another command reaches only that one, one standing
+alone sets a shell variable no command is handed, an assignment after the command is an argument
+like any other, and a value the shell already holds from an earlier call is a fact about the shell
+rather than about this call. ⚠️ **A command behind `env` is not named here** because it is behind a
+runner, which the rule above already leaves unguarded.
 
 ⛔ **`escape` is a variable's name and never a value** ([§ 14](#what-the-shell-inherits-is-a-list-of-names)),
 and what stands the refusal down is the person setting it to a reason. A blank value is not an
