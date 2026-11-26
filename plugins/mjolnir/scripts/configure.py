@@ -2532,17 +2532,28 @@ def _end_of(lines: list[str], at: int, indent: int) -> int:
     own second run. ⚠️ No other line at that column can continue the key, since
     a mapping's next key there is a sibling and a `- ` there under a scalar is
     not YAML.
+
+    ⚠️ **A comment at or left of that column is the block's only where an entry
+    follows it**: one written between two entries is inside the list, and one
+    written after the last is about whatever key comes next, so it ends the
+    block and stays where it was.
     """
+    ended = None
     for index in range(at + 1, len(lines)):
         stripped = lines[index].strip()
         if not stripped:
             continue
         column = len(lines[index]) - len(lines[index].lstrip())
         if column == indent and (stripped == "-" or stripped.startswith("- ")):
+            ended = None
+            continue
+        if column <= indent and stripped.startswith("#"):
+            ended = index if ended is None else ended
             continue
         if column <= indent:
-            return index
-    return len(lines)
+            return index if ended is None else ended
+        ended = None
+    return len(lines) if ended is None else ended
 
 
 def write(skills_root: str, answers: dict, *, dry_run: bool = False) -> dict:
@@ -3301,6 +3312,27 @@ def self_test() -> int:
               third["holds"] and not third["changed"]
               and open(path, encoding="utf-8").read() == after,
               f"changed {third['changed']!r}")
+
+    # ⛔ The same shape after a person has written into it: a comment at the
+    # list key's own column ended the block where it stood, so the entries
+    # below it survived the edit and the reader appended them. One written
+    # after the last entry is about the next key and has to stay with it.
+    for where, text in (
+        ("between the key and its entries", "a: 1\nlist:\n# a note\n- x\n- y\nb: 2\n"),
+        ("between two entries", "a: 1\nlist:\n- x\n# a note\n- y\nb: 2\n"),
+        ("between two entries of a nested list",
+         "a: 1\nouter:\n  list:\n  - x\n  # a note\n  - y\n  k: 1\nb: 2\n"),
+    ):
+        nested = "outer" in text
+        wanted = ({"a": 1, "outer": {"list": ["z"], "k": 1}, "b": 2} if nested
+                  else {"a": 1, "list": ["z"], "b": 2})
+        out, changed, _ = edited(text, wanted)
+        check(f"a comment {where} is taken with the list rather than ending it",
+              yaml.safe_load(out) == wanted, f"left {yaml.safe_load(out)!r}")
+    after_the_list = "a: 1\nlist:\n- x\n- y\n# about b\nb: 2\n"
+    out, changed, _ = edited(after_the_list, {"a": 1, "list": ["z"], "b": 2})
+    check("while a comment after the last entry stays with the key after it",
+          out == "a: 1\nlist:\n- z\n# about b\nb: 2\n", f"left {out!r}")
 
     print("\nWhat the interrogation reads, and what it reports it could not:")
     root = _a_tree({})
