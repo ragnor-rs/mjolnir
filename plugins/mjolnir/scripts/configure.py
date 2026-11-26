@@ -2192,23 +2192,27 @@ def _vocabularies(answers: dict, menus: dict, detected: dict | None = None) -> d
         reading = published.get(vocabulary)
         if isinstance(reading, dict) and reading.get("answer") == READ:
             menus[key] = reading["values"]
-    # ⛔ A vocabulary the tracker could not be asked for makes the reading
-    # unestablished, even beside one that came back: a `read` there would say the
-    # tracker was interrogated when part of it never was. What did come back is
-    # still a menu above, and each part's own reason is named.
-    missed = sorted(
-        name for name, one in published.items()
+    # ⛔ A reading in which no vocabulary was established is unestablished, each
+    # part's reason named: a board that could not be addressed answers every part
+    # unestablished, and `read` there would say the tracker was interrogated when
+    # none of it was. ⚠️ Not *any* part unestablished -- a tracker may state one
+    # unestablished by design (a site-wide label set), and that reading still
+    # read what it could, which the parts beside it carry.
+    established = [
+        one for one in published.values()
         if isinstance(one, dict)
-        and one.get("answer") == tracker_port.VOCABULARY_UNESTABLISHED
-    )
-    if missed:
+        and one.get("answer") != tracker_port.VOCABULARY_UNESTABLISHED
+    ]
+    if published and not established:
         return {
             "reading": TRACKER_VOCABULARY,
             "answer": UNESTABLISHED,
             "because":
-                f"`{kind}` could not establish "
+                f"`{kind}` could not establish any vocabulary: "
                 + "; ".join(
-                    f"{name}: {published[name].get('because')}" for name in missed
+                    f"{name}: {one.get('because')}"
+                    for name, one in sorted(published.items())
+                    if isinstance(one, dict)
                 ),
             "vocabularies": published,
         }
@@ -3374,6 +3378,56 @@ def self_test() -> int:
               f"said {reading.get('because')!r}")
     finally:
         github_issues.TRANSPORT = standing_transport
+
+    # ⛔ The aggregate, held in both directions against the shapes trackers
+    # publish: a part unestablished by design beside parts that came back is
+    # still a reading taken, and a reading with no part established is not one.
+    class _Published:
+        performed, detail = True, "a stand-in for the port"
+
+        def __init__(self, result):
+            self.result = result
+
+    def through(published):
+        class APort:
+            def __init__(self, configuration):
+                pass
+
+            def implements(self, operation):
+                return True
+
+            def invoke(self, operation):
+                return _Published(published)
+
+        standing_port = tracker_port.Port
+        tracker_port.Port = APort
+        try:
+            return _vocabularies({"tracker": {"kind": "a-kind"}}, {}, {})
+        finally:
+            tracker_port.Port = standing_port
+
+    def part(answer, values=None):
+        return {"answer": answer, "values": values, "because": f"a part {answer}"}
+
+    designed = through({
+        "statuses": part(tracker_port.VOCABULARY_READ, ["a-status"]),
+        "types": part(tracker_port.VOCABULARY_READ, ["a-type"]),
+        "labels": part(tracker_port.VOCABULARY_UNESTABLISHED),
+    })
+    check("a part unestablished by design beside parts read leaves the reading "
+          "read", designed["answer"] == READ, f"answered {designed!r}")
+    nothing_read = through({
+        "statuses": part(tracker_port.VOCABULARY_UNESTABLISHED),
+        "labels": part(tracker_port.VOCABULARY_UNESTABLISHED),
+    })
+    check("a reading with no part established is unestablished",
+          nothing_read["answer"] == UNESTABLISHED, f"answered {nothing_read!r}")
+    check("and it names each part's reason",
+          nothing_read["because"].count("a part unestablished") == 2,
+          f"said {nothing_read['because']!r}")
+    boardless = _vocabularies({"tracker": {"kind": "github-projects"}}, {}, {})
+    check("a board-addressed tracker with no board is unestablished, not read",
+          boardless["answer"] == UNESTABLISHED, f"answered {boardless!r}")
 
     print("\nThe head marker: at the head, not moving, and removable:")
     root = _a_tree({})

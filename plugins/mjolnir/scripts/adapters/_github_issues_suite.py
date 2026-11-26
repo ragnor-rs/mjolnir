@@ -1184,6 +1184,17 @@ def self_test() -> int:
         and (reading.get("statuses") or {}).get("answer") == port.VOCABULARY_READ,
         f"answered {reading!r}",
     )
+    # ⛔ And no repository at all: the whole read is refused naming `host.repo`,
+    # rather than the status constant coming back beside nothing addressed --
+    # and never as `None.count`, which no caller of the port catches.
+    bind({})
+    raised = (with_host(labelled, read_vocabulary) or {}).get("<raised>", "")
+    check(
+        "no repository at all refuses the whole read as the configuration's own "
+        "error, naming `host.repo`",
+        raised.startswith("ConfigError") and "host.repo" in raised,
+        f"raised {raised!r}",
+    )
     bind({"host.repo": A_REPO})
 
     # --- the host's own types (§ 4.1) ----------------------------------------

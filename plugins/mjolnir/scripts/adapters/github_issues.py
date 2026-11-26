@@ -1117,7 +1117,15 @@ def read_vocabulary() -> dict:
 
     ⚠️ **The types are the repository's own answer**, and stating them is not a
     project carrying its type in them: that is § 4.1's question and stays asked.
+
+    ⛔ **No repository at all refuses the whole read**, by `_repo`'s own refusal
+    naming `host.repo`. The status pair is this module's constant rather than
+    anything the tracker said, so returning it beside two unestablished parts
+    would report a tracker interrogated when nothing was addressed. ⚠️ A slug in
+    the wrong shape is a different case and stays per vocabulary, below.
     """
+    if _bound is None or not _bound.get("host.repo"):
+        _repo()
     reading = {
         "statuses": {
             "answer": port.VOCABULARY_READ,
