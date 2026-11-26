@@ -675,6 +675,18 @@ ANSWERED_BY: dict[str, Answer] = {
     "commit.trailer": ask(
         "What trailer does a commit here carry, if any?",
     ),
+    "commit.branch_rules.branches": ask(
+        "Is there a branch a commit may carry only some paths onto -- a release "
+        "branch that takes documents and no code, say? None is the answer for a "
+        "project where every branch takes what a commit stages.",
+    ),
+    "commit.branch_rules.paths": ask(
+        "Which paths may a commit on those branches carry?",
+    ),
+    "commit.branch_rules.otherwise": ask(
+        "And a commit carrying any other path -- does it stop, or leave that path "
+        "out and commit the rest?",
+    ),
 
     # --- § 7. Carrier ------------------------------------------------------
     "carriers.*": ask(

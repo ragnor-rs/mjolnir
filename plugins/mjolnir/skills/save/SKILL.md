@@ -233,6 +233,14 @@ message mechanism, the style, the authorship rule, and what holds under either s
 - ⛔ **A commit this role would make where its own staging entry is absent is a stop.** The reader
   refuses that configuration, so meeting it here means the entry was never read; say so rather than
   choosing a mode.
+- ⛔ **What the branch admits is asked last, with the staged paths and the branch the commit lands
+  on** — the exempt verdict's destination below, where there is one. The verdicts are
+  [`§ 6 → What a commit may contain on a given branch`](../../config/schema.md#what-a-commit-may-contain-on-a-given-branch)'s,
+  and the reply names every path left out:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <the staged paths> --on-branch <that branch>
+  ```
 
 ⛔ **This is the one role that acts on an exempt change**
 ([`§ 30`](../../config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs)), so the
