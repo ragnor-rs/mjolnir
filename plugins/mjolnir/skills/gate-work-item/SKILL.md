@@ -290,7 +290,7 @@ is a field or a label rather than an assignee, the write goes through that carri
 A repair rewrites the author's text, and the test is the work rather than the prose: a constraint,
 a condition or a dependency the body already carried is still true unless the new material replaced
 it — the discipline
-[`§ 3`](../../config/schema.md#a-duplicate-is-the-item-rewritten-never-a-second-item-filed) states
+[`§ 3`](../../config/schema.md#a-duplicate-is-folded-into-the-item-never-a-second-item-filed) states
 for a rewritten item.
 
 The repair is subject to the gate it is trying to pass, 4f included: the sentence explaining why

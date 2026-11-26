@@ -297,12 +297,26 @@ neither.
 
 ## 3. The three relationships, and the parent case that reads like a clean check
 
-- **Duplicate — the same outcome or the same defect.** The existing item is **rewritten** to what
-  the work now is, per
-  [`§ 3`](../../config/schema.md#a-duplicate-is-the-item-rewritten-never-a-second-item-filed), and
-  sections 4–6 do not run for it. Reworded, differently scoped, or classified under another area is
-  still the same work — the test is whether doing one leaves the other with nothing to do, never
-  whether the two read alike.
+- **Duplicate — the same outcome or the same defect.** The new material goes into the existing
+  item, and sections 4–6 do not run for it. How it goes in is `tracker.duplicate`, which
+  [`§ 3`](../../config/schema.md#a-duplicate-is-folded-into-the-item-never-a-second-item-filed)
+  states:
+  - **`rewrite`**: the body is rewritten to what the work now is.
+  - **`append`**: the body is kept byte for byte and gains one dated section. The section is
+    composed and held by the carrier, never by hand. `addendum` prints the body to write, and
+    `appended` holds it against the body as read before the write. `appended` runs again on the
+    body read back after the write, and a refusal there is reported, not retried:
+
+    ```bash
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" addendum --before <the body as read> --material <the new material>
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" appended --before <the body as read> --after <the body to write>
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/item_sections.py" appended --before <the body as read> --after <the body read back>
+    ```
+
+  Under either mode the source is cited in a comment, or in the run report where the tracker
+  has no comments. Reworded, differently scoped, or classified under another area is still the
+  same work — the test is whether doing one leaves the other with nothing to do, never whether
+  the two read alike.
 - **Parent — the request is a *piece* of an item that is already open**, named in its body, its
   acceptance condition or its checklist. ⛔ **The default is a check item on the parent, not a new
   item.** A child restates a promise the parent already made: both then sit open, both read as
