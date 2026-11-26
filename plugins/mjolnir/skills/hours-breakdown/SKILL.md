@@ -1,13 +1,13 @@
 ---
 name: hours-breakdown
 description: Break a given total of hours down over the work a period shipped — the total taken from the invocation and never measured, the changes read from the repository rather than handed over, every part summing back to the total, a change committed outside the loop shown with no work item to name, and a run given no total offering the day log's own sum and stopping. Use when asked where a period's hours went, to distribute a month's hours over what shipped, or to write the narrative behind a figure the day log already produced.
-argument-hint: "--from YYYY-MM-DD --to YYYY-MM-DD [--hours <total>] [--to-file <path>]"
+argument-hint: "--from YYYY-MM-DD --to YYYY-MM-DD [--hours <total>] [--per-item] [--fold <commit> ...] [--to-file <path>]"
 ---
 
 # Hours breakdown
 
-Produces one artifact: a total of hours, distributed over the changes a period shipped, with a
-narrative of what each change was.
+Produces one artifact: a total of hours, distributed over the changes a period shipped (one line
+per change, or one per work item), with a narrative of what each line was.
 
 What this role may not do about the total is [`§ The loop`](../../config/schema.md#the-loop)'s
 rule, and every restriction below follows from it.
@@ -54,13 +54,13 @@ The arithmetic is the carrier's, and this pass does none of it by eye. One comma
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hours_breakdown.py" --from <the first day> --to <the last day> \
-  --hours <the total> [--weight <commit>=<share> ...]
+  --hours <the total> [--weight <commit>=<share> ...] [--per-item] [--fold <commit> ...]
 ```
 
 | exit | what it means | what this pass does |
 |---|---|---|
 | 0 | the total was distributed, and the parts sum back to it | writes the artifact from what was printed |
-| 1 | a stop, named — a period that shipped nothing, a total finer than a hundredth of an hour, a weight naming no change of the period | reports the stop as it came back |
+| 1 | a stop, named — a period that shipped nothing, a total finer than a hundredth of an hour, a weight or a fold naming no change of the period | reports the stop as it came back |
 | 2 | the invocation itself was malformed, which is the argument parser's own status | corrects the invocation |
 | 3 | no total was given, so one was offered or none could be | § 2: asks for the total, with the offer |
 | 4 | the configuration could not be read | reports the refusal |
@@ -104,17 +104,34 @@ its diff, its subject, the item it closes — and never from a figure the day lo
 total does not move whatever the weights are: they change how the total is divided, never what it
 adds up to.
 
+**The lines.** By default the total is divided over changes, one line each. Two options change
+what a line is, and the carrier prints `lines` whenever either is used:
+
+| option | what it does |
+|---|---|
+| `--per-item` | every change naming exactly one work item folds into that item's line, whose day is the day the item's last change landed. A change naming none, naming two, or whose item went unread stays a line of its own |
+| `--fold <commit>` | that change folds into one remainder line, whatever item it names. A fold is this pass's judgement, in the same standing as a weight and drawn from the same evidence: a change too small to name for the reader § 8's triple sets |
+
+A line weighs what its changes weigh, so a fold moves where a change's share is stated and never
+what the share is. Folding is not omission: the remainder line lists every change it holds, and
+hours folded are still hours placed. With neither option the carrier's output is the per-change
+one exactly.
+
 ## 4. The artifact
 
-One line per change, carrying the part the carrier printed for it, its day and its root. Below
-it, a narrative of what each change was, written in § 8's triple for the reader that triple names,
-so a change is described by what it did rather than by its identifiers. Every figure is copied from
-the carrier's output, and the artifact states the total beside the sum of its parts. The two are
-equal by the carrier's construction; an artifact on which they differ was edited by hand.
+One line per line the carrier printed, carrying its part, its day and its root. That is one per
+change by default. Below the lines comes a narrative of what each line was, written in § 8's triple
+for the reader that triple names, so a line is described by what it did rather than by its
+identifiers. Under `--per-item`, an item's line is described as the one piece of work its changes
+landed. Every figure is copied from the carrier's output, and the artifact states the total beside
+the sum of its parts. The two are equal by the carrier's construction; an artifact on which they
+differ was edited by hand.
 
 - The total is the one handed over. A total the reader expected to be different is still reported
   as given.
 - A change with no work item is shown with none, not attached to a nearby item and not left out.
+- The remainder line is worded in the artifact's language, and the artifact names every change it
+  holds.
 - Where the invocation names no destination, the reply carries the artifact. This role converts
   nothing to money, so § 28 has no value that would be kept out of a transcript.
 
@@ -130,9 +147,10 @@ with a table where the content enumerates. The reply carries:
 - the total as given, and the sum of the parts beside it — or, on § 2's arm, that no total was
   given, the figure offered with the days the store could not read, and the question asking for the
   total;
-- every change, with its day, its root, the item it names or that it names none, and its part;
+- every line, with its day, its root, the item it names or that it names none, the changes it
+  holds, and its part;
 - every change whose item went unread, and why;
-- every weight handed over, named as this pass's judgement;
+- every weight handed over and every change folded, each named as this pass's judgement;
 - that the ingestion step ran over the period's commit messages, and what it surfaced — never that
   they were clean
   ([§ 14](../../config/schema.md#the-hidden-half-is-shown-before-a-role-acts-on-the-text));
