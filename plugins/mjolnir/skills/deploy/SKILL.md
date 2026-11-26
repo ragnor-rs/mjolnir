@@ -139,8 +139,14 @@ this step runs it.
   reaches the entry's:
 
   ```bash
-  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" plan --target "<the entry's name>"
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" plan --target "<the entry's name>" \
+    --choose "<a choice's name>=<a value>"
   ```
+
+  `--choose` is exactly what this step was handed above, and every call to the carrier below takes
+  the same flags: a step whose side is a choice is resolved by them, and a reading taken under one
+  selection licenses no write handed another
+  ([`§ 35`](../../config/schema.md#a-side-chosen-for-one-run-and-the-go-that-names-it)).
 
   It runs none of them. It exits 3 where this target writes no live data, the ordinary case: the
   deploy is what § 33 states, step 5a does not run, and the reply says the target states no step,
@@ -312,20 +318,24 @@ stops the deploy before the go, not after a dump has been taken.
   step falls on, and `sides` may place one phase of it on the other — the plan from step 3 carries
   the side of every phase. Whatever falls `before_invoke` runs here, and whatever falls
   `after_invoke` runs once step 6 has come back. Neither is this role's to choose: whether the new
-  code requires the schema is that project's knowledge of its own code.
+  code requires the schema is that project's knowledge of its own code. Where the step places a
+  choice there, the side is the value the run was handed or the choice's default, and the plan
+  names which.
 - **A target listing several steps is performed one step at a time**, in the order the plan lists
   them, on each side in turn — every command below then carries `--step "<the step's name>"`, and
   the carrier refuses one that names no step. A step whose phases fall on both sides is prepared
   once per side, with `--side` naming the side being performed; the carrier refuses to run such a
   step without one, and answers a side no phase of it falls on with nothing run and no stop.
 - **The order taken is named in the go below**, so the person rules on it. The configured value is
-  what this role proposes.
+  what this role proposes; where it is a choice, the value is the person's selection, and one
+  changed after the preparation is a different deploy, prepared again.
 
 **The preparation, which stops on its own:**
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" prepare --target "<the entry's name>" \
-  [--step "<the step's name>"] [--side <the side being performed>]
+  [--step "<the step's name>"] [--side <the side being performed>] \
+  [--choose "<a choice's name>=<a value>"]
 ```
 
 - ⛔ **A non-zero exit is a stop for the deploy and not for the step**, and the carrier names which
@@ -347,13 +357,16 @@ the command once it is recorded.
 that it was read back, or that the step takes no backup with the reason the plan quotes —
 the preview of the pending writes **whole** — or the path the carrier names where the step states
 `preview.at` — or that no preview is stated, the rehearsal's output **whole** or that there was
-none, the order being taken and that it is the configured one, and who the entry says performs the
-write. ⛔ **The preview is shown as a preview and never as the rehearsal**: it runs nothing against
-the store, so a step stating one and no `rehearse` is still asked with *no rehearsal* said.
+none, the order being taken and that it is the configured one — or, where the side is a choice, the
+side taken, whether the run chose it, and the warning declared for it — and who the entry says
+performs the write. ⛔ **A go on a chosen side names that side**, and the carrier refuses one that
+does not. ⛔ **The preview is shown as a preview and never as the rehearsal**: it runs nothing
+against the store, so a step stating one and no `rehearse` is still asked with *no rehearsal* said.
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" apply --target "<the entry's name>" \
-  [--step "<the step's name>"] --given "<their answer, in their words>"
+  [--step "<the step's name>"] --given "<their answer, in their words>" \
+  [--choose "<a choice's name>=<a value>"]
 ```
 
 ⛔ **One go per write, asked once that step's own dump, preview and rehearsal are on record** — never
