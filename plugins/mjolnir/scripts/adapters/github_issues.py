@@ -1257,6 +1257,10 @@ ADAPTER = port.Adapter(binder=bind, operations={
 #     blocks nothing. Mapping a project's *related* onto the hierarchy would file
 #     one item as a piece of another. So the relation stays the prose line a body
 #     already carries, which is § 3's stated fallback.
+#   * `read_current_grouping`, because a milestone here carries no mark saying it
+#     is the open one: several stay open at once and a due date is a date rather
+#     than a mark, so reading one as current would be this module choosing the
+#     grouping. The value arrives on the invocation, which is § 3's fallback.
 #
 # ⛔ Written once, here, and read by the suite rather than restated in it: one more
 # absence would otherwise be an operation nobody noticed going missing -- which is
@@ -1266,6 +1270,7 @@ DELIBERATELY_ABSENT = (
     "set_field",
     "link_relation",
     "read_relations",
+    "read_current_grouping",
     "checklist_read",
     "checklist_write",
     "checklist_item_delete",

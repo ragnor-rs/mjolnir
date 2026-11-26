@@ -51,6 +51,7 @@ from adapters.jira import (  # noqa: E402
     OWNED_ELSEWHERE,
     QUERYABLE,
     RENDERED,
+    SPRINT_TYPE,
     TOKEN_VARIABLE,
     _sites,
     as_document,
@@ -65,6 +66,7 @@ from adapters.jira import (  # noqa: E402
     link_relation,
     advance_on_merge,
     read_blockers,
+    read_current_grouping,
     read_relations,
     read_item,
     read_vocabulary,
@@ -109,10 +111,16 @@ FIELDS = [
     {"id": "labels", "name": "Labels", "schema": {"type": "array"}},
     {"id": "status", "name": "Status", "schema": {"type": "status"}},
     {"id": "assignee", "name": "Assignee", "schema": {"type": "user"}},
+    # The tracker's own sprint field, a list of `json` members that is written by
+    # one sprint's id -- recognised by its custom type, never by this name.
+    {"id": "customfield_10020", "name": "Sprint",
+     "schema": {"type": "array", "items": "json", "custom": SPRINT_TYPE}},
     # A custom field, with the site-specific id that is the whole reason a field
     # is addressed by name: readable by name, and refused for a write because
-    # this implementation has no shape for its type.
-    {"id": "customfield_10020", "name": "Sprint", "schema": {"type": "array", "items": "json"}},
+    # this implementation has no shape for its type -- a list of `json` that is
+    # not the sprint.
+    {"id": "customfield_10060", "name": "Flags",
+     "schema": {"type": "array", "items": "json", "custom": "com.example:flags"}},
     # One list field per element type a write is shaped for.
     {"id": "components", "name": "Parts", "schema": {"type": "array", "items": "component"},
      "searchable": True, "clauseNames": ["component"]},
@@ -152,8 +160,9 @@ MOVE_OFFERS = {
     "description": {"name": "Description", "schema": {"type": "string"}},
     # Offered and of a type no write is shaped for, so the refusal of it is about
     # the type rather than the move.
-    "customfield_10020": {
-        "name": "Sprint", "required": False, "schema": {"type": "array", "items": "json"},
+    "customfield_10060": {
+        "name": "Flags", "required": False,
+        "schema": {"type": "array", "items": "json", "custom": "com.example:flags"},
     },
 }
 
@@ -238,6 +247,20 @@ def _example_configuration():
     return loaded
 
 
+def _sprinted_configuration():
+    """The shipped example, with its time box held in the tracker's sprint field.
+
+    ⛔ The example's own text with one placeholder filled, rather than a block
+    written here: the grouping's every other key stays the example's.
+    """
+    path = os.path.join(config.EXAMPLES, f"{KIND}.yaml")
+    with open(path, encoding="utf-8") as handle:
+        text = handle.read().replace("<the field the time box is held in>", "Sprint")
+    loaded = config.load_text(text, config.EXAMPLES)
+    loaded.data["tracker"].pop("create_fields", None)
+    return loaded
+
+
 def _statuses(configuration) -> list[dict]:
     return list(configuration.get("statuses") or [])
 
@@ -301,7 +324,23 @@ ROUTES = [
     ("POST", r"^/issueLink$", "link"),
     ("GET", r"^/project/[^/]+/statuses$", "statuses"),
     ("GET", r"^/project/[^/]+$", "project"),
+    ("GET", r"^/rest/agile/1\.0/board/\d+/sprint$", "sprints"),
+    ("GET", r"^/rest/agile/1\.0/board$", "boards"),
 ]
+
+# The boards this project has and the sprints each one holds, as the board
+# interface answers them. ⚠️ A board of the kind that carries no sprints sits
+# beside the one that does, and it holds an "open" sprint the host would never
+# answer for it -- so a read that asked it anyway would list one too many.
+SPRINT_FIELD = "customfield_10020"
+OPEN_SPRINT = {"id": 42, "name": "Sprint 42", "state": "active"}
+SECOND_SPRINT = {"id": 43, "name": "Sprint 43", "state": "active"}
+CLOSED_SPRINT = {"id": 41, "name": "Sprint 41", "state": "closed"}
+BOARDS = [
+    {"id": 7, "name": "the sprint board", "type": "scrum"},
+    {"id": 8, "name": "the flow board", "type": "kanban"},
+]
+SPRINTS = {7: [CLOSED_SPRINT, OPEN_SPRINT], 8: [SECOND_SPRINT]}
 
 
 def route(method: str, path: str) -> str | None:
@@ -336,6 +375,8 @@ class _Host:
             for issue in (self._default_issues() if issues is None else issues)
         }
         self.fields = list(self.answers.pop("<fields>", FIELDS))
+        self.boards = list(self.answers.pop("<boards>", BOARDS))
+        self.sprints = dict(self.answers.pop("<sprints>", SPRINTS))
         self.changelog: dict[str, list[dict]] = dict(self.answers.pop("<changelog>", {}))
         self.filed = 0
         self.calls: list[str] = []
@@ -487,11 +528,47 @@ class _Host:
             "not offer -- the id written was not one read"
         )
 
+    def _sprint_held(self, value):
+        """A sprint write, stored as this host stores it; `None` where it refuses.
+
+        ⛔ The host takes one sprint's id and answers the field as a list of the
+        sprint's own structure; anything else is its `400`, so a write that sent a
+        name or a list fails here exactly where it would there.
+        """
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None
+        for sprints in self.sprints.values():
+            for sprint in sprints:
+                if sprint["id"] == value:
+                    return [dict(sprint)]
+        return None
+
     def _do_update(self, path: str, _params, body) -> None:
         issue = self.item(path)
         for name, value in ((body or {}).get("fields") or {}).items():
+            if name == SPRINT_FIELD:
+                value = self._sprint_held(value)
+                if value is None:
+                    return 400, json.dumps({"errors": {name: "Number value expected"}})
             issue["fields"][name] = value
         return None
+
+    def _answer_boards(self, _path, params: dict, _body) -> dict:
+        kind = params.get("type")
+        boards = [board for board in self.boards if kind in (None, board["type"])]
+        return {"startAt": 0, "isLast": True, "values": boards}
+
+    def _answer_sprints(self, path: str, params: dict, _body) -> tuple | dict:
+        board = int(path.split("/")[-2])
+        held = next(one for one in self.boards if one["id"] == board)
+        if held["type"] != "scrum":
+            return 400, json.dumps({"errorMessages": ["The board does not support sprints"]})
+        state = params.get("state")
+        sprints = [
+            sprint for sprint in self.sprints.get(board, [])
+            if state in (None, sprint["state"])
+        ]
+        return {"startAt": 0, "isLast": True, "values": sprints}
 
     def _do_assignee(self, path: str, _params, body) -> None:
         issue = self.item(path)
@@ -511,8 +588,15 @@ class _Host:
             labels=list(fields.get("labels") or []),
         )
         issue["fields"]["description"] = fields.get("description")
+        issue["fields"][SPRINT_FIELD] = None
         for name, value in fields.items():
-            if name not in issue["fields"]:
+            if name == SPRINT_FIELD:
+                value = self._sprint_held(value)
+                if value is None:
+                    self.filed -= 1
+                    return 400, json.dumps({"errors": {name: "Number value expected"}})
+                issue["fields"][name] = value
+            elif name not in issue["fields"]:
                 issue["fields"][name] = value
         issue["fields"]["issuetype"] = {"name": str((fields.get("issuetype") or {}).get("name"))}
         self.issues[issue["key"]] = issue
@@ -584,6 +668,8 @@ class _Host:
             "create": self._do_create,
             "link": self._do_link,
             "search": self._answer_search,
+            "boards": self._answer_boards,
+            "sprints": self._answer_sprints,
             # ⛔ Two issue types with **overlapping** state sets, which is what
             # this tracker actually publishes: a vocabulary read that took one
             # type's words would state a set the other half of the backlog
@@ -642,7 +728,7 @@ class _Host:
         return 200, json.dumps(answer)
 
     def writes(self) -> list[str]:
-        reads = {"fields", "me", "issue", "transitions", "search"}
+        reads = {"fields", "me", "issue", "transitions", "search", "boards", "sprints"}
         return [call for call in self.calls if call not in reads]
 
     def sent_for(self, name: str) -> list[dict]:
@@ -1299,12 +1385,12 @@ def self_test() -> int:
         reported == "tracker.transitions.fields" and not disallowed.writes(),
         f"reported {reported!r} after {disallowed.calls}",
     )
-    stating([{"status": finished, "field": "Sprint", "value": "a sprint"}])
+    stating([{"status": finished, "field": "Flags", "value": "a flag"}])
     unshaped = host()
     reported = with_host(unshaped, lambda: refused(lambda: set_state(key(1), status=finished)))
     check(
         "a field whose type has no shape here is refused before the move",
-        reported == "tracker.transitions.fields.Sprint" and not unshaped.writes(),
+        reported == "tracker.transitions.fields.Flags" and not unshaped.writes(),
         f"reported {reported!r} after {unshaped.calls}",
     )
     stating([{"status": finished, "field": "Resolution", "value": RESOLUTIONS[0]}])
@@ -1467,17 +1553,17 @@ def self_test() -> int:
         f"reported {reported!r}",
     )
     unshaped = host()
-    reported = with_host(unshaped, lambda: refused(lambda: set_field(key(1), "Sprint", "a sprint")))
+    reported = with_host(unshaped, lambda: refused(lambda: set_field(key(1), "Flags", "a flag")))
     check(
         "a field type this module has no shape for is refused, naming the field",
-        reported == "tracker.fields.Sprint" and not unshaped.writes(),
+        reported == "tracker.fields.Flags" and not unshaped.writes(),
         f"reported {reported!r}",
     )
     check(
         "and a list whose elements have no shape is refused by the element's own type",
         "`json`" in with_host(
             host(),
-            lambda: str(ran(lambda: set_field(key(1), "Sprint", ["a"])).get("<raised>")),
+            lambda: str(ran(lambda: set_field(key(1), "Flags", ["a"])).get("<raised>")),
         ),
     )
     # --- a field holding several values --------------------------------------
@@ -2391,6 +2477,160 @@ def self_test() -> int:
             and got(answered, "at_limit") is False,
             f"made {grouped_pages['calls']} call(s) for {answered!r}",
         )
+
+    # --- the sprint: the open one read, and its id written ---------------------
+    in_sprints = {
+        "name": "time_box", "carrier": "field", "field": "Sprint",
+        "current": "discoverable",
+    }
+    sprinted = host()
+    answered = with_host(sprinted, lambda: read_current_grouping(grouping=in_sprints))
+    check(
+        "one open sprint is the answer, by the id a write takes and the name a person reads",
+        got(answered, "value") == OPEN_SPRINT["id"]
+        and got(answered, "name") == OPEN_SPRINT["name"]
+        and got(answered, "ask") is None
+        and got(answered, "current") == [{"value": 42, "name": "Sprint 42"}],
+        f"answered {answered!r}",
+    )
+    check(
+        "and a board that carries no sprints is not asked for any",
+        not any("/board/8/" in what["path"] for what in sprinted.sent_for("sprints"))
+        and params_of(sprinted, "boards").get("projectKeyOrId") == project,
+        f"sent {sprinted.sent_for('sprints')!r} and {sprinted.sent_for('boards')!r}",
+    )
+    two_open = host({"<sprints>": {7: [OPEN_SPRINT, SECOND_SPRINT], 8: []}})
+    answered = with_host(two_open, lambda: read_current_grouping(grouping=in_sprints))
+    check(
+        "two open sprints answer no value, list both, and say the role asks",
+        got(answered, "value") is None
+        and [entry["value"] for entry in got(answered, "current") or []] == [42, 43]
+        and "2 sprints" in str(got(answered, "ask")),
+        f"answered {answered!r}",
+    )
+    shared = host({
+        "<boards>": [BOARDS[0], {"id": 9, "name": "a second sprint board", "type": "scrum"}],
+        "<sprints>": {7: [OPEN_SPRINT], 9: [OPEN_SPRINT]},
+    })
+    answered = with_host(shared, lambda: read_current_grouping(grouping=in_sprints))
+    check(
+        "a sprint two boards share is one open sprint, not two",
+        got(answered, "value") == 42 and len(got(answered, "current") or []) == 1,
+        f"answered {answered!r}",
+    )
+    none_open = host({"<sprints>": {7: [CLOSED_SPRINT], 8: []}})
+    answered = with_host(none_open, lambda: read_current_grouping(grouping=in_sprints))
+    check(
+        "no open sprint answers no value and says why, rather than a closed one",
+        got(answered, "value") is None and got(answered, "current") == []
+        and "no sprint is open" in str(got(answered, "ask")),
+        f"answered {answered!r}",
+    )
+    reported = with_host(host(), lambda: refused(lambda: read_current_grouping(
+        grouping={**in_sprints, "field": "Story points"}
+    )))
+    check(
+        "a grouping held in a field that is not the sprint is refused, naming its field",
+        reported == "work_item.grouping.time_box.field",
+        f"reported {reported!r}",
+    )
+    labelled = host()
+    reported = with_host(labelled, lambda: refused(lambda: read_current_grouping(
+        grouping={**in_sprints, "carrier": "label"}
+    )))
+    check(
+        "and one held in a label is refused before any call",
+        reported == "work_item.grouping.time_box.carrier" and labelled.calls == [],
+        f"reported {reported!r} after {labelled.calls}",
+    )
+    written = host()
+    answered = with_host(written, lambda: set_field(key(1), "Sprint", 42))
+    check(
+        "the sprint is written by its id alone",
+        (body_of(written, "update").get("fields") or {}).get(SPRINT_FIELD) == 42
+        and [entry.get("id") for entry in (got(answered, "fields") or {}).get("Sprint") or []]
+        == [42],
+        f"sent {written.sent_for('update')!r}, answered {answered!r}",
+    )
+    worded_id = host()
+    with_host(worded_id, lambda: set_field(key(1), "Sprint", "43"))
+    check(
+        "and an id handed as text, as the command line hands it, is the same number",
+        (body_of(worded_id, "update").get("fields") or {}).get(SPRINT_FIELD) == 43,
+        f"sent {worded_id.sent_for('update')!r}",
+    )
+    for given in ("Sprint 42", ["42"], True, 0):
+        named_sprint = host()
+        reported = with_host(
+            named_sprint, lambda given=given: refused(lambda: set_field(key(1), "Sprint", given))
+        )
+        check(
+            f"a sprint handed as {given!r} is refused rather than looked up or sent",
+            reported == "tracker.fields.Sprint" and not named_sprint.writes(),
+            f"reported {reported!r} after {named_sprint.calls}",
+        )
+    unheld = host({"update": lambda *_: None})
+    failed = with_host(unheld, lambda: unavailable(lambda: set_field(key(1), "Sprint", 42)))
+    check(
+        "a sprint write that does not read back is a failure naming the sprint",
+        isinstance(failed, str) and "sprint `42`" in failed,
+        f"answered {failed!r}",
+    )
+    # ⛔ The acceptance case end to end: the open sprint read, its id filed, and
+    # the item read back in it -- which is what `in_grouping` reads.
+    filing = host()
+
+    def _filed_into_the_open_sprint():
+        current = read_current_grouping(grouping=in_sprints)
+        made = create_item(
+            "a filed item", "a body", type=_a_type(configuration),
+            fields={"Sprint": current["value"]},
+        )
+        return read_item(made["key"], fields=["Sprint"])
+
+    filed = with_host(filing, _filed_into_the_open_sprint)
+    check(
+        "a filing into the open sprint sends its id and the item reads back in it",
+        (body_of(filing, "create").get("fields") or {}).get(SPRINT_FIELD) == 42
+        and [entry.get("name") for entry in (got(filed, "fields") or {}).get("Sprint") or []]
+        == [OPEN_SPRINT["name"]],
+        f"sent {filing.sent_for('create')!r}, read {filed!r}",
+    )
+    short_filing = host({"create": lambda _p, _q, body: filing_without_sprint(body)})
+
+    def filing_without_sprint(body):
+        body = {"fields": {
+            name: value for name, value in (body or {}).get("fields", {}).items()
+            if name != SPRINT_FIELD
+        }}
+        return short_filing._do_create(None, None, body)
+
+    failed = with_host(short_filing, lambda: unavailable(lambda: create_item(
+        "a filed item", "a body", type=_a_type(configuration), fields={"Sprint": 42},
+    )))
+    check(
+        "a filing whose sprint did not land is reported, not filed again",
+        isinstance(failed, str) and "sprint `42`" in failed and short_filing.filed == 1,
+        f"answered {failed!r} after {short_filing.filed} filing(s)",
+    )
+    sprint_port = port.Port(
+        _sprinted_configuration(), adapter=ADAPTER, stated=port.surface_operations()
+    )
+    sprint_host = host()
+    outcome = with_host(sprint_host, lambda: sprint_port.current_in("time_box"))
+    check(
+        "the port hands the grouping's own block to the read under `discoverable`",
+        getattr(outcome, "performed", False)
+        and (getattr(outcome, "result", None) or {}).get("value") == 42
+        and getattr(outcome, "grouping", None) == "time_box",
+        f"answered {outcome!r}",
+    )
+    reported = refused(lambda: sprint_port.current_in("release_scope"))
+    check(
+        "and refuses the read for a grouping the project states, naming `current`",
+        reported == f"{config.GROUPING_KEY}.current",
+        f"reported {reported!r}",
+    )
 
     # --- `advance_on_merge`: the tracker's half of the question ---------------
     def _history(account: str) -> dict:
