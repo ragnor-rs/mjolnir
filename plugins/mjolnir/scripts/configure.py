@@ -1281,7 +1281,11 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which deploy targets does this project have?",
     ),
     "deploy.invoke": ask(
-        "How is this target reached -- a command, a dispatch, or by hand?",
+        "How is this target reached -- a command, a dispatch, or by hand? Or is "
+        "it named and not implemented yet?",
+    ),
+    "deploy.reason": ask(
+        "Why does nothing reach this target yet? A deploy of it stops with this.",
     ),
     "deploy.command": ask(
         "Which command?",

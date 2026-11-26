@@ -1414,7 +1414,10 @@ def _deploy_root_facet(data: dict, roots: dict[str, dict]) -> None:
         return
     named = ", ".join(repr(key) for key in roots)
     for index, entry in enumerate(targets):
-        if not isinstance(entry, dict):
+        # ⛔ A target nothing reaches has no act to be in a repository, and its
+        # entry may carry no `code_root` (§ 33) -- so the several-roots arm
+        # below would refuse it for a key it is refused for stating.
+        if not isinstance(entry, dict) or entry.get("invoke") == NOT_IMPLEMENTED:
             continue
         where = f"deploy[{index}]"
         stated = entry.get(DEPLOY_CODE_ROOT)
@@ -3383,6 +3386,9 @@ class Config:
                 f"names no target {target!r}. It names "
                 f"{', '.join(repr(one.get('name')) for one in entries) or 'none'} (§ 33).",
             )
+        refusal = _not_implemented_refusal(entry)
+        if refusal is not None:
+            raise refusal
         choices = {choice["name"]: choice for choice in entry.get("choices") or ()}
         asked: dict[str, list[str]] = {}
         for stated in chosen or ():
@@ -3629,6 +3635,9 @@ class Config:
                     "it does.",
                 )
         entry = stated[0]
+        refusal = _not_implemented_refusal(entry)
+        if refusal is not None:
+            raise refusal
         named = entry.get(ADVANCE_REQUIRES)
         by_name = isinstance(named, list)
         required: list[tuple[str, str]] = []
@@ -3897,6 +3906,16 @@ class Config:
                 "it, and it says nothing about a deploy somebody makes by hand "
                 "(§ 33)."
             )
+        for entry in self.get("deploy") or ():
+            refusal = isinstance(entry, dict) and _not_implemented_refusal(entry)
+            if refusal:
+                out.append(
+                    f"The deploy target {entry.get('name')!r} is not implemented "
+                    f"(`invoke: {NOT_IMPLEMENTED}`): "
+                    f"{' '.join(str(entry.get(NOT_IMPLEMENTED_REASON)).split())} "
+                    "Asking for it stops with that reason, and nothing is run, "
+                    "batched or advanced for it (§ 33)."
+                )
         if not self.get("readiness"):
             out.append("The readiness gate is empty, so there is nothing to gate.")
         if not self.get("done"):
@@ -5540,6 +5559,16 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
                 "carrying one name leave the ask undefined.",
             )
         seen_names[name] = index
+        if entry.get("invoke") == NOT_IMPLEMENTED and NOT_IMPLEMENTED in shapes:
+            _validate_not_implemented(where, entry)
+            continue
+        if NOT_IMPLEMENTED_REASON in entry:
+            raise ConfigError(
+                f"{where}.{NOT_IMPLEMENTED_REASON}",
+                f"is stated beside `invoke: {entry.get('invoke')}`, which never "
+                f"reads it (§ 33). It is read beside `invoke: {NOT_IMPLEMENTED}` "
+                "alone, as why nothing reaches the target yet.",
+            )
         # ⛔ Boolean, and read for neither truth nor presence -- § 1's rule for
         # `code_root_runs_nothing`, arriving at the key where getting it wrong is
         # worst. Read as truthy, `false` spelled as a word would make a live
@@ -5782,6 +5811,33 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         _validate_live_data_step(where, entry, facts)
         _validate_advance_requires(where, entry, data, facts)
         _validate_figures(where, entry, facts)
+
+
+def _validate_not_implemented(where: str, entry: dict) -> None:
+    """§ 33's `not_implemented` entry: a name, the shape and a reason, nothing else.
+
+    ⛔ Every other key is refused with its own name, `not_live` among them: each
+    describes how the target is reached, and a target nothing reaches has no
+    answer to any of them -- so a value written there is a fact nothing reads.
+    """
+    for stated_key in entry:
+        if stated_key not in NOT_IMPLEMENTED_KEYS:
+            raise ConfigError(
+                f"{where}.{stated_key}",
+                f"is stated beside `invoke: {NOT_IMPLEMENTED}`, which takes "
+                f"{', '.join(f'`{key}`' for key in NOT_IMPLEMENTED_KEYS)} and "
+                "nothing else (§ 33). Nothing reaches this target yet, so how it "
+                "is reached is stated when it is implemented, as one of the "
+                "other shapes.",
+            )
+    reason = entry.get(NOT_IMPLEMENTED_REASON)
+    if not isinstance(reason, str) or not reason.strip():
+        raise ConfigError(
+            f"{where}.{NOT_IMPLEMENTED_REASON}",
+            f"required where `invoke` is {NOT_IMPLEMENTED!r}, and a non-empty "
+            "string (§ 33). It is what a deploy of this target stops with, so a "
+            "target stated without one would stop saying nothing.",
+        )
 
 
 def _stated_tier_names(data: dict) -> set[str]:
@@ -8642,6 +8698,34 @@ PARTS = "parts"
 # because an entry states both and they name different things, which is § 1's
 # `A command root is not a code root` read at the one key pair that carries it.
 DEPLOY_CODE_ROOT = "code_root"
+
+# § 33's shape for a target the project names and nothing reaches yet, and the
+# keys such an entry carries. ⛔ The shape's word is on the surface's `invoke`
+# line and is read from there by `vocabulary`; it is named here because the
+# readers below branch on it, and the keys are a literal because what the
+# surface states is the rule *every other key is refused*, which a fence cannot
+# carry -- the suite holds the two together by planting each key the fence
+# declares beside the shape and asserting the refusal.
+NOT_IMPLEMENTED = "not_implemented"
+NOT_IMPLEMENTED_REASON = "reason"
+NOT_IMPLEMENTED_KEYS = ("name", "invoke", NOT_IMPLEMENTED_REASON)
+
+
+def _not_implemented_refusal(entry: dict) -> "ConfigError | None":
+    """The stop § 33 makes for a target nothing reaches yet, or `None`.
+
+    ⛔ One wording for every ask -- a deploy, a batch, an advance -- so the
+    person asking hears the project's own reason whichever act they asked for.
+    """
+    if entry.get("invoke") != NOT_IMPLEMENTED:
+        return None
+    reason = " ".join(str(entry.get(NOT_IMPLEMENTED_REASON)).split())
+    return ConfigError(
+        f"deploy.{entry.get('name')}",
+        f"is not implemented (`invoke: {NOT_IMPLEMENTED}`): {reason} Nothing "
+        "reaches this target yet, so nothing is run, batched or advanced for it "
+        "(§ 33).",
+    )
 
 # § 33's key naming the checks a target's advance rests on, and the outcomes one
 # comes back with. ⛔ The outcomes are a literal because the surface states them
@@ -17742,6 +17826,7 @@ def self_test() -> int:
         check(label, refusal is None, f"refused on {refusal!r}")
 
     _advance_requires_suite(check, surface)
+    _not_implemented_suite(check, surface)
 
     print("\n§ 33's choices, resolved for one run:")
 
@@ -23129,6 +23214,110 @@ def _surface_advance_outcomes() -> dict[str, bool]:
         ):
             rows[cells[0].strip("`")] = cells[2] == "yes"
     return rows
+
+
+def _a_target_not_implemented(**overrides) -> dict:
+    """§ 33's `not_implemented` entry, minimal and correct."""
+    target = {
+        "name": "a-planned-target",
+        "invoke": NOT_IMPLEMENTED,
+        NOT_IMPLEMENTED_REASON: "The host it would reach is not provisioned yet.",
+    }
+    target.update(overrides)
+    return {key: value for key, value in target.items() if value is not _ABSENT}
+
+
+def _not_implemented_suite(check, facts: dict) -> None:
+    """§ 33's `not_implemented` shape: what loads, what is refused, and the stop.
+
+    ⛔ The planted violation is a target nothing reaches carrying a key that
+    says how it is reached -- each key the surface's entry fence declares is
+    planted beside the shape in turn, so a key added to the fence is held with
+    no edit here, and a reader that tolerated one would redden on its name.
+    """
+    print("\n§ 33, a target nothing reaches yet:")
+    shapes = vocabulary(facts, "deploy.invoke", "a deploy invocation shape")
+    check("the surface states `not_implemented` among the invocation shapes",
+          NOT_IMPLEMENTED in shapes, f"states {shapes}")
+
+    def resolved(*targets):
+        loaded = _a_valid_example()
+        loaded["deploy"] = [dict(one) for one in targets]
+        return loaded
+
+    beside = resolved(_a_deploy_target(), _a_target_not_implemented())
+    refusal = _refused(beside)
+    check("a target stating only a name, the shape and a reason loads beside a live one",
+          refusal is None, f"refused on {refusal!r}")
+
+    declared = sorted({
+        path.split(".")[1] for path in facts["declared"] if path.startswith("deploy.")
+    })
+    for key in declared:
+        if key in NOT_IMPLEMENTED_KEYS:
+            continue
+        planted = resolved(_a_target_not_implemented(**{key: "anything"}))
+        refusal = _refused(planted)
+        check(f"`{key}` beside `not_implemented` is refused by name",
+              refusal == f"deploy[0].{key}", f"refused on {refusal!r}")
+    for value, label in ((_ABSENT, "absent"), ("  ", "blank"), (["a"], "not a string")):
+        refusal = _refused(resolved(_a_target_not_implemented(
+            **{NOT_IMPLEMENTED_REASON: value})))
+        check(f"a `not_implemented` target with its reason {label} is refused",
+              refusal == f"deploy[0].{NOT_IMPLEMENTED_REASON}", f"refused on {refusal!r}")
+    refusal = _refused(resolved(_a_deploy_target(**{NOT_IMPLEMENTED_REASON: "why"})))
+    check("a `reason` beside a shape that reaches the target is refused",
+          refusal == f"deploy[0].{NOT_IMPLEMENTED_REASON}", f"refused on {refusal!r}")
+
+    view = _resolve(beside, EXAMPLES, facts, False)
+    stops = {}
+    for label, ask in (
+        ("a deploy", lambda: view.deploy_target("a-planned-target")),
+        ("a batch", lambda: view.deploy_batch("a-planned-target")),
+        ("an advance", lambda: view.advance("a-planned-target", {})),
+    ):
+        try:
+            ask()
+            stops[label] = None
+        # ⚠️ Any exception and not only the refusal: a reader that reached the
+        # entry's absent keys raises something else, and that is this arm's
+        # failure to report rather than a crash taking the arms after it.
+        except Exception as error:  # noqa: BLE001
+            stops[label] = f"{type(error).__name__}: {error}"
+    for label, stop in stops.items():
+        check(f"{label} of a target nothing reaches stops with its reason",
+              stop is not None and "not provisioned yet" in stop
+              and NOT_IMPLEMENTED in stop,
+              f"answered {stop!r}")
+    try:
+        live = view.deploy_target("a-target")["target"]
+    except ConfigError as error:
+        live = str(error)
+    check("the live target beside it is still reached as before",
+          live == "a-target", f"answered {live!r}")
+    listed = [line for line in view.unavailable() if "'a-planned-target'" in line]
+    check("the target is listed among what is unavailable, with its reason",
+          len(listed) == 1 and "not provisioned yet" in listed[0], f"listed {listed!r}")
+    check("a live target is not listed among what is unavailable",
+          not any("'a-target'" in line for line in view.unavailable()),
+          "listed")
+
+    collection = _a_collection_example()
+    if collection is None:
+        check("a shipped example carries several code roots", False, "none does")
+        return
+    collection = copy.deepcopy(collection)
+    collection["deploy"] = [
+        *_absent_as(collection.get("deploy"), []), _a_target_not_implemented()
+    ]
+    refusal = _refused(collection)
+    check("under several code roots, a target nothing reaches names no root and loads",
+          refusal is None, f"refused on {refusal!r}")
+    collection["deploy"][-1][DEPLOY_CODE_ROOT] = _collection_keys()[0]
+    refusal = _refused(collection)
+    check("under several code roots, a root named beside `not_implemented` is refused",
+          refusal == f"deploy[{len(collection['deploy']) - 1}].{DEPLOY_CODE_ROOT}",
+          f"refused on {refusal!r}")
 
 
 def _advance_requires_suite(check, facts: dict) -> None:
