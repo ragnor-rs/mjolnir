@@ -5865,6 +5865,7 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
         _validate_advance_requires(where, entry, data, facts)
+        _validate_figures(where, entry, facts)
 
 
 def _stated_tier_names(data: dict) -> set[str]:
@@ -5963,6 +5964,154 @@ def _validate_advance_requires(where: str, entry: dict, data: dict, facts: dict)
                 "one name leave which of them it answers undefined.",
             )
         seen[name] = position
+
+
+def _validate_figures(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `figures` on one target, which no marker can reach.
+
+    ⚠️ Optional: a target that omits it reads no figure, which is every
+    configuration written before the key. ⛔ What a stated list has to *be* is
+    held here, every arm refusing rather than skipping -- a bound a reader could
+    not make sense of is a bound whose skip would move the items anyway.
+    """
+    if FIGURES not in entry:
+        return
+    at = f"{where}.{FIGURES}"
+    blocks = entry[FIGURES]
+    if not isinstance(blocks, list) or not blocks:
+        raise ConfigError(
+            at,
+            "must be a non-empty list, one entry per check whose figures the reply "
+            "carries (§ 33); omit it where the target reads none.",
+        )
+    # ⛔ Both key sets are read off the surface's own entry fence, which is
+    # `_validate_deploy`'s rule two levels down.
+    prefix = f"deploy.{FIGURES}."
+    keys = {
+        path[len(prefix):].split(".")[0]
+        for path in facts["declared"]
+        if path.startswith(prefix)
+    }
+    bound_prefix = f"{prefix}{FIGURE_BOUNDS}."
+    bound_keys = {
+        path[len(bound_prefix):]
+        for path in facts["declared"]
+        if path.startswith(bound_prefix)
+    }
+    if not keys or not bound_keys:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a figure could be held "
+            "to nothing (§ 33).",
+        )
+    checks: dict[str, int] = {}
+    for position, block in enumerate(blocks):
+        here = f"{at}[{position}]"
+        if not isinstance(block, dict):
+            raise ConfigError(
+                here,
+                "must be a mapping naming a check, the command that prints its "
+                "figures and the figures it is expected to report (§ 33).",
+            )
+        for stated_key in block:
+            if stated_key not in keys:
+                raise ConfigError(
+                    f"{here}.{stated_key}",
+                    "is a key § 33 does not declare on a check's figures, so it is "
+                    "a fact nothing reads. The keys it declares are: "
+                    f"{', '.join(sorted(keys))}.",
+                )
+        for key in ("check", "reads"):
+            value = block.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise ConfigError(
+                    f"{here}.{key}", "required, and a non-empty string (§ 33)."
+                )
+        if block["check"] in checks:
+            raise ConfigError(
+                f"{here}.check",
+                f"is {block['check']!r}, which {at}[{checks[block['check']]}] already "
+                "names (§ 33). Two commands for one check leave which figures it "
+                "reported undefined.",
+            )
+        checks[block["check"]] = position
+        names = block.get("names")
+        if not isinstance(names, list) or not names:
+            raise ConfigError(
+                f"{here}.names",
+                "required, and a non-empty list (§ 33): it is what makes a figure "
+                "the command did not print visible as unread.",
+            )
+        for index, name in enumerate(names):
+            if not isinstance(name, str) or not FIGURE_NAME.fullmatch(name):
+                raise ConfigError(
+                    f"{here}.names[{index}]",
+                    f"is {name!r}; a figure's name is one word of letters, digits, "
+                    "`_`, `.` and `-`, the form the command prints it in (§ 33).",
+                )
+        if len(set(names)) != len(names):
+            raise ConfigError(f"{here}.names", "names one figure twice (§ 33).")
+        if FIGURE_BOUNDS not in block:
+            continue
+        if entry.get("advances") == "none":
+            raise ConfigError(
+                f"{here}.{FIGURE_BOUNDS}",
+                "is stated beside `advances: none`, which never reads it (§ 33). A "
+                "target that moves nothing has no outcome for a bound to lower.",
+            )
+        bounds = block[FIGURE_BOUNDS]
+        if not isinstance(bounds, list) or not bounds:
+            raise ConfigError(
+                f"{here}.{FIGURE_BOUNDS}",
+                "must be a non-empty list of bounds (§ 33); omit it where no figure "
+                "of this check decides anything.",
+            )
+        bounded: dict[str, int] = {}
+        for index, bound in enumerate(bounds):
+            there = f"{here}.{FIGURE_BOUNDS}[{index}]"
+            if not isinstance(bound, dict):
+                raise ConfigError(
+                    there,
+                    "must be a mapping naming a figure and its min, max or both (§ 33).",
+                )
+            for stated_key in bound:
+                if stated_key not in bound_keys:
+                    raise ConfigError(
+                        f"{there}.{stated_key}",
+                        "is a key § 33 does not declare on a bound. The keys it "
+                        f"declares are: {', '.join(sorted(bound_keys))}.",
+                    )
+            figure = bound.get("figure")
+            if figure not in names:
+                raise ConfigError(
+                    f"{there}.figure",
+                    f"is {figure!r}, which `names` does not carry (§ 33). A bound on "
+                    "a figure nobody expects is a bound that is never read.",
+                )
+            if figure in bounded:
+                raise ConfigError(
+                    f"{there}.figure",
+                    f"is {figure!r}, which {here}.{FIGURE_BOUNDS}[{bounded[figure]}] "
+                    "already bounds (§ 33). One figure carries one bound.",
+                )
+            bounded[figure] = index
+            limits = [key for key in ("min", "max") if key in bound]
+            if not limits:
+                raise ConfigError(
+                    there, "states neither `min` nor `max`, so it bounds nothing (§ 33)."
+                )
+            for key in limits:
+                value = bound[key]
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    raise ConfigError(
+                        f"{there}.{key}", f"is {value!r}; a bound is a number (§ 33)."
+                    )
+            if len(limits) == 2 and bound["min"] > bound["max"]:
+                raise ConfigError(
+                    there,
+                    f"has `min` {bound['min']!r} above `max` {bound['max']!r}, so no "
+                    "value is inside it (§ 33).",
+                )
 
 
 # § 33's placement grammar, which the surface states in prose as it does § 34's
@@ -6425,7 +6574,24 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
 # § 35's sequence, which the sides a step's phases fall on may never run
 # backwards through. ⛔ Phases rather than commands: `backup.verify` belongs to
 # the backup and falls where it does.
-LIVE_DATA_PHASES = ("backup", "rehearse", "apply")
+LIVE_DATA_PHASES = ("backup", "preview", "rehearse", "apply")
+
+# The phases a step may omit, each read by `live_data_command` -- and the only two
+# whose absence leaves a phase with no side at all.
+LIVE_DATA_OPTIONAL = ("preview", "rehearse")
+
+
+def live_data_command(block: dict, phase: str) -> str | None:
+    """The command one optional phase of a step states, or `None` where none.
+
+    ⛔ The one reading of whether `preview` or `rehearse` is stated, which the
+    placement below and the carrier's sequence both take: `rehearse` is a command
+    stated whole, and `preview` a mapping whose `run` is (§ 35).
+    """
+    value = block.get(phase)
+    if phase == "preview":
+        value = value.get("run") if isinstance(value, dict) else None
+    return value if isinstance(value, str) and value.strip() else None
 
 
 def live_data_sides(block: dict) -> dict:
@@ -6433,14 +6599,12 @@ def live_data_sides(block: dict) -> dict:
 
     ⛔ The one derivation of a step's placement, which the loader holds and the
     carrier performs: a phase `sides` does not name falls where `order` says, and
-    a `rehearse` the step does not state has no side at all.
+    a `preview` or `rehearse` the step does not state has no side at all.
     """
     placed = block.get("sides") if isinstance(block.get("sides"), dict) else {}
     out = {}
     for phase in LIVE_DATA_PHASES:
-        if phase == "rehearse" and not (
-            isinstance(block.get("rehearse"), str) and block["rehearse"].strip()
-        ):
+        if phase in LIVE_DATA_OPTIONAL and live_data_command(block, phase) is None:
             out[phase] = None
             continue
         out[phase] = placed.get(phase, block.get("order"))
@@ -6522,6 +6686,7 @@ def _validate_one_live_data_step(
                 f"{at}.backup.{key}",
                 "required, and a non-empty command stated whole (§ 35).",
             )
+    _validate_live_data_preview(at, block, declared)
     for key in ("apply", "rehearse", "record"):
         if key in block and (
             not isinstance(block[key], str) or not block[key].strip()
@@ -6562,6 +6727,50 @@ def _validate_one_live_data_step(
     _validate_live_data_sides(at, block, declared, facts)
 
 
+def _validate_live_data_preview(at: str, block: dict, declared: set) -> None:
+    """`preview`, a read-only listing of the pending writes that is never a rehearsal.
+
+    ⛔ A mapping rather than a command, because where the listing lands is part of
+    what is stated: the output whole, or the file `at` names (§ 35).
+    """
+    if "preview" not in block:
+        return
+    preview = block["preview"]
+    if not isinstance(preview, dict):
+        raise ConfigError(
+            f"{at}.preview",
+            "must be a mapping of `run`, the read-only command printing the writes "
+            "this deploy would make, and optionally `at`, the file it writes them to "
+            "(§ 35). Omit it where the project has no preview.",
+        )
+    inside = {
+        path[len("preview."):]
+        for path in declared
+        if path.startswith("preview.") and "." not in path[len("preview."):]
+    }
+    for stated_key in preview:
+        if stated_key not in inside:
+            raise ConfigError(
+                f"{at}.preview.{stated_key}",
+                "is a key § 35 does not declare on a preview, so it is a fact "
+                f"nothing reads. The keys it declares are: {', '.join(sorted(inside))}.",
+            )
+    if live_data_command(block, "preview") is None:
+        raise ConfigError(
+            f"{at}.preview.run",
+            "required of a stated preview, and a non-empty command stated whole "
+            "(§ 35).",
+        )
+    if "at" in preview and (
+        not isinstance(preview["at"], str) or not preview["at"].strip()
+    ):
+        raise ConfigError(
+            f"{at}.preview.at",
+            "must be a non-empty path, the file the preview command writes to; "
+            "omit it where the command prints its preview (§ 35).",
+        )
+
+
 def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) -> None:
     """`sides`, and the placement no deploy may perform: a write ahead of its evidence.
 
@@ -6575,7 +6784,7 @@ def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) 
         if not isinstance(sides, dict):
             raise ConfigError(
                 f"{at}.sides",
-                "must be a mapping of a phase -- backup, rehearse, apply -- to the "
+                "must be a mapping of a phase -- backup, preview, rehearse, apply -- to the "
                 "side of the invocation it falls on (§ 35). Omit it where every "
                 "phase falls where `order` says.",
             )
@@ -6601,12 +6810,13 @@ def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) 
                     f"{at}.sides.{phase}",
                     f"is {side!r}; the surface states {' | '.join(stated)}.",
                 )
-        if "rehearse" in sides and "rehearse" not in block:
-            raise ConfigError(
-                f"{at}.sides.rehearse",
-                "places a rehearsal this step does not state, which is a placement "
-                "of nothing (§ 35). State `rehearse`, or omit its side.",
-            )
+        for phase in LIVE_DATA_OPTIONAL:
+            if phase in sides and phase not in block:
+                raise ConfigError(
+                    f"{at}.sides.{phase}",
+                    f"places a {phase} this step does not state, which is a "
+                    f"placement of nothing (§ 35). State `{phase}`, or omit its side.",
+                )
     rank = vocabulary(
         facts, "deploy.live_data_step.order",
         "which side of the invocation a live data step falls on",
@@ -8612,6 +8822,13 @@ ADVANCE_OUTCOMES = ("passed", "failed", "skipped", "deselected", "unread", "runn
 ADVANCE_RELEASES = "passed"
 ADVANCE_DEFAULT_HOLDS = "failed"
 ADVANCE_UNREPORTED = "unread"
+FIGURES = "figures"
+FIGURE_BOUNDS = "bounds"
+# ⛔ § 33's figure line: one word, then one number. The name's alphabet is the
+# one `names` is held to at the load, so a name the configuration may carry is a
+# name the command's output can carry and the other way round.
+FIGURE_NAME = re.compile(r"[A-Za-z0-9_.-]+")
+FIGURE_LINE = re.compile(r"([A-Za-z0-9_.-]+)[ \t]+(-?[0-9]+(?:\.[0-9]+)?)")
 
 # Where the command goes inside an `invoke` form (§ 1). ⛔ A form and not a
 # pattern, which is `PLACEHOLDER`'s own reason one facet over: what reads this
@@ -18145,6 +18362,19 @@ def self_test() -> int:
          {"live_data_step": _a_live_data_step()}),
         ("and the same step with a rehearsal stated loads",
          {"live_data_step": _a_live_data_step(rehearse="a-dry-run")}),
+        # ⛔ The preview in both of the shapes § 35 states for where it lands, and
+        # beside no rehearsal -- the target the key was written for.
+        ("a step with a preview printing its writes and no rehearsal loads",
+         {"live_data_step": _a_live_data_step(preview={"run": "a-listing-of-writes"})}),
+        ("a step with a preview written to a stated path loads",
+         {"live_data_step": _a_live_data_step(
+             preview={"run": "a-listing-of-writes", "at": "pending.txt"})}),
+        ("a preview after the invocation, ahead of the rehearsal and the write, loads",
+         {"live_data_step": _a_live_data_step(
+             preview={"run": "a-listing-of-writes"}, rehearse="a-dry-run",
+             order=_the_sides()[0],
+             sides={"preview": _the_sides()[1], "rehearse": _the_sides()[1],
+                    "apply": _the_sides()[1]})}),
         # ⚠️ Both members of each alternation, written out rather than sampled:
         # the fixture carries the surface's *first* member, so an arm that
         # exercised only the fixture would say nothing about the second -- and the
@@ -19769,6 +19999,63 @@ def _planted_violations():
         ("one name carried by two checks", f"deploy[0].{ADVANCE_REQUIRES}[1].reading",
          at("deploy", [_an_advancing_target(
              advance_requires=[{"reading": "a reading"}, {"reading": "a reading"}])])),
+        # ⛔ § 33's `figures`, every arm, each on a target that loads without it.
+        ("figures written as something that is not a list", f"deploy[0].{FIGURES}",
+         at("deploy", [_an_advancing_target(figures="cases")])),
+        ("figures stated as an empty list", f"deploy[0].{FIGURES}",
+         at("deploy", [_an_advancing_target(figures=[])])),
+        ("a check's figures that are not a mapping", f"deploy[0].{FIGURES}[0]",
+         at("deploy", [_an_advancing_target(figures=["cases"])])),
+        ("a check's figures carrying a key § 33 does not declare",
+         f"deploy[0].{FIGURES}[0].from",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(**{"from": "x"})])])),
+        ("a check's figures naming no check", f"deploy[0].{FIGURES}[0].check",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(check=_ABSENT)])])),
+        ("a check's figures with no command to read them", f"deploy[0].{FIGURES}[0].reads",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(reads="  ")])])),
+        ("one check given two commands", f"deploy[0].{FIGURES}[1].check",
+         at("deploy", [_an_advancing_target(
+             figures=[_a_figures_block(), _a_figures_block()])])),
+        ("a check's figures expecting no figure", f"deploy[0].{FIGURES}[0].names",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(names=[])])])),
+        ("a figure named in more than one word", f"deploy[0].{FIGURES}[0].names[0]",
+         at("deploy", [_an_advancing_target(
+             figures=[_a_figures_block(names=["case count"])])])),
+        ("one figure expected twice", f"deploy[0].{FIGURES}[0].names",
+         at("deploy", [_an_advancing_target(
+             figures=[_a_figures_block(names=["cases", "cases"])])])),
+        ("a bound beside a target that advances nothing",
+         f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}",
+         at("deploy", [_a_deploy_target(
+             figures=[_a_figures_block(bounds=[{"figure": "cases", "min": 1}])])])),
+        ("bounds stated as an empty list", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(bounds=[])])])),
+        ("a bound that is not a mapping", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0]",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(bounds=["cases"])])])),
+        ("a bound carrying a key § 33 does not declare",
+         f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0].floor",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases", "floor": 1}])])])),
+        ("a bound on a figure `names` does not carry",
+         f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0].figure",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "score", "min": 1}])])])),
+        ("one figure bounded twice", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[1].figure",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases", "min": 1}, {"figure": "cases", "max": 9}])])])),
+        ("a bound stating neither a min nor a max",
+         f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0]",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases"}])])])),
+        ("a bound written as a word", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0].min",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases", "min": "ten"}])])])),
+        ("a bound written as a boolean", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0].max",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases", "max": True}])])])),
+        ("a bound whose min is above its max", f"deploy[0].{FIGURES}[0].{FIGURE_BOUNDS}[0]",
+         at("deploy", [_an_advancing_target(figures=[_a_figures_block(
+             bounds=[{"figure": "cases", "min": 9, "max": 1}])])])),
         # § 35's block, one plant per arm, every one of them on a target this list
         # has already shown loads — so a refusal here is the block's and never the
         # target's. ⚠️ The block's own absence is **not** planted: § 35 makes an
@@ -19820,6 +20107,23 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(apply="   "))])),
         ("a rehearsal written blank", "deploy[0].live_data_step.rehearse",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(rehearse="   "))])),
+        # ⛔ The preview's own shape: a mapping, its keys, a `run` and an `at` that
+        # each name something (§ 35).
+        ("a preview stated as a bare command", "deploy[0].live_data_step.preview",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview="a-listing-of-writes"))])),
+        ("a key § 35 declares on no preview", "deploy[0].live_data_step.preview.format",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes", "format": "json"}))])),
+        ("a preview with no command to run", "deploy[0].live_data_step.preview.run",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"at": "pending.txt"}))])),
+        ("a preview command written blank", "deploy[0].live_data_step.preview.run",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "   "}))])),
+        ("a preview path written blank", "deploy[0].live_data_step.preview.at",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes", "at": "  "}))])),
         ("a record command written blank", "deploy[0].live_data_step.record",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(record="   "))])),
         ("who performs the write, outside its alternation",
@@ -19870,6 +20174,20 @@ def _planted_violations():
          "deploy[0].live_data_step.sides.rehearse",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
              sides={"rehearse": _the_sides()[0]}))])),
+        ("a side for a preview the step does not state",
+         "deploy[0].live_data_step.sides.preview",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             sides={"preview": _the_sides()[0]}))])),
+        ("a preview placed before the backup it follows",
+         "deploy[0].live_data_step.sides.preview",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes"}, order=_the_sides()[1],
+             sides={"preview": _the_sides()[0]}))])),
+        ("a write placed before the preview it follows",
+         "deploy[0].live_data_step.sides.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             preview={"run": "a-listing-of-writes"},
+             sides={"preview": _the_sides()[1], "apply": _the_sides()[0]}))])),
         ("a side for a phase § 35 does not declare",
          "deploy[0].live_data_step.sides.record",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
@@ -23094,6 +23412,21 @@ def _advance_requires_suite(check, facts: dict) -> None:
     check("a target naming a tier its project states loads",
           refusal is None, f"refused on {refusal!r}")
 
+    figured = _a_valid_example()
+    figured["deploy"] = [
+        _a_deploy_target(figures=[_a_figures_block()]),
+    ]
+    refusal = _refused(figured)
+    check("a target that advances nothing may still read a check's figures",
+          refusal is None, f"refused on {refusal!r}")
+    figured["deploy"] = [_an_advancing_target(figures=[
+        _a_figures_block(names=["cases", "score"], bounds=[
+            {"figure": "cases", "min": 1}, {"figure": "score", "min": 0.5, "max": 1}]),
+    ])]
+    refusal = _refused(figured)
+    check("an advancing target bounding two figures, one by both ends, loads",
+          refusal is None, f"refused on {refusal!r}")
+
     surface_rows = _surface_advance_outcomes()
     check(
         "the surface's outcome table and the carrier's outcomes are the same set",
@@ -23186,6 +23519,20 @@ def _advance_requires_suite(check, facts: dict) -> None:
             check(label, False, "parsed")
 
 
+def _a_figures_block(**overrides) -> dict:
+    """One § 33 `figures` entry that loads, for the arms that plant one key wrong.
+
+    ⚠️ `_ABSENT` drops a key, which is how an arm plants a key's absence.
+    """
+    block = {"check": "a smoke run", "reads": "printf 'cases 3\\n'", "names": ["cases"]}
+    for key, value in overrides.items():
+        if value is _ABSENT:
+            block.pop(key, None)
+        else:
+            block[key] = value
+    return block
+
+
 def _an_advancing_target(**overrides) -> dict:
     """`_a_deploy_target` that moves its items, for § 33's `advance_requires`.
 
@@ -23276,9 +23623,9 @@ def _a_live_data_step(**overrides) -> dict:
     ⛔ Built here rather than borrowed from whichever example carries the facet,
     for `_a_deploy_target`'s reason: a plant that broke one key of a shipped file
     would stop asserting the moment that file grew a second target.
-    ⚠️ It states no `rehearse`, that being the one key § 35 lets a block omit, so
-    the arms about it state it themselves and the arm about its absence is the
-    fixture as it stands.
+    ⚠️ It states neither `preview` nor `rehearse`, those being the two commands
+    § 35 lets a block omit, so the arms about each state it themselves and the arm
+    about their absence is the fixture as it stands.
     """
     step = {
         "backup": {"run": "a-dump", "verify": "a-read-back"},
