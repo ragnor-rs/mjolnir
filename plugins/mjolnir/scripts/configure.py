@@ -552,6 +552,28 @@ ANSWERED_BY: dict[str, Answer] = {
         "Who is allowed to set an item's priority? ⛔ The writer question, which "
         "no tracker records and which is therefore a person's to answer (§ 4.2).",
     ),
+    "work_item.classification.carrier": ask(
+        "Does a filing classify each item with labels from a closed list this "
+        "project keeps -- a component, an area -- rather than from whatever the "
+        "repository's label set holds? Leave it unstated to file as before; "
+        "state `none` with the reason where labels classify nothing here (§ 4.9).",
+    ),
+    "work_item.classification.name": ask(
+        "What is that classification called -- the word a report uses for it?",
+    ),
+    "work_item.classification.values": detect(
+        TRACKER_VOCABULARY,
+        "the labels a filing may classify an item with, picked from the "
+        "repository's own label list",
+    ),
+    "work_item.classification.at_least": ask(
+        "How many of those labels must one item carry at least? Leave it unstated "
+        "for one.",
+    ),
+    "work_item.classification.at_most": ask(
+        "How many of them may one item carry at most? Leave it unstated for no "
+        "upper bound.",
+    ),
     "work_item.grouping.carrier": ask(
         "How is the grouping above an item carried -- the iteration, sprint, "
         "version or milestone it belongs to?",
@@ -2554,6 +2576,7 @@ VOCABULARY_FOR = {
     "work_item.priority.values": "labels",
     "work_item.grouping.label_prefix": "labels",
     "work_item.code_root.label_prefix": "labels",
+    "work_item.classification.values": "labels",
     "tracker.status_field.name": "status_fields",
 }
 

@@ -2818,6 +2818,62 @@ question a role has to ask before it publishes a grouping, not derivable from th
 a key still unread when that role is written is § 1's retirement argument with a project's own
 answer behind it.
 
+### 4.9 Classification — the closed set of labels an item is filed under
+
+```yaml
+work_item:
+  classification:
+    carrier: label | none        # absent_reason
+    name: "component"            # when carrier is label; what the axis is called in a report
+    values: [backend, frontend]  # when carrier is label; the closed set, written as a list
+    at_least: 1                  # when carrier is label; 1 where unstated
+    at_most: 2                   # when carrier is label; no upper bound where unstated
+    absent_reason: "…"           # required when carrier is none
+    revisit_when: "…"
+```
+
+The labels a filing role classifies an item with, where those are a closed list the project keeps
+rather than whatever the repository's label set holds. A repository's set also carries the host's
+own defaults and labels left over from older practice, so a filing that picks from it can classify
+an item with a label nobody meant as a classification, or leave it with none. **`values` is the whole
+of what may be picked, and `at_least` and `at_most` bound how many of them one item carries.** No
+operation is added to [§ 3](#3-tracker-port) for it: the labels are written through `set_labels` and
+read back through `read_item`, as § 4.6's `label` carrier is.
+
+**A label the item carries is accounted for by this set or by the key that owns it, and by nothing
+else.** The keys that own a label are every other facet whose carrier is `label` (§ 4.1, § 4.3,
+§ 4.6, § 4.7, § 4.8), through its `label_prefix` or, where it states none, its own `values`; § 27's
+`people` under `key: label`, through its `label_prefix`; the label a
+[§ 5](#5-readiness-gate--an-ordered-predicate-list) `label_absent` entry names, and the label a
+[§ 7](#an-item-a-project-routes-to-a-carrier-of-its-own) route names. A label none of those accounts
+for is refused, which is what keeps a host default out of the place a classification goes. A value
+in `values` that one of those keys also owns is refused at load: two keys would each read the same
+label as their own fact.
+
+The reader answers the question for the labels an item carries, and the filing role asks it twice:
+when it picks, and when it reads the item back.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --classification-for <every label the item carries>
+```
+
+| what comes back | what it means |
+|---|---|
+| `holds` | the item carries between `at_least` and `at_most` of `values`, and every other label it carries is accounted for |
+| `refused` | each problem named: too few, too many, or a label nothing accounts for, with the label |
+| `none` | the project states that it classifies with no closed set (`carrier: none`), with its reason; nothing is held |
+| `unstated` | the project states no facet, and the filing role files as it did before the key existed |
+
+**A request the set cannot place is reported, never forced.** The filing role picks from `values`
+and from nothing else. Where none of them fits the request, it says so in its reply, naming the set,
+and it neither invents a label nor files the item with none. Which label the request should have is
+then the person's to answer.
+
+`carrier: none` with a stated reason is [§ 4.3](#43-estimate)'s first-class setting: a project whose
+labels carry no classification states that, and `revisit_when` carries the trigger that would give it
+a set. A project that writes no facet at all files exactly as before, since the facet is new and a
+key that became required would invalidate every configuration written before it.
+
 ## 5. Readiness gate — an ordered predicate list
 
 ```yaml
