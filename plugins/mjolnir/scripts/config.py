@@ -3687,6 +3687,7 @@ class Config:
             "advances": entry.get("advances"),
             "requires_role": entry.get("requires_role"),
             "grouping": entry.get("grouping"),
+            "excludes": dict(entry.get(EXCLUDES) or {}),
             "choices": shown["choices"],
             "commit": commit,
         }
@@ -6223,10 +6224,64 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # one § 33 has with § 16 over `requires` -- the shape is held where the
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
+        _validate_excludes(where, entry, data)
         _validate_advance_requires(where, entry, data, facts)
         _validate_after_verified(where, entry, facts)
         _validate_figures(where, entry, facts)
         _validate_grouping_placed(where, entry)
+
+
+def _validate_excludes(where: str, entry: dict, data: dict) -> None:
+    """§ 33's `excludes` on one target: the stated labels and types it leaves out.
+
+    ⚠️ Optional: a target that omits it leaves nothing out, which is every
+    target before the key existed. ⛔ What a stated block has to *be* is held
+    here, every arm refusing rather than skipping -- an exclusion a reader could
+    not make sense of is one whose skip would hold a release, or advance an item,
+    nobody meant to.
+    """
+    if EXCLUDES not in entry:
+        return
+    at = f"{where}.{EXCLUDES}"
+    block = entry[EXCLUDES]
+    if not isinstance(block, dict) or not block:
+        raise ConfigError(
+            at,
+            f"is {block!r}; it must be a block naming "
+            f"{' and/or '.join(f'`{key}`' for key in EXCLUDES_KEYS)}, each a list of "
+            "the words that leave an item out (§ 33). Omit the key where this "
+            "target leaves nothing out.",
+        )
+    for key, words in block.items():
+        if key not in EXCLUDES_KEYS:
+            raise ConfigError(
+                f"{at}.{key}",
+                f"is not one of {', '.join(f'`{one}`' for one in EXCLUDES_KEYS)} "
+                "(§ 33). An item is left out by a label or a type it states, and "
+                "never by its title, which is prose and changes.",
+            )
+        if (
+            not isinstance(words, list)
+            or not words
+            or not all(isinstance(word, str) and word.strip() for word in words)
+        ):
+            raise ConfigError(
+                f"{at}.{key}",
+                f"is {words!r}; it must be a non-empty list of non-empty words "
+                "(§ 33), each matched whole against what an item carries.",
+            )
+    if entry.get("requires_role") == "none" and entry.get("advances") == "none":
+        raise ConfigError(
+            at,
+            "is stated beside `requires_role: none` and `advances: none`, which "
+            "read no set for it to leave anything out of (§ 33).",
+        )
+    if "types" in block and _get(data, "work_item.type.carrier") == "none":
+        raise ConfigError(
+            f"{at}.types",
+            "is stated while `work_item.type.carrier` is `none`, so no item "
+            "carries a type for it to match (§ 33, § 4.1).",
+        )
 
 
 def _validate_not_implemented(where: str, entry: dict) -> None:
@@ -9780,6 +9835,9 @@ def _not_implemented_refusal(entry: dict) -> "ConfigError | None":
 # disagree. ⛔ `passed` is the one outcome that releases an advance, and
 # `failed` the one the stated default holds on where a target names no check.
 ADVANCE_REQUIRES = "advance_requires"
+# § 33's leaving out of a target's set: the key, and the two things it names.
+EXCLUDES = "excludes"
+EXCLUDES_KEYS = ("labels", "types")
 ADVANCE_OUTCOMES = ("passed", "failed", "skipped", "deselected", "unread", "running")
 ADVANCE_RELEASES = "passed"
 ADVANCE_DEFAULT_HOLDS = "failed"
@@ -19253,6 +19311,12 @@ def self_test() -> int:
           "publishes": True,
           "advances": _a_role_some_status_maps(),
           "batch": "a-batch-command"}),
+        # ⛔ § 33's `excludes`, the shape the item names: a bar over a grouping
+        # leaving the release's own tracking items out by label and by type.
+        ("a precondition leaving the release's own items out by label and type loads",
+         {"grouping": _a_grouping_the_example_plans_in(),
+          "requires_role": _a_role_some_status_maps(),
+          EXCLUDES: {"labels": ["release"], "types": ["Chore"]}}),
     ):
         loaded = _a_valid_example()
         loaded["deploy"] = [_a_deploy_target(**overrides)]
@@ -21436,6 +21500,26 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(publishes="yes")])),
         ("a target that publishes while naming no grouping", "deploy[0].publishes",
          at("deploy", [_a_deploy_target(publishes=True)])),
+        # ⛔ § 33's `excludes`, every arm the reader refuses.
+        ("an exclusion that is not a block", f"deploy[0].{EXCLUDES}",
+         at("deploy", [_a_deploy_target(
+             requires_role=_a_role_some_status_maps(), batch="a-command",
+             **{EXCLUDES: ["release"]})])),
+        ("an exclusion by title, which is prose", f"deploy[0].{EXCLUDES}.titles",
+         at("deploy", [_a_deploy_target(
+             requires_role=_a_role_some_status_maps(), batch="a-command",
+             **{EXCLUDES: {"titles": ["Release"]}})])),
+        ("an exclusion naming an empty list", f"deploy[0].{EXCLUDES}.labels",
+         at("deploy", [_a_deploy_target(
+             requires_role=_a_role_some_status_maps(), batch="a-command",
+             **{EXCLUDES: {"labels": []}})])),
+        ("an exclusion on a target reading no set", f"deploy[0].{EXCLUDES}",
+         at("deploy", [_a_deploy_target(**{EXCLUDES: {"labels": ["release"]}})])),
+        ("an exclusion by type where no item carries one", f"deploy[0].{EXCLUDES}.types",
+         lambda data: at("work_item.type", {"carrier": "none", "absent_reason": "planted"})(
+             at("deploy", [_a_deploy_target(
+                 requires_role=_a_role_some_status_maps(), batch="a-command",
+                 **{EXCLUDES: {"types": ["Chore"]}})])(data))),
         # ⛔ § 33's `advance_requires`, every arm. ⚠️ The base example states no
         # tier, so the tier plant is the `carrier: none` arm: a project with no
         # tier has none for a check to name.
