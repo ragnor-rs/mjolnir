@@ -167,6 +167,16 @@ def _repo() -> str:
             "first; a direct call bypasses the one place the project is stated.",
         )
     repo = _bound.get("host.repo")
+    # ⛔ An absent slug is refused as the configuration's own error and never
+    # reached as `None.count`: a view bound before every required key is written
+    # -- setup's provisional one -- can carry none, and an `AttributeError` is
+    # the one failure no caller of the port catches.
+    if not isinstance(repo, str) or not repo:
+        raise port.ConfigError(
+            "host.repo",
+            "is not stated, and plain issues are addressed by nothing else: the "
+            "repository's `owner/name` is the whole address of this tracker",
+        )
     if repo.count("/") != 1:
         raise port.ConfigError(
             "host.repo",

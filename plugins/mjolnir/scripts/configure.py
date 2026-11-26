@@ -2019,7 +2019,7 @@ def interrogate(skills_root: str, answers: dict | None = None) -> dict:
         })
 
     report.append(_definitions(skills_root, detected))
-    report.append(_vocabularies(answers, menus))
+    report.append(_vocabularies(answers, menus, detected))
     return {
         "code_root": code_root,
         "detected": detected,
@@ -2124,17 +2124,26 @@ class _Provisional:
     required key is written, which is exactly the state this step is in: a
     provisional view that went through the reader would be refused for want of
     the answers the interrogation is trying to make unnecessary.
+
+    ⛔ **What the first pass detected answers a key the answers do not.** A
+    detected value is never put back as a question, so a view built from the
+    answers alone would hide from the tracker the one address it was read for --
+    `host.repo` being the whole address of a tracker that is the code host's own.
+    An answer still wins over a detection, since it is the person's statement.
     """
 
-    def __init__(self, answers: dict):
+    def __init__(self, answers: dict, detected: dict | None = None):
         self._answers = answers
+        self._detected = detected or {}
 
     def get(self, path: str, default=None):
         found = _at(self._answers, path)
+        if found is None:
+            found = self._detected.get(path)
         return default if found is None else found
 
 
-def _vocabularies(answers: dict, menus: dict) -> dict:
+def _vocabularies(answers: dict, menus: dict, detected: dict | None = None) -> dict:
     """The vocabularies the tracker itself states, through the port.
 
     ⛔ Through the port and never around it: the operation is the one seam a
@@ -2154,7 +2163,7 @@ def _vocabularies(answers: dict, menus: dict) -> dict:
                 "this step is run again with it in hand",
         }
     try:
-        tracker = tracker_port.Port(_Provisional(answers))
+        tracker = tracker_port.Port(_Provisional(answers, detected))
         if not tracker.implements(READ_VOCABULARY):
             return {
                 "reading": TRACKER_VOCABULARY,
@@ -2183,6 +2192,26 @@ def _vocabularies(answers: dict, menus: dict) -> dict:
         reading = published.get(vocabulary)
         if isinstance(reading, dict) and reading.get("answer") == READ:
             menus[key] = reading["values"]
+    # ⛔ A vocabulary the tracker could not be asked for makes the reading
+    # unestablished, even beside one that came back: a `read` there would say the
+    # tracker was interrogated when part of it never was. What did come back is
+    # still a menu above, and each part's own reason is named.
+    missed = sorted(
+        name for name, one in published.items()
+        if isinstance(one, dict)
+        and one.get("answer") == tracker_port.VOCABULARY_UNESTABLISHED
+    )
+    if missed:
+        return {
+            "reading": TRACKER_VOCABULARY,
+            "answer": UNESTABLISHED,
+            "because":
+                f"`{kind}` could not establish "
+                + "; ".join(
+                    f"{name}: {published[name].get('because')}" for name in missed
+                ),
+            "vocabularies": published,
+        }
     return {
         "reading": TRACKER_VOCABULARY,
         "answer": READ,
@@ -3285,6 +3314,66 @@ def self_test() -> int:
     check("and the reason says the question has not been answered yet",
           "has not been answered" in nothing["because"],
           f"said {nothing['because']!r}")
+
+    # ⛔ The tracker half with the tracker answered and its address only
+    # detected: the first pass reads the slug off the remote, and a tracker that
+    # is the code host's own is addressed by nothing else. Driven through
+    # `interrogate` in a real tree, against a transport standing in for the host.
+    from adapters import github_issues
+    addressing = {
+        "tracker": {"kind": "github-issues"},
+        "branch_model": {"kind": "worktree"},
+        "host": {"landing": {"method": "squash", "delete_branch": "host"}},
+    }
+
+    def a_host(args, parse):
+        if args[:2] == ["label", "list"]:
+            return [{"name": "a-label"}, {"name": "another-label"}]
+        if args[:2] == ["api", "graphql"]:
+            return {"data": {"repository": {"issueTypes": None}}}
+        raise tracker_port.HostUnavailable(f"no answer planted for {args!r}")
+
+    def tracker_reading(seen):
+        return next(one for one in seen["report"]
+                    if one["reading"] == TRACKER_VOCABULARY)
+
+    standing_transport = github_issues.TRANSPORT
+    github_issues.TRANSPORT = a_host
+    try:
+        remoted = _a_tree({"a-file": "a line\n"})
+        _git(remoted, "init", "-q")
+        _git(remoted, "remote", "add", "origin",
+             "https://a-host.example/an-owner/a-name.git")
+        seen = interrogate(remoted, addressing)
+        reading = tracker_reading(seen)
+        check("with the repository detected and not answered, the slug is "
+              "detected", seen["detected"].get("host.repo") == "an-owner/a-name",
+              f"detected {seen['detected']!r}")
+        check("and the tracker's vocabularies are read through it",
+              reading["answer"] == READ, f"answered {reading!r}")
+        check("and the labels come back as the menu they are",
+              seen["menus"].get("work_item.type.label_prefix")
+              == ["a-label", "another-label"], f"menus {seen['menus']!r}")
+        check("and the statuses with them",
+              bool(seen["menus"].get("statuses")), f"menus {seen['menus']!r}")
+
+        bare = _a_tree({"a-file": "a line\n"})
+        _git(bare, "init", "-q")
+        try:
+            seen = interrogate(bare, addressing)
+            crashed = None
+        except Exception as error:  # the defect this holds: a traceback
+            seen, crashed = None, error
+        check("with no remote and nothing answered, interrogation does not crash",
+              crashed is None, f"raised {crashed!r}")
+        reading = tracker_reading(seen) if seen else {}
+        check("and the tracker reading is unestablished",
+              reading.get("answer") == UNESTABLISHED, f"answered {reading!r}")
+        check("and its reason names `host.repo`",
+              "host.repo" in str(reading.get("because")),
+              f"said {reading.get('because')!r}")
+    finally:
+        github_issues.TRANSPORT = standing_transport
 
     print("\nThe head marker: at the head, not moving, and removable:")
     root = _a_tree({})
