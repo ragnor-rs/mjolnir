@@ -112,11 +112,15 @@ FIELDS = [
     # A custom field, with the site-specific id that is the whole reason a field
     # is addressed by name: readable by name, and refused for a write because
     # this implementation has no shape for its type.
-    {"id": "customfield_10020", "name": "Sprint", "schema": {"type": "array", "items": "json"}},
+    {"id": "customfield_10020", "name": "Sprint", "schema": {"type": "array", "items": "json"},
+     "searchable": True, "clauseNames": ["sprint"]},
     # One list field per element type a write is shaped for.
     {"id": "components", "name": "Parts", "schema": {"type": "array", "items": "component"},
      "searchable": True, "clauseNames": ["component"]},
-    {"id": "fixVersions", "name": "Ships in", "schema": {"type": "array", "items": "version"}},
+    # ⚠️ Three strings for one field, as the host's own catalogue states them: the
+    # display name a write is addressed by, the id, and the clause a query names.
+    {"id": "fixVersions", "name": "Ships in", "schema": {"type": "array", "items": "version"},
+     "searchable": True, "clauseNames": ["fixVersion"]},
     {"id": "customfield_10050", "name": "Areas", "schema": {"type": "array", "items": "option"},
      "searchable": True, "clauseNames": ["cf[10050]", "Areas"]},
     {"id": "customfield_10051", "name": "Readers", "schema": {"type": "array", "items": "user"}},
@@ -1484,6 +1488,8 @@ def self_test() -> int:
     for name, identifier, given, wire in (
         ("Parts", "components", ["One", "Two"], [{"name": "One"}, {"name": "Two"}]),
         ("Ships in", "fixVersions", ["1.0"], [{"name": "1.0"}]),
+        # ⛔ The id names the same field: § 3's one name, stated either way.
+        ("fixVersions", "fixVersions", ["1.0"], [{"name": "1.0"}]),
         ("Areas", "customfield_10050", ["A", "B"], [{"value": "A"}, {"value": "B"}]),
         ("Readers", "customfield_10051", [ME, SOMEBODY],
          [{"id": ME}, {"id": SOMEBODY}]),
@@ -2261,7 +2267,7 @@ def self_test() -> int:
     )
     covering = _example_configuration()
     covering.data["tracker"]["search"] = {
-        "texts": ["title", "body"], "fields": ["Parts", "Areas", "Sprint", "Words"],
+        "texts": ["title", "body"], "fields": ["Parts", "Areas", "Readers", "Words"],
     }
     bind(covering)
     answered = with_host(host(), lambda: search_items("dup word"))
@@ -2280,7 +2286,7 @@ def self_test() -> int:
             f"sent {got(answered, 'jql')!r}",
         )
     for name, refused_on, why in (
-        ("Sprint", "tracker.search.fields", "states no clause"),
+        ("Readers", "tracker.search.fields", "states no clause"),
         ("Words", "tracker.search.fields", "is marked unsearchable"),
         ("Absent", "tracker.search.fields", "the site does not have"),
         ("Story points", "tracker.operations.search_items.Story points", "is not listed"),
@@ -2318,17 +2324,81 @@ def self_test() -> int:
         f"carries {sorted(configuration.groupings or {})!r}",
     )
     if scope is not None:
-        in_a_field = {**scope, "name": "release_scope"}
+        # ⚠️ The example's field is a placeholder no catalogue answers to, so the
+        # field is one this site holds; the rest of the block is the example's.
+        in_a_field = {**scope, "name": "release_scope", "field": "Ships in"}
         grouped = host()
         answered = with_host(
             grouped, lambda: under_test.grouping_items(A_RELEASE, grouping=in_a_field)
         )
         check(
-            "a grouping held in a field becomes one clause of one bounded query",
-            got(answered, "jql") == as_query(
-                project, None, [], {str(scope.get("field")): A_RELEASE}
-            ),
+            "a grouping held in a field becomes one clause of one bounded query, "
+            "naming the field by the catalogue's clause",
+            got(answered, "jql") == as_query(project, None, [], {"fixVersion": A_RELEASE}),
             f"sent {got(answered, 'jql')!r}",
+        )
+        # ⛔ § 3's one name: the id and the display name each reach the same clause,
+        # which neither of them is.
+        for stated, clause in (
+            ("fixVersions", "fixVersion"),
+            ("Sprint", "sprint"),
+            ("customfield_10020", "sprint"),
+        ):
+            either = host()
+            named = with_host(
+                either,
+                lambda stated=stated: under_test.grouping_items(
+                    A_RELEASE, grouping={**in_a_field, "field": stated}
+                ),
+            )
+            check(
+                f"a grouping field named `{stated}` is queried by the clause `{clause}`",
+                got(named, "jql") == as_query(project, None, [], {clause: A_RELEASE}),
+                f"sent {got(named, 'jql')!r}",
+            )
+        # ⛔ A name the catalogue does not answer to is refused naming the key that
+        # stated it, and no query is sent under it.
+        for stated, why in (
+            ("Fix versions", "matches nothing on this site"),
+            ("Words", "is marked unsearchable"),
+            ("Time tracking", "states no clause"),
+        ):
+            unnamed = host()
+            reported = with_host(
+                unnamed,
+                lambda stated=stated: refused(
+                    lambda: under_test.grouping_items(
+                        A_RELEASE, grouping={**in_a_field, "field": stated}
+                    )
+                ),
+            )
+            check(
+                f"a grouping field that {why} is refused naming "
+                "`work_item.grouping.field`, before any query",
+                reported == "work_item.grouping.field"
+                and not any("search" in call for call in unnamed.calls),
+                f"reported {reported!r} after {unnamed.calls}",
+            )
+        # ⛔ A name that is one field's id and another's display name is two fields,
+        # refused as a display name two fields carry is.
+        twice = host({"<fields>": FIELDS + [
+            {"id": "customfield_10070", "name": "fixVersions",
+             "schema": {"type": "string"}, "searchable": True, "clauseNames": ["cf[10070]"]},
+        ]})
+        reported = with_host(
+            twice,
+            lambda: refused(
+                lambda: under_test.grouping_items(
+                    A_RELEASE, grouping={**in_a_field, "field": "fixVersions"}
+                )
+            ),
+        )
+        check(
+            "a name that is one field's id and another's display name is refused, "
+            "before any query",
+            reported == "work_item.grouping.field"
+            and not any("search" in call for call in twice.calls),
+            f"reported {reported!r} after {twice.calls}",
         )
         check(
             "and it carries no status clause, the set being every state the "
