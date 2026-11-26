@@ -140,6 +140,11 @@ MOVE_OFFERS = {
     "customfield_10030": {
         "name": "Story points", "required": False, "schema": {"type": "number"},
     },
+    # One field per remaining shape a move's read-back compares by: a list, a
+    # composite and a document.
+    "components": {"name": "Parts", "schema": {"type": "array", "items": "component"}},
+    "timetracking": {"name": "Time tracking", "schema": {"type": "timetracking"}},
+    "description": {"name": "Description", "schema": {"type": "string"}},
     # Offered and of a type no write is shaped for, so the refusal of it is about
     # the type rather than the move.
     "customfield_10020": {
@@ -1225,6 +1230,39 @@ def self_test() -> int:
         == RESOLUTIONS[0].lower(),
         f"read {answered!r}",
     )
+    stating([
+        {"status": finished, "field": "Parts", "value": ["One", "Two"]},
+        {"status": finished, "field": "Time tracking", "value": "2h"},
+        {"status": finished, "field": "Description", "value": "a closing note"},
+    ])
+    shaped = host()
+    answered = with_host(shaped, lambda: set_state(key(1), status=finished))
+    check(
+        "a list, a composite and a document a move carries each read back as landed",
+        got(answered, "status") == finished
+        and (got(answered, "fields") or {}).get("Time tracking") == {"originalEstimate": "2h"},
+        f"read {answered!r}",
+    )
+    for field, kept in (
+        ("Parts", lambda sent: {**sent, "components": [{"name": "One"}]}),
+        ("Time tracking", lambda sent: {**sent, "timetracking": {"originalEstimate": "1h"}}),
+        ("Description", lambda sent: {**sent, "description": as_document("another note")}),
+    ):
+        def altering(path, _params, body, kept=kept):
+            return short_host._do_transition(
+                path, {}, {**body, "fields": kept(body.get("fields") or {})}
+            )
+
+        short_host = host()
+        short_host.answers["transition"] = altering
+        reported = with_host(
+            short_host, lambda: unavailable(lambda: set_state(key(1), status=finished))
+        )
+        check(
+            f"and `{field}` read back as something else is reported, not taken as landed",
+            reported is not None and f"`{field}`" in reported,
+            f"got {reported!r}",
+        )
     elsewhere = host()
     with_host(elsewhere, lambda: set_state(key(1), status=second))
     check(
