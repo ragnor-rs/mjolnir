@@ -73,6 +73,7 @@ from __future__ import annotations
 import argparse
 import copy
 import fnmatch
+import functools
 import json
 import os
 import re
@@ -1741,6 +1742,8 @@ def questions(
             continue
         if answers is not None and _at(answers, path) is not None:
             continue
+        if answers is not None and _decided(surface_text, facts, answers, path):
+            continue
         # ⛔ **A key a configured project left unset has been answered**, and the
         # answer is that it states none. The surface's own rule -- a key carrying
         # neither requiredness marker is legitimately unset -- so a re-run that
@@ -1798,6 +1801,198 @@ def questions(
             "absent_case": _absent_facet(facts, path),
         })
     return out
+
+
+# A literal discriminator: the one value a fence shows for a block's `kind` or
+# `carrier`, rather than the alternation the facet's own statement carries.
+DISCRIMINATORS = ("kind", "carrier")
+LITERAL = re.compile(r"^[A-Za-z][\w-]*$")
+
+
+@functools.lru_cache(maxsize=4)
+def scopes(surface_text: str) -> dict[str, list[tuple[str, str] | None]]:
+    """`path -> the discriminator each fence declaring it is shown under`.
+
+    ⛔ Read off the surface's own fences rather than listed: a fence that shows a
+    block's `kind` (or `carrier`) as **one** value -- `tracker:` with
+    `kind: jira`, `day_log.destination` with `kind: google-sheet` -- states what
+    that kind's block carries, so every other key it shows under the block is
+    that kind's. A fence showing the alternation, or none, declares the key for
+    every kind, and that is written as `None`.
+
+    ⚠️ Per declaration rather than per key, because one key may be shown in both
+    shapes: it is scoped only where **every** fence declaring it is scoped, and
+    a key one unscoped fence declares stands whatever the kind.
+    """
+    found: dict[str, list[tuple[str, str] | None]] = {}
+    for _heading, block in config._fences(surface_text):
+        stack: list[tuple[int, str]] = []
+        shown: list[str] = []
+        fixed: dict[str, tuple[str, str]] = {}
+        for line in block.splitlines():
+            entry = ENTRY_LINE.match(line) or KEY_LINE.match(line)
+            if not entry:
+                continue
+            indent = len(entry.group("indent"))
+            while stack and stack[-1][0] >= indent:
+                stack.pop()
+            path = ".".join([key for _, key in stack] + [entry.group("key")])
+            if not ENTRY_LINE.match(line):
+                stack.append((indent, entry.group("key")))
+            shown.append(normalized(path))
+            parent, _, leaf = normalized(path).rpartition(".")
+            value = line.split(":", 1)[1].split("#", 1)[0].strip().strip("\"'")
+            if parent and leaf in DISCRIMINATORS and LITERAL.match(value):
+                fixed.setdefault(parent, (f"{parent}.{leaf}", value))
+        for path in shown:
+            scope = next(
+                (on for block_path, on in fixed.items()
+                 if path.startswith(f"{block_path}.") and path != on[0]),
+                None,
+            )
+            found.setdefault(path, []).append(scope)
+    return found
+
+
+# Where a key the surface shows **relatively** sits in a configuration. ⛔
+# Grammar, for `COLLECTIONS`' reason: § 4.1, § 4.2 and § 5 show their keys in a
+# fence that opens at an indent, so the walk yields `role` where a project writes
+# `statuses[].role`, and nothing in the fence says which block it is inside. A
+# reading that guessed by suffix would answer § 4.2's `writer` with § 4.6's
+# `work_item.priority.writer`, which is a different key.
+ANCHORS = {
+    "type_branch_prefix": "work_item",
+    "role": "statuses",
+    "writer": "statuses",
+    "check": "readiness",
+    "on_fail": "readiness",
+}
+
+
+def absolute(path: str) -> str:
+    """The path a configuration writes this declared key at."""
+    head = path.split(".", 1)[0]
+    return f"{ANCHORS[head]}.{path}" if head in ANCHORS else path
+
+
+# The facets whose keys no stated block of their own rules out, because what
+# makes them unreachable is **another** facet's answer. ⛔ Each is a decision the
+# surface states in prose and no fence carries, which is why the reason sits
+# beside it -- the same placement `COLLECTIONS` above has for its grammar.
+UNREACHABLE: dict[str, tuple[str, object]] = {
+    "work_item.code_root": (
+        "§ 4.7 answers which of several repositories an item belongs to, and the "
+        "reader refuses the facet where `roots.code` carries one root",
+        lambda answers, facts: _one_root(answers, facts),
+    ),
+    "language.artifacts.billing_report": (
+        "the billing report is written by § 37's role alone, which a project "
+        "answering `billing.carrier: none` never runs",
+        lambda answers, facts: _at(answers, "billing.carrier") == ABSENT,
+    ),
+    "language.artifacts.hours_breakdown": (
+        "a period's hours are broken down by § 37's role alone, which a project "
+        "answering `billing.carrier: none` never runs",
+        lambda answers, facts: _at(answers, "billing.carrier") == ABSENT,
+    ),
+    "language.artifacts.day_log": (
+        "the day log is written by the role `carriers.day_log` maps, and a "
+        "project whose `carriers` maps none keeps no day log",
+        lambda answers, facts: (
+            isinstance(_at(answers, "carriers"), dict)
+            and "day_log" not in _at(answers, "carriers")
+        ),
+    ),
+}
+
+
+def _one_root(answers: dict, facts: dict) -> bool:
+    """Whether the answers state exactly one code root, read as the reader reads it."""
+    if _at(answers, "roots.code") is None:
+        return False
+    try:
+        roots, _collection = config._code_roots(answers, facts)
+    except ConfigError:
+        return False
+    return len(roots) < 2
+
+
+def _decided(surface_text: str, facts: dict, answers: dict, path: str) -> str | None:
+    """Why the answers already rule this key out, or `None` where it stands.
+
+    ⛔ Each reading is about what the answers **state**, or what the surface's own
+    default states for them -- never about a block they merely leave out: a key
+    whose block nothing has addressed yet is still a question, which is the line
+    `questions` draws for an optional key too.
+
+    - **A key the surface shows relatively** (`role` under § 4.2's statuses,
+      `on_fail` under § 5's predicates) is read at the path `ANCHORS` places it,
+      and every reading below is taken there.
+    - **A key under a list** is answered by the list's entries, and under `[]`
+      by the statement that there are none.
+    - **A key under a value** -- `roots.code: "."` -- addresses a shape the
+      project did not choose.
+    - **A key under `carrier: none`** is unreachable: the absence decided it.
+    - **A key under a block every named root states for itself** is answered
+      per root, so the project-level question has nothing left to ask.
+    - **A key every fence shows under one kind** stands only where the answers
+      state that kind, and the answers state another -- or leave it to the
+      surface's own default, which is then the kind they state. A key marked
+      `# required` with no condition is never scoped this way.
+
+    ⚠️ And a key `private.keys` names, whose value lives in § 28's source
+    rather than here, plus the cross-facet cases `UNREACHABLE` carries.
+    """
+    private = _at(answers, "private.keys")
+    if isinstance(private, list) and path in {normalized(str(k)) for k in private}:
+        return "its value lives in `private.source` (§ 28)"
+
+    declared_at, path = path, absolute(path)
+    if path != declared_at and _at(answers, path) is not None:
+        return "the entries the answers state carry it"
+
+    segments = path.split(".")
+    for depth in range(1, len(segments)):
+        prefix = ".".join(segments[:depth])
+        value = _at(answers, prefix)
+        if isinstance(value, list):
+            return f"`{prefix}` is answered as a list, whose entries carry it"
+        if value is not None and not isinstance(value, (dict, list)):
+            return f"`{prefix}` is answered as a value, which has no keys under it"
+        if isinstance(value, dict) and value.get("carrier") == ABSENT:
+            return f"`{prefix}.carrier` is answered `{ABSENT}`"
+
+    named = _at(answers, "roots.code")
+    head = path.split(".", 1)[0]
+    if (
+        isinstance(named, dict) and named
+        and head in (facts.get("per_root") or ())
+        and all(isinstance(e, dict) and e.get(head) is not None for e in named.values())
+    ):
+        return f"every root in `roots.code` states its own `{head}` (§ 1)"
+
+    # ⛔ A key the surface marks `# required` with no condition is every kind's,
+    # whatever kind the fences happen to show it under: `host.repo` is shown only
+    # beside `kind: github`, and scoping it there would stop asking a project on
+    # another host for a key the write then refuses as missing.
+    declared = scopes(surface_text).get(declared_at) or [None]
+    required = declared_at in {normalized(k) for k in facts["required"]}
+    if None not in declared and not required:
+        stated = {
+            on: _at(answers, on) if _at(answers, on) is not None
+            else facts["defaults"].get(on)
+            for on, _value in declared
+        }
+        if all(v is not None for v in stated.values()) and not any(
+            str(stated[on]) == value for on, value in declared
+        ):
+            on = declared[0][0]
+            return f"every fence shows it under another `{on}` than `{stated[on]}`"
+
+    for block, (reason, applies) in UNREACHABLE.items():
+        if (path == block or path.startswith(f"{block}.")) and applies(answers, facts):
+            return reason
+    return None
 
 
 def _owed(facts: dict, answers: dict, path: str) -> bool:
@@ -2987,6 +3182,16 @@ def _an_example(name: str) -> dict:
         return yaml.safe_load(handle.read())
 
 
+def _drop(answers: dict, path: str) -> dict:
+    """The answers with the key at a dotted path taken out, for an arm's red side."""
+    *parents, leaf = path.split(".")
+    node = answers
+    for name in parents:
+        node = node.get(name) or {}
+    node.pop(leaf, None)
+    return answers
+
+
 def _examples() -> list[str]:
     return sorted(
         name for name in os.listdir(config.EXAMPLES)
@@ -3095,6 +3300,134 @@ def self_test() -> int:
         surface_text, answers={"host": {"repo": "a/b"}})}
     check("and neither is one the answers already carry",
           "host.repo" not in carried, "it was asked anyway")
+
+    print("\nWhat the answers already decided is not put again:")
+
+    def standing(answers: dict) -> set[str]:
+        return {one["key"] for one in questions(surface_text, answers)}
+
+    def under(keys: set[str], *prefixes: str) -> list[str]:
+        return sorted(k for k in keys if any(
+            k == p or k.startswith(f"{p}.") for p in prefixes))
+
+    # ⛔ The adopter's shape: a configuration the reader accepts whole, with a
+    # live list per entry facet, one root, the absent facets stated `none`, a
+    # tracker whose kind carries no block, and no day log or billing role.
+    adopter = _an_example("github-issues.yaml")
+    adopter["release"] = {"carrier": ABSENT, "absent_reason": "r"}
+    adopter["carriers"].pop("day_log")
+    adopter["day_log"]["destination"] = {"kind": ABSENT}
+    adopter.setdefault("language", {}).pop("artifacts", None)
+    adopter["readiness"] = [
+        {**entry, "on_fail": "flag"} for entry in adopter["readiness"]]
+    refusal = None
+    try:
+        config.load_text(yaml.safe_dump(adopter, sort_keys=False), _a_tree({}),
+                         check_paths=False)
+    except ConfigError as refused:
+        refusal = str(refused)
+    check("the adopter's configuration is one the reader accepts",
+          refusal is None, f"refused with {refusal!r}")
+    left = standing(adopter)
+    decided = under(
+        left, "role", "writer", "type_branch_prefix", "on_fail", "test_tiers",
+        "release", "deploy", "verify", "language.artifacts.day_log",
+        "language.artifacts.billing_report", "language.artifacts.hours_breakdown",
+        "day_log.destination.columns", "work_item.code_root", "tracker.project",
+        "tracker.status_field", "tracker.lists", "tracker.transitions",
+        "tracker.create_fields", "roots.code.*")
+    check("a configuration the reader accepts puts none of what it decided",
+          not decided, f"still put: {decided!r}")
+    check("while a block it never addressed is still asked",
+          "language.artifacts.session_summary" in left,
+          "an unaddressed key was dropped with the decided ones")
+
+    # Each rule both ways: the decided side above, the undecided side here.
+    bare = copy.deepcopy(adopter)
+    del bare["statuses"], bare["readiness"]
+    check("a list answered with entries puts none of their fields, an "
+          "unanswered one still does",
+          {"role", "writer", "on_fail"} <= standing(bare),
+          f"put {under(standing(bare), 'role', 'writer', 'on_fail')!r}")
+    live = copy.deepcopy(adopter)
+    live["release"] = {"carrier": "list"}
+    check("a facet answered `none` puts none of its keys, a live carrier still "
+          "does", "release.files.path" in standing(live),
+          f"put {under(standing(live), 'release')!r}")
+    no_deploy = copy.deepcopy(adopter)
+    del no_deploy["deploy"]
+    check("`[]` decides the block, and a block left out is still asked",
+          "deploy.choices.name" in standing(no_deploy),
+          f"put {under(standing(no_deploy), 'deploy')[:3]!r}")
+    projects = _an_example("github-projects.yaml")
+    del projects["tracker"]["project"]
+    check("a key one kind's block carries is put under that kind",
+          "tracker.project.owner" in standing(projects),
+          f"put {under(standing(projects), 'tracker')!r}")
+    # ⚠️ `none.yaml` writes `destination: null`, so the kind is the surface's
+    # own default rather than a value the answers state.
+    defaulted = standing(_an_example("none.yaml"))
+    check("a kind left to the surface's default rules out another kind's keys",
+          not under(defaulted, "day_log.destination.columns"),
+          f"put {under(defaulted, 'day_log.destination')!r}")
+    # ⚠️ Every fence shows `host.repo` beside `kind: github`, and the surface
+    # marks it `# required` with no condition, so another host still owes it.
+    hosted = copy.deepcopy(adopter)
+    hosted["host"]["kind"] = "gitlab"
+    del hosted["host"]["repo"]
+    check("a key required of every kind is put whatever kind the fences show",
+          "host.repo" in standing(hosted),
+          f"put {under(standing(hosted), 'host')!r}")
+    sheet = copy.deepcopy(adopter)
+    sheet["day_log"]["destination"] = {"kind": "google-sheet"}
+    check("and the kind that carries them still puts them",
+          "day_log.destination.columns.date" in standing(sheet),
+          f"put {under(standing(sheet), 'day_log.destination')!r}")
+    trello = _an_example("trello.yaml")
+    check("a block every named root states is not asked of the project",
+          not under(standing(trello), "host"),
+          f"put {under(standing(trello), 'host')[:3]!r}")
+    first = next(iter(trello["roots"]["code"].values()))
+    del first["host"]
+    check("and is asked where one root leaves it to the project",
+          "host.repo" in standing(trello),
+          f"put {under(standing(trello), 'host')[:3]!r}")
+    check("§ 4.7's facet is asked where there are several roots",
+          "work_item.code_root.carrier" in standing(_drop(
+              _an_example("trello.yaml"), "work_item.code_root")),
+          "it was dropped with one root's reason")
+    withheld = copy.deepcopy(adopter)
+    del withheld["ordering"]["record"]["dir"]
+    check("a private key left out of the tracked file is asked",
+          "ordering.record.dir" in standing(withheld), "it was dropped")
+    withheld["private"] = {"carrier": "file", "source": "p.yaml",
+                           "keys": ["ordering.record.dir"]}
+    check("and is not where `private.keys` names it",
+          "ordering.record.dir" not in standing(withheld), "it was put")
+    billed = copy.deepcopy(adopter)
+    billed["billing"] = {"carrier": "period"}
+    check("an artifact whose role runs is asked about",
+          "language.artifacts.billing_report" in standing(billed), "it was dropped")
+
+    print("\nWhat the narrowing leaves alone:")
+    unanswered = {one["key"] for one in questions(surface_text)}
+    asked_at_all = {k for k in inventory(surface_text)
+                    if ANSWERED_BY[k].how != NOT_ASKED}
+    check("with no answers, every key the surface states is still put",
+          unanswered == asked_at_all,
+          f"missing {sorted(asked_at_all - unanswered)[:3]!r}")
+    relative = sorted({k.split(".", 1)[0] for k in asked_at_all
+                       if k.split(".", 1)[0] not in blocks(surface_text)})
+    check("every key put that the surface shows relatively has an anchor",
+          set(relative) <= set(ANCHORS), f"unanchored: {relative!r}")
+    check("and every anchor is a block a configuration carries",
+          set(ANCHORS.values()) <= set(blocks(surface_text)),
+          f"anchors {sorted(set(ANCHORS.values()))!r}")
+    reached = {absolute(k) for k in inventory(surface_text)}
+    stale = [b for b in UNREACHABLE
+             if not any(k == b or k.startswith(f"{b}.") for k in reached)]
+    check("every cross-facet case names a block the surface declares",
+          not stale, f"declared nowhere: {stale!r}")
 
     # ⚠️ A vocabulary the tracker published wins over the surface's own set, and
     # it is the menu rather than the value -- so the question stays.
