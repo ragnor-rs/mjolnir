@@ -4461,7 +4461,7 @@ project's configuration, and `plugins/mjolnir/scripts/documents.py` is the one i
 reads them. Two independent implementations in two other projects were what argued for it, and the
 counts behind that are in [`configuration-surface.md`](configuration-surface.md#the-document-checks-two-implementations-and-the-claim-measured-rather-than-taken).
 
-Nine checks, each declaring which of the three kinds it is, and the run prints the kind beside the
+Ten checks, each declaring which of the three kinds it is, and the run prints the kind beside the
 verdict so that a reader can tell what a green is worth:
 
 | Name | Check | Kind |
@@ -4474,6 +4474,7 @@ verdict so that a reader can tell what a green is worth:
 | a table keeps its shape | every row of a table carrying the same number of cell delimiters, an escaped pipe counted as a cell's own character | computed |
 | a table row keeps its table | a run of pipe lines with no delimiter row, which renders as a paragraph | computed |
 | no document leaves a fence open | an opening delimiter with no matching close | computed |
+| a box diagram keeps its edges | where a project turns it on, every corner, tee and cross in a fenced box-character diagram meeting a line that reaches back, columns counted by display width | computed |
 | a quoted sentence is still in its document | the kind that does not work, performed as configured and warned about on every run | quoting |
 
 ⛔ **The quoting kind is admitted and not refused**, which that section rules: refusing it would
@@ -4527,6 +4528,12 @@ only through its carrier's suite is a facet nothing has ever run over real text 
   every such row, and where every row carries one it says which three checks hold nothing
   ([`schema.md § 38 → The two
   edges`](../plugins/mjolnir/config/schema.md#the-two-edges-and-which-of-them-is-enforced)).
+- **A box diagram's straight runs, an ASCII diagram, or a diagram this project has not turned the
+  check on for.** Only a junction is held, so a run that ends early with no corner at its end is
+  not reported; a block drawn in `+`, `-` and `|` is not read; and an arm landing on text is read
+  as a line drawn to a label, so a box whose corner lands on a letter of its own content passes
+  ([`schema.md § 38 → A box
+  diagram's edges`](../plugins/mjolnir/config/schema.md#a-box-diagrams-edges-held-where-a-project-turns-the-check-on)).
 - **Whether the graph is the right graph.** The rows for this repository were read off the text
   rather than composed, so they assert nothing about the commit that landed them. ⛔ **What they
   assert is every commit after it** — an edge added with no row, and a row whose edge the text

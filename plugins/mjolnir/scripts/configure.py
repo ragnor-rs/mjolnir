@@ -1365,6 +1365,28 @@ ANSWERED_BY: dict[str, Answer] = {
         "sentence quoted at a document outside the governed set is a check over "
         "a file nothing else here reads (§ 38).",
     ),
+    "documents.box_diagrams.held": ask(
+        "Should diagrams drawn in box characters be held to their own alignment "
+        "-- every corner, tee and cross meeting a line that reaches back, columns "
+        "counted by display width? ⚠️ The one key of this facet that may be left "
+        "out: leaving the block out and answering no are the same answer, and "
+        "either holds no diagram (§ 38).",
+    ),
+    "documents.box_diagrams.exempt.document": ask(
+        "Is any diagram drawn this way on purpose -- reproducing a terminal's own "
+        "output, say? Which document is it in? ⛔ One the graph declares (§ 38).",
+    ),
+    "documents.box_diagrams.exempt.block": ask(
+        "Which block is it, as an expression its own text matches? ⛔ Never a line "
+        "number, which every edit above the block moves; and an expression that "
+        "matches no block is a red, since an exemption outliving its diagram "
+        "covers whatever is drawn there next (§ 38).",
+    ),
+    "documents.box_diagrams.exempt.reason": ask(
+        "And why is it exempt? ⛔ Stated, because an exemption whose reason nobody "
+        "wrote down cannot be told from a misaligned diagram somebody silenced "
+        "(§ 38).",
+    ),
 
     # --- § 39. The specification corpus, and which copy of it governs -------
     "spec_corpus.carrier": ask(
