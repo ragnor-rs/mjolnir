@@ -23975,6 +23975,31 @@ def _undeclared_suite(check) -> None:
     check("a key inside a list entry was planted into at least one example",
           planted_in_an_entry > 0)
 
+    # § 4.8's two forms: a block under the facet is a named grouping only where
+    # the facet is the collection, so in the single form one carrying nothing
+    # but the single form's own keys is still a stray.
+    forms = {"single": 0, "collection": 0}
+    for path in _examples():
+        name = os.path.basename(path)
+        with open(path, encoding="utf-8") as handle:
+            document = _load_yaml(handle.read(), name)
+        grouping = (document.get("work_item") or {}).get("grouping")
+        if not isinstance(grouping, dict) or not grouping:
+            continue
+        form = "single" if "carrier" in grouping else "collection"
+        forms[form] += 1
+        grouping["another_block"] = (
+            {"carrier": "none"} if form == "single"
+            else copy.deepcopy(next(iter(grouping.values())))
+        )
+        found = loaded_from(document).undeclared()
+        expected = ["work_item.grouping.another_block"] if form == "single" else []
+        check(f"{name}: a block beside § 4.8's {form} form is "
+              f"{'reported' if expected else 'read as a named grouping'}",
+              found == expected, f"reported {found!r}")
+    check("an example carries each of § 4.8's two forms",
+          all(forms.values()), f"carried {forms!r}")
+
     with open(os.path.join(EXAMPLES, "github-issues.yaml"), encoding="utf-8") as handle:
         document = _load_yaml(handle.read(), "github-issues.yaml")
     relative = [

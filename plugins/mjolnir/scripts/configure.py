@@ -2009,14 +2009,21 @@ def undeclared(surface_text: str, data, facts: dict | None = None) -> list[str]:
 
     ⛔ Reported, never refused, and what answers for a key no fence states at its
     own path is that section's table -- performed by `known` below and stated
-    nowhere else. The paths come back in the configuration's own spelling, a list entry by its
-    index, so the report names the key a person would edit.
+    nowhere else. The paths come back in the configuration's own spelling, a list
+    entry by its index, so the report names the key a person would edit.
     """
     facts = facts if facts is not None else config.surface_facts(surface_text)
     head, tail = declared_shapes(surface_text)
     patterns = _collection_patterns()
     per_root = set(facts.get("per_root") or ())
     single_grouping = set(config._grouping_keys(facts))
+    # Whether § 4.8's facet is the collection is the reader's own test, and
+    # only then is a block under it a named grouping: in the single form a
+    # block whose keys merely match the single form's is a stray.
+    try:
+        named_groupings = isinstance(data, dict) and config._groupings(data, facts)[1]
+    except ConfigError:
+        named_groupings = False
 
     @functools.lru_cache(maxsize=None)
     def known(parts: tuple[str, ...]) -> bool:
@@ -2025,7 +2032,7 @@ def undeclared(surface_text: str, data, facts: dict | None = None) -> list[str]:
             return True
         if len(parts) > 3 and parts[:2] == ("roots", "code") and parts[3] in per_root:
             return known(parts[3:])
-        if (len(parts) > 3 and parts[:2] == ("work_item", "grouping")
+        if (named_groupings and len(parts) > 3 and parts[:2] == ("work_item", "grouping")
                 and parts[2] not in single_grouping):
             return known(parts[:2] + parts[3:])
         # An entry of a collection the surface declares, where it shows the
@@ -2054,7 +2061,7 @@ def undeclared(surface_text: str, data, facts: dict | None = None) -> list[str]:
         for key, value in node.items():
             here, said = parts + (str(key),), f"{spelled}.{key}" if spelled else str(key)
             named_grouping = (
-                len(here) == 3 and here[:2] == ("work_item", "grouping")
+                named_groupings and len(here) == 3 and here[:2] == ("work_item", "grouping")
                 and here[2] not in single_grouping and isinstance(value, dict)
             )
             if not (named_grouping or known(here)):
