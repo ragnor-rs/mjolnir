@@ -1408,6 +1408,7 @@ host:
     approval_covers: commit | content          # what a merge approval covers; default: commit
     admin_override: refused | allowed          # whether a merge may override the host's protections; default: refused
     protected: ["release/*"]                   # branches a local merge into is held, beside the integration branch; default: []
+    bases: ["release/*"]                       # branches a pull request lands on, beside the integration branch; default: []
     unrecorded_merge: deny | prompt            # what a merge no approval covers gets; default: deny
 ```
 
@@ -1466,6 +1467,19 @@ integration branch to is a merge the host's own protections did not admit, so it
 says it allows rather than one the guard assumes. `protected` adds branches to the integration
 branch, which is derived and never stated here, and a glob in it is matched against the whole
 branch name.
+
+**`bases` says where a change lands when that is not the integration branch alone**, and a role
+that reads landed work reads it on every branch the list matches as well as on the integration
+branch. Some projects merge each change into a grouping branch and move the integration branch
+only at release, by fast-forward or by a merge of the grouping branch. Read on the integration
+branch alone, the weeks between two releases show no landed work. Each glob is matched against
+the whole branch name, on the remote's copy where the integration branch is read there. **A
+change is counted once, on the first branch it landed on**: a commit reached from several
+branches is one change, and a merge whose other parent is already on one of those branches'
+first-parent history only moves landed work between them, so it is not a change of its own. An
+empty list, which is what a project stating nothing gets, reads the integration branch alone,
+exactly as before the key existed. It is not `protected`: one says where a local merge is held
+and the other where work lands, and a project may state either without the other.
 
 **`unrecorded_merge` is read by the same guard and by nothing else**, and what each value does is
 [§ 7's](#a-merge-put-to-the-person-at-the-prompt-and-the-record-it-leaves) to state. Per
@@ -1787,7 +1801,7 @@ the operations the survey reached and says which it did not.
 | `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
 | `link_relation` | one item recorded as standing in a relation to another that blocks nothing, under a name the project maps in `tracker.relations` ([below](#a-relation-that-blocks-nothing)) — ⛔ never a dependency, which is `link_dependency`'s | the relation stays a line of prose in the item's own body, which is where it lived before the operation existed, and the report says it went there rather than to the tracker |
 | `read_relations` | the items one item is recorded as related to, each under the project's own relation name and read from that item's side — ⛔ never read by a readiness check | the relations are reported **unread**, never as none, by § 2's rule that absence of signal is not an answer |
-| `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
+| `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not. A role reading which item a landed change names reads it from the references a line of the change's message opens with, in the [title form](#what-a-pull-request-title-opens-with) where the root states one, and reports the item **unread** where it states none |
 | `read_closing_change` | `link_for_close`'s own read, after the fact: the change that closed one item and the commit that change landed as — ⛔ never a verdict about whether the item is done, which is the item's state and is `read_item`'s | the landed record names the item and reports the closing change **unread**: never *no change closed it*, and never the newest change on the branch, by § 2's rule that absence of signal is not an answer |
 | `read_closing_list` | `link_for_close`'s own read, before the fact: the items the host will close when one change lands, and every text in its title, its body, its commit messages and the merge call's own text that could close one — ⛔ never a verdict about which were meant, which is [the comparison](#what-a-merge-closes-and-the-comparison-that-holds-it) below | the report says what the merge closes went **unread**, and never that nothing but the intended items closes, by § 2's rule that absence of signal is not an answer |
 | `create_grouping` | one of § 4.8's groupings brought into existence, by the value that facet keys it on — the one write about a grouping that is made before any item is in it | nothing is created, and the role **names the grouping it would have created** for whoever creates it by hand; ⛔ no file and no record of a grouping is written anywhere else instead, a grouping the tracker does not hold being a grouping no `grouping_items` can read |

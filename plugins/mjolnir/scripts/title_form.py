@@ -218,6 +218,32 @@ def _opens_with(found: dict, title: str) -> bool:
             and len(rest) > len(BEFORE_THE_REST))
 
 
+def items_in(configuration: config.Config, title: str) -> list[str] | None:
+    """The identifiers a title opens with, in order -- or `None` where no form is stated.
+
+    The same walk `_opens_with` takes, keeping what each reference carried where the
+    placeholder stands. ⛔ A title that does not open with the form names no item and
+    comes back empty, never as a guess at a reference written elsewhere in it.
+    """
+    found = form(configuration)
+    if found is None:
+        return None
+    if not _opens_with(found, title):
+        return []
+    before, after = found["reference"].split(config.PLACEHOLDER)
+    at, numbers = 0, []
+    while True:
+        matched = re.match(found["one"], title[at:])
+        if not matched or matched.end() == 0:
+            break
+        text = matched.group(0)
+        numbers.append(text[len(before):len(text) - len(after)])
+        at += matched.end()
+        if not found["repeated"]:
+            break
+    return numbers
+
+
 def holds(configuration: config.Config, title: str):
     """(whether this title opens with the form, the reason) -- or (None, why not).
 
@@ -473,12 +499,19 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
             holds(single, "[A-KEY-1][A-KEY-2] The rest")[0] is False,
             expression,
         )
+        check("the identifier a title opens with is read back through the same walk",
+              items_in(single, "[A-KEY-31] The rest (#9)") == ["31"]
+              and items_in(single, "The rest [A-KEY-31]") == [],
+              str(items_in(single, "[A-KEY-31] The rest (#9)")))
         # ⛔ The acceptance this item was filed on: the enforced form changes with
         # the configuration and with nothing else. ⚠️ Asserted as an inequality of
         # the two expressions and not of their reports, a report being a sentence
         # either of them could carry.
         with tempfile.TemporaryDirectory() as other:
             many = _a_project(other, A_FORM)
+            check("every identifier a repeated form opens with is read, in order",
+                  items_in(many, "[A-KEY-4][A-KEY-12] The rest") == ["4", "12"],
+                  str(items_in(many, "[A-KEY-4][A-KEY-12] The rest")))
             check(
                 "changing the stated form changes what is enforced",
                 form(many)["expression"] != expression,
@@ -584,6 +617,8 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
     with tempfile.TemporaryDirectory() as tmp:
         silent = _a_project(tmp)
         check("the form is the stated absence", form(silent) is None)
+        check("and no identifier is read off a title, which is not a title naming none",
+              items_in(silent, "[A-KEY-1] Any title") is None)
         verdict, why = holds(silent, "Any title at all")
         check("and a title gets no answer rather than a verdict", verdict is None, str(verdict))
         check("named rather than omitted", "states no" in why, why)
