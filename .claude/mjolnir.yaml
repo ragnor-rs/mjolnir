@@ -367,12 +367,11 @@ tracker:
   # Plain GitHub issues with no project board — the cheapest real configuration. The gap was
   # found by writing this file, and `config/examples/github-issues.yaml` now covers the kind.
   kind: github-issues
-  labels: [role, port, infra, hooks, migration, utility, decision]
 
 work_item:
   type:
-    # The labels above classify work by surface rather than by type, and nothing here reads
-    # a type. Deliberately absent rather than unset.
+    # The host's labels classify work by the part of the toolkit it touches rather than by
+    # type, and nothing here reads a type. Deliberately absent rather than unset.
     carrier: none
     absent_reason: >-
       Work here is classified by which part of the toolkit it touches, not by bug/feature.
@@ -415,9 +414,7 @@ work_item:
   priority:
     # This backlog's own axis, which existed as a convention before it was a key: the two
     # labels are on the host, and what they meant was readable in a person's head and in one
-    # project-local script. ⛔ The values are NOT repeated in `tracker.labels` above — that
-    # list classifies work by the part of the toolkit it touches, and a second statement of
-    # this vocabulary there would be free to disagree with this one.
+    # project-local script.
     carrier: label
     label_prefix: "P: "
     # Two values and no third: nothing below `P: High` is ever set here, so the axis holds

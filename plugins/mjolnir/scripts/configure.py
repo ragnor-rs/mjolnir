@@ -80,6 +80,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import textwrap
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -175,6 +176,18 @@ COLLECTIONS = {
     "tracker.relations":
         "each key is the project's own word for a relation that blocks nothing "
         "(§ 3), so the question is asked once per relation it links",
+    "work_item.template.by_type":
+        "each key is one of this project's own item types (§ 4.4), so a template "
+        "is named once per type rather than once per name the surface shows",
+    "billing.rates":
+        "each key is a client an invocation names (§ 37), which the project "
+        "chooses and the surface shows as an empty mapping",
+    "deploy.inputs":
+        "each key is one of the target's own typed inputs (§ 33), named by the "
+        "workflow it dispatches rather than by the surface",
+    "deploy.choices.warnings":
+        "each key is one of that choice's own values (§ 33), so a warning is "
+        "stated once per value the project offers",
 }
 
 # The two leaf names that are a facet's own absence record. ⛔ Covered by the
@@ -904,13 +917,23 @@ ANSWERED_BY: dict[str, Answer] = {
     "branch_model.exclusive_resources.subject": ask(
         "Is a place held by a tree, or by one call?",
     ),
-    "branch_model.exclusive_resources.claimed_by": ask(
-        "Which commands claim a place on it -- each a command, and a pattern its "
-        "arguments carry where the command alone does not decide?",
+    # The list form of § 10's `claimed_by` and `never_claims`, one entry per
+    # command. ⚠️ The one-pattern form is not asked for: the surface keeps it so a
+    # project stating it is read as stated, and the list is what does not
+    # over-match.
+    "branch_model.exclusive_resources.claimed_by.command": ask(
+        "Which commands claim a place on it -- each one word, at a command position?",
     ),
-    "branch_model.exclusive_resources.never_claims": ask(
-        "Which forms of those commands claim nothing? ⚠️ Unstated, every call one of "
-        "them names does.",
+    "branch_model.exclusive_resources.claimed_by.args_match": ask(
+        "For each, what do its arguments have to match for it to claim? ⚠️ "
+        "Unstated, the command alone decides.",
+    ),
+    "branch_model.exclusive_resources.never_claims.command": ask(
+        "Which of those commands have a form that claims nothing? ⚠️ Unstated, every "
+        "call one of them names does.",
+    ),
+    "branch_model.exclusive_resources.never_claims.args_match": ask(
+        "For each, what do the arguments of that form match?",
     ),
     "branch_model.exclusive_resources.probe": ask(
         "Can the resource be asked how many are held? ⚠️ A resource that cannot "
@@ -1902,6 +1925,156 @@ def coverage(surface_text: str) -> list[str]:
             "answer into a configuration the reader accepts."
         )
     return problems
+
+
+# --- the other direction: what a configuration carries and nothing declares --
+#
+# `coverage` holds this module's questions to the surface; `undeclared` holds a
+# project's configuration to it, which is the same comparison run against what a
+# file carries. ⛔ Read off the fences as YAML rather than by line, because the
+# surface states most entries in flow form -- `- { check: …, stop: … }` -- whose
+# keys no line walk reaches, and a key the walk cannot see is a key every project
+# writing it would be reported for.
+
+# A segment the surface writes as a placeholder, `<the client an invocation
+# names>`: the project chooses the key, so it is matched as `*`.
+CHOSEN_SEGMENT = re.compile(r"^<.*>$")
+
+
+def _collection_patterns() -> set[str]:
+    """`COLLECTIONS`, each also at the path a configuration writes it at."""
+    return set(COLLECTIONS) | {absolute(known) for known in COLLECTIONS}
+
+
+def _shape(parts, patterns: set[str]) -> str:
+    """A path with every project-chosen segment written as `*`."""
+    out: list[str] = []
+    for segment in parts:
+        prefix = ".".join(out)
+        chosen = CHOSEN_SEGMENT.match(segment) or any(
+            fnmatch.fnmatch(prefix, known) for known in patterns
+        )
+        out.append("*" if chosen else segment)
+    return ".".join(out)
+
+
+def _mapping_paths(node, keys: tuple[str, ...] = ()):
+    """Every key path a parsed block states, a list's entries read as one entry."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            here = keys + (str(key),)
+            yield here
+            yield from _mapping_paths(value, here)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _mapping_paths(item, keys)
+
+
+@functools.lru_cache(maxsize=4)
+def declared_shapes(surface_text: str) -> tuple[frozenset, frozenset]:
+    """(the paths the surface declares from a configuration's head, the paths it
+    declares relative to a block it does not name).
+
+    ⛔ A fence that opens at an indent shows one facet of a larger key, and
+    nothing in it says which. Its paths are therefore kept apart and matched as
+    the *tail* of a configured path whose head is itself declared, which is the
+    half a check written against the absolute set alone reports as a stray. ⚠️
+    Where `ANCHORS` does name the block, the path is placed there as well.
+    """
+    patterns = _collection_patterns()
+    head: set[str] = set()
+    tail: set[str] = set()
+    for _heading, block in config._fences(surface_text):
+        lines = [line for line in block.splitlines() if line.strip()]
+        if not lines:
+            continue
+        try:
+            node = yaml.safe_load(textwrap.dedent(block))
+        except yaml.YAMLError:
+            node = None
+        if isinstance(node, (dict, list)):
+            found = {_shape(path, patterns) for path in _mapping_paths(node)}
+        else:
+            # A fence YAML cannot read still declares what its lines state.
+            found = {
+                _shape(path.split("."), patterns)
+                for path, _ in walk(f"```yaml\n{block}\n```")
+            }
+        if lines[0][:1].isspace():
+            tail |= found
+            head |= {absolute(path) for path in found if path.split(".")[0] in ANCHORS}
+        else:
+            head |= found
+    return frozenset(head), frozenset(tail)
+
+
+def undeclared(surface_text: str, data, facts: dict | None = None) -> list[str]:
+    """Every key `data` carries that the surface declares nowhere, at any depth.
+
+    ⛔ Reported, never refused, and what answers for a key no fence states at its
+    own path is that section's table -- performed by `known` below and stated
+    nowhere else. The paths come back in the configuration's own spelling, a list
+    entry by its index, so the report names the key a person would edit.
+    """
+    facts = facts if facts is not None else config.surface_facts(surface_text)
+    head, tail = declared_shapes(surface_text)
+    patterns = _collection_patterns()
+    per_root = set(facts.get("per_root") or ())
+    single_grouping = set(config._grouping_keys(facts))
+    # Whether § 4.8's facet is the collection is the reader's own test, and
+    # only then is a block under it a named grouping: in the single form a
+    # block whose keys merely match the single form's is a stray.
+    try:
+        named_groupings = isinstance(data, dict) and config._groupings(data, facts)[1]
+    except ConfigError:
+        named_groupings = False
+
+    @functools.lru_cache(maxsize=None)
+    def known(parts: tuple[str, ...]) -> bool:
+        shape = _shape(parts, patterns)
+        if shape in head:
+            return True
+        if len(parts) > 3 and parts[:2] == ("roots", "code") and parts[3] in per_root:
+            return known(parts[3:])
+        if (named_groupings and len(parts) > 3 and parts[:2] == ("work_item", "grouping")
+                and parts[2] not in single_grouping):
+            return known(parts[:2] + parts[3:])
+        # An entry of a collection the surface declares, where it shows the
+        # collection with no entry at all -- `rates: {}`, or a placeholder.
+        if (len(parts) > 1 and shape.endswith(".*")
+                and any(fnmatch.fnmatch(".".join(shape.split(".")[:-1]), known_)
+                        for known_ in patterns)
+                and known(parts[:-1])):
+            return True
+        if parts[-1] in RECORD_LEAVES and len(parts) > 1 and known(parts[:-1]):
+            return True
+        return any(
+            _shape(parts[at:], patterns) in tail and known(parts[:at])
+            for at in range(1, len(parts))
+        )
+
+    found: list[str] = []
+
+    def visit(node, parts: tuple[str, ...], spelled: str) -> None:
+        if isinstance(node, list):
+            for index, item in enumerate(node):
+                visit(item, parts, f"{spelled}[{index}]")
+            return
+        if not isinstance(node, dict):
+            return
+        for key, value in node.items():
+            here, said = parts + (str(key),), f"{spelled}.{key}" if spelled else str(key)
+            named_grouping = (
+                named_groupings and len(here) == 3 and here[:2] == ("work_item", "grouping")
+                and here[2] not in single_grouping and isinstance(value, dict)
+            )
+            if not (named_grouping or known(here)):
+                found.append(said)
+                continue
+            visit(value, here, said)
+
+    visit(data, (), "")
+    return found
 
 
 # --- the question set -------------------------------------------------------

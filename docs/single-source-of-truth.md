@@ -294,8 +294,12 @@ An unstated limit reads later as coverage, so every section below states its own
   commit takes: edits verified green and then left out of the commit give a verdict about a tree
   that never landed. The host's own run closes it afterwards; nothing here closes it before.
 - **Key subtrees.** Check 5 holds the top level only, so a key inside a block is this check's blind
-  spot whether or not the surface declares it — `tracker.labels`, which it does not, is the known
-  consequence. A deeper comparison needs one exception per tracker kind, since every configuration
+  spot whether or not the surface declares it. What holds one instead is the reader, which reports
+  a configured key the surface declares nowhere at any depth
+  ([schema](../plugins/mjolnir/config/schema.md#a-key-the-surface-declares-nowhere)), and its own
+  suite asserts this project's configuration and every example carry none — a line in
+  `unavailable` rather than a red build. A deeper comparison here needs one exception per tracker
+  kind, since every configuration
   lacks every other kind's block by design
   ([§ 3](../plugins/mjolnir/config/schema.md#what-each-kinds-block-carries)). The reader refuses
   a block that omits a key its own kind requires, at configuration time, which answers nothing
@@ -450,7 +454,7 @@ names, planted one at a time into a carrier file as a code span, `closed`, a wor
 artifact directory each reddened, while **a configured branch prefix and a configured label both
 passed** — the two the project invented. The prefix sits under
 `work_item.type_branch_prefix.<one of the project's own types>`, a key the project itself writes,
-and the label sits in `tracker.labels`, a plural whose singular `label` is a readiness check's
+and the label sat in a list under a plural key whose singular `label` is a readiness check's
 argument. The branch prefix is read by the starting role, whose text is the one place that value
 must not appear, since reading it from configuration is what that role is for.
 

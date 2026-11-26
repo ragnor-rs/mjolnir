@@ -210,6 +210,33 @@ existed reads like one on a file that left the key out, and names the key either
 is the same in both cases — make the file match the markers, writing what is marked required and
 deleting what is marked retired.
 
+### A key the surface declares nowhere
+
+⛔ **A configuration carrying a key that no fence on this surface declares, at any depth, is
+reported with the key named, and the reader resolves nothing from it.** The report is a line of
+`unavailable`, which every role reads before acting, and it names the path as the file spells it — a
+list entry by its index. ⛔ **Reported and not refused**: a file written against a newer surface
+carries keys an older reader's surface does not declare, and a refusal would make that file
+unreadable to every role still on the older one. What the person running a role does about it is
+one of two acts — declare the key here with what reads it, or take it out of the file — and the
+test between them is [§ What the procedure models](#what-the-procedure-models-and-what-it-only-names-and-calls)'s:
+whether any role reads it to decide what to do next.
+
+What counts as declared is read off every fence as the configuration would be read, so a key a
+fence states in flow form — `- { check: …, stop: … }` — is as declared as one on a line of its own.
+Four shapes answer for a key no fence states at its own path, and each is a rule stated elsewhere
+on this surface rather than an exception:
+
+| a configured key | is declared where |
+|---|---|
+| inside a fence that opens at an indent | its path is the tail of the configured one, and the head is itself declared |
+| an entry of a collection whose keys the project chooses — a code root's name, an item type, a target's input | the collection is declared, the entry being the project's own word |
+| inside a named code root, under a block it narrows ([§ 1](#a-projects-code-is-not-always-one-repository)) | that block declares it |
+| inside a named grouping ([§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)) | the single form declares it |
+
+⚠️ **A facet's absence record, `absent_reason` and `revisit_when`, is declared under every
+declared block**, since an absence is a stated decision wherever a facet can be absent.
+
 ## The loop
 
 File a work item · gate it into committed work · start it · implement it · finish it · review it ·
@@ -4342,6 +4369,17 @@ stands, and how an entry's `command` and `args_match` are compared, are
 [§ 19](#the-command-position-and-why-the-whole-call-is-not-one)'s. An entry of either list carries
 those two keys and no other: `command` is one word, and `args_match` is absent where the command
 alone decides.
+
+```yaml
+branch_model:
+  exclusive_resources:
+      claimed_by:
+        - command:    "<one word, the command at a command position>"
+          args_match: "<what its arguments are matched on>"   # may be left unwritten
+      never_claims:
+        - command:    "<one word>"
+          args_match: "<the arguments of a form that takes no place>"
+```
 
 - A call claims where any one position matches an entry of `claimed_by` and none of
   `never_claims`. A form that never claims spares the position it matches: a status call beside a
