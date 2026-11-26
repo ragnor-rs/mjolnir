@@ -1281,6 +1281,13 @@ ANSWERED_BY: dict[str, Answer] = {
         "sentence quoted at a document outside the governed set is a check over "
         "a file nothing else here reads (§ 38).",
     ),
+    "documents.exempt_targets": ask(
+        "Does any document link to a file the build writes rather than the "
+        "repository holds -- generated reference pages, a rendered site? ⛔ Every "
+        "other relative link is held to a file the index carries and a heading "
+        "that file has. Omit the key where there is none: omitted, nothing is "
+        "exempt (§ 38).",
+    ),
 
     # --- § 39. The specification corpus, and which copy of it governs -------
     "spec_corpus.carrier": ask(

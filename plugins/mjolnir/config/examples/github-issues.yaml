@@ -502,6 +502,10 @@ documents:
         The name was removed rather than renamed — there is no component it now refers to, so no
         correct sentence can carry it.
   quoted: []
+  # The one key of the block that may be omitted, and omitting it exempts nothing. This project's
+  # build writes its API reference under `site/`, which no index holds, and the runbook links into
+  # it — so that target is exempt from the link check and every other target is held.
+  exempt_targets: ["site/**"]
 
 # § 39's live arm, and the one example that carries it. The specification is a tree in this
 # repository and the release branch for each version carries it as it stood there, so a filing

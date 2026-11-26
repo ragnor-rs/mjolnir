@@ -2986,6 +2986,7 @@ class Config:
             "graph": [dict(entry) for entry in self.get("documents.graph") or ()],
             "forbidden": [dict(entry) for entry in self.get("documents.forbidden") or ()],
             "quoted": [dict(entry) for entry in self.get("documents.quoted") or ()],
+            "exempt_targets": list(self.get("documents.exempt_targets") or ()),
         }
 
     @property
@@ -5709,7 +5710,8 @@ def _validate_documents(data: dict, facts: dict) -> None:
         # governed and nothing holds.
         stated = [
             key
-            for key in ("files", "entry_points", "graph", "forbidden", "quoted")
+            for key in ("files", "entry_points", "graph", "forbidden", "quoted",
+                        "exempt_targets")
             if key in _absent_as(_get(data, "documents"), {})
         ]
         if stated:
@@ -5745,6 +5747,23 @@ def _validate_documents(data: dict, facts: dict) -> None:
             )
         for index, glob in enumerate(value):
             _a_document(glob, f"documents.{key}[{index}]", "a glob a document matches")
+
+    # ⛔ The one key of the block that may be omitted, and omitting it exempts
+    # nothing -- the strict direction (§ 38). Stated, it is held to the shape
+    # the globs above are, `[]` included: an empty list exempts nothing too.
+    exempt = _absent_as(_get(data, "documents"), {}).get("exempt_targets")
+    if "exempt_targets" in _absent_as(_get(data, "documents"), {}):
+        if not isinstance(exempt, list):
+            raise ConfigError(
+                "documents.exempt_targets",
+                "must be a list of globs relative to the code root (§ 38), each a "
+                "link target the build produces rather than the index holds. One "
+                "glob is a list of one.",
+            )
+        for index, glob in enumerate(exempt):
+            _a_document(
+                glob, f"documents.exempt_targets[{index}]", "a glob a link target matches"
+            )
 
     graph = _get(data, "documents.graph")
     if not isinstance(graph, list):
@@ -16083,6 +16102,16 @@ def _planted_violations():
             _a_documents_of(forbidden=[_a_forbidden_name(reason="   ")]))),
         ("a quoted list that is not a list", "documents.quoted",
          at("documents", _a_documents_of(quoted="a sentence"))),
+        # ⛔ The optional key's three arms. Omitting it is accepted and held by
+        # every configuration that does not write it; stated, it is a glob list.
+        ("an exempt-target list stated beside a carrier that reads none",
+         "documents.exempt_targets",
+         at("documents", {"carrier": "none", "absent_reason": "nothing is governed",
+                          "exempt_targets": ["build/**"]})),
+        ("an exempt-target list that is not a list", "documents.exempt_targets",
+         at("documents", _a_documents_of(exempt_targets="build/**"))),
+        ("an exempt target written blank", "documents.exempt_targets[0]",
+         at("documents", _a_documents_of(exempt_targets=["  "]))),
         ("a quoted entry with no sentence", "documents.quoted[0].sentence",
          at("documents",
             _a_documents_of(quoted=[{"document": "a-document.md"}]))),

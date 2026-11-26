@@ -8835,6 +8835,7 @@ documents:
       derived_from: ["docs/requirements.md"] # recorded and held acyclic, never read against the text
   forbidden: []                    # required_when: documents.carrier = list
   quoted: []                       # required_when: documents.carrier = list
+  exempt_targets: ["site/**"]      # link targets the build writes and no index holds; omitted, none
   absent_reason: "…"               # required where the carrier is none
 ```
 
@@ -8981,6 +8982,30 @@ answered `<p>| 32 | … |</p>` by the host's own renderer while every check over
 green, each of them holding a **line** or holding the document against this surface and none holding
 its blocks.
 
+### A link resolves to something the repository holds
+
+⛔ **Every relative link in a governed document resolves, and it is held as a **computed** check**:
+the target against the index, and a fragment against the headings of the document it lands in.
+A link to a file that is gone and a link into a heading that was renamed each render as a working
+link, and no other check here reads either — a reader follows one and lands on a missing page or at
+the top of a document.
+
+| what a link carries | what it is held to |
+|---|---|
+| a relative path, or one opening with `/` for the repository's root | a file, or a directory above one, that the index holds — ⚠️ the index and not the disk, since a file nobody added is a target the host does not serve |
+| a fragment, on a markdown target or on none | a heading of that document, slugged the way the host slugs it with its `-1` suffix on a repeat, or an anchor the document writes |
+| an address with a scheme, or one opening with `//` | ⛔ nothing: it is **not fetched**, since a network read would make the verdict a fact about the day the run happened |
+| a line range, or a fragment on a file that is not markdown | nothing: the host answers both and no heading carries either |
+
+⚠️ **A destination a renderer shows rather than follows is not a link** — one inside a fence, a code
+span or a comment — since prose that documents a link's own syntax would otherwise be refused.
+
+⛔ **`exempt_targets` names the targets a link may reach that no index holds**, as globs: a file the
+build writes is the case it exists for. ⚠️ **It is the one key of this block that may be omitted,
+and that is not the default this section refuses elsewhere**: an omitted `files` or `graph` would
+default to a check that never fires, while an omitted exemption list defaults to *nothing exempt*,
+which is the strictest reading available. A project that states nothing is held on every link.
+
 ### Every check carries a violation it reddens on
 
 ⛔ **A check ships with a recorded violation, and the suite asserts the red rather than claiming
@@ -9005,12 +9030,12 @@ this is what happened.
 
 ⛔ **A project's own domain-specific computed checks stay in that project's own script, and this
 facet neither carries them nor names them.** What a shared mechanism can hold is the graph, the file
-set, the forbidden names and a document's block structure; whether a project's five request shapes
-each have a home in its layout is a property of that project's subject matter, and a key pointing at
-a command that answers it would satisfy
+set, the links, the forbidden names and a document's block structure; whether a project's five
+request shapes each have a home in its layout is a property of that project's subject matter, and a
+key pointing at a command that answers it would satisfy
 [§ 36](#why-a-utility-has-no-home-on-this-surface-from-either-direction)'s letter and deliver
 nothing. ⚠️ **So the facet's coverage is a boundary and not a claim of completeness**: a project's
-document rules are expressible here to the extent that they are the four things above.
+document rules are expressible here to the extent that they are the five things above.
 
 ### `carrier: none`, and the configurations this key refuses
 
@@ -9023,9 +9048,10 @@ asked what holds a document answers *nothing is stated* rather than *the documen
 and has not written its rows yet, which is this facet at its most drifted and the state it most
 needs to tell apart from the other.
 
-⛔ **Stated as a list, the block states every key and none is defaulted.** `forbidden: []` and
-`quoted: []` are a project forbidding and quoting nothing, written; `files`, `entry_points` and
-`graph` carry no empty form, a governed set with nothing in it being a check that never fires while
+⛔ **Stated as a list, the block states every key and none is defaulted**, `exempt_targets` excepted
+for [the reason its own subsection gives](#a-link-resolves-to-something-the-repository-holds).
+`forbidden: []` and `quoted: []` are a project forbidding and quoting nothing, written; `files`,
+`entry_points` and `graph` carry no empty form, a governed set with nothing in it being a check that never fires while
 reading as one that does.
 
 ⛔ **This key is required of every project, so it invalidates every configuration written before
