@@ -195,9 +195,10 @@ host:
     - workflow: "Hours breakdown carrier"
       mirrors: "python3 plugins/mjolnir/scripts/hours_breakdown.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
-    # ⚠️ This project states no `work_item.template.declared`, so pointed at this tree the module
-    # answers that nothing is declared. This run holds the reading against planted declarations and
-    # bodies, which is the only place it can be held.
+    # ⚠️ This project states no `work_item.template.declared` and no `tracker.duplicate`, so pointed
+    # at this tree the module answers that nothing is declared and nothing is appended. This run
+    # holds both readings against planted declarations, bodies and appended sections, which is the
+    # only place they can be held.
     - workflow: "Item sections"
       mirrors: "python3 plugins/mjolnir/scripts/item_sections.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]

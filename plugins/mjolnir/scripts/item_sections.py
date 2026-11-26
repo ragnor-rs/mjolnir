@@ -23,15 +23,30 @@ What it refuses, per declared section:
 reference to a real file passes whether or not anybody opened it; § 4.4 states
 that limit and this module does not narrow it.
 
+It also composes and holds the dated section that § 3's `tracker.duplicate:
+append` adds to a confirmed duplicate, under § 4.4's `sections.addendum`. What
+it refuses there:
+
+  * a body whose text before the section is **not the existing body exactly**;
+  * **no dated section, or more than one**, after the existing body;
+  * a heading that is **not the project's wording with a date in it**;
+  * a section with **nothing under it**.
+
 Usage:
     item_sections.py [--skills-root DIR]   the sections this project declares
     item_sections.py check --body-file PATH [--code-root DIR]
                                            hold a body to them
+    item_sections.py addendum --before PATH --material PATH [--date YYYY-MM-DD]
+                                           a confirmed duplicate's body with its
+                                           dated section added
+    item_sections.py appended --before PATH --after PATH
+                                           hold that body to the existing one
     item_sections.py --self-test           assert every answer against planted
                                            bodies, then report this project's own
 
 Exit status: 0 the body holds, 1 it does not, 2 the configuration or the body
-could not be read, 3 this project declares no section. ⚠️ The last is § 11's
+could not be read, 3 this project declares no section -- or, for `addendum` and
+`appended`, states `rewrite`, so there is no dated section to compose or hold. ⚠️ The last is § 11's
 rule at a command line: *nothing to hold a body to* collapsed into 0 reads as a
 body checked and passed, and a filing role reading 3 files as it did before the
 key existed.
@@ -40,6 +55,7 @@ key existed.
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import os
 import re
@@ -157,10 +173,101 @@ def hold(configuration: config.Config, body: str, code_root: str | None = None) 
     return problems
 
 
+# --- § 3's append mode -----------------------------------------------------
+
+APPEND = "append"
+
+
+def duplicate_mode(configuration: config.Config) -> str:
+    """§ 3's `tracker.duplicate`, with the default the reader applies."""
+    return str(configuration.get("tracker.duplicate"))
+
+
+def addendum_heading(configuration: config.Config) -> str:
+    """§ 4.4's `sections.addendum`, carrying `{date}` once by the reader's rule."""
+    return str(configuration.get(config.ADDENDUM))
+
+
+def _level(body: str) -> int:
+    """The level of the body's first heading outside a fence, `##` where it has none."""
+    fenced = None
+    for line in body.splitlines():
+        fence = FENCE.match(line)
+        if fence:
+            marker = fence.group(1)[0]
+            fenced = None if fenced == marker else (fenced or marker)
+            continue
+        heading = None if fenced else HEADING.match(line)
+        if heading:
+            return len(heading.group(1))
+    return 2
+
+
+def _spaced(text: str) -> str:
+    return re.sub(r"\s+", " ", text)
+
+
+def _dated(configuration: config.Config, line: str) -> str | None:
+    """The date a line carries where it is the project's dated heading, else None.
+
+    Matched as § 4.4 matches a heading: the text alone, at any level and in any
+    case, a run of spaces being formatting rather than wording.
+    """
+    heading = HEADING.match(line)
+    if not heading:
+        return None
+    before, after = addendum_heading(configuration).split(config.DATE_SLOT)
+    pattern = (re.escape(_spaced(before).lstrip()) + r"(\d{4}-\d{2}-\d{2})"
+               + re.escape(_spaced(after).rstrip()))
+    found = re.fullmatch(pattern, _spaced(heading.group(2).strip()), re.IGNORECASE)
+    return found.group(1) if found else None
+
+
+def compose(configuration: config.Config, before: str, material: str, date: str) -> str:
+    """The existing body byte for byte, then one dated section carrying `material`."""
+    heading = addendum_heading(configuration).replace(config.DATE_SLOT, date)
+    if not before or before.endswith("\n\n"):
+        gap = ""
+    elif before.endswith("\n"):
+        gap = "\n"
+    else:
+        gap = "\n\n"
+    return f"{before}{gap}{'#' * _level(before)} {heading}\n\n{material.strip()}\n"
+
+
+def hold_appended(configuration: config.Config, before: str, after: str) -> list[str]:
+    """Every problem `after` has as `before` with one dated section added; `[]` holds."""
+    if not after.startswith(before):
+        return ["the text before the dated section is not the existing body exactly, "
+                "so what was accepted has changed"]
+    lines = after[len(before):].splitlines()
+    content = [line for line in lines if not NOISE.match(line)]
+    if not content:
+        return ["nothing follows the existing body, so no dated section was added"]
+    problems: list[str] = []
+    if _dated(configuration, content[0]) is None:
+        problems.append(f"what follows the existing body opens with {content[0].strip()!r}, "
+                        "which is not the project's dated heading")
+    dated = [i for i, line in enumerate(lines) if _dated(configuration, line) is not None]
+    if len(dated) > 1:
+        problems.append(f"{len(dated)} dated sections follow the existing body, and one "
+                        "filing adds one")
+    for index in dated[:1]:
+        stamp = _dated(configuration, lines[index])
+        try:
+            datetime.date.fromisoformat(stamp)
+        except ValueError:
+            problems.append(f"the heading's date {stamp!r} is not a calendar date")
+        if not [line for line in lines[index + 1:] if not NOISE.match(line)]:
+            problems.append("the dated section has nothing under it, which reads as "
+                            "material added")
+    return problems
+
+
 # --- the suite -------------------------------------------------------------
 
 
-def _a_project(tmp: str, entries=None) -> config.Config:
+def _a_project(tmp: str, entries=None, addendum=None) -> config.Config:
     """A loadable configuration in a tree of its own, declaring `entries` or nothing.
 
     Built from an example rather than written here, for the reason the sibling
@@ -177,6 +284,9 @@ def _a_project(tmp: str, entries=None) -> config.Config:
         template.pop("declared", None)
     else:
         template["declared"] = entries
+    if addendum is not None:
+        data.setdefault("tracker", {})["duplicate"] = "append"
+        template.setdefault("sections", {})["addendum"] = addendum
     os.makedirs(os.path.join(tmp, ".claude"), exist_ok=True)
     with open(os.path.join(tmp, config.CONFIG_PATH), "w", encoding="utf-8") as handle:
         handle.write(yaml.safe_dump(data, allow_unicode=True))
@@ -340,6 +450,101 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("and its declared list reads as empty rather than absent",
               declared(config.load(bare)) == [])
 
+        print()
+        print("§ 3's append mode, composed and held")
+        appending = _a_project(os.path.join(tmp, "a"), addendum="Addendum of {date}")
+        check("a project stating nothing rewrites, the reader's default",
+              duplicate_mode(config.load(bare)) == "rewrite",
+              duplicate_mode(config.load(bare)))
+        check("a project stating append reads as append", duplicate_mode(appending) == APPEND)
+        material = "#### User story\n\nAs a requester I see the new case.\n"
+        composed = compose(appending, A_BODY, material, "2026-11-27")
+        check("the composed body opens with the existing body byte for byte",
+              composed.startswith(A_BODY), composed)
+        check("the dated section sits at the level of the body's first heading",
+              "\n### Addendum of 2026-11-27\n" in composed, composed)
+        check("the composed body holds", hold_appended(appending, A_BODY, composed) == [],
+              str(hold_appended(appending, A_BODY, composed)))
+        unterminated = "Accepted text with no heading and no newline"
+        joined = compose(appending, unterminated, material, "2026-11-27")
+        check("a body with no heading and no final newline gains a `##` section after a gap",
+              joined == unterminated + "\n\n## Addendum of 2026-11-27\n\n" + material.strip()
+              + "\n" and hold_appended(appending, unterminated, joined) == [], repr(joined))
+        check("the heading is matched in another case and at another level",
+              hold_appended(appending, A_BODY, A_BODY + "\n# ADDENDUM  of 2026-11-27\n\nNew.\n")
+              == [])
+
+        print()
+        print("planted violations of the append mode, each refused")
+        edited = composed.replace("Something is possible.", "Something else is possible.")
+        check("an existing body changed by one word is refused",
+              any("not the existing body exactly" in p
+                  for p in hold_appended(appending, A_BODY, edited)),
+              str(hold_appended(appending, A_BODY, edited)))
+        trimmed = A_BODY + "  \n" + composed[len(A_BODY):]
+        check("whitespace added to the end of the existing body is refused too",
+              any("not the existing body exactly" in p
+                  for p in hold_appended(appending, A_BODY + "\n", trimmed)),
+              str(hold_appended(appending, A_BODY + "\n", trimmed)))
+        check("an existing body with nothing added is refused",
+              hold_appended(appending, A_BODY, A_BODY + "\n\n")
+              == ["nothing follows the existing body, so no dated section was added"])
+        undated = A_BODY + "\n### Addendum\n\nNew.\n"
+        check("a section under the wording with no date is refused",
+              any("not the project's dated heading" in p
+                  for p in hold_appended(appending, A_BODY, undated)),
+              str(hold_appended(appending, A_BODY, undated)))
+        reworded = A_BODY + "\n### Update 2026-11-27\n\nNew.\n"
+        check("a dated section under another wording is refused",
+              any("not the project's dated heading" in p
+                  for p in hold_appended(appending, A_BODY, reworded)),
+              str(hold_appended(appending, A_BODY, reworded)))
+        twice = composed + "\n### Addendum of 2026-11-28\n\nMore.\n"
+        check("two dated sections from one filing are refused",
+              any("2 dated sections" in p for p in hold_appended(appending, A_BODY, twice)),
+              str(hold_appended(appending, A_BODY, twice)))
+        hollow = A_BODY + "\n### Addendum of 2026-11-27\n\n---\n"
+        check("a dated section with nothing under it is refused",
+              any("nothing under it" in p for p in hold_appended(appending, A_BODY, hollow)),
+              str(hold_appended(appending, A_BODY, hollow)))
+        impossible = A_BODY + "\n### Addendum of 2026-13-45\n\nNew.\n"
+        check("a heading whose date is no calendar date is refused",
+              any("not a calendar date" in p
+                  for p in hold_appended(appending, A_BODY, impossible)),
+              str(hold_appended(appending, A_BODY, impossible)))
+        loose = A_BODY + "\nA paragraph first.\n\n### Addendum of 2026-11-27\n\nNew.\n"
+        check("material written before the dated heading is refused",
+              any("opens with 'A paragraph first.'" in p
+                  for p in hold_appended(appending, A_BODY, loose)),
+              str(hold_appended(appending, A_BODY, loose)))
+
+        print()
+        print("the append mode at the command line")
+        before_file = os.path.join(tmp, "before.md")
+        material_file = os.path.join(tmp, "material.md")
+        after_file = os.path.join(tmp, "after.md")
+        for path, text in ((before_file, A_BODY), (material_file, material),
+                           (after_file, composed)):
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(text)
+        root_a = os.path.join(tmp, "a")
+        check("a composed body that holds exits 0",
+              main(["appended", "--skills-root", root_a, "--before", before_file,
+                    "--after", after_file]) == 0)
+        with open(after_file, "w", encoding="utf-8") as handle:
+            handle.write(edited)
+        check("an edited existing body exits 1",
+              main(["appended", "--skills-root", root_a, "--before", before_file,
+                    "--after", after_file]) == 1)
+        check("a date that is no calendar date exits 2 and composes nothing",
+              main(["addendum", "--skills-root", root_a, "--before", before_file,
+                    "--material", material_file, "--date", "2026-02-30"]) == 2)
+        check("a rewriting project exits 3 for either command",
+              main(["addendum", "--skills-root", bare, "--before", before_file,
+                    "--material", material_file]) == NOTHING_DECLARED
+              and main(["appended", "--skills-root", bare, "--before", before_file,
+                        "--after", after_file]) == NOTHING_DECLARED)
+
     print()
     print("this project's own declaration, read rather than assumed")
     live = config.load(config.REPO_ROOT)
@@ -366,6 +571,54 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
 # --- the command line ------------------------------------------------------
 
 
+def _read(path: str) -> str | None:
+    try:
+        with open(path, encoding="utf-8", newline="") as handle:
+            return handle.read()
+    except OSError as exc:
+        print(f"{path} could not be read: {exc}", file=sys.stderr)
+        return None
+
+
+def _append_command(configuration: config.Config, args) -> int:
+    """`addendum` and `appended`: § 3's append mode at a command line."""
+    mode = duplicate_mode(configuration)
+    if mode != APPEND:
+        print(json.dumps({
+            "mode": mode, "holds": None, "problems": [],
+            "report": [f"This project states `tracker.duplicate: {mode}`, so a confirmed "
+                       "duplicate is rewritten and gains no dated section to compose or "
+                       "hold (§ 3)."],
+        }, indent=2, ensure_ascii=False))
+        return NOTHING_DECLARED
+    before = _read(args.before)
+    if before is None:
+        return 2
+    if args.what == "addendum":
+        material = _read(args.material)
+        if material is None:
+            return 2
+        date = args.date or datetime.date.today().isoformat()
+        try:
+            datetime.date.fromisoformat(date)
+        except ValueError:
+            print(f"--date {date!r} is not a YYYY-MM-DD calendar date", file=sys.stderr)
+            return 2
+        if not material.strip():
+            print("the material is empty, and a dated section with nothing under it reads "
+                  "as material added (§ 3)", file=sys.stderr)
+            return 1
+        sys.stdout.write(compose(configuration, before, material, date))
+        return 0
+    after = _read(args.after)
+    if after is None:
+        return 2
+    problems = hold_appended(configuration, before, after)
+    print(json.dumps({"mode": mode, "holds": not problems, "problems": problems},
+                     indent=2, ensure_ascii=False))
+    return 1 if problems else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Hold a work item's body to the sections this project declares.",
@@ -378,6 +631,15 @@ def main(argv: list[str] | None = None) -> int:
     reading.add_argument("--body-file", required=True)
     reading.add_argument("--code-root", default=None,
                          help="where a code-sourced section's files must exist")
+    composing = sub.add_parser("addendum", help="a duplicate's body with its dated section")
+    composing.add_argument("--skills-root", default=".")
+    composing.add_argument("--before", required=True, help="the existing body, as read")
+    composing.add_argument("--material", required=True, help="the new material")
+    composing.add_argument("--date", default=None, help="YYYY-MM-DD; today where omitted")
+    holding = sub.add_parser("appended", help="hold a duplicate's body to the existing one")
+    holding.add_argument("--skills-root", default=".")
+    holding.add_argument("--before", required=True, help="the existing body, as read")
+    holding.add_argument("--after", required=True, help="the body about to be written")
 
     args = parser.parse_args(argv)
     if args.self_test:
@@ -388,6 +650,9 @@ def main(argv: list[str] | None = None) -> int:
     except (config.ConfigError, OSError) as exc:
         print(exc, file=sys.stderr)
         return 2
+
+    if args.what in ("addendum", "appended"):
+        return _append_command(configuration, args)
 
     entries = declared(configuration)
     if args.what != "check":

@@ -539,12 +539,13 @@ content itself.
 document comes under this rule where somebody is editing it anyway. Nothing here licenses a sweep
 that rewrites every document, which is why a gate holding this reads the lines a change **adds**.
 
-[§ 3](#a-duplicate-is-the-item-rewritten-never-a-second-item-filed) applies this to a work item's
-body: it rewrites a confirmed duplicate rather than appending to it, and keeps nothing of what the
-body stated earlier.
+[§ 3](#a-duplicate-is-folded-into-the-item-never-a-second-item-filed)'s default applies this to a
+work item's body: `rewrite` keeps nothing of what the body stated earlier. Its `append` mode is not
+an exception to this rule. The dated section it adds carries the new material, which is content,
+and the pass that wrote it is recorded in the comment beside it, never in the body.
 
 Procedure rather than configuration, and **no key on this surface turns it off** — the placement
-authorship has under § 6, the reply's register under § 8 and the duplicate rule under § 3. The cost
+authorship has under § 6 and the reply's register under § 8. The cost
 was measured where the habit was: the ordering document this repository plans with had grown seven
 dated revalidation paragraphs, 70 of its 469 lines, every figure in them stale and every standing
 fact in them already argued in a row of the table.
@@ -1985,29 +1986,58 @@ This is the one half of the port a **project** states, and it is content rather 
 it says what may reach an item, never which operations exist. A role meeting a policy refusal has a
 capability it may not use here, which is reported differently from an absence.
 
-### A duplicate is the item rewritten, never a second item filed
+### A duplicate is folded into the item, never a second item filed
 
-**A confirmed duplicate is the existing item's body rewritten to what the work now is.** No
-second item is created, no dated block is appended, and no record is kept of what the body used to
-say. The item states the work as it now stands, and `search_items` above is what finds the item to
-rewrite.
+```yaml
+tracker:
+  duplicate: rewrite | append    # default: rewrite
+```
 
-Two items describing one job both sit open and both read as work nobody did, and closing one closes
-nothing. An appended addendum costs the other half: the item's current scope stops being readable
-off the item and has to be reconstructed by reading its body in order of writing.
+**A confirmed duplicate never becomes a second item.** Two items describing one job both sit open
+and both read as work nobody did, and closing one closes nothing. That half is procedure and no key
+turns it off. `search_items` above is what finds the item the new material goes into. **How it goes
+in is the project's choice, and `duplicate` states it once.**
 
-**Where the provenance goes** — what the new material was and where it came from — follows the
-`comment` capability and nothing else: a note on the item where that capability exists, and the run
-report where it does not, which is `comment`'s own fallback above.
+**`rewrite` is the existing item's body rewritten to what the work now is.** No dated block is
+appended and no record is kept of what the body used to say, so the item's current scope is
+readable off the item rather than reconstructed by reading its body in order of writing. **A
+rewrite does not license dropping what the item already stated.** A constraint, an acceptance
+condition or a dependency the old body carried is still true unless the new material replaced it.
+A rewrite that quietly narrows the item is the one failure this mode is worse at than appending.
 
-**Rewriting is not a licence to drop what the item already stated.** A constraint, an acceptance
-condition or a dependency the old body carried is still true unless the new material replaced it,
-and a rewrite that quietly narrows the item is the one failure this is worse at than appending.
+**`append` keeps the existing body byte for byte and adds one dated section after it** carrying the
+new material — its outcome, its acceptance conditions and its notes. This is for a project whose
+items are text somebody outside the build has already validated: a rewrite changes what that person
+accepted, and the only trace is a comment. The cost is the one `rewrite` avoids, since the scope is
+now read across the body and its sections in order of writing. A project that pays it states so
+here.
 
-Procedure rather than configuration, and there is no setting that turns it off — the same
-placement authorship has under § 6 and the reply's register under § 8. A project that could
-configure this would be choosing whether its own tracker is allowed to hold two statements of one
-job.
+- **The section's heading is the project's wording**, stated as
+  [§ 4.4](#44-template)'s `sections.addendum`, which carries `{date}` once where the date goes.
+  The surface states no heading text, which keeps the wording and its language out of the
+  procedure as [§ 8](#8-language-register-audience--per-artifact-not-per-project) requires. The date
+  is the day of the filing, written `YYYY-MM-DD`. The heading sits at the level of the body's first
+  heading, or at `##` where the body has none.
+- **One consumer composes the body and holds it**, so the filing role neither assembles the section
+  by hand nor judges by eye whether the old text survived:
+
+  ```bash
+  python3 plugins/mjolnir/scripts/item_sections.py addendum --before <the body as read> \
+    --material <the new material> [--date <YYYY-MM-DD>]
+  python3 plugins/mjolnir/scripts/item_sections.py appended --before <the body as read> \
+    --after <the body to write>
+  ```
+
+  `appended` refuses a body whose text before the section is not the existing body exactly. It
+  also refuses one carrying no dated section or more than one, a heading that is not the project's
+  wording with a date in it, and a section with nothing under it. Each command exits 3 where the
+  project states `rewrite`, since there is no section to compose.
+
+**The provenance is written under both modes.** That is what the new material was and where it
+came from, and it follows the `comment` capability and nothing else: a note on the item where that
+capability exists, and the run report where it does not, which is `comment`'s own fallback above.
+Under `append` the dated section carries the material and the comment carries its source. One does
+not stand in for the other.
 
 ### An edge is a relation, and a body keeps the reasoning about it
 
@@ -2289,6 +2319,7 @@ work_item:
       outcome: "…"
       acceptance: "…"
       reproduction: "…"
+      addendum: "…"              # required_when: tracker.duplicate = append
     declared: []                 # the sections this project requires beyond those three; default: []
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
@@ -2298,6 +2329,13 @@ The procedure names the **semantic** sections it depends on — `outcome`, `acce
 `reproduction` — and each template declares which of its own headings fills each. That keeps the
 heading text, and its language, out of the procedure while letting the procedure still check a
 section is present and tick its items later.
+
+**`addendum` is the heading of the dated section a confirmed duplicate gains** where
+[§ 3](#a-duplicate-is-folded-into-the-item-never-a-second-item-filed)'s `duplicate` is `append`. It
+carries `{date}` exactly once, where the filing's date is written, and the reader refuses one that
+does not. No template file carries it, since a body gains it only after it is filed. So it holds
+under either carrier, as `declared` below does, and its absence is a refusal only where `append`
+is stated.
 
 **How the acceptance section's content is phrased is no part of this key**:
 [§ What an acceptance condition is written as](#what-an-acceptance-condition-is-written-as) states
@@ -10551,7 +10589,7 @@ nobody can audit afterwards.
 
 At `file`, a closed duplicate whose work is `absent` or `partly built` is offered for reopening,
 beside filing anew. The duplicate check finds it and
-[§ 3](#a-duplicate-is-the-item-rewritten-never-a-second-item-filed) would otherwise send the request
+[§ 3](#a-duplicate-is-folded-into-the-item-never-a-second-item-filed) would otherwise send the request
 to it. That is right only where its work exists. Where it does not, the closed item's history is
 worth keeping, and a new item loses it. Which of the two to take is a person's choice:
 the filing role asks, and the step does neither.

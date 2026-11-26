@@ -467,6 +467,12 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.policy.forbid_on_item": ask(
         "Which classes of content may not be written onto an item here?",
     ),
+    "tracker.duplicate": ask(
+        "When a request turns out to duplicate an open item, should that item's body be "
+        "rewritten to what the work now is, or kept exactly as it is with the new "
+        "material added in a dated section after it -- because somebody outside the "
+        "build has already accepted its text?",
+    ),
 
     # --- § 4. Work-item facets ---------------------------------------------
     "work_item.type.carrier": detect(
@@ -612,6 +618,10 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "work_item.template.sections.reproduction": ask(
         "Which heading does a body state a reproduction under?",
+    ),
+    "work_item.template.sections.addendum": ask(
+        "Which heading does a duplicate's dated section go under, with {date} where the "
+        "date is written?",
     ),
     "work_item.template.declared.name": ask(
         "Which section must an item carry beyond the outcome, the acceptance check "

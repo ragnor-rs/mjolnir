@@ -1,11 +1,12 @@
 name: Item sections
 
-# The sections a project declares for a work item beyond the procedure's own, and the one consumer
-# that holds a body to them. Held to § 4.4 of plugins/mjolnir/config/schema.md; no copy of it is
-# carried here.
+# The sections a project declares for a work item beyond the procedure's own, the one consumer that
+# holds a body to them, and the dated section § 3's append mode adds to a confirmed duplicate. Held
+# to § 3 and § 4.4 of plugins/mjolnir/config/schema.md; no copy of either is carried here.
 #
-# ⚠️ This repository declares no section, so pointed at this tree the module answers that nothing
-# is declared. What this run holds is the reading itself, against planted declarations and bodies.
+# ⚠️ This repository declares no section and rewrites its duplicates, so pointed at this tree the
+# module answers that nothing is declared and nothing is appended. What this run holds is the
+# reading itself, against planted declarations, bodies and appended sections.
 
 on:
   pull_request:

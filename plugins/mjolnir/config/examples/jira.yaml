@@ -76,6 +76,10 @@ tracker:
   # No capability is stated here — schema § 3, `Who declares a capability`.
   policy:
     forbid_on_item: []
+  # The items here are accepted by somebody outside the build before the work starts, so a
+  # confirmed duplicate keeps the text they accepted and gains a dated section after it. The
+  # heading that section is written under is the template's, below.
+  duplicate: append
 
 work_item:
   type:
@@ -114,6 +118,7 @@ work_item:
       outcome: "<this template's own heading>"
       acceptance: "<this template's own heading>"
       reproduction: "<this template's own heading>"
+      addendum: "<this template's own heading, with {date} where the date goes>"
   due_date:
     carrier: none
     absent_reason: >-

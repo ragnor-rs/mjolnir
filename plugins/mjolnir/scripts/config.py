@@ -11442,6 +11442,35 @@ def _a_named_call(entry, where: str) -> None:
             ) from None
 
 
+ADDENDUM = "work_item.template.sections.addendum"
+DATE_SLOT = "{date}"
+
+
+def _validate_addendum_heading(data: dict) -> None:
+    """§ 4.4's `sections.addendum`: the dated heading § 3's `append` writes.
+
+    Whether it must be stated is the surface's `required_when` marker; what it
+    has to *be* is here. ⛔ `{date}` exactly once: a heading with no slot writes
+    an undated section, and one with two writes a date nobody can tell apart.
+    """
+    heading = _get(data, ADDENDUM)
+    if heading is None:
+        return
+    if not isinstance(heading, str) or not heading.strip():
+        raise ConfigError(
+            ADDENDUM,
+            f"is {heading!r}, and § 4.4 states it as the heading text a confirmed "
+            "duplicate's dated section is written under.",
+        )
+    if heading.count(DATE_SLOT) != 1:
+        raise ConfigError(
+            ADDENDUM,
+            f"is {heading!r}, which carries `{DATE_SLOT}` {heading.count(DATE_SLOT)} "
+            "times. § 4.4 states it once, where the filing's date is written, so the "
+            "section § 3's `append` adds is dated and its date reads one way.",
+        )
+
+
 DECLARED = "work_item.template.declared"
 
 
@@ -12962,6 +12991,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
         seen_headings[folded] = index
 
     _validate_declared_sections(data, facts)
+    _validate_addendum_heading(data)
 
     # § 18. The guard on a command the host has already run. Requiredness is the
     # surface's marker and answers whether `never_guard` is written; what these
@@ -14459,6 +14489,9 @@ MARKED_REQUIRED_WHEN = [
     # and a rule of its own -- that refusal names what the role was left unable
     # to do, which a marker's message cannot say.
     ("branch_model.regenerable", "branch_model.kind", "worktree"),
+    # § 4.4's one: the heading § 3's `append` writes its dated section under,
+    # meaningless where a confirmed duplicate is rewritten instead.
+    ("work_item.template.sections.addendum", "tracker.duplicate", "append"),
     # § 9's one: the archive's address, needed by the kind that reads an archive
     # and meaningless under the kind that says there is no chat evidence at all.
     ("day_log.evidence.chat.path", CHAT_KIND_PATH, "telegram_export"),
@@ -22801,6 +22834,17 @@ def _planted_violations():
          _a_declared_section_of(second={"name": "another", "heading": "implementation PLAN"})),
         ("a declared section under a heading `sections` maps", f"{DECLARED}[0].heading",
          _a_declared_section_of(heading="What Is Wanted", mapped="What is wanted")),
+        # § 3's duplicate mode and § 4.4's dated heading it writes under, one plant per arm.
+        ("a duplicate mode outside the surface's alternation", "tracker.duplicate",
+         at("tracker.duplicate", "merge")),
+        ("an append mode stating no heading for its dated section", ADDENDUM,
+         _an_append_mode(_ABSENT)),
+        ("a dated-section heading with no date slot", ADDENDUM,
+         _an_append_mode("Addendum")),
+        ("a dated-section heading with two date slots", ADDENDUM,
+         _an_append_mode("Addendum {date} ({date})")),
+        ("a dated-section heading that is blank", ADDENDUM,
+         _an_append_mode("   ")),
         ("a local check list that is not a list", "checks_local",
          at("checks_local", "a-local-command")),
         ("a local check entry that is not a block", "checks_local[0]",
@@ -26319,6 +26363,22 @@ def _without(data: dict, path: str) -> dict:
             return data
     node.pop(parts[-1], None)
     return data
+
+
+def _an_append_mode(heading):
+    """§ 3's `append` stated, with § 4.4's dated heading written as `heading`."""
+
+    def mutate(data: dict) -> dict:
+        _with(data, "tracker.duplicate", "append")
+        sections = data.setdefault("work_item", {}).setdefault("template", {}).setdefault(
+            "sections", {})
+        if heading is _ABSENT:
+            sections.pop("addendum", None)
+        else:
+            sections["addendum"] = heading
+        return data
+
+    return mutate
 
 
 def _with(data: dict, path: str, value) -> dict:
