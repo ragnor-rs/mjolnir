@@ -288,6 +288,10 @@ ANSWERED_BY: dict[str, Answer] = {
         "Does a merge approval cover one commit only, or survive a push that leaves "
         "the change's content the same?",
     ),
+    "host.landing.unrecorded_merge": ask(
+        "Where no recorded approval covers a merge, is it refused, or put to the "
+        "person at the harness's own prompt?",
+    ),
     "host.checks.workflow": detect(
         HOST_CLIENT,
         "the name each of the host's own workflow definitions states, read out of "
