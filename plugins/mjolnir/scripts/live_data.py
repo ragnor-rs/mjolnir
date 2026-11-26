@@ -105,11 +105,17 @@ GO_MUST_NAME = ("the target", "the rehearsal's verdict")
 RECORD = "live-data-step-{target}.json"
 RECORD_OF_STEP = "live-data-step-{target}--{step}.json"
 
-# Which phase of § 35's sequence each prepared command belongs to, and so which
-# side of the invocation it falls on. ⛔ The dump's reading-back belongs to the
-# backup and falls where it does: a verification on the other side of the deploy
-# from its dump would be reading a store the new code may already have written.
-PHASE_OF = {"backup.run": "backup", "backup.verify": "backup", "rehearse": "rehearse"}
+
+def _phase(step: str) -> str:
+    """Which phase of § 35's sequence a prepared command belongs to.
+
+    ⛔ Read off the command's own key rather than listed beside `PREPARED`, which
+    would be a second statement of that list: `backup.run` and `backup.verify`
+    are the backup's, and the dump's reading-back falls where the dump does — a
+    verification on the other side of the deploy from its dump would be reading
+    a store the new code may already have written.
+    """
+    return step.split(".", 1)[0]
 
 # ⚠️ What a rehearsal that said nothing is reported as. A stand-in and never a
 # default: every arm that would compare against it is dropped instead, which is
@@ -441,7 +447,7 @@ def _on_this_side(phases: list[dict], sides: dict, side: str | None) -> list[dic
     """The prepared commands that fall on the side asked for, or all of them."""
     if side is None:
         return phases
-    return [each for each in phases if sides[PHASE_OF[each["step"]]] == side]
+    return [each for each in phases if sides[_phase(each["step"])] == side]
 
 
 def prepare(
@@ -480,7 +486,7 @@ def prepare(
     answer["rehearsal"] = None
     answer["side"] = side
     stated = [each for each in answer["steps"] if each["stated"]]
-    if side is None and len({sides[PHASE_OF[each["step"]]] for each in stated}) > 1:
+    if side is None and len({sides[_phase(each["step"])] for each in stated}) > 1:
         answer["stopped_at"] = stated[0]["step"]
         answer["report"].insert(
             0,
@@ -499,7 +505,7 @@ def prepare(
             "reading on record is untouched (§ 35).",
         )
         return answer
-    starts_here = any(PHASE_OF[each["step"]] == "backup" for each in here)
+    starts_here = any(_phase(each["step"]) == "backup" for each in here)
     if starts_here:
         # ⛔ A fresh reading: whatever an earlier deploy left for this step, or for
         # a step that starts after it, is not this deploy's evidence.
