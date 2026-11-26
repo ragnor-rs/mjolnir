@@ -4442,16 +4442,20 @@ A project stating none has none asked, and its sweep is what it was.
 - **It prints one running resource per line: the tree's path, a tab, and the resource.** A relative
   path is read against the main checkout, where it runs. ⛔ **A line with no tab is named as
   unread**, never guessed at.
-- ⛔ **A resource whose path is not one of the repository's trees is named on the event that opens
-  a session**, with the tree's path and what became of it. It is asked after the removals, so a tree
-  the same sweep removed counts as gone.
+- ⛔ **A resource whose path is no longer there is named on the event that opens a session**, with
+  the path and what became of it. It is asked after the removals, so a tree the same sweep removed
+  counts as gone. ⚠️ **A path that is still there is never gone**, whatever repository it belongs
+  to: a listing that reaches the whole machine names another clone's live work too.
 - ⛔ **A listing that fails, cannot be started or does not finish in `10` seconds is reported as
   unanswered**, never as nothing running.
 - ⛔ **Nothing is stopped unless `resource_stop` is stated.** Where it is, it runs once per resource
   found, at the main checkout, with the tree in `MJOLNIR_TREE` and the resource in
-  `MJOLNIR_RESOURCE`. ⛔ **A stop that exited zero is read back**: the listing is asked again, and
-  a resource it still names is reported as still up. A stop that fails is reported with its exit
-  and the end of what it printed.
+  `MJOLNIR_RESOURCE`. ⛔ **Only a path one level under `tree_dir` is stopped**, that being where a
+  tree this procedure cut sat; a gone path anywhere else is named and left. ⛔ **A stop that exited
+  zero is read back**: the listing is asked again, and a resource it still names is reported as
+  still up. A stop that fails is reported with its exit and the end of what it printed.
+- ⛔ **The stop has to be repeatable.** Every session that opens runs the sweep, so two opening at
+  once can each stop the same resource.
 - ⛔ **Each command runs inside the sweep's own bound**, and one there is no time left for is not
   started and is named as not run.
 

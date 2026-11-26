@@ -672,6 +672,7 @@ def _gone_trees(
 
     The rule is § 10's *A resource whose tree is gone* and is not restated here. ⛔ Asked after
     the trees, so a tree this sweep just removed reads as gone, and its resource with it.
+    `tree_dir` is what decides whether a gone path was a tree this procedure cut.
     """
     pairs, unread, why = _listed(root, listing, left())
     if why is not None:
@@ -683,27 +684,27 @@ def _gone_trees(
         f"a line the resource listing printed names no tree, so it was not read: {line}"
         for line in unread
     ]
-    try:
-        present = {
-            os.path.realpath(tree.path)
-            for tree in registered(root, tree_dir)
-            if not tree.prunable and Path(tree.path).is_dir()
-        }
-    except claim.ClaimError as error:
-        report.unestablished.append(
-            "which resources are up for a tree that is gone: this repository's trees could not "
-            f"be listed: {' '.join(str(error).split())}"
-        )
-        return
-    gone = [(tree, resource) for tree, resource in pairs if tree not in present]
+    # ⛔ **Gone is a path that is not there**, never a path that is not one of this repository's
+    # trees: a listing that reaches the whole machine names another clone's live stack too, and
+    # reading that as gone handed it to the stop. Reproduced in this pass's own review.
+    gone = [(tree, resource) for tree, resource in pairs if not os.path.lexists(tree)]
     if not stop:
         report.orphans += [
             Orphan(tree, resource, "nothing stops it: this project states no stop command")
             for tree, resource in gone
         ]
         return
+    main = claim.main_checkout(root)
     ran: list[Orphan] = []
     for tree, resource in gone:
+        if not claim.a_work_tree(tree, main, tree_dir):
+            # ⛔ Named and not stopped: a path outside the tree directory is not a tree this
+            # procedure cut, so what ran there is not this sweep's to stop.
+            report.orphans.append(Orphan(tree, resource, (
+                "the stop command was not run: the path is not under this project's tree "
+                "directory, so it was not a tree this procedure cut"
+            )))
+            continue
         bound = min(claim.RESOURCE_UP_SECONDS, left())
         if bound < claim.TEARDOWN_FLOOR_SECONDS:
             report.orphans.append(Orphan(tree, resource, (
@@ -1377,6 +1378,24 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             and "still names it" in report.message(),
             report.report(),
         )
+        other = Path(tmp) / "another-clone"
+        other.mkdir()
+        outside = os.path.realpath(tmp) + "/elsewhere/9-gone"
+        running(f"{os.path.realpath(other)}\tsomebody-elses-stack", f"{outside}\tstack-outside")
+        log.unlink()
+        report = swept(resources_running=listing, resource_stop=stop)
+        suite.ok(
+            "⛔ a path still there is not gone, whatever repository it belongs to",
+            "somebody-elses-stack" not in report.report(),
+            report.report(),
+        )
+        suite.ok(
+            "⛔ and a gone path outside the tree directory is named and never stopped",
+            [(o.resource, o.stopped) for o in report.orphans] == [("stack-outside", False)]
+            and not log.exists() and "not under this project's tree directory" in report.message(),
+            report.report(),
+        )
+        running(f"{gone}\tstack-gone")
         report = swept(resources_running=listing, resource_stop="echo refused; exit 4")
         suite.ok(
             "⛔ a stop that fails is reported with its exit and what it said",
