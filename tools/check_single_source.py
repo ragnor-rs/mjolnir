@@ -116,6 +116,8 @@ CONFIG_GLOBS = [".claude/mjolnir.yaml", "plugins/mjolnir/config/examples/*.y*ml"
 # table is found by this header rather than by a section heading, so renumbering
 # a section is not a change this script has to be edited for.
 OUTCOME_COLUMN = "Outcome lives in"
+# What a ruling's ordinal cell holds: the number every `(N)` in the table cites it by.
+RULING_ORDINAL = re.compile(r"[1-9][0-9]*")
 
 # The marker a binding statement carries in this repository. A statement opens a
 # line, optionally as a list item; the marker inside a table cell is prose about
@@ -1156,7 +1158,10 @@ def check_ruling_ordinals_are_unique_and_contiguous(tree: Tree) -> list[str]:
     for index, line in rows:
         cells = split_row(line)
         ordinal = cells[0].strip() if cells else ""
-        if not ordinal.isdigit():
+        # ⛔ ASCII digits with no leading zero, and never `str.isdigit`: measured, a
+        # superscript passes `isdigit` and then raises in `int`, a traceback where this
+        # gate's verdict belongs. A `0` or a `07` is a number no reference is written as.
+        if not RULING_ORDINAL.fullmatch(ordinal):
             problems.append(
                 f"{RULINGS}: line {index} is a row of the rulings table carrying no ordinal "
                 f"-- {ordinal!r}. A ruling is cited by its number, so a row without one "
@@ -2024,6 +2029,15 @@ def _plant_a_ruling_with_no_ordinal(tree: Tree) -> Tree:
     return _renumber_a_ruling(tree, -1, lambda rows: "n")
 
 
+def _plant_a_ruling_numbered_in_a_digit_int_cannot_read(tree: Tree) -> Tree:
+    """A superscript two, which `str.isdigit` accepts and `int` refuses.
+
+    ⛔ The arm that keeps the refusal a refusal rather than a traceback: under the
+    `isdigit` test this was written with first, the check raised on this row.
+    """
+    return _renumber_a_ruling(tree, -1, lambda rows: "²")
+
+
 VIOLATIONS = [
     ("every document has a role", "a document with no role", _plant_unroled_document),
     ("every document has a role", "a nested document with no role", _plant_unroled_nested_document),
@@ -2079,6 +2093,8 @@ VIOLATIONS = [
      _plant_a_skipped_ruling_ordinal),
     ("ruling ordinals are unique and contiguous", "a row carrying no ordinal",
      _plant_a_ruling_with_no_ordinal),
+    ("ruling ordinals are unique and contiguous", "a digit `int` cannot read",
+     _plant_a_ruling_numbered_in_a_digit_int_cannot_read),
 ]
 
 
