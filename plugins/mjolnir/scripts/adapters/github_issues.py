@@ -1250,6 +1250,13 @@ ADAPTER = port.Adapter(binder=bind, operations={
 #     field of its own to write, and what another tracker keeps in a field -- an
 #     estimate, a date, a code root -- reaches a plain issue as a label or as body
 #     text, which is that operation's own stated fallback.
+#   * `link_relation` and `read_relations`, because this host has no link type a
+#     project can name: what it records between two issues is the dependency,
+#     which is `link_dependency`'s, and a parent and its sub-issues, which is a
+#     decomposition the host counts progress over rather than a relation that
+#     blocks nothing. Mapping a project's *related* onto the hierarchy would file
+#     one item as a piece of another. So the relation stays the prose line a body
+#     already carries, which is § 3's stated fallback.
 #
 # ⛔ Written once, here, and read by the suite rather than restated in it: one more
 # absence would otherwise be an operation nobody noticed going missing -- which is
@@ -1257,6 +1264,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # the checklist ones*.
 DELIBERATELY_ABSENT = (
     "set_field",
+    "link_relation",
+    "read_relations",
     "checklist_read",
     "checklist_write",
     "checklist_item_delete",

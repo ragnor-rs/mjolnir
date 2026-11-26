@@ -1875,6 +1875,9 @@ tracker:
   create_fields:                # the fields the site requires before it will create an item
     - field: "<the field's name>"
       value: []                 # absent: the filing states it
+  relations:                    # absent: nothing is linked but a dependency
+    related:
+      type: "<link type>"
 ```
 
 ```yaml
@@ -1951,6 +1954,8 @@ operations the survey reached and says which it did not.
 | `item_number` | the identifier the branch name and the pull request carry | the number is read from the argument the role was given, and a role with neither stops rather than inventing one |
 | `link_dependency` | one item recorded as blocked by another | the dependency is written into both items' bodies as prose, which is the one case [`An edge is a relation`](#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it) below admits prose carrying an edge at all |
 | `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
+| `link_relation` | one item recorded as standing in a relation to another that blocks nothing, under a name the project maps in `tracker.relations` ([below](#a-relation-that-blocks-nothing)) — ⛔ never a dependency, which is `link_dependency`'s | the relation stays a line of prose in the item's own body, which is where it lived before the operation existed, and the report says it went there rather than to the tracker |
+| `read_relations` | the items one item is recorded as related to, each under the project's own relation name and read from that item's side — ⛔ never read by a readiness check | the relations are reported **unread**, never as none, by § 2's rule that absence of signal is not an answer |
 | `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
 | `read_closing_change` | `link_for_close`'s own read, after the fact: the change that closed one item and the commit that change landed as — ⛔ never a verdict about whether the item is done, which is the item's state and is `read_item`'s | the landed record names the item and reports the closing change **unread**: never *no change closed it*, and never the newest change on the branch, by § 2's rule that absence of signal is not an answer |
 | `read_closing_list` | `link_for_close`'s own read, before the fact: the items the host will close when one change lands, and every text in its title, its body, its commit messages and the merge call's own text that could close one — ⛔ never a verdict about which were meant, which is [the comparison](#what-a-merge-closes-and-the-comparison-that-holds-it) below | the report says what the merge closes went **unread**, and never that nothing but the intended items closes, by § 2's rule that absence of signal is not an answer |
@@ -2181,6 +2186,47 @@ rather than a value of it. The measurement behind it is in
 tracker's own form for both halves is recorded, the absence included. ⛔ **And no tracker's own name
 for the relation reaches a role**: the procedure names the two operations above, which is the same
 rule that keeps a tracker's name out of a carrier.
+
+### A relation that blocks nothing
+
+⛔ **Two items related without one waiting on the other are linked through `link_relation` and
+read through `read_relations`, under a name the project chooses** — *related*, *duplicates*, *split
+from*. A tracker with link types stores the relation where a reader of the item sees it, and this
+gives a project the means to put it there rather than in a sentence.
+
+```yaml
+tracker:
+  relations:                    # absent: no relation is linked, and every one stays prose
+    related:                    # the project's own word, which is what a role passes and reads back
+      type: "<link type>"       # the tracker's own name for a type worded the same both ways
+    duplicates:
+      type: "<link type>"       # a type worded differently each way
+      side: outward             # which of its two wordings the first item reads: outward or inward
+```
+
+- ⛔ **A relation never answers a readiness check.** § 5's `no_open_blockers` reads `read_blockers`
+  and nothing else, and `read_blockers` reads the dependency alone, so a related item that is open
+  holds nothing back. ⛔ **A relation mapped onto the link type the dependency itself is written
+  as is refused** by the implementation that writes it, before anything is sent — the same link
+  read through both operations would make a blocker readable as a relation, and the other way
+  round.
+- ⛔ **The side is held by a round trip, never by the type's wording.** Where a type is worded
+  differently each way, `link_relation` writes the item named first on the stated side, and
+  `read_relations` on each of the two items answers with the name whose side that item reads. The
+  suite of each implementation holds this the way it holds the dependency's direction: by writing
+  the link and reading it back from both ends.
+- ⛔ **A name maps to one wording, and one wording to one name.** Two names over one type and side
+  give the read-back two answers, and a sided name beside an unsided one on the same type gives it
+  the same choice, so the reader refuses either at load. ⚠️ A link of a type no name maps is
+  reported with the wording the tracker gave it and no name, never dropped and never assigned one.
+- ⚠️ **Where the tracker has no link types, both operations are absent** and take the fallbacks
+  above: the relation is the line of prose a body already carries, and nothing reads it as more.
+  ⛔ **A name the project does not map is refused rather than defaulted**, so a role links only
+  what `tracker.relations` names, and a project stating no `relations` links nothing — it files
+  exactly as it did before this key existed.
+
+⚠️ **What prose still keeps is the reasoning**, by the test above: why two items are related is a
+sentence, and that they are is the relation.
 
 ## 4. Work-item facets
 

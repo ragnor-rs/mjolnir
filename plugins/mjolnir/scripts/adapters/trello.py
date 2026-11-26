@@ -1644,9 +1644,15 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # so there is no object of that kind to create, read or mark. ⚠️ All three move
 # together the moment a project here carries one, which is one condition rather
 # than three.
+#
+# `link_relation` and `read_relations` join the dependency's pair for its reason:
+# with no relation between two cards there is no link type to name, so a relation
+# that blocks nothing stays prose on the card, which is § 3's stated fallback.
 DELIBERATELY_ABSENT = (
     "link_dependency",
     "read_blockers",
+    "link_relation",
+    "read_relations",
     "link_for_close",
     "read_closing_change",
     "read_closing_list",
