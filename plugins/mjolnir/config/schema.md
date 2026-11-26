@@ -7759,6 +7759,9 @@ deploy:
     requires_role: "<one of § 4.2's own roles, read there — or `none`>"
     publishes:    false
     live_data_step: "<§ 35's block, stated there and not restated>"
+    advance_requires:
+      tier:       "<a § 31 tier, by the name `test_tiers` keys it on>"
+      reading:    "<a reading the project's own verification reports under>"
 ```
 
 ⛔ **The last of those is a block rather than a value, and what it is read for is
@@ -7984,6 +7987,63 @@ resting on it** rather than the deploy, which is the same split one direction ov
 role adds to it is the list**: every item the batch left behind and why, every verification that was
 skipped rather than passed, every step still running, and what the deploy left standing — a spent
 version, a branch ahead of what the target serves, work queued behind the command that queued it.
+
+### What an advance requires, and what holds it
+
+⛔ **Which verifications the advance of a target's items rests on is the target's own fact, and
+`advance_requires` states it.** Reporting a skipped tier as *the gate did not run* says what
+happened; it does not say whether the items move. Without this key the move is made wherever the
+verification came out *clean*, and no reading of that word separates a check that passed from one
+that never ran.
+
+Each entry names one check, by exactly one of two keys:
+
+| key | what the check is | what the load holds it to |
+|---|---|---|
+| `tier` | a [§ 31](#31-test-tiers--what-each-one-needs-before-it-can-run-at-all) tier the verification runs | a tier `test_tiers` states; under `carrier: none` every tier is refused, since there is none to name |
+| `reading` | a reading the project's own verification reports under: an exact served commit, every service's image | a non-empty name; what the reading is, and how it is taken, is [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle column and the procedure states none of it |
+
+⛔ **One name answers for one check across the list**, so a tier and a reading carrying the same
+name, or one name written twice, are refused with the entry that already carries it named. An entry
+carrying both keys or neither is refused, and so is a list carrying nothing: an empty list reads
+exactly like a target nobody thought about, which is the reading an omitted key already gives.
+
+**Every check comes back with one outcome, and only one outcome releases the advance:**
+
+| outcome | what it means | releases the advance |
+|---|---|---|
+| `passed` | the check ran over what was deployed and its reading agreed | yes |
+| `failed` | it ran and its reading disagreed | no |
+| `skipped` | the run reached it and did not run it | no |
+| `deselected` | the run was configured not to reach it | no |
+| `unread` | no outcome was read for it — the default for a required check nothing reported | no |
+| `running` | it was started and has not finished | no |
+
+⛔ **A required check with any outcome other than `passed` holds the advance, and the role names
+it with its outcome.** What it holds is the advance of every item in the batch, ⛔ **never the
+target and never the grouping's mark**, for the asymmetry
+[`What a change in the batch owes this target`](#what-a-change-in-the-batch-owes-this-target-and-where-the-step-falls)
+states for an `after` step: the deploy has already been made, and the move is the one act that can
+still be withheld. ⚠️ **A verification covers the target rather than one item**, so it holds the
+whole batch, where an `after` step holds only the items whose change owes it.
+
+⛔ **A check the target does not name is reported with its outcome and holds nothing**, whatever the
+outcome is: the target has said which verifications its advance rests on, and the rest are
+evidence for a reader rather than a gate.
+
+⛔ **A target that omits the key requires no check by name, and the stated default is that a
+`failed` outcome still holds the advance.** Every other outcome is reported and holds nothing. That
+is the one reading of *clean* every configuration written before the key already meets — nothing
+came back failed — so a project stating nothing new advances exactly the items it advanced before.
+⚠️ **The cost is the one this key exists to remove**: under the default a skipped, deselected,
+unread or still-running verification is reported and moves the items anyway, and a project for
+which that is wrong says so by naming the check.
+
+⛔ **The verdict is the carrier's and not the role's**: the role hands each check's outcome to
+`config.py --advance-for <target> --reading <name>=<outcome>`, and what comes back names every
+check, its outcome, whether it was required, and which of them hold the advance. ⚠️ **An outcome
+outside the table above is refused rather than read**, since a word the carrier did not recognise
+and a check that passed must not come out alike.
 
 ### Publishing a grouping, and the precondition that holds the whole target
 

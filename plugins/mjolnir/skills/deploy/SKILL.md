@@ -364,6 +364,21 @@ What a run delivered is read from its **log**, through the port's own operation,
   ([`§ The loop`](../../config/schema.md#what-carries-the-item-forward-and-where-it-stops-to-ask)):
   ⛔ **report which ran, by name**, and report
   one that skipped as *the gate did not run* rather than as *the gate passed*.
+- **Then whether the verification holds the advance, which is the carrier's verdict and not this
+  role's reading of *clean*.** Every check the delivery was read for is handed over with its
+  outcome, in the vocabulary
+  [`§ 33 → What an advance requires`](../../config/schema.md#what-an-advance-requires-and-what-holds-it)
+  states, and ⛔ **a check the target requires that nothing reported is handed over as nothing**,
+  never as `passed` — the carrier reads it as `unread`:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" \
+    --advance-for "<the target>" --reading "<check>=<outcome>" --reading "<check>=<outcome>"
+  ```
+
+  ⛔ **What it reports holding is held**: the target is deployed either way, and what is withheld is
+  the advance of the batch, never the target and never the grouping's mark. Which checks a target
+  requires, and the default where it names none, are § 33's and are not restated here.
 - **Then the `after` steps, and only those** — the `before` ones were performed in step 4b, and
   ⛔ **a step placed `after` is never brought forward to here from there or the other way round**,
   the place being the entry's own fact. In whatever order the project's own record gives, and
@@ -392,8 +407,10 @@ What a run delivered is read from its **log**, through the port's own operation,
 still reported — what the deploy carried is a fact about the deploy — and ⛔ **the reply says the
 target writes nothing on an item** rather than leaving a reader to read silence as a failed move.
 
-⛔ **Otherwise: only the items step 4a put in the batch, and only once step 7 came out clean for
-each** — which includes every `after` step that item's own change owes. The move goes through the
+⛔ **Otherwise: only the items step 4a put in the batch, only where step 7's `--advance-for`
+verdict holds nothing, and only for an item none of whose `after` steps is holding it.** A verdict
+that holds the advance holds it for every item in the batch, and the reply names each check holding
+it with its outcome. The move goes through the
 port, asked for as a **role** and never as a status word, and this role asks as the writer the
 deploy is:
 
@@ -509,6 +526,9 @@ the facts, with a table where the content enumerates.
 - ⛔ **what was not verified**, named rather than omitted
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)): every skipped
   scenario, every tier that did not run, and everything a log did not cover;
+- ⛔ **whether the verification held the advance** — every check `--advance-for` reported, its
+  outcome, whether the target requires it, and which hold; and where the target names no check,
+  that § 33's default governed rather than that every check passed;
 - ⛔ **the live data step, where the target carries one** — that the dump was verified and by what,
   whether a rehearsal ran at all, what its output was read as, which order was taken and whether
   the configured one was overruled, and whether the write ran or was handed over. ⚠️ **A target

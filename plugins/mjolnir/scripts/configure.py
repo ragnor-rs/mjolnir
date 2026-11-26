@@ -1130,6 +1130,15 @@ ANSWERED_BY: dict[str, Answer] = {
     "deploy.grouping": ask(
         "Which grouping does a release on this target mark?",
     ),
+    "deploy.advance_requires.tier": ask(
+        "Which test tiers must have passed over this deploy before its items "
+        "move? ⛔ Asked because a skipped or deselected tier otherwise moves "
+        "them anyway; omitted, only a failed check holds the advance (§ 33).",
+    ),
+    "deploy.advance_requires.reading": ask(
+        "And which of the project's own readings must agree -- an exact served "
+        "commit, every service's image?",
+    ),
 
     # --- § 34. The files that carry a version ------------------------------
     "release.carrier": ask(

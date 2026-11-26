@@ -3085,6 +3085,109 @@ class Config:
             "report": [],
         }
 
+    def advance(self, target: str, readings: dict[str, str]) -> dict:
+        """§ 33's verdict on whether a deploy's verification holds its advance.
+
+        `readings` maps a check's name -- a tier's or a reading's -- to the
+        outcome the role read for it. ⛔ **A required check nothing reported is
+        `unread`, never passed**, and an outcome outside § 33's table is refused
+        rather than read: a word this carrier did not recognise and a check that
+        passed must not come out alike.
+
+        ⚠️ What a hold withholds is the advance of the batch and never the target
+        or the grouping's mark; that is § 33's rule and is said in the report
+        rather than enforced here, the deploy having been made before this runs.
+        """
+        stated = [
+            entry
+            for entry in self.get("deploy") or ()
+            if isinstance(entry, dict) and entry.get("name") == target
+        ]
+        if not stated:
+            names = [
+                entry.get("name")
+                for entry in self.get("deploy") or ()
+                if isinstance(entry, dict)
+            ]
+            raise ConfigError(
+                "deploy",
+                f"names no target {target!r} (§ 33), so there is no advance to "
+                "hold or release. The targets stated are: "
+                + (", ".join(repr(name) for name in names) if names else "none")
+                + ".",
+            )
+        for name, outcome in readings.items():
+            if outcome not in ADVANCE_OUTCOMES:
+                raise ConfigError(
+                    f"deploy[{target}].{ADVANCE_REQUIRES}",
+                    f"was handed {outcome!r} for {name!r}; the outcomes § 33 "
+                    f"states are {' | '.join(ADVANCE_OUTCOMES)}. An outcome this "
+                    "carrier does not recognise is refused rather than read as one "
+                    "it does.",
+                )
+        entry = stated[0]
+        named = entry.get(ADVANCE_REQUIRES)
+        by_name = isinstance(named, list)
+        required: list[tuple[str, str]] = []
+        if by_name:
+            for check in named:
+                (kind, name), = check.items()
+                required.append((kind, name))
+        checks = []
+        for kind, name in required:
+            outcome = readings.get(name, ADVANCE_UNREPORTED)
+            checks.append({
+                "name": name,
+                "kind": kind,
+                "required": True,
+                "outcome": outcome,
+                "holds": outcome != ADVANCE_RELEASES,
+            })
+        required_names = {name for _, name in required}
+        for name, outcome in readings.items():
+            if name in required_names:
+                continue
+            checks.append({
+                "name": name,
+                "kind": None,
+                "required": False,
+                "outcome": outcome,
+                # ⛔ The stated default, read only where the target names no
+                # check: a target that names some has said which ones its
+                # advance rests on, and the rest hold nothing.
+                "holds": (not by_name) and outcome == ADVANCE_DEFAULT_HOLDS,
+            })
+        holding = [check["name"] for check in checks if check["holds"]]
+        report = []
+        if not by_name:
+            report.append(
+                f"The target {target!r} names no check its advance requires "
+                f"(`{ADVANCE_REQUIRES}` omitted), so § 33's default governs: a "
+                f"`{ADVANCE_DEFAULT_HOLDS}` outcome holds the advance, and every "
+                "other outcome is reported and holds nothing."
+            )
+        for check in checks:
+            if check["holds"]:
+                report.append(
+                    f"{check['name']!r} came back `{check['outcome']}` and holds the "
+                    "advance of every item in the batch -- never the target, which "
+                    "is already deployed, and never the grouping's mark."
+                )
+            elif check["outcome"] != ADVANCE_RELEASES:
+                report.append(
+                    f"{check['name']!r} came back `{check['outcome']}`; it is not a "
+                    "check this target's advance rests on, so it is reported and "
+                    "holds nothing."
+                )
+        return {
+            "target": target,
+            "names_checks": by_name,
+            "checks": checks,
+            "held": bool(holding),
+            "holding": holding,
+            "report": report,
+        }
+
     def _report_roots(self) -> "list[tuple[str, Config]]":
         """(what to prefix a line with, the root to read it from).
 
@@ -5088,6 +5191,99 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # one § 33 has with § 16 over `requires` -- the shape is held where the
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
+        _validate_advance_requires(where, entry, data, facts)
+
+
+def _stated_tier_names(data: dict) -> set[str]:
+    """The § 31 tiers a configuration states, by the name `test_tiers` keys them on.
+
+    ⚠️ Empty under `carrier: none`, which is the answer and not a fallback: a
+    project stating no tier has none for a § 33 check to name.
+    """
+    if _get(data, "test_tiers.carrier") != "list":
+        return set()
+    return {
+        entry["tier"]
+        for entry in _absent_as(_get(data, "test_tiers.tiers"), [])
+        if isinstance(entry, dict) and isinstance(entry.get("tier"), str)
+    }
+
+
+def _validate_advance_requires(where: str, entry: dict, data: dict, facts: dict) -> None:
+    """§ 33's `advance_requires` on one target, which no marker can reach.
+
+    ⚠️ Optional: an entry that omits it requires no check by name, and § 33 states
+    the default that governs it then. ⛔ What a stated list has to *be* is held
+    here, every arm refusing rather than skipping -- a check a reader could not
+    make sense of is a check whose skip would move the items anyway.
+    """
+    if ADVANCE_REQUIRES not in entry:
+        return
+    at = f"{where}.{ADVANCE_REQUIRES}"
+    checks = entry[ADVANCE_REQUIRES]
+    if not isinstance(checks, list) or not checks:
+        raise ConfigError(
+            at,
+            "must be a non-empty list of the checks this target's advance rests on "
+            "(§ 33); omit it where the target names none, which is the stated "
+            "default rather than an empty list.",
+        )
+    # ⛔ The two kinds are read off the surface's own entry fence, which is
+    # `_validate_deploy`'s rule one level down.
+    prefix = f"deploy.{ADVANCE_REQUIRES}."
+    kinds = {path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)}
+    if not kinds:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a check could be held "
+            "to nothing (§ 33).",
+        )
+    tiers = _stated_tier_names(data)
+    seen: dict[str, int] = {}
+    for position, check in enumerate(checks):
+        here = f"{at}[{position}]"
+        if not isinstance(check, dict):
+            raise ConfigError(
+                here,
+                f"must be a mapping carrying exactly one of {', '.join(sorted(kinds))} "
+                "(§ 33).",
+            )
+        for stated_key in check:
+            if stated_key not in kinds:
+                raise ConfigError(
+                    f"{here}.{stated_key}",
+                    "is a key § 33 does not declare on a check, so it is a fact "
+                    f"nothing reads. The keys it declares are: {', '.join(sorted(kinds))}.",
+                )
+        if len(check) != 1:
+            raise ConfigError(
+                here,
+                f"carries {len(check)} of {', '.join(sorted(kinds))}; a check names "
+                "itself by exactly one (§ 33).",
+            )
+        (kind, name), = check.items()
+        if not isinstance(name, str) or not name.strip():
+            raise ConfigError(f"{here}.{kind}", "must be a non-empty name (§ 33).")
+        if kind == "tier" and name not in tiers:
+            raise ConfigError(
+                f"{here}.tier",
+                f"is {name!r}, which no tier in `test_tiers` states (§ 33, § 31). "
+                + (
+                    f"The tiers stated are: {', '.join(sorted(tiers))}."
+                    if tiers
+                    else "This project states no tier at all, so there is none "
+                    "for a check to name; a project-specific verification is a "
+                    "`reading`."
+                ),
+            )
+        if name in seen:
+            raise ConfigError(
+                f"{here}.{kind}",
+                f"is {name!r}, which {at}[{seen[name]}] already names (§ 33). An "
+                "outcome is handed to a check by its name, so two checks carrying "
+                "one name leave which of them it answers undefined.",
+            )
+        seen[name] = position
 
 
 # § 35's two commands that may not carry their own answer, and the one shape a
@@ -6577,6 +6773,19 @@ COMMAND_ROOT_REF = "command_root"
 # because an entry states both and they name different things, which is § 1's
 # `A command root is not a code root` read at the one key pair that carries it.
 DEPLOY_CODE_ROOT = "code_root"
+
+# § 33's key naming the checks a target's advance rests on, and the outcomes one
+# comes back with. ⛔ The outcomes are a literal because the surface states them
+# in a table rather than on a key line -- they are what a role hands the carrier,
+# not a value a configuration writes -- and what holds the two together is the
+# suite, which reads the table back and refuses a surface and a carrier that
+# disagree. ⛔ `passed` is the one outcome that releases an advance, and
+# `failed` the one the stated default holds on where a target names no check.
+ADVANCE_REQUIRES = "advance_requires"
+ADVANCE_OUTCOMES = ("passed", "failed", "skipped", "deselected", "unread", "running")
+ADVANCE_RELEASES = "passed"
+ADVANCE_DEFAULT_HOLDS = "failed"
+ADVANCE_UNREPORTED = "unread"
 
 # Where the command goes inside an `invoke` form (§ 1). ⛔ A form and not a
 # pattern, which is `PLACEHOLDER`'s own reason one facet over: what reads this
@@ -14299,6 +14508,8 @@ def self_test() -> int:
         refusal = _refused(loaded)
         check(label, refusal is None, f"refused on {refusal!r}")
 
+    _advance_requires_suite(check, surface)
+
     # ⛔ The one arm the plant list above cannot hold, and it is held on the
     # refusal's **text** rather than on its key. Two rules refuse
     # `deploy[].command_root` — this facet's *the shape never reads it* and
@@ -15678,6 +15889,33 @@ def _planted_violations():
          at("deploy", [_a_deploy_target(publishes="yes")])),
         ("a target that publishes while naming no grouping", "deploy[0].publishes",
          at("deploy", [_a_deploy_target(publishes=True)])),
+        # ⛔ § 33's `advance_requires`, every arm. ⚠️ The base example states no
+        # tier, so the tier plant is the `carrier: none` arm: a project with no
+        # tier has none for a check to name.
+        ("checks an advance rests on written as something that is not a list",
+         f"deploy[0].{ADVANCE_REQUIRES}",
+         at("deploy", [_a_deploy_target(advance_requires="a tier")])),
+        ("an advance resting on an empty list of checks",
+         f"deploy[0].{ADVANCE_REQUIRES}",
+         at("deploy", [_a_deploy_target(advance_requires=[])])),
+        ("a check that is not a mapping", f"deploy[0].{ADVANCE_REQUIRES}[0]",
+         at("deploy", [_a_deploy_target(advance_requires=["a tier"])])),
+        ("a check carrying a key § 33 does not declare",
+         f"deploy[0].{ADVANCE_REQUIRES}[0].suite",
+         at("deploy", [_a_deploy_target(advance_requires=[{"suite": "a suite"}])])),
+        ("a check naming itself as a tier and a reading at once",
+         f"deploy[0].{ADVANCE_REQUIRES}[0]",
+         at("deploy", [_a_deploy_target(
+             advance_requires=[{"tier": "a tier", "reading": "a reading"}])])),
+        ("a check naming itself by neither key", f"deploy[0].{ADVANCE_REQUIRES}[0]",
+         at("deploy", [_a_deploy_target(advance_requires=[{}])])),
+        ("a reading written blank", f"deploy[0].{ADVANCE_REQUIRES}[0].reading",
+         at("deploy", [_a_deploy_target(advance_requires=[{"reading": "   "}])])),
+        ("a tier no `test_tiers` states", f"deploy[0].{ADVANCE_REQUIRES}[0].tier",
+         at("deploy", [_a_deploy_target(advance_requires=[{"tier": "a tier"}])])),
+        ("one name carried by two checks", f"deploy[0].{ADVANCE_REQUIRES}[1].reading",
+         at("deploy", [_a_deploy_target(
+             advance_requires=[{"reading": "a reading"}, {"reading": "a reading"}])])),
         # § 35's block, one plant per arm, every one of them on a target this list
         # has already shown loads — so a refusal here is the block's and never the
         # target's. ⚠️ The block's own absence is **not** planted: § 35 makes an
@@ -18419,6 +18657,166 @@ def _a_deploy_target(**overrides) -> dict:
     return {key: value for key, value in target.items() if value is not _ABSENT}
 
 
+def _an_example_stating_a_tier() -> tuple[dict, str]:
+    """An example whose `test_tiers` states a tier, and that tier's name (§ 31).
+
+    ⛔ Found rather than named, for `_a_valid_example`'s reason; raises where no
+    example states one, since the green arm of § 33's `tier` check would then
+    assert nothing.
+    """
+    for path in _examples():
+        with open(path, encoding="utf-8") as handle:
+            data = _load_yaml(handle.read(), CONFIG_PATH)
+        tiers = sorted(_stated_tier_names(data))
+        if tiers:
+            return data, tiers[0]
+    raise ConfigError(
+        "test_tiers",
+        "no example states a tier, so § 33's `tier` check has no green arm.",
+    )
+
+
+def _surface_advance_outcomes() -> dict[str, bool]:
+    """§ 33's outcome table, read back: each outcome and whether it releases.
+
+    ⛔ Read off the subsection's own rows -- a backticked word in the first cell
+    and `yes` or `no` in the last -- so the suite compares the carrier's literal
+    with what the surface states rather than with a third copy written here.
+    """
+    with open(SURFACE, encoding="utf-8") as handle:
+        text = handle.read()
+    start = text.find("### What an advance requires, and what holds it")
+    if start < 0:
+        return {}
+    end = text.find("\n### ", start + 1)
+    rows: dict[str, bool] = {}
+    for line in text[start:end].splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if (
+            len(cells) == 3
+            and re.fullmatch(r"`[a-z]+`", cells[0])
+            and cells[2] in ("yes", "no")
+        ):
+            rows[cells[0].strip("`")] = cells[2] == "yes"
+    return rows
+
+
+def _advance_requires_suite(check, facts: dict) -> None:
+    """§ 33's `advance_requires`: the green side of the load, and the carrier's verdicts.
+
+    ⛔ The planted violation this facet exists for is a skipped required check
+    that moves the items anyway; every outcome but `passed` is planted on a
+    required check, and each must hold.
+    """
+    print("\n§ 33, what an advance requires -- the load's green side and the verdict:")
+    loaded = _a_valid_example()
+    loaded["deploy"] = [
+        _a_deploy_target(advance_requires=[{"reading": "the served commit"}])
+    ]
+    refusal = _refused(loaded)
+    check("a target naming a reading its advance rests on loads",
+          refusal is None, f"refused on {refusal!r}")
+    tiered, tier = _an_example_stating_a_tier()
+    tiered = copy.deepcopy(tiered)
+    tiered["deploy"] = [
+        _a_deploy_target(advance_requires=[{"tier": tier}, {"reading": "every image"}])
+    ]
+    refusal = _refused(tiered)
+    check("a target naming a tier its project states loads",
+          refusal is None, f"refused on {refusal!r}")
+
+    surface_rows = _surface_advance_outcomes()
+    check(
+        "the surface's outcome table and the carrier's outcomes are the same set",
+        set(surface_rows) == set(ADVANCE_OUTCOMES),
+        f"surface states {sorted(surface_rows)}, carrier {sorted(ADVANCE_OUTCOMES)}",
+    )
+    check(
+        "the surface releases an advance on exactly the carrier's one outcome",
+        [o for o, releases in surface_rows.items() if releases] == [ADVANCE_RELEASES],
+        f"surface releases on {[o for o, r in surface_rows.items() if r]}",
+    )
+
+    def verdict(data: dict, readings: dict) -> dict:
+        return _resolve(data, EXAMPLES, facts, False).advance("a-target", readings)
+
+    named = _a_valid_example()
+    named["deploy"] = [_a_deploy_target(
+        advance_requires=[{"reading": "the served commit"}, {"reading": "every image"}]
+    )]
+    released = verdict(named, {"the served commit": "passed", "every image": "passed"})
+    check("every required check passed releases the advance",
+          released["held"] is False, f"held on {released['holding']}")
+    for outcome in ADVANCE_OUTCOMES:
+        if outcome == ADVANCE_RELEASES:
+            continue
+        got = verdict(named, {"the served commit": outcome, "every image": "passed"})
+        check(
+            f"a required check that came back `{outcome}` holds the advance",
+            got["holding"] == ["the served commit"],
+            f"held on {got['holding']}",
+        )
+    unreported = verdict(named, {"every image": "passed"})
+    check(
+        "a required check handed no outcome is unread and holds",
+        unreported["holding"] == ["the served commit"]
+        and unreported["checks"][0]["outcome"] == ADVANCE_UNREPORTED,
+        f"read {unreported['checks']}",
+    )
+    extra = verdict(named, {"the served commit": "passed", "every image": "passed",
+                            "a smoke run": "failed"})
+    check(
+        "a check the target does not name is reported and holds nothing, even failed",
+        extra["held"] is False
+        and any(c["name"] == "a smoke run" and not c["required"] for c in extra["checks"]),
+        f"read {extra}",
+    )
+
+    # ⛔ The stated default, and the half that keeps a project stating nothing
+    # new where it was: failed holds, every other outcome moves the items.
+    unnamed = _a_valid_example()
+    unnamed["deploy"] = [_a_deploy_target()]
+    failed = verdict(unnamed, {"a tier": "failed"})
+    check("under the default a failed check holds the advance",
+          failed["holding"] == ["a tier"], f"held on {failed['holding']}")
+    for outcome in ADVANCE_OUTCOMES:
+        if outcome == ADVANCE_DEFAULT_HOLDS:
+            continue
+        got = verdict(unnamed, {"a tier": outcome})
+        check(f"under the default a `{outcome}` check is reported and holds nothing",
+              got["held"] is False, f"held on {got['holding']}")
+    check("under the default nothing handed holds nothing",
+          verdict(unnamed, {})["held"] is False, "held")
+
+    for label, readings in (
+        ("an outcome outside the table is refused", {"the served commit": "green"}),
+        ("an outcome spelled in another case is refused", {"the served commit": "Passed"}),
+    ):
+        try:
+            verdict(named, readings)
+        except ConfigError:
+            check(label, True, "")
+        else:
+            check(label, False, "read rather than refused")
+    try:
+        verdict(_a_valid_example(), {})
+    except ConfigError:
+        check("an advance asked of a target nothing states is refused", True, "")
+    else:
+        check("an advance asked of a target nothing states is refused", False, "answered")
+    for label, pairs in (
+        ("a reading with no outcome separator is refused", ["the served commit"]),
+        ("one check handed two outcomes is refused", ["a=passed", "a=failed"]),
+        ("a reading with no name is refused", ["=passed"]),
+    ):
+        try:
+            _parse_readings(pairs)
+        except ConfigError:
+            check(label, True, "")
+        else:
+            check(label, False, "parsed")
+
+
 def _a_grouping_the_example_plans_in() -> str:
     """The name a § 33 target may write for `_a_valid_example`'s own grouping.
 
@@ -19344,6 +19742,30 @@ def _refuses_a_root_with_no_config() -> tuple[str | None, bool]:
 # --- entry point -----------------------------------------------------------
 
 
+def _parse_readings(pairs: list[str]) -> dict[str, str]:
+    """`NAME=OUTCOME` pairs, as `--reading` hands them, into one mapping.
+
+    ⛔ A pair with no `=`, an empty name, or one name handed twice is refused:
+    two outcomes for one check leave which of them governs undefined.
+    """
+    readings: dict[str, str] = {}
+    for pair in pairs:
+        name, sep, outcome = pair.rpartition("=")
+        name = name.strip()
+        if not sep or not name:
+            raise ConfigError(
+                f"deploy.{ADVANCE_REQUIRES}",
+                f"was handed {pair!r} as a reading; the form is NAME=OUTCOME (§ 33).",
+            )
+        if name in readings:
+            raise ConfigError(
+                f"deploy.{ADVANCE_REQUIRES}",
+                f"was handed {name!r} twice; one check has one outcome (§ 33).",
+            )
+        readings[name] = outcome.strip()
+    return readings
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="Read a project's configuration, once, for every role.",
@@ -19439,6 +19861,23 @@ def main(argv: list[str]) -> int:
         "answer of not-refused",
     )
     parser.add_argument(
+        "--advance-for",
+        metavar="TARGET",
+        help="one of § 33's deploy targets: whether the outcomes handed by "
+        "`--reading` hold the advance of its batch. Prints every check, its "
+        "outcome, whether the target requires it, and which hold. ⛔ A required "
+        "check handed no outcome is `unread` and holds, never passed",
+    )
+    parser.add_argument(
+        "--reading",
+        action="append",
+        default=[],
+        metavar="NAME=OUTCOME",
+        help="one check's outcome for `--advance-for`, repeated per check: the "
+        "name is the tier's or the reading's, and the outcome one of "
+        f"{' | '.join(ADVANCE_OUTCOMES)}",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="hold this reader to the surface and the examples",
@@ -19492,6 +19931,15 @@ def main(argv: list[str]) -> int:
                 "a *command* runs in, so a name alone asks nothing. Pass "
                 "`--command` with it, or read the roots this project declares "
                 "out of the report this run prints without either.",
+            )
+        if args.advance_for:
+            answer = config.advance(args.advance_for, _parse_readings(args.reading))
+        elif args.reading:
+            raise ConfigError(
+                f"deploy.{ADVANCE_REQUIRES}",
+                "cannot be asked about an outcome with no target named: § 33 "
+                "states which checks an advance rests on per target, so a reading "
+                "alone holds nothing. Pass `--advance-for` with it.",
             )
         if args.exempt_for:
             answer = config.exempt_for(args.exempt_for, args.of_kind)
