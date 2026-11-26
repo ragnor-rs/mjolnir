@@ -710,6 +710,12 @@ spec_corpus:
     Somebody outside the two people who work on this service starts being told what a version of
     it does — the first reader of a copy that is not the current one.
 
+# § 42 at its defaults, written out so a reader sees the step was considered: no role reads the code
+# for whether an item is already built.
+built_check:
+  points: []
+  on_finding: report
+
 # § 40's stated arm, and the only shipped example that carries one: this is the ladder with an
 # `accepted` role in it, so it is the one project here where somebody judges a deployed item
 # before a release may carry it. ⛔ `identity` is keyed by a target's own `name` from `deploy`

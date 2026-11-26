@@ -697,6 +697,7 @@ same questions:
 | what an item's identifier is | the project's key and a number, and the key resolves across the **whole site** — so a key from another project answers perfectly rather than being refused, which makes the project key a guard and not a label | a live site |
 | what a state is | a status the item is **in** and a transition that leads there, and a transition's `name` is a separate field from the `to.name` it leads to. ⛔ So a status word is matched on what a move leads to; matching the verb would match the wrong half on every workflow whose verbs differ from its states | a live site |
 | which statuses an item can reach | what the workflow offers **for that item's type**: on one project defining nine statuses, one type offered three of them and another all nine. ⚠️ So a word the project states and this item cannot reach has two readings — a vocabulary the tracker lacks, or a move this workflow does not allow from here — and neither is assumed | a live site |
+| what a move can carry | the fields a transition offers, asked for with `expand=transitions.fields` and keyed by the field's id, each with its type and, where it has them, the values it takes; the move's own write takes them under `fields` beside the transition's id. ⚠️ So a field the project states for a move is held to that offer before the write, and one the move does not offer is refused rather than sent. A resolution on a move to a finished status is the case one adopter's workflow was recorded as needing, and no move carrying one has been run | the published reference |
 | which types an item can have | nine available on one project with six in use, against a branch-prefix vocabulary of five — the case behind `type_branch_prefix` being a map rather than a boolean ([`schema.md § 4.1`](../plugins/mjolnir/config/schema.md#41-type)). ⛔ And a type is **required at creation**: there is no filing without one, which is the one place this tracker forces a question the code-host trackers leave open | a live site |
 | what a dependency's two sides are called | the link type reads `inward: is blocked by` / `outward: blocks`, and the call's `inwardIssue` is the item that **blocks** — the inversion this survey's own row named, now with both halves in hand. ⛔ Read the wording and the dependency is filed the wrong way round, and nothing in the answer says so | a live site |
 | how a dependency reads back | the entry an item carries names the *other* side, so an entry holding `inwardIssue` means this item **is blocked by** it. ⛔ Which is why the adapter's direction is held by a round trip rather than by reading the call: the write and the read are two separate chances to invert it | a live site |
@@ -4157,6 +4158,27 @@ the wrong key, and a plant certifying the wrong arm. ⛔ **The fix was to ask th
 the one function that produces it, which is why this rule sits beside § 5's rather than with the
 facet's own glob arms.
 
+### The roles that hold the item read it too, where the project says so
+
+One adopter loads its version's specification at start and again while implementing, and the
+filing role is the only one here that reads it. ⛔ **The answer is a list of roles and not a second
+read**: `while_working.roles` names which of the starting and implementing roles run the same
+command, at the same ref, for the item they hold —
+[`schema.md § 39 → The roles that read it while the work is done`](../plugins/mjolnir/config/schema.md#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read).
+
+| what was weighed | what the surface says, and why |
+|---|---|
+| reading at every leg wherever a corpus is carried | **opted into instead.** Every project carrying a corpus today would start paying for it in the window on every item, and a corpus written for filing decisions is not necessarily one the work is held to. A project that states nothing reads at filing alone |
+| the filing role as a value of the list | **refused.** It reads wherever a corpus is carried, so the entry would be a key that changes nothing |
+| a size cap on what is loaded | **refused, in favour of a glob list.** A truncated specification is the wrong copy one step further on, which is the carrier's own reason for capping nothing; `while_working.files` lets the project say what is loaded |
+| a narrowing list read as a corpus of its own | **an intersection instead.** A document is loaded only where both lists match it, so a glob reaching outside `files` cannot widen the read |
+| an item carrying no version falling back | **a stop.** The fallback is for a version with no branch; an item naming no version has no governing copy to decide, and reading the integration branch for it would read as the version's own |
+
+⛔ **The two roles add a statement the filing role never needed**: *this project does not have this
+role read its corpus*. It is neither the absent subject nor a verdict, and the carrier prints it in
+its own words so that a role asked to read nothing cannot report that nothing contradicts the item
+([`schema.md § 39 → The roles that read it while the work is done`](../plugins/mjolnir/config/schema.md#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read)).
+
 ## The role that writes a specification: two implementations, and the half already carried
 
 A role that turns raw source material into a specification and then into work items was named as
@@ -4474,3 +4496,39 @@ rather than a status word —
 [`schema.md § 41 → What the role records`](../plugins/mjolnir/config/schema.md#what-the-role-records-and-what-it-may-not-record). The suite beside the carrier asserts both arms and the green side with
 them — a role the procedure does write is not refused — so the four refusals are about this role
 rather than about every move being barred.
+
+## Whether the work is already built, a step three roles skipped
+
+**The filing role searched the tracker and never the code, and the starting and implementing roles
+took an item's statement as still true.** The gap was found by reading the role texts while
+preparing adopters' migrations, and nothing there was run. Two cases follow from it: an item whose
+work landed under another item is started and built again, and a closed duplicate whose work was
+never built receives every new request for that work, so the work drops out of every list. No role
+asked the question, so nothing in the loop could catch either case.
+
+Each subsection of the answer sits where its fact belongs:
+
+- **Where the step runs is the project's choice, and running nowhere is the default**, at
+  [`schema.md § 42 → The three points`](../plugins/mjolnir/config/schema.md#the-three-points-and-what-each-one-reads).
+  Reading the code on every item costs something on every item. A project whose items are filed
+  against the code as it stands has nothing to buy with it, and a default that ran everywhere would
+  change every adopter's loop under it.
+- **The finding is per bullet and a built bullet must cite something real**, at
+  [`schema.md § 42 → The finding`](../plugins/mjolnir/config/schema.md#the-finding-and-what-it-has-to-carry).
+  An item half built and an item not built read alike at the item level, and the failure the step
+  exists against is a role that believes the work is done without being able to point at where. A
+  bullet nobody could check is kept apart from one the code fails, because reading the first as the
+  second is the confident wrong answer.
+- **The step offers and never acts**, at
+  [`schema.md § 42 → What a finding does`](../plugins/mjolnir/config/schema.md#what-a-finding-does-and-what-it-never-does).
+  Whether the cited code answers a bullet is a judgement, and a judgement that closes items on its
+  own is one nobody can audit afterwards. `on_finding` decides only whether the role stops to ask.
+- **A closed duplicate with absent work is offered for reopening beside filing anew**, at
+  [`schema.md § 42 → A closed item whose work is absent`](../plugins/mjolnir/config/schema.md#a-closed-item-whose-work-is-absent).
+  Reopening keeps the item's history and filing anew starts clean. Neither is wrong in general, so
+  the person chooses.
+- **The carrier holds the shape and never reads the code**, at
+  [`schema.md § 42 → The carrier`](../plugins/mjolnir/config/schema.md#the-carrier-and-what-it-holds).
+  Which code answers a bullet is a reading only the role can take. What a script can hold is that
+  every citation exists, that the verdict is derived rather than written, and that nothing was
+  performed.

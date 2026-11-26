@@ -4616,6 +4616,13 @@ single-branch clone:
 | a ref the remote has and this clone does not is unread | the third outcome, reported as itself rather than as the fallback | computed |
 | a keyword is held to a word boundary | the match that reports a hit inside a longer word | computed |
 | a project with no corpus has no subject | the absent case, and the report that says so rather than that nothing contradicts | computed |
+| a working role the project does not name reads nothing | the *not asked* answer, worded as neither the absent subject nor a verdict | computed |
+| a working role's narrowing only narrows | a document matching the narrowing and not the corpus stays unloaded, and the filing role's read is not narrowed | computed |
+
+⛔ **Which roles read the corpus and what narrows their read** are the project's
+`while_working` block, refused at load in every shape that reads as a role or a narrowing while
+being neither ([`schema.md § 39 → The roles that read it while the work is
+done`](../plugins/mjolnir/config/schema.md#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read)).
 
 ⛔ **The two answers the last of those keeps apart are the reason the facet is worth a check at
 all.** *No corpus is configured* is the absence of a subject and *no contradiction was found* is a
