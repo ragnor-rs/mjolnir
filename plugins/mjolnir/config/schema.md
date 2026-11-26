@@ -2969,6 +2969,10 @@ commit:
     finish: explicit | all
     review: explicit | all
   trailer: none | read_from_history | "<literal trailer line>" # required
+  branch_rules:                              # default: []
+    - branches: ["release/*"]                # globs on the branch the commit lands on
+      paths: ["docs/*", "*.md"]              # what a commit there may contain
+      otherwise: stop | leave_out
 ```
 
 ### What staging is per, and the two rules that hold regardless
@@ -3018,6 +3022,41 @@ per-role form in the message — the same cost
 [§ 2](#a-workflow-whose-jobs-mirror-more-than-one-command) states beside its own withdrawn
 tolerance, and taken for the same reason: a second way of stating one fact is a second way for two
 roles to disagree about it.
+
+### What a commit may contain on a given branch
+
+`staging` says how a role picks its paths. `branch_rules` says which paths a commit may carry at
+all, by the branch it lands on. The measured case is a bookkeeping commit that has to keep code
+off a release branch while documents may go there, which no per-role value can express.
+
+- **A rule applies to a commit whose branch matches one of its `branches` globs.** The branch is
+  the one the commit lands on, read in the tree, never composed.
+- **A path is admitted when it matches one of the rule's `paths` globs**, in
+  [§ 30](#30-the-changes-that-do-not-go-through-the-loop)'s glob grammar: matched against
+  the repository-relative path, with `*` crossing a directory separator, and `**` refused.
+- ⛔ **Where several rules match one branch, every one of them applies.** A path has to be
+  admitted by each, so adding a rule can only narrow what a branch accepts.
+- **`otherwise` decides a commit carrying a path that is not admitted.** `stop` makes no commit and
+  names every such path. `leave_out` commits the admitted paths alone and names every path it
+  left out. ⚠️ Where any matching rule that refused a path says `stop`, the commit stops.
+- ⛔ **What was left out is named in the role's reply, and is left in the tree untouched.** A
+  path dropped silently reads exactly like a path that was never changed.
+- ⚠️ **A `leave_out` that admits nothing makes no commit**, and says so, rather than making an
+  empty commit.
+- **A branch that no rule matches behaves as it does today**, and so does a project that states
+  no rule. The answer then says the branch is unruled, which is a stated absence rather than an
+  admission.
+
+⛔ **One command answers, and every committing role asks it before its commit.** That is each
+role [§ 6's block](#6-commit-behaviour) gives a `staging` entry to, and the commit's staged
+paths are what is handed over:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <staged paths> --on-branch <branch>
+```
+
+⚠️ **The rule is read and applied by the role, and nothing on the host enforces it.** A commit
+made by hand, outside every role, is held to nothing here.
 
 ### Authorship is procedure, not configuration
 
