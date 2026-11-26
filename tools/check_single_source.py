@@ -723,7 +723,13 @@ def check_citations_between_documents_resolve(tree: Tree) -> list[str]:
     return problems
 
 
-def check_outcomes_live_in_one_of_two_places(tree: Tree) -> list[str]:
+def ruling_rows(tree: Tree) -> tuple[list[str], list[tuple[int, str]]]:
+    """The rulings table's rows, each with its 1-based line number, or why there are none.
+
+    ⛔ The one reading of that table, shared by every check that holds it: the table is
+    found by its column header and runs to the first line that is not a row, and a second
+    reader of the same shape is a second answer to where the table ends.
+    """
     lines = tree.text[RULINGS].splitlines()
     header = next(
         (i for i, l in enumerate(lines) if l.strip().startswith("|") and OUTCOME_COLUMN in l),
@@ -733,16 +739,24 @@ def check_outcomes_live_in_one_of_two_places(tree: Tree) -> list[str]:
         return [
             f"{RULINGS}: no table has a `{OUTCOME_COLUMN}` column, so no ruling's outcome "
             "is held to anything."
-        ]
+        ], []
     # Rows run to the first line that is not a table row, so a table added later
     # in the document is not parsed as a row of this one.
     rows = []
-    for line in lines[header + 2:]:
+    for index, line in enumerate(lines[header + 2:], start=header + 3):
         if not line.strip().startswith("|"):
             break
-        rows.append(line)
+        rows.append((index, line))
     if not rows:
-        return [f"{RULINGS}: the rulings table has no rows."]
+        return [f"{RULINGS}: the rulings table has no rows."], []
+    return [], rows
+
+
+def check_outcomes_live_in_one_of_two_places(tree: Tree) -> list[str]:
+    refusal, numbered = ruling_rows(tree)
+    if refusal:
+        return refusal
+    rows = [line for _index, line in numbered]
 
     sections = tree.sections()
     section_of = tree.section_of()
@@ -1121,6 +1135,54 @@ def check_the_front_page_names_every_carrier(tree: Tree) -> list[str]:
     return problems
 
 
+def check_ruling_ordinals_are_unique_and_contiguous(tree: Tree) -> list[str]:
+    """Every ruling's ordinal names one row, and every ordinal up to the last names one.
+
+    ⛔ Here because the rows cite each other by number in prose -- `(44)` inside another
+    row's cell -- and two sibling branches each computed the same next ordinal while one
+    item was in review. Git caught both only because the two rows were appended at the
+    same offset; rows landing at different offsets merge clean and the duplicate ships.
+
+    ⛔ **Computed from the rows and carrying no count of them**: the sequence expected is
+    one to the largest ordinal the table states, so a row appended is held the day it
+    lands and nothing here goes stale. ⚠️ The order the rows are written in is not held,
+    only the set: a reference resolves by number, not by position.
+    """
+    refusal, rows = ruling_rows(tree)
+    if refusal:
+        return refusal
+    problems = []
+    first_on: dict[int, int] = {}
+    for index, line in rows:
+        cells = split_row(line)
+        ordinal = cells[0].strip() if cells else ""
+        if not ordinal.isdigit():
+            problems.append(
+                f"{RULINGS}: line {index} is a row of the rulings table carrying no ordinal "
+                f"-- {ordinal!r}. A ruling is cited by its number, so a row without one "
+                "is a ruling nothing can cite."
+            )
+            continue
+        number = int(ordinal)
+        if number in first_on:
+            problems.append(
+                f"{RULINGS}: ruling {number} is stated twice -- first on line "
+                f"{first_on[number]}, again on line {index}. Every `({number})` elsewhere "
+                "in the table now names two rulings; the row that landed later takes the "
+                "next free ordinal."
+            )
+            continue
+        first_on[number] = index
+    if first_on:
+        for number in range(1, max(first_on) + 1):
+            if number not in first_on:
+                problems.append(
+                    f"{RULINGS}: no ruling is numbered {number}, though rulings run to "
+                    f"{max(first_on)}. A reference to ({number}) resolves to nothing."
+                )
+    return problems
+
+
 CHECKS = [
     ("every document has a role", check_every_document_has_a_role),
     ("citations resolve", check_citations_resolve),
@@ -1139,6 +1201,9 @@ CHECKS = [
     # ⛔ Appended for the reason the record check states, and not placed beside
     # check 0, whose subject is also a document set.
     ("the front page names every carrier", check_the_front_page_names_every_carrier),
+    # ⛔ Appended for the record check's reason, and not placed beside check 3, which
+    # reads the same table.
+    ("ruling ordinals are unique and contiguous", check_ruling_ordinals_are_unique_and_contiguous),
 ]
 
 
@@ -1915,6 +1980,50 @@ def _plant_a_command_shown_inside_a_fence(tree: Tree) -> Tree:
     return tree
 
 
+def _renumber_a_ruling(tree: Tree, which: int, to) -> Tree:
+    """Rewrite the ordinal cell of the rulings table's row `which` (0-based, negative
+    from the end) to `to(rows)`, the rows read through the check's own reader.
+
+    ⛔ Refuses rather than guessing where the table cannot be read, so a plant that
+    could not be built is reported as that and never as a mechanism holding.
+    """
+    refusal, rows = ruling_rows(tree)
+    assert not refusal, refusal
+    index, line = rows[which]
+    first = line.index("|")
+    second = line.index("|", first + 1)
+    lines = tree.text[RULINGS].split("\n")
+    assert lines[index - 1] == line, "the reader's line numbers do not address the text"
+    lines[index - 1] = f"{line[:first + 1]} {to(rows)} {line[second:]}"
+    tree.text[RULINGS] = "\n".join(lines)
+    return tree
+
+
+def _ordinal_of(line: str) -> str:
+    return split_row(line)[0].strip()
+
+
+def _plant_a_repeated_ruling_ordinal(tree: Tree) -> Tree:
+    """The last row takes the ordinal of the one before it.
+
+    ⚠️ Its own old ordinal is then nobody's, and that is not a gap by this check's
+    reading -- the sequence runs to the largest ordinal stated -- so the duplicate is
+    the only arm that fires, which is the arm this plant is for.
+    """
+    return _renumber_a_ruling(tree, -1, lambda rows: _ordinal_of(rows[-2][1]))
+
+
+def _plant_a_skipped_ruling_ordinal(tree: Tree) -> Tree:
+    """The last row skips one ordinal, which is what a branch computing its number from
+    a stale base does when the row it was counting on is withdrawn."""
+    return _renumber_a_ruling(tree, -1, lambda rows: int(_ordinal_of(rows[-1][1])) + 1)
+
+
+def _plant_a_ruling_with_no_ordinal(tree: Tree) -> Tree:
+    """A row whose first cell is not a number, which nothing could cite."""
+    return _renumber_a_ruling(tree, -1, lambda rows: "n")
+
+
 VIOLATIONS = [
     ("every document has a role", "a document with no role", _plant_unroled_document),
     ("every document has a role", "a nested document with no role", _plant_unroled_nested_document),
@@ -1964,6 +2073,12 @@ VIOLATIONS = [
      _plant_an_inventory_row_no_carrier_ships),
     ("the front page names every carrier", "a tree carrying no carrier at all",
      _plant_no_carrier_at_all),
+    ("ruling ordinals are unique and contiguous", "an ordinal two rows state",
+     _plant_a_repeated_ruling_ordinal),
+    ("ruling ordinals are unique and contiguous", "an ordinal the sequence skips",
+     _plant_a_skipped_ruling_ordinal),
+    ("ruling ordinals are unique and contiguous", "a row carrying no ordinal",
+     _plant_a_ruling_with_no_ordinal),
 ]
 
 

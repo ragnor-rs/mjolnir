@@ -139,6 +139,7 @@ inserted rather than appended renumbered every reference below and the run staye
 | 9 | `the record has a row per check` | This table's rows are the script's checks, in its own order and under its own names | the number and the name, not what the remaining cells say | computed |
 | 10 | `no document leaves a fence open` | No document ends inside a fenced block | every document with a role, the schema included | computed |
 | 11 | `the front page names every carrier` | Every carrier the plugin ships is offered on the front page as a command **and** linked in the inventory below it, and neither list names a carrier that does not ship | both lists, fenced examples excepted | computed |
+| 12 | `ruling ordinals are unique and contiguous` | Every ruling's ordinal names one row, and every ordinal from one to the largest stated names a row | the rulings table's first column, not the order its rows are written in | computed |
 
 Check 2 is the one that does the most work, because it runs in the direction nobody remembers to
 check by hand: a section added to the schema with nothing recording why it has that shape fails
@@ -192,6 +193,18 @@ which is what the case recorded above needed and what ruling 11 already relies o
 `N → Subsection` form the documents use in prose resolve on their leading ordinal. ⛔ **What is
 still refused is naming a `###` subsection as though it were the section**: the cell names the
 home and the link names the place in it, and the refusal says which of the two disagrees.
+
+Check 12 holds the rulings table's ordinals, which check 3 reads only to name a row in a refusal.
+The rows cite each other by number in prose, so a duplicate makes every such reference name two
+rulings and a skipped ordinal makes a reference to it name none — and neither shows in review,
+because each row reads correctly on its own. ⚠️ **It was measured before it was held**: two sibling
+branches computed the same next ordinal twice while one item was in review
+([#45](https://github.com/ragnor-rs/mjolnir/issues/45)), and what caught both times was git, only
+because the rows were appended at the same offset. Rows landing at different offsets merge clean.
+The expected sequence is derived from the table on every run — one to the largest ordinal it
+states — so no count of rulings is written here or in the script. A duplicate's refusal names the
+ordinal and the line that stated it first, which is the form
+[#194](https://github.com/ragnor-rs/mjolnir/issues/194) settled for a key stated twice.
 
 ## What the run reports rather than holds
 
@@ -353,6 +366,12 @@ Stated, because an unstated limit reads later as coverage.
   ⚠️ **The carrier reading is keyed on the skills directory**, every carrier this plugin ships
   being a skill there — so a command the page offers is held against that directory and against
   nothing else.
+- **The schema's own section numbers, and whether a `(44)` in prose names the ruling it means.**
+  Check 12 holds the rulings table and no other numbered sequence: the surface's `## N.` headings
+  sit in the same position and were scoped out when the item was filed. ⚠️ **Nor is the order of
+  the rows held**, only the set, since a reference resolves by number rather than by position. ⛔
+  **A reference to a ruling that exists but is the wrong one reads correctly to it** — that half is
+  a reader's.
 - **A heading inside a region the citation scan skips and the heading scan does not.** ⚠️ **The
   two scans now share one fence walker**, so this residue is narrower than it was: a fenced
   block is the same bytes to both, under either delimiter and at any delimiter length. ⛔ **What
