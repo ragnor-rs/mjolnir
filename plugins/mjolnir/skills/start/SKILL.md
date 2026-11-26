@@ -405,10 +405,11 @@ first sentence, then the facts, with a table where the content enumerates.
   ([`§ 11`](../../config/schema.md#a-report-names-what-it-could-not-establish)), which has no
   quiet form;
 - ⛔ **that the work itself is under way, and which carrier the leg was entered through** — the
-  implementing role where the project maps one, or that it maps none and this session is doing the
-  work, by step 7. ⚠️ **Said rather than left to be inferred from the turn continuing**: a reply
-  that ends without it reads as a pass that stopped at the claim, which is the state this role's
-  last act exists to prevent;
+  implementing role where the project maps one, the project's own carrier and the label or type
+  that routed the item to it, or that it maps none and this session is doing the work, by step 7.
+  ⚠️ **Said rather than left to be inferred from the turn continuing**: a reply that ends without
+  it reads as a pass that stopped at the claim, which is the state this role's last act exists to
+  prevent;
 - ⛔ **what happens when the work is done, named rather than left to whoever reads this later**:
   the item's stated acceptance condition answered in the tree is what the finishing role is entered
   on, and the session holding the item is what enters it —
@@ -442,6 +443,20 @@ the finishing one.
 addresses it by name — [`skills/implement/`](../implement/) is what this toolkit ships for it — and
 ⚠️ **where the project maps none, the leg is not skipped**: this session does the work itself in
 this same pass, which is § The loop's own statement for an absent role on this one leg.
+
+⛔ **Unless the project routes this item to a carrier of its own, which is read first**, off every
+label the item carries and its type, ⚠️ **quoted**:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --route-for "<each label>" "<the type>"
+```
+
+What each answer means — no route, one carrier, two, and a carrier that is not there — is
+[`§ 7 → An item a project routes`](../../config/schema.md#an-item-a-project-routes-to-a-carrier-of-its-own)'s,
+⛔ **cited and not restated**. What is this role's: a routed item is **handed over** — the carrier
+addressed by the name the answer gives, and the reply naming it and what routed it — ⛔ **and
+nothing of that carrier is absorbed here**, what it does and where it hands next being its own.
+⛔ **A stop is a stop**, and never the implementing role entered in the routed carrier's place.
 
 ⛔ **So there is no hand-back here**: no *ready to start?*, no *shall I begin?*, and no reply whose
 last line offers the work rather than reporting it under way. ⚠️ **The reply register forbids it

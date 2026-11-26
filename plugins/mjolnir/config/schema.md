@@ -3337,6 +3337,53 @@ than skills, so a sweep of skill directories undercounts it by six roles. Config
 independently of the role, or a migration declares that project done with most of it still
 local.
 
+### An item a project routes to a carrier of its own
+
+```yaml
+carrier_routes:                 # absent: every item's work is entered through `carriers.implement`
+  - label: "<a label the tracker holds>"      # or `type`, never both
+    carrier: "<the carrier's own invocation name>"
+    kind: skill
+```
+
+⛔ **A project may hand the work on an item of a stated type or label to a carrier of its own, and
+the toolkit ships no such carrier.** Each entry names one `label` or one `type` — the value
+[§ 4.1](#41-type) reads, which under a `label` carrier is matched with its `label_prefix` — the
+`carrier` by its own invocation name, and its `kind`. ⚠️ **This is a route within the loop and not
+a role beside it**, so [§ 36](#36-a-skill-that-is-no-leg-of-the-loop-and-why-none-is-carried-here)
+is not reached: what is configured is which carrier a leg the loop already has is entered through,
+and the carrier itself stays the project's.
+
+⛔ **The starting role is what reads it, and only after the gate and the claim.** An item a route
+matches still runs [§ 5](#5-readiness-gate--an-ordered-predicate-list)'s list whole and is still
+claimed by [§ 10](#the-claim-on-a-work-item)'s ref; what the route changes is the leg entered next,
+which is the routed carrier in place of the implementing one. ⛔ **The starting role hands over and
+reports the hand-over, and absorbs nothing of the carrier** — what that carrier does, and which leg
+it hands to after, is its own.
+
+⛔ **A route that cannot be followed is a stop naming the carrier, never a fall back to the loop's
+own leg**:
+
+| what the route resolves to | what the starting role does |
+|---|---|
+| no entry matches the item | enters `carriers.implement`, as a project stating no route does |
+| one carrier | enters it, and the reply names the carrier and the label or type that routed it |
+| two entries matching, naming different carriers | ⛔ stops, naming both: which one the work belongs to is the project's to state |
+| a carrier whose file is not where its kind puts it under the skills root | ⛔ stops, naming the carrier and the path read |
+| a namespaced carrier, whose install the harness alone knows | **unestablished** rather than present, so the invocation is the test, and a refused invocation is the stop |
+
+⛔ **The reader refuses at load** an entry naming neither a `label` nor a `type`, or both; a `type`
+where [§ 4.1](#41-type) carries none, or one outside its `values`; one with no `carrier`; a `kind`
+with no invocation name; and one label or type routed twice.
+
+```yaml
+carrier_routes:
+    label:   "<a label the tracker holds>"
+    type:    "<one of § 4.1's values>"
+    carrier: "<the carrier's own invocation name>"
+    kind:    skill | command
+```
+
 ### Invocation
 
 A role is addressed **namespaced, with no alias** — `/<plugin>:<name>`, where the name is the
