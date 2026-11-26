@@ -1906,7 +1906,7 @@ def grouping_items(value: str, *, grouping: dict) -> dict:
         # ⛔ Resolved against the board, which is what `search_items` does with a
         # field a caller names: a field this board does not carry is refused
         # rather than answered with the cards that do not match it.
-        _field(str(held), key="work_item.grouping.field")
+        _field(str(held), key=f"{config.grouping_at((grouping or {}).get('name'))}.field")
     label = None
     if carrier == "label":
         label = f"{(grouping or {}).get('label_prefix') or ''}{value}"

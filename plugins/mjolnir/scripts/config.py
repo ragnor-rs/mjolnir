@@ -2262,7 +2262,7 @@ class Config:
         and never the first grouping, the map's commonest value, or a blank.
         """
         block = self.grouping(name)
-        at = GROUPING_KEY if block["name"] == ONE_GROUPING else f"{GROUPING_KEY}.{block['name']}"
+        at = grouping_at(block["name"])
         answer = {"grouping": block["name"], "value": None}
         if given is not None and str(given).strip():
             return {**answer, "value": given, "source": "given",
@@ -4945,6 +4945,18 @@ ASSIGNEE_CHECK = "assignee_matches_role"
 # be free to disagree with the path a refusal names.
 GROUPING_KEY = "work_item.grouping"
 ONE_GROUPING = GROUPING_KEY.rpartition(".")[2]
+
+
+def grouping_at(name) -> str:
+    """The path one grouping's block is stated at, which a refusal about it names.
+
+    ⛔ One derivation for every reader: the single form is the facet's own path
+    and a collection entry sits one segment below it, so a key composed by hand
+    names a path the file does not hold in one of the two forms.
+    """
+    return GROUPING_KEY if name in (None, ONE_GROUPING) else f"{GROUPING_KEY}.{name}"
+
+
 IN_GROUPING_CHECK = "in_grouping"
 GROUPING_REF_CHECK = "grouping_ref_exists"
 # § 4.8's stated default: the facet it is read from, and the map from that

@@ -99,8 +99,8 @@ API_SHOWN = under_test.API
 # things the implementation does with a field are resolve the name, read the id
 # and shape by the type, and a fixture short of any of them leaves one unreached.
 #
-# ⚠️ The display names are deliberately **not** the ids: a field is addressed by
-# name here and resolved per site, and a fixture whose names equalled its ids
+# ⚠️ The display names are deliberately **not** the ids: a field is resolved per
+# site from whichever name a project states, and a fixture whose names equalled its ids
 # would let a guard that matched the caller's spelling read as correct.
 FIELDS = [
     {"id": "summary", "name": "Summary", "schema": {"type": "string"}},
@@ -117,7 +117,7 @@ FIELDS = [
      "schema": {"type": "array", "items": "json", "custom": SPRINT_TYPE},
      "searchable": True, "clauseNames": ["sprint"]},
     # A custom field, with the site-specific id that is the whole reason a field
-    # is addressed by name: readable by name, and refused for a write because
+    # is resolved per site: readable by name, and refused for a write because
     # this implementation has no shape for its type -- a list of `json` that is
     # not the sprint.
     {"id": "customfield_10060", "name": "Flags",
@@ -2392,7 +2392,7 @@ def self_test() -> int:
     # --- § 33's publishing set, by one bounded query --------------------------
     #
     # ⛔ The field is the **configuration's**, not one of `QUERYABLE`: § 4.8 says
-    # where this project holds its grouping, and the host resolves that name. ⚠️
+    # where this project holds its grouping, and the catalogue states its clause. ⚠️
     # The grouping block is read off the shipped example rather than built here,
     # for the reason every other fixture in this module is read off it.
     A_RELEASE = "a release"
@@ -2425,10 +2425,14 @@ def self_test() -> int:
         )
         # ⛔ § 3's one name: the id and the display name each reach the same clause,
         # which neither of them is.
+        # ⚠️ And a clause spelling a project already states keeps reaching the
+        # query, which took the configured name as written before any of this.
         for stated, clause in (
             ("fixVersions", "fixVersion"),
             ("Sprint", "sprint"),
             ("customfield_10020", "sprint"),
+            ("fixVersion", "fixVersion"),
+            ("sprint", "sprint"),
         ):
             either = host()
             named = with_host(
@@ -2443,7 +2447,9 @@ def self_test() -> int:
                 f"sent {got(named, 'jql')!r}",
             )
         # ⛔ A name the catalogue does not answer to is refused naming the key that
-        # stated it, and no query is sent under it.
+        # stated it -- in the collection form, the entry's own path -- and no query
+        # is sent under it.
+        stated_at = f"{config.grouping_at('release_scope')}.field"
         for stated, why in (
             ("Fix versions", "matches nothing on this site"),
             ("Words", "is marked unsearchable"),
@@ -2459,9 +2465,9 @@ def self_test() -> int:
                 ),
             )
             check(
-                f"a grouping field that {why} is refused naming "
-                "`work_item.grouping.field`, before any query",
-                reported == "work_item.grouping.field"
+                f"a grouping field that {why} is refused naming `{stated_at}`, "
+                "before any query",
+                reported == stated_at
                 and not any("search" in call for call in unnamed.calls),
                 f"reported {reported!r} after {unnamed.calls}",
             )
@@ -2482,9 +2488,26 @@ def self_test() -> int:
         check(
             "a name that is one field's id and another's display name is refused, "
             "before any query",
-            reported == "work_item.grouping.field"
+            reported == stated_at
             and not any("search" in call for call in twice.calls),
             f"reported {reported!r} after {twice.calls}",
+        )
+        # ⛔ The single form names the facet's own path, which is the other half of
+        # the one derivation: a key composed by hand is wrong in one of the two.
+        single = host()
+        reported = with_host(
+            single,
+            lambda: refused(
+                lambda: under_test.grouping_items(
+                    A_RELEASE,
+                    grouping={**in_a_field, "name": config.ONE_GROUPING, "field": "Nowhere"},
+                )
+            ),
+        )
+        check(
+            "in the single form the refusal names `work_item.grouping.field`",
+            reported == f"{config.GROUPING_KEY}.field",
+            f"reported {reported!r}",
         )
         check(
             "and it carries no status clause, the set being every state the "
