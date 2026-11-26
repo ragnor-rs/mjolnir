@@ -119,6 +119,13 @@ import check_body_sections  # noqa: E402
 # so there is nothing per project to render in and nothing it can wait on.
 import strip_attribution  # noqa: E402
 
+# ⛔ Imported for their rendering and not for their rules, as the body gate's
+# checker is above. What a governed document and a recorded case *are* belongs to
+# §§ 38 and 15 and is answered in those modules; this one registers the pair of
+# files each gate needs in a repository and holds the four properties over them.
+import check_e2e_register  # noqa: E402
+import documents  # noqa: E402
+
 try:
     import yaml
 except ModuleNotFoundError:  # pragma: no cover - environment, not logic
@@ -229,11 +236,16 @@ NO_PLACE = "no place to write it"
 # green with a marked artifact still installed — § 11's rule that a report names
 # what it could not establish, arriving at the one answer that had no form.
 UNDETERMINED = "could not establish whether one is installed"
+# ⛔ The configuration asks for the gate and a checkout could not run it: what
+# the gate would carry is a value the repository does not commit, or a tree the
+# checkout does not hold. Written anyway, it would either commit what the project
+# withheld or hold nothing on every run -- so it is not written, and says why.
+CANNOT_RUN = "cannot run from a checkout"
 
 # Which answers leave the install incomplete. ⛔ `waiting` is among them: the
 # configuration asks for the artifact and the artifact cannot be rendered, so a
 # run reporting zero is reporting a gate that is not there.
-INCOMPLETE = (WAITING, OCCUPIED, UNSTATABLE, NO_PLACE, UNDETERMINED)
+INCOMPLETE = (WAITING, OCCUPIED, UNSTATABLE, NO_PLACE, UNDETERMINED, CANNOT_RUN)
 
 _ABSENT = object()
 
@@ -266,6 +278,7 @@ class Artifact:
         registers_as: str | None = None,
         comment: str = HASH,
         mode: int | None = _BY_KIND,
+        cannot_run=None,
     ):
         # ⛔ Refused at construction and not reported per run. `leaf` is the one
         # field that decides *where* a file lands, the registry is code in this
@@ -301,9 +314,17 @@ class Artifact:
         # removal path then takes out the file and leaves the entry.
         self.registers_as = registers_as
         self.comment = comment
+        # Why a checkout could not run this artifact, or None. ⛔ A work item's
+        # statement handed over like `wanted` -- which values the artifact carries
+        # into the tree, and what it reads there -- so that this module answers
+        # the refusal without reading either.
+        self._cannot_run = cannot_run
 
     def wanted(self, configuration: config.Config) -> bool:
         return True if self._wanted is None else bool(self._wanted(configuration))
+
+    def cannot_run(self, configuration: config.Config) -> str | None:
+        return None if self._cannot_run is None else self._cannot_run(configuration)
 
     def absent_values(self, configuration: config.Config) -> list[str]:
         """The `needs` paths this configuration does not state.
@@ -703,6 +724,182 @@ def body_gate_entry(configuration: config.Config) -> dict:
     }
 
 
+# --- what a checkout cannot run ---------------------------------------------
+#
+# ⛔ The surface's rule for a facet gate: a value the repository does not commit
+# is not committed by this step on the project's behalf. Two ways a value is
+# withheld, and both are facts the project already states -- a key § 28 routes to
+# the untracked layer, and a configuration file the repository ignores. ⚠️ Read
+# by the facet gates below and by no artifact registered before them, whose
+# behaviour a project stating nothing new keeps.
+
+
+def withheld(configuration: config.Config, paths: tuple[str, ...]) -> str | None:
+    """Why the values under `paths` cannot be carried into a tracked file, or None."""
+    listed = sorted(
+        key for key in configuration.private_keys
+        if any(key == path or key.startswith(f"{path}.") for path in paths)
+    )
+    if listed:
+        return (f"{', '.join(listed)} {'is' if len(listed) == 1 else 'are'} routed to "
+                "the untracked layer (§ 28), and this artifact would carry the value "
+                "into a tracked file")
+    source = configuration.config_path
+    if source and _ignored(source):
+        return (f"the configuration ({source}) is ignored by its repository, so a gate "
+                "rendered from it would commit what the project withheld and a gate "
+                "reading it would find nothing in a checkout")
+    return None
+
+
+def _ignored(path: str) -> bool:
+    """Whether git ignores this file where it is.
+
+    ⚠️ Ignored and not merely untracked: a configuration a project has written
+    and not yet added is one it can commit, and refusing on it would refuse
+    every adoption on its first day. A file outside any repository is not
+    ignored either -- git answers that with an error, and the error is not a
+    statement that the project withheld anything.
+    """
+    try:
+        done = subprocess.run(
+            ["git", "-C", os.path.dirname(path), "check-ignore", "-q",
+             os.path.basename(path)],
+            capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return False
+    return done.returncode == 0
+
+
+# --- the facet gates: the governed documents (§ 38) and the register (§ 15) --
+#
+# ⛔ Each facet's rule is its carrier's and not this module's. What is here is
+# what both gates need in a repository -- a vendored copy of the carrier with the
+# facet rendered in, because a checkout holds neither the toolkit nor, where it is
+# withheld, the configuration; the workflow that runs it; and the `host.checks`
+# entry that registers the run.
+
+
+class FacetGate(NamedTuple):
+    """One facet's gate, stated once and read by every function below."""
+
+    facet: str
+    carried: str           # the `carrier` value that means the facet is carried
+    module: object         # the carrier, which renders its own vendored half
+    workflow: str
+    leaf: str
+    job: str
+    step: str
+    says: tuple            # the workflow's own head comment
+    full_history: bool     # whether the run reads a merge base
+
+
+FACET_GATES = (
+    FacetGate(
+        facet="documents", carried="list", module=documents,
+        workflow="Governed documents", leaf="mjolnir-documents.yml",
+        job="governed-documents",
+        step="Hold every governed document to its row, its edges and its own blocks",
+        says=("# Holds this repository's governed documents to the facet its configuration",
+              "# states. The facet is rendered into the checker this runs; nothing about it",
+              "# is written in this file."),
+        full_history=False,
+    ),
+    FacetGate(
+        facet="e2e_register", carried="file", module=check_e2e_register,
+        workflow="End-to-end coverage recorded", leaf="mjolnir-e2e-register.yml",
+        job="end-to-end-coverage-recorded",
+        step="Hold the register to the suite, and this change to both",
+        says=("# Holds this repository's end-to-end register to its suite, and this change to",
+              "# both. The facet is rendered into the checker this runs; nothing about it is",
+              "# written in this file."),
+        full_history=True,
+    ),
+)
+
+# ⛔ A pull request and nothing else. The register's change arm reads the base the
+# event states, and a run with no base has no change to hold; the documents' run
+# needs no base, and holding a change before it lands is what a gate is.
+FACET_GATE_TRIGGER = "pull_request -> *"
+
+
+def _script_leaf(gate: FacetGate) -> str:
+    return os.path.basename(gate.module.__file__)
+
+
+def _command(gate: FacetGate) -> str:
+    # ⛔ A forward slash and never the platform's separator: the host reads it.
+    return f"python3 {TOOLKIT_DIRECTORY}/{_script_leaf(gate)}"
+
+
+def _carried(gate: FacetGate):
+    return lambda c: (c.get(gate.facet) or {}).get("carrier") == gate.carried
+
+
+def _stated(gate: FacetGate, configuration: config.Config):
+    return gate.module.from_config(configuration)
+
+
+def _cannot_run(gate: FacetGate):
+    def answer(configuration: config.Config) -> str | None:
+        refused = withheld(configuration, (gate.facet,))
+        if refused:
+            return refused
+        if _stated(gate, configuration) is None:
+            return ("the facet is read from a root outside the repository this gate "
+                    "would sit in, which a checkout of that repository does not hold")
+        return None
+    return answer
+
+
+def _checker(gate: FacetGate):
+    return lambda c: gate.module.render(_stated(gate, c))
+
+
+def _workflow(gate: FacetGate):
+    def body(configuration: config.Config) -> str:
+        template = TEMPLATES[configuration.get("host.kind")]
+        where = runner_of(configuration)
+        lines = [f"name: {_scalar(gate.workflow)}", "", *gate.says, "",
+                 "on:", "  pull_request:", "",
+                 "# No credential: the checker reads the checkout and asks the host for nothing.",
+                 "permissions: {}"]
+        if where["group"] is not None:
+            lines += ["", "concurrency:", f"  group: {_scalar(where['group'])}",
+                      "  cancel-in-progress: true"]
+        lines += ["", "jobs:", f"  {gate.job}:", f"    name: {_scalar(gate.workflow)}",
+                  f"    runs-on: {_scalar(where['label'])}"]
+        if where["budget"] is not None:
+            lines.append(f"    timeout-minutes: {where['budget']}")
+        lines += ["    steps:", f"      - uses: {template.checkout}", "        with:",
+                  "          persist-credentials: false"]
+        if gate.full_history:
+            # ⛔ The whole history: what the change touches is a diff against the
+            # merge base, and a shallow checkout has no base to diff against.
+            lines.append("          fetch-depth: 0")
+        lines += ["", f"      - name: {_scalar(gate.step)}", f"        run: {_command(gate)}"]
+        return "\n".join(lines) + "\n"
+    return body
+
+
+def _entry(gate: FacetGate):
+    return lambda _c: {"workflow": gate.workflow, "mirrors": _command(gate),
+                       "triggers": FACET_GATE_TRIGGER}
+
+
+def _facet_artifacts(gate: FacetGate) -> tuple:
+    """The checker and the workflow for one facet, in install order."""
+    wanted, blocked = _carried(gate), _cannot_run(gate)
+    return (
+        Artifact(f"{gate.facet}-checker", SCRIPT, _script_leaf(gate),
+                 wanted=wanted, body=_checker(gate), cannot_run=blocked),
+        Artifact(f"{gate.facet}-gate", WORKFLOW, gate.leaf,
+                 wanted=wanted, body=_workflow(gate), entry=_entry(gate),
+                 registers_as=gate.workflow, cannot_run=blocked),
+    )
+
+
 # ⛔ The live registry. Each member is a rule somebody else's work item states,
 # handed over as data: what the file says, which configured value decides whether
 # it is wanted, and which `host.checks` entry registers it. This module holds the
@@ -751,6 +948,7 @@ ARTIFACTS: tuple[Artifact, ...] = (
         entry=_title_gate_entry,
         registers_as=TITLE_GATE_WORKFLOW,
     ),
+    *(artifact for gate in FACET_GATES for artifact in _facet_artifacts(gate)),
 )
 
 
@@ -1373,6 +1571,15 @@ def _one(configuration: config.Config, artifact: Artifact, *, write: bool) -> di
                       because="the configuration asks for this artifact and states no "
                               "value for what it would say, so it is not written")
 
+    # ⛔ Asked before the entry and the file, so a gate a checkout could not run
+    # leaves nothing behind -- and a copy already standing is left as it is and
+    # reported, which is the refusing property's *no partial install* rather
+    # than a removal nobody asked for.
+    blocked = artifact.cannot_run(configuration)
+    if blocked:
+        return _state(artifact, CANNOT_RUN, path, standing=here is not None,
+                      because=blocked)
+
     entry = artifact.entry(configuration)
     # This artifact's own earlier entry, where it wrote one. ⛔ Read before the
     # pre-check and passed to it: the step's own output under its own key is what
@@ -1680,7 +1887,7 @@ A_RUNNER = {
 }
 
 
-def _a_project(tmp: str, checks=None, title=None, runner=None) -> config.Config:
+def _a_project(tmp: str, checks=None, title=None, runner=None, facets=None) -> config.Config:
     """A loadable configuration in a tree of its own.
 
     Built from an example rather than written here, for the reason the sibling
@@ -1711,11 +1918,66 @@ def _a_project(tmp: str, checks=None, title=None, runner=None) -> config.Config:
     # § 17 refuses a local check the host already runs, and a fixture colliding
     # with one would be refused by the reader rather than answered here.
     data["checks_local"] = []
+    # ⚠️ Every facet a gate turns on is stated absent unless the arm states it, so
+    # an arm about another artifact is not also an arm about these -- and the
+    # example the fixture is built from is free to carry either facet.
+    for gate in FACET_GATES:
+        data[gate.facet] = {"carrier": "none", "absent_reason": "Not this arm's subject."}
+    data.update(facets or {})
     os.makedirs(os.path.join(tmp, ".claude"), exist_ok=True)
     with open(os.path.join(tmp, config.CONFIG_PATH), "w", encoding="utf-8") as handle:
         handle.write(yaml.safe_dump(data, allow_unicode=True))
     _a_repository(tmp)
     return config.load(tmp)
+
+
+# Each facet gate's fixture facet, and a string only that facet carries. ⛔ Taken
+# from the carriers' own fixtures rather than written here, so the rendered copy
+# an arm runs in a bare checkout is held to the tree that carrier's suite builds.
+_A_FACET = {
+    "documents": {
+        "carrier": "list",
+        "files": ["*.md", "docs/**/*.md"],
+        "entry_points": ["README.md"],
+        "graph": [
+            {"document": "README.md", "may_name": ["docs/a-document.md"], "derived_from": []},
+            {"document": "docs/a-document.md", "may_name": [], "derived_from": []},
+        ],
+        "forbidden": [],
+        "quoted": [],
+    },
+    "e2e_register": dict(check_e2e_register._a_subject().facet),
+}
+_A_FACET_MARK = {
+    "documents": "docs/a-document.md",
+    "e2e_register": str(_A_FACET["e2e_register"]["register"]),
+}
+
+
+def _imports_of(text: str) -> set[str]:
+    """Every top-level module this source imports, by name."""
+    import ast
+    found = set()
+    for node in ast.walk(ast.parse(text)):
+        if isinstance(node, ast.Import):
+            found.update(alias.name.split(".")[0] for alias in node.names)
+        if isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            found.add(node.module.split(".")[0])
+    return found
+
+
+def _isolated(script: str, extra: dict | None = None) -> subprocess.CompletedProcess:
+    """Run a rendered copy as a host would: isolated, from elsewhere, with a bare env.
+
+    ⛔ `-I` keeps the script's own directory and every user path off `sys.path`,
+    and the environment carries nothing but what a runner always has -- so a
+    copy that reached for the toolkit, the configuration or a variable the event
+    does not state fails here rather than on an adopter's first pull request.
+    """
+    env = {key: os.environ[key] for key in ("PATH", "HOME") if key in os.environ}
+    env.update(extra or {})
+    return subprocess.run([sys.executable, "-I", script], cwd=tempfile.gettempdir(),
+                          env=env, capture_output=True, text=True, check=False)
 
 
 def _a_gate(**rest) -> Artifact:
@@ -3455,6 +3717,167 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
               str(answered["report"]))
         check("and no toolkit directory was created",
               not os.path.isdir(os.path.join(quiet.code_root, TOOLKIT_DIRECTORY)))
+
+    for gate in FACET_GATES:
+        names = (f"{gate.facet}-checker", f"{gate.facet}-gate")
+        leaf = _script_leaf(gate)
+        print()
+        print(f"the {gate.facet} gate: written where the facet is carried, and only there")
+        with tempfile.TemporaryDirectory() as tmp:
+            carried = {gate.facet: _A_FACET[gate.facet]}
+            asking = _a_project(tmp, facets=carried)
+            check("the fixture project carries the facet",
+                  (asking.get(gate.facet) or {}).get("carrier") == gate.carried,
+                  str(asking.get(gate.facet)))
+            check("both members name artifacts the registry holds",
+                  set(names) <= {artifact.name for artifact in ARTIFACTS})
+            done = run(asking, write=True)
+            answers = _answers_of(done)
+            check("both artifacts are written",
+                  [_answer_of(answers, name) for name in names] == [WRITTEN, WRITTEN],
+                  str(done["artifacts"]))
+            check("and the install reports nothing incomplete", done["report"] == [],
+                  str(done["report"]))
+            script = answers[names[0]]["path"]
+            flow = answers[names[1]]["path"]
+            check("the checker lands under the toolkit's own directory",
+                  script == os.path.join(asking.code_root, TOOLKIT_DIRECTORY, leaf), script)
+            check("the workflow lands where this host kind keeps its definitions",
+                  flow == os.path.join(asking.code_root,
+                                       check_host_checks.DEFINITIONS["github"].directory,
+                                       gate.leaf), flow)
+            mark = _A_FACET_MARK[gate.facet]
+            check("the checker carries the facet this project states",
+                  mark in _read(script), "the rendered copy holds a different facet")
+            check("and the workflow carries none of it", mark not in _read(flow),
+                  "a facet value in the workflow is one the gate would hold from two places")
+            # ⛔ The acceptance bullet held on the artifact: a copy importing a
+            # module of this toolkit's is a gate that fails in every checkout,
+            # the toolkit being nowhere in one.
+            imported = _imports_of(_read(script))
+            ours = sorted(name for name in imported
+                          if os.path.exists(os.path.join(HERE, f"{name}.py")))
+            check("the checker imports nothing of the toolkit's", not ours,
+                  f"it imports {ours}, which a checkout does not hold")
+            check("the entry registered mirrors the command the workflow runs",
+                  answers[names[1]].get("registered", {}).get("mirrors") == _command(gate)
+                  and _command(gate) in _read(flow),
+                  str(answers[names[1]].get("registered")))
+            before = {path: open(path, "rb").read() for path in (script, flow)}
+            again = _answers_of(run(config.load(tmp), write=True))
+            check("a second run changes nothing",
+                  [_answer_of(again, name) for name in names] == [UNCHANGED, UNCHANGED]
+                  and all(open(path, "rb").read() == text for path, text in before.items()),
+                  str([again.get(name) for name in names]))
+            drift = check_host_checks.run(check_host_checks.read_subject(tmp))
+            check("the generated workflow and its entry do not drift",
+                  not any(drift.values()), str({k: v for k, v in drift.items() if v}))
+            # ⛔ Dropping the facet takes the gate out, file and entry both.
+            dropped = config.load(tmp)
+            dropped.data[gate.facet] = {"carrier": "none", "absent_reason": "Dropped."}
+            off = _answers_of(run(dropped, write=True))
+            check("a facet no longer carried takes both artifacts out",
+                  [_answer_of(off, name) for name in names] == [REMOVED, REMOVED],
+                  str([off.get(name) for name in names]))
+            check("and its entry with them",
+                  not any(entry.get("workflow") == gate.workflow
+                          for entry in config.load(tmp).get("host.checks") or []),
+                  str(config.load(tmp).get("host.checks")))
+            check("and neither file is left standing",
+                  not os.path.exists(script) and not os.path.exists(flow))
+        with tempfile.TemporaryDirectory() as tmp:
+            absent = _answers_of(run(_a_project(tmp), write=True))
+            check("a project that does not carry the facet gets neither",
+                  [_answer_of(absent, name) for name in names] == [NOT_WANTED, NOT_WANTED],
+                  str([absent.get(name) for name in names]))
+
+    print()
+    print("a configuration the repository ignores gets no gate rendered from it")
+    with tempfile.TemporaryDirectory() as tmp:
+        withholding = _a_project(tmp, facets=dict(_A_FACET))
+        with open(os.path.join(tmp, ".gitignore"), "w", encoding="utf-8") as handle:
+            handle.write(".claude/mjolnir.yaml\n")
+        check("the fixture's configuration is one git ignores",
+              _ignored(withholding.config_path), withholding.config_path)
+        refused = run(withholding, write=True)
+        said = _answers_of(refused)
+        gates = [f"{gate.facet}-{part}" for gate in FACET_GATES
+                 for part in ("checker", "gate")]
+        check("the arm is over every facet gate, and there are some",
+              bool(FACET_GATES) and set(_A_FACET) == {gate.facet for gate in FACET_GATES},
+              f"{sorted(_A_FACET)} against {[gate.facet for gate in FACET_GATES]}")
+        check("every facet gate is refused as one a checkout cannot run",
+              all(_answer_of(said, name) == CANNOT_RUN for name in gates),
+              str([said.get(name) for name in gates]))
+        check("and the refusal says the configuration is ignored",
+              all("ignored" in said[name].get("because", "") for name in gates))
+        check("the report names each one", all(
+            any(line.startswith(f"{name}: {CANNOT_RUN}") for line in refused["report"])
+            for name in gates), str(refused["report"]))
+        check("no file and no entry of theirs was written",
+              not any(os.path.exists(said[name]["path"]) for name in gates)
+              and not any(entry.get("workflow") in {g.workflow for g in FACET_GATES}
+                          for entry in config.load(tmp).get("host.checks") or []))
+        # ⛔ The item's own bound: a project stating nothing new behaves as it did,
+        # so the gates registered before these keep their answer here.
+        check("while the body gate keeps the answer it had before the facet gates",
+              all(_answer_of(said, name) == WRITTEN for name in BODY_GATE_ARTIFACTS),
+              str([said.get(name) for name in BODY_GATE_ARTIFACTS]))
+        import contextlib
+        import io
+        with contextlib.redirect_stdout(io.StringIO()):
+            status = main(["install", "--skills-root", tmp, "--dry-run"])
+        check("and the install exits non-zero", status != 0, str(status))
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⚠️ Untracked is not ignored: a configuration written and not yet added
+        # is one the project can commit, and refusing it would refuse every
+        # adoption on its first day.
+        fresh = _a_project(tmp, facets=dict(_A_FACET))
+        check("a configuration merely not yet added is not withheld",
+              withheld(fresh, ("documents",)) is None,
+              str(withheld(fresh, ("documents",))))
+
+    print()
+    print("each rendered checker runs in a checkout holding nothing but itself")
+    with tempfile.TemporaryDirectory() as tmp:
+        root = documents._a_repository(tmp)
+        copy = os.path.join(root, TOOLKIT_DIRECTORY, "documents.py")
+        os.makedirs(os.path.dirname(copy))
+        with open(copy, "w", encoding="utf-8") as handle:
+            handle.write(documents.render({"root": ".", "facet": _A_FACET["documents"]}))
+        green = _isolated(copy)
+        check("the documents copy is green on a tree that agrees with it",
+              green.returncode == 0, green.stdout + green.stderr)
+        with open(os.path.join(root, "docs", "a-stray.md"), "w", encoding="utf-8") as handle:
+            handle.write("# A document nothing declares\n")
+        subprocess.run(["git", "-C", root, "add", "docs/a-stray.md"], check=True)
+        red = _isolated(copy)
+        check("and red on a governed document with no row", red.returncode == 1,
+              red.stdout + red.stderr)
+    with tempfile.TemporaryDirectory() as tmp:
+        root, _base = check_e2e_register._a_repository(tmp)
+        copy = os.path.join(root, TOOLKIT_DIRECTORY, "check_e2e_register.py")
+        os.makedirs(os.path.dirname(copy))
+        with open(copy, "w", encoding="utf-8") as handle:
+            handle.write(check_e2e_register.render(_A_FACET["e2e_register"]))
+        event = {"GITHUB_BASE_REF": "a-base-branch"}
+        red = _isolated(copy, event)
+        check("the register copy is red on a change nobody wrote down",
+              red.returncode == 1, red.stdout + red.stderr)
+        the_register = os.path.join(root, _A_FACET["e2e_register"]["register"])
+        with open(the_register, encoding="utf-8") as handle:
+            text = handle.read()
+        with open(the_register, "w", encoding="utf-8") as handle:
+            handle.write(text.replace("- nothing yet.", "- `a-judged-tree/thing.src`: "
+                                      "moved, and nothing drives it end to end."))
+        subprocess.run(["git", "-C", root, "commit", "-qam", "written down"], check=True)
+        green = _isolated(copy, event)
+        check("and green once the change is written down", green.returncode == 0,
+              green.stdout + green.stderr)
+        bare = _isolated(copy)
+        check("a run stating no base is refused rather than read as nothing to hold",
+              bare.returncode == 1 and "states no base" in bare.stderr,
+              bare.stdout + bare.stderr)
 
     print()
     print("where the project states a runner, the generated file states that one")

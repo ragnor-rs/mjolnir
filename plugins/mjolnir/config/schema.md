@@ -4763,8 +4763,11 @@ exist.** Driving a deployed system needs a stack, a credential, indexed material
 the diff. One is a project's own command and may be a `checks_local` entry under
 [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts), read by a `local` check of
 [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check); the other is
-mirrored as a host check like any other (§ 2). Measured in one project, where the two comparisons
-run in a workflow beside a suite the same workflow cannot start
+mirrored as a host check like any other (§ 2), and the install step writes it as a gate wherever
+this facet is carried
+([§ What the toolkit installs](#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)).
+Measured in one project, where the two comparisons run in a workflow beside a suite the same
+workflow cannot start
 ([the measurement](../../../docs/configuration-surface.md#the-register-nothing-compared-to-the-suite)).
 
 ⛔ **Both directions of the first comparison are held, and the failure that motivated it is the one
@@ -9012,6 +9015,10 @@ a command that answers it would satisfy
 nothing. ⚠️ **So the facet's coverage is a boundary and not a claim of completeness**: a project's
 document rules are expressible here to the extent that they are the four things above.
 
+⚠️ **How the shared check reaches a project's host is the install step's**, which writes it as a
+gate wherever this facet is carried
+([§ What the toolkit installs](#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)).
+
 ### `carrier: none`, and the configurations this key refuses
 
 ⛔ **A project whose prose nothing holds states `carrier: none` with its reason, and gets no check.**
@@ -9616,6 +9623,33 @@ states none of it again. ⛔ **And where its jobs run is
 does with it: the block is written where the project states one, and nothing about it is chosen
 here. A value that block states and the project does not is the `needs` rule above rather than a
 second mechanism.
+
+**A facet whose check this toolkit ships gets that check as a gate wherever the facet is carried.**
+The checks are [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property)'s over the
+governed documents and [§ 15](#15-end-to-end-coverage-recorded)'s over the register and the change,
+beside [§ 20](#20-the-sections-a-pull-request-body-must-carry)'s over a body. Each is written as three things: a copy
+of its carrier with the project's facet rendered into it, the workflow that runs the copy, and the
+`host.checks` entry that registers the run. ⛔ **The copy runs with what a checkout holds and
+nothing else** — no toolkit, no configuration, no credential — which is why the facet is rendered in
+rather than read: a checkout carries neither the plugin nor, where a project withholds it, the
+configuration. ⚠️ **What the run reads beyond the tree is the event's own statement**: a change's
+base arrives with a pull-request event, so a gate whose check reads a base runs on that event and
+refuses where none is stated, rather than deriving one. ⛔ **A facet stated absent gets no gate**,
+and a project that stops carrying one has the gate taken out, file and entry, which is the removable
+property above with nothing added.
+
+⛔ **A facet the repository does not commit is not committed by this step on the project's
+behalf.** The gate of § 38 or § 15 is refused, with the reason named and nothing written, where the
+facet it would render is withheld: a key under it
+[§ 28](#28-a-configured-value-a-repository-may-not-hold) routes to the untracked layer, or a
+configuration file the repository ignores. Written anyway, such a gate either commits what the
+project withheld or, reading the configuration instead, holds nothing on every run — the first a
+leak and the second a green over nothing. ⚠️ **Ignored and not untracked**: a configuration written
+and not yet added is one the project can commit, and refusing it would refuse every adoption on its
+first day. ⚠️ **And a gate already standing is left and reported**, which is the refusing
+property's *no partial install* rather than a removal nobody asked for. ⚠️ **The body gate of
+§ 20 and the title gate of [§ 2](#2-code-host) are not held to this**: a project stating nothing new
+keeps what those two write for it, and holding them here would change that.
 
 ⛔ **An artifact a mechanism will not act on unless it carries a mode is written with it.** The
 measured case is a hook: git treats a non-executable one as absent, so a rail installed without the
