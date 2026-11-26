@@ -1355,6 +1355,18 @@ ANSWERED_BY: dict[str, Answer] = {
         "And which of the project's own readings must agree -- an exact served "
         "commit, every service's image?",
     ),
+    "deploy.after_verified.name": ask(
+        "Does anything run once this target's deploy is verified -- a tag, a "
+        "fast-forward, a rebase of the next branch? Name each step. ⚠️ Nothing is "
+        "an answer: the key is then omitted and nothing runs after it (§ 33).",
+    ),
+    "deploy.after_verified.command": ask(
+        "Which whole command is that step? It may place the deployed commit and "
+        "this target's choices (§ 33).",
+    ),
+    "deploy.after_verified.performed_by": ask(
+        "Does the procedure run it, or does a person perform it and say so?",
+    ),
 
     # --- § 34. The files that carry a version ------------------------------
     "release.carrier": ask(
