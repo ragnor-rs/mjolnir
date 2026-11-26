@@ -6130,13 +6130,13 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         # one § 33 has with § 16 over `requires` -- the shape is held where the
         # entry is, and what the block means is the other section's.
         _validate_live_data_step(where, entry, facts)
-        _validate_excludes(where, entry)
+        _validate_excludes(where, entry, data)
         _validate_advance_requires(where, entry, data, facts)
         _validate_after_verified(where, entry, facts)
         _validate_figures(where, entry, facts)
 
 
-def _validate_excludes(where: str, entry: dict) -> None:
+def _validate_excludes(where: str, entry: dict, data: dict) -> None:
     """§ 33's `excludes` on one target: the stated labels and types it leaves out.
 
     ⚠️ Optional: a target that omits it leaves nothing out, which is every
@@ -6180,6 +6180,12 @@ def _validate_excludes(where: str, entry: dict) -> None:
             at,
             "is stated beside `requires_role: none` and `advances: none`, which "
             "read no set for it to leave anything out of (§ 33).",
+        )
+    if "types" in block and _get(data, "work_item.type.carrier") == "none":
+        raise ConfigError(
+            f"{at}.types",
+            "is stated while `work_item.type.carrier` is `none`, so no item "
+            "carries a type for it to match (§ 33, § 4.1).",
         )
 
 
@@ -21007,6 +21013,11 @@ def _planted_violations():
              **{EXCLUDES: {"labels": []}})])),
         ("an exclusion on a target reading no set", f"deploy[0].{EXCLUDES}",
          at("deploy", [_a_deploy_target(**{EXCLUDES: {"labels": ["release"]}})])),
+        ("an exclusion by type where no item carries one", f"deploy[0].{EXCLUDES}.types",
+         lambda data: at("work_item.type", {"carrier": "none", "absent_reason": "planted"})(
+             at("deploy", [_a_deploy_target(
+                 requires_role=_a_role_some_status_maps(), batch="a-command",
+                 **{EXCLUDES: {"types": ["Chore"]}})])(data))),
         # ⛔ § 33's `advance_requires`, every arm. ⚠️ The base example states no
         # tier, so the tier plant is the `carrier: none` arm: a project with no
         # tier has none for a check to name.

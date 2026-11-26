@@ -903,15 +903,30 @@ def _named_words(value: object) -> list[str]:
     return words
 
 
-def left_out_by(item: object, excludes: dict | None) -> str | None:
+# What `left_out_by` answers for an item whose type `excludes` asks about and no
+# answer carried: neither left out nor kept, but unplaced.
+TYPE_UNREAD = "its type, which this target's `excludes` names types by, was not read"
+
+
+def left_out_by(
+    item: object,
+    excludes: dict | None,
+    *,
+    type_carrier: str = "native",
+    type_prefix: str = "",
+) -> str | None:
     """What leaves one item out of a target's publishing set, or None (§ 33).
 
     ⛔ **A stated label or type, matched exactly, and never a title.** A title is
     prose and changes, so a pattern over it would leave an item out on a rename
-    nobody read as a release decision. ⚠️ An item that carries no readable label
-    or type is never left out: an item nobody could read is reported where the
-    bar reports it, and leaving it out would make a held release read as a clear
-    one.
+    nobody read as a release decision.
+
+    ⛔ **A type is read where § 4.1 carries it**: the item's own type under
+    `native`, and the label `type_prefix` + the type under `label`. ⚠️ Under
+    `native` an answer may carry no type at all -- a list answer often reads
+    only what a search returns -- and that item is `TYPE_UNREAD` rather than
+    kept: kept, it would be held against the bar and advanced by a deploy the
+    target said leaves it out.
     """
     if not excludes or not isinstance(item, dict):
         return None
@@ -919,8 +934,18 @@ def left_out_by(item: object, excludes: dict | None) -> str | None:
     for label in excludes.get("labels") or []:
         if label in carried:
             return f"the label `{label}`"
+    kinds = excludes.get("types") or []
+    if not kinds:
+        return None
+    if type_carrier == "label":
+        for kind in kinds:
+            if f"{type_prefix}{kind}" in carried:
+                return f"the type `{kind}`"
+        return None
+    if "type" not in item:
+        return TYPE_UNREAD
     typed = set(_named_words(item.get("type")))
-    for kind in excludes.get("types") or []:
+    for kind in kinds:
         if kind in typed:
             return f"the type `{kind}`"
     return None
@@ -1771,12 +1796,21 @@ class Port:
         role's; what this answers is which items are where.
         """
         self._stated(WROTE_A_STATUS)
-        excluded = []
-        kept = []
+        typing = ((self.config.get("work_item") or {}).get("type") or {})
+        excluded, kept, type_unread = [], [], []
         for item in items:
-            by = left_out_by(item, excludes)
+            by = left_out_by(
+                item,
+                excludes,
+                type_carrier=typing.get("carrier") or "native",
+                type_prefix=typing.get("label_prefix") or "",
+            )
             if by is None:
                 kept.append(item)
+            elif by == TYPE_UNREAD:
+                type_unread.append(
+                    {**_item_name(item), "word": _item_word(item), "unread": by}
+                )
             else:
                 excluded.append({**_item_name(item), "by": by})
         items = kept
@@ -1795,7 +1829,7 @@ class Port:
                 "status": None,
                 "placed": [],
                 "short": [],
-                "unanswered": [
+                "unanswered": type_unread + [
                     {**_item_name(item), "word": _item_word(item)} for item in items
                 ],
                 "excluded": excluded,
@@ -1808,7 +1842,7 @@ class Port:
         for word in order:
             folded.setdefault(str(word).casefold(), []).append(word)
         bar = order[status["name"]]
-        placed, short, unanswered = [], [], []
+        placed, short, unanswered = [], [], list(type_unread)
         for item in items:
             word = _item_word(item)
             # ⛔ Exact first, then case-insensitively, which is what every
@@ -1835,7 +1869,8 @@ class Port:
             "short": short,
             "unanswered": unanswered,
             "excluded": excluded,
-            "detail": f"{len(short)} of {len(items)} in the set are short of the "
+            "detail": f"{len(short)} of {len(items) + len(type_unread)} in the set "
+            "are short of the "
             f"`{role}` role (`{status.get('name')}`), and {len(unanswered)} could "
             "not be placed at all"
             + (
@@ -3654,6 +3689,32 @@ def _hold_port(check, surface_text: str, spec: PortSpec) -> None:
         left_out_by({"title": "release", "labels": []}, {"labels": ["release"]})
         is None,
         "a title matched an excluded label",
+    )
+    check(
+        "under a label-carried type, the type is read off the prefixed label",
+        left_out_by(
+            {"labels": [{"name": "type:Chore"}]}, {"types": ["Chore"]},
+            type_carrier="label", type_prefix="type:",
+        ) == "the type `Chore`"
+        and left_out_by(
+            {"labels": ["Chore"]}, {"types": ["Chore"]},
+            type_carrier="label", type_prefix="type:",
+        ) is None,
+        "a label-carried type was not read off its prefixed label",
+    )
+    natively = _with_statuses(ladder)
+    natively.data["work_item"] = {
+        **natively.data.get("work_item", {}), "type": {"carrier": "native"}
+    }
+    unread_type = Port(natively, spec, adapter=Adapter(), stated=stated).short_of(
+        another_role, [{"number": 10, "status": "first"}], {"types": ["Chore"]}
+    )
+    check(
+        "an item whose type was not read is unanswered, so it neither clears nor is placed",
+        [entry.get("item") for entry in unread_type["unanswered"]] == [10]
+        and not unread_type["placed"]
+        and not unread_type["excluded"],
+        f"answered {unread_type!r}",
     )
     unchanged = placing.short_of(another_role, [tracking])
     check(

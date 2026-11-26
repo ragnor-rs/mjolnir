@@ -326,8 +326,10 @@ def self_test() -> int:
 
     print("What the target leaves out:")
     tracking = {**item(4, landed), "labels": [{"name": "release"}]}
-    chore = {**item(2, early), "type": "Chore"}
-    leaving = reader(requires_role=landed, excludes={"labels": ["release"], "types": ["Chore"]})
+    # ⚠️ The shipped example carries its type as a `type:` label (§ 4.1), so that is
+    # where the excluded type is read.
+    chore = {**item(2, early), "labels": ["type:task"]}
+    leaving = reader(requires_role=landed, excludes={"labels": ["release"], "types": ["task"]})
     runs.clear()
     got = answered(leaving, printing("1", "3"),
                    items=[item(1, first), chore, item(3, landed), tracking, item(5, last)])
@@ -338,7 +340,7 @@ def self_test() -> int:
           purposes["precondition"].get("handed") == ["1"], purposes["precondition"])
     check("every item left out is reported with what left it out",
           got["excluded"] == [
-              {"item": "2", "title": "item 2", "by": "the type `Chore`"},
+              {"item": "2", "title": "item 2", "by": "the type `task`"},
               {"item": "4", "title": "item 4", "by": "the label `release`"},
           ], got["excluded"])
     got = answered(reader(), printing("3"))

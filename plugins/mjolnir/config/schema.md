@@ -8570,10 +8570,13 @@ the release itself — into the grouping it ships, and those items close only af
 gate; read by the bar, they would hold the release for as long as releasing it takes. An item
 carrying any label under `labels`, or any [§ 4.1](#41-type) type under `types`, matched whole, is
 taken out before the bar is read and before the batch command is handed anything: it holds nothing
-and it is not advanced. A title is prose and changes, so a rename would leave an item out that
-nobody decided to. Every item left out is reported, with the label or type that left it out, so the
-exclusion is read rather than silent. An item whose labels and type could not be read is not left
-out, which is the reading that holds a release instead of clearing it. A target stating no
+and it is not advanced. A type is read where § 4.1 carries it: the item's own type under `native`,
+the prefixed label under `label`; `types` under `carrier: none` is refused, no item carrying one. A
+title is prose and changes, so a rename would leave an item out that nobody decided to. Every item
+left out is reported, with the label or type that left it out, so the exclusion is read rather than
+silent. An item whose labels could not be read is not left out, and one whose native type an answer
+did not carry is unplaced — it holds the bar and is not advanced, which is the reading that holds a
+release instead of clearing it or moving what the target meant to leave alone. A target stating no
 `excludes` leaves nothing out, and one stating it beside `requires_role: none` and `advances: none`
 is refused, there being no set for it to narrow.
 
