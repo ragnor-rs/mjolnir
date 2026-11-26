@@ -456,6 +456,35 @@ names, and identifiers cited from elsewhere.
 item's own title verbatim. A bare locator names no item and an unattributed quote names no source.
 An identifier is owed only where the source has one.
 
+## 4a. A question the request left open
+
+A question about what the request asks for — a source short of what the item needs, or an
+acceptance condition the request cannot yet support — is asked, and nothing is filed until it is
+answered. That holds unless the project files such an item marked, which one command answers:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --open-questions
+```
+
+[`§ 5 → An item filed with its questions open`](../../config/schema.md#an-item-filed-with-its-questions-open)
+states which questions qualify, where they are written, and when the mark comes off. What this role
+does with the answer:
+
+- **`ask`** ⇒ the question is asked with its options, and the pass is not finished while it is open.
+- **`file_marked`** ⇒ the item is filed with the semantic sections the request does support, carrying
+  the `label` the answer names, and every open question is written on the item: in the body under
+  `heading` where `written_on` is `section`, in one comment after the create where it is `comment`.
+  ⛔ **The label is the answer's, never a word chosen here** — it is the gate's own mark, and any
+  other label leaves an item that reads as ready.
+- **A question about whether or where to file is still asked first** — a duplicate, a parent, a
+  contradiction, the type, the code root, the grouping. The mark does not hold back an item filed in
+  the wrong place.
+- **Where `set_labels` is absent, or `comment` is absent under `comment`**, the item cannot carry its
+  mark or its questions. Ask instead, as under `ask`, and name the missing capability in the reply.
+- **Run again on the answers to an item filed marked**, this role writes each answer where its
+  question stands and sets the item's labels without the mark. Only once every question is answered;
+  an item with one question still open keeps the mark.
+
 ## 5. Write it, and record the relations
 
 **The fields the tracker requires at creation go in that call**, where
@@ -541,6 +570,8 @@ Then report, in the register
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/file_window.py" check --reply <the reply>
   ```
 
+- **every item filed with its questions open**: the mark it carries, where its questions were
+  written, and each question — or, run on answers, each one answered and whether the mark came off;
 - the type and the template used, or that the project carries neither;
 - **the grouping each item went into, and where it came from**: given on the request, the
   project's map with the rule it named, or asked for and answered;
@@ -553,7 +584,8 @@ Then report, in the register
 A question this role cannot answer is asked, not noted
 ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)): the question, the options,
 what each costs, and which is recommended. The pass is not finished while a question it raised is
-open.
+open — except a question section 4a filed on a marked item, which is open on the item rather than
+in this pass.
 
 ## What this carrier is
 

@@ -2937,7 +2937,52 @@ label would be a configuration free to disagree with itself about which items ar
 An item sent back unmarked reads exactly like one nobody has looked at. **Where a project
 configures no `label_absent`, or configures more than one, the gating role has no mark to set** —
 it says so and leaves its verdict on the item, rather than choosing between two labels or inventing
-a third.
+a third. The filing role sets the same mark where a project files an item with its questions open,
+under the subsection below, and is held to the same rule about how many labels there are.
+
+### An item filed with its questions open
+
+```yaml
+open_questions:
+  mode: ask | file_marked                    # default: ask
+  written_on: comment | section              # default: comment
+  heading: "…"
+```
+
+A request can leave a question open that only its author can answer, and some authors answer days
+later in a chat. Under `ask` the filing role puts the question and files nothing until it is
+answered, so meanwhile the work exists only in that chat. **`file_marked` files the item at once,
+carrying the open questions and the mark this section's gate refuses**, so the work is tracked
+and visible, and the gate holds it back until the questions are answered. **`ask` is the default**,
+and a project stating nothing files as it always has.
+
+- **The mark is `label_absent`'s label and no other.** A key naming a label of its own would be the
+  second statement the subsection above rules out, and could name a label the gate does not refuse.
+  **A project stating `file_marked` while `readiness` configures no `label_absent`, or more than
+  one, is refused where the configuration is read.** With none there is no mark the gate refuses.
+  With two, the filing role would be choosing which one the item carries.
+- **The questions are written on the item, never only in the reply.** `written_on` says where:
+  under `comment`, in one comment written after the item is created; under `section`, in the body
+  under `heading`, in the item's own language
+  ([§ 8](#8-language-register-audience--per-artifact-not-per-project)). **`heading` is required
+  under `section` and refused under `comment`**, where nothing would read it. A question in the
+  reply alone is invisible to whoever answers it, and to the role that next reads the item.
+- **Only a question about what the request asks for is filed open.** That is a source short of
+  what the item needs, or an acceptance condition the request cannot yet support. It is not a
+  question about whether or where to file the item: a duplicate, a parent, a contradiction, the
+  type, the code root and the grouping are each still asked first. Filing past one of those
+  produces a duplicate or a misplaced item, which the mark does not hold back.
+- **The mark comes off when every question it was filed with is answered.** The filing role, run
+  again on the answers, writes each answer where its question stands and drops the mark from the
+  item's labels. It removes no mark while any question is unanswered, and **neither does the
+  gating role**: an item carrying a question filed open is held where it stands, with its mark,
+  however its other checks come out. Clearing the mark there would admit an item whose questions
+  nobody answered.
+- **A tracker that cannot write the mark or the questions cannot file an item marked.** Where
+  `set_labels`, or `comment` under `comment`, is absent
+  ([§ 3](#the-operations-and-what-an-absent-capability-does)), the role asks instead, as under
+  `ask`, and its reply names the missing capability. An item filed without its mark reads as ready,
+  which is the one outcome this mode must not produce.
 
 ## 6. Commit behaviour
 

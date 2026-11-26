@@ -1154,3 +1154,8 @@ verify:
   revisit_when: >-
     This project states a deploy target, which is the same trigger the release and deploy facets
     above carry and would be answered by the same reading.
+
+open_questions:
+  # § 5 at its default. Requests here come from the person running the session, who answers a
+  # question in the same sitting, so nothing waits days for an answer.
+  mode: ask

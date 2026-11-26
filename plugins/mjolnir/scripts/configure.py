@@ -1771,6 +1771,25 @@ ANSWERED_BY: dict[str, Answer] = {
         "reopens or rewrites an item itself (§ 42).",
     ),
 
+    # --- § 5. An item filed with its questions open ------------------------
+    "open_questions.mode": ask(
+        "When a request leaves a question open that only its author can answer, "
+        "should the filing role ask and file nothing until it is answered, or file "
+        "the item at once carrying the questions and the gate's `label_absent` "
+        "mark? Unstated, it asks. ⛔ Filing marked needs exactly one "
+        "`label_absent` check in the readiness list, whose label is the mark (§ 5).",
+    ),
+    "open_questions.written_on": ask(
+        "Where on the item should those questions be written: in a comment after "
+        "it is created, or in its body under a heading of its own? Unstated, a "
+        "comment (§ 5).",
+    ),
+    "open_questions.heading": ask(
+        "Which heading should the open questions sit under in the body, in the "
+        "item's own language? ⛔ Asked only where they go in the body, and refused "
+        "where they go in a comment (§ 5).",
+    ),
+
     # --- § 41. What a deployed item is judged against ----------------------
     "verify.carrier": ask(
         "Does anybody judge a deployed item against its own criteria here? ⚠️ "
