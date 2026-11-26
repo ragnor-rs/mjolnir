@@ -7797,6 +7797,9 @@ def _triggers(entry: dict, where: str) -> None:
 COMMAND_ROOTS = "command_roots"
 CODE_ROOT_RUNS_NOTHING = "code_root_runs_nothing"
 COMMAND_ROOT_REF = "command_root"
+# § 2's key beside a `mirrors`: the commands that command runs, each answered for
+# by the same run.
+PARTS = "parts"
 # § 33's own reference into § 1's roots: which repository a target's act is in.
 # ⚠️ Not `COMMAND_ROOT_REF`'s neighbour by accident -- the two sit together
 # because an entry states both and they name different things, which is § 1's
@@ -8111,6 +8114,8 @@ def mirrored_runs(data: dict) -> list[dict]:
                 {
                     "command": mirrored["command"],
                     "normalised": mirrored["normalised"],
+                    "parts": mirrored["parts"],
+                    "parts_run": mirrored["parts_run"],
                     COMMAND_ROOT_REF: mirrored[COMMAND_ROOT_REF],
                     "runs": mirrored["runs"],
                     "runs_normalised": mirrored["runs_normalised"],
@@ -8253,7 +8258,7 @@ def _entry_commands(entry: dict, index: int, roots: dict[str, dict]):
     workflow = _entry_workflow(entry, where)
 
     def record(command: str, root, at: str, mirrored_by: str, job: str | None,
-               filters) -> dict:
+               filters, parts: list[str]) -> dict:
         # ⛔ § 1's one resolution, called rather than reproduced: the join of a
         # form and a command is stated once, and a second join written here
         # would be the per-consumer reading this facet exists to delete.
@@ -8265,9 +8270,15 @@ def _entry_commands(entry: dict, index: int, roots: dict[str, dict]):
         # package root. The flag stops a role about to run a command, which is
         # `Config.command` below.
         resolved = command_in(roots, root, command, at)
+        # ⛔ Each part through the same resolution as the command it is a part of,
+        # in the same root: a part is the command as that root runs it, and a part
+        # matched in its written form would never recognise the call (§ 1).
+        ran = [command_in(roots, root, part, at)["command"] for part in parts]
         return {
             "command": command,
             "normalised": _normalised_command(command),
+            "parts": [_normalised_command(part) for part in parts],
+            "parts_run": [_normalised_command(part) for part in ran],
             COMMAND_ROOT_REF: resolved[COMMAND_ROOT_REF],
             "runs": resolved["command"],
             "runs_normalised": _normalised_command(resolved["command"]),
@@ -8303,6 +8314,19 @@ def _entry_commands(entry: dict, index: int, roots: dict[str, dict]):
             "somewhere else. Written here it reads as a default the members "
             "inherit, which is what the filter rule beside it already refuses.",
         )
+    # ⛔ § 2's level rule again, and it covers an entry whose commands are its
+    # jobs: each job states the parts of its own command, so a `parts` on that
+    # entry is beside no `mirrors` and would read as parts of every job at once.
+    # ⚠️ Presence and never value, as above.
+    if PARTS in entry and "mirrors" not in entry:
+        raise ConfigError(
+            f"{where}.{PARTS}",
+            "is stated on an entry with no `mirrors` beside it, and § 2 makes it the "
+            "parts of the command a `mirrors` states -- on an entry whose commands are "
+            "its `jobs`, each job states its own. Here the list names parts of no one "
+            "command, and a guard reading it would refuse a call on the strength of a "
+            "run the facet never says duplicates it.",
+        )
     if "mirrors" in entry:
         if entry["mirrors"] is None:
             raise ConfigError(
@@ -8319,6 +8343,7 @@ def _entry_commands(entry: dict, index: int, roots: dict[str, dict]):
             f"the `{workflow}` workflow",
             None,
             None,
+            _parts(entry, f"{where}.{PARTS}"),
         )
         return
     if "jobs" not in entry:
@@ -8361,6 +8386,7 @@ def _entry_commands(entry: dict, index: int, roots: dict[str, dict]):
             f"the `{name}` job of the `{workflow}` workflow",
             name,
             _path_filter(job, f"{at}.paths"),
+            _parts(job, f"{at}.{PARTS}"),
         )
 
 
@@ -8553,6 +8579,35 @@ def _command(mirrors, where: str) -> str:
             "command its own run answers about.",
         )
     return mirrors
+
+
+def _parts(node: dict, where: str) -> list[str]:
+    """The parts a mirrored command states, or `[]` where it states none (§ 2).
+
+    ⛔ **Presence and never value**, which is § 2's rule for every key of this
+    facet whose absence is itself an answer: a `parts` written blank is the same
+    text as one somebody meant to fill in, and the omission that means *no part
+    of this command is answered for on its own* is the key not being there.
+    """
+    if PARTS not in node:
+        return []
+    parts = node[PARTS]
+    if not isinstance(parts, list) or not parts:
+        raise ConfigError(
+            where,
+            f"is {parts!r}; § 2 states it as a list of the commands the mirrored "
+            "command runs, each of which its run also answers for, and omitted where "
+            "no part is. Written as anything else it reads as a list somebody filled "
+            "in and guards nothing.",
+        )
+    for index, part in enumerate(parts):
+        if not isinstance(part, str) or not part.strip():
+            raise ConfigError(
+                f"{where}[{index}]",
+                f"is {part!r}, which names no command (§ 2). A part naming nothing "
+                "matches no call while reading as one somebody stated.",
+            )
+    return [str(part) for part in parts]
 
 
 def _every_key(data, prefix: str = ""):
@@ -10358,6 +10413,25 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
             "absence while looking like a probe somebody configured, and a probe that "
             "answers nothing stands every refusal down.",
         )
+    setting = _get(data, "already_run.unguarded_when_set")
+    if setting is not None:
+        if not isinstance(setting, list) or not setting:
+            raise ConfigError(
+                "already_run.unguarded_when_set",
+                f"is {setting!r}; § 18 states it as a list of variable names, a call "
+                "setting any of which is not held to the host's runs, and omitted where "
+                "none is. Written as anything else it reads as a list somebody filled in.",
+            )
+        for index, name in enumerate(setting):
+            # ⛔ A name and never a value, as `escape` above: § 14's rule at a key
+            # that names a variable, the value being the thing a configuration
+            # must not carry.
+            if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+                raise ConfigError(
+                    f"already_run.unguarded_when_set[{index}]",
+                    f"is {name!r}, which is not a variable name (§ 18). The entry names "
+                    "the variable a call sets, never what it is set to.",
+                )
 
     # § 13. The same shape as `readiness` at the other end of the item, with one
     # thing that gate has no need of: who answers each check.
@@ -18877,6 +18951,25 @@ def _planted_violations():
          at("already_run.escape", "")),
         ("an operational probe written blank", "already_run.operational_when",
          at("already_run.operational_when", "   ")),
+        ("a variable exemption written as one name rather than a list",
+         "already_run.unguarded_when_set", at("already_run.unguarded_when_set", "A_VARIABLE")),
+        ("a variable exemption written as an empty list",
+         "already_run.unguarded_when_set", at("already_run.unguarded_when_set", [])),
+        ("a variable exemption stating a value rather than a name",
+         "already_run.unguarded_when_set[0]",
+         at("already_run.unguarded_when_set", ["A_VARIABLE=a-value"])),
+        ("a mirrored command's parts written as one string rather than a list",
+         "host.checks[0].parts", _parts_planted("a-task-runner one-task")),
+        ("a mirrored command's parts written as an empty list",
+         "host.checks[0].parts", _parts_planted([])),
+        ("a mirrored command's part that names nothing",
+         "host.checks[0].parts[1]", _parts_planted(["a-task-runner one-task", "  "])),
+        ("parts on an entry that mirrors no command",
+         "host.checks[0].parts", _parts_planted(["a-task-runner one-task"], mirrors=False)),
+        ("parts on an entry whose commands are its jobs",
+         "host.checks[0].parts", _parts_beside_jobs),
+        ("a job's part that names nothing",
+         "host.checks[0].jobs[0].parts[0]", _a_jobs_blank_part),
         ("several commands in one `mirrors` rather than in its jobs",
          "host.checks[0].mirrors", _several_commands_in_one_mirrors),
         ("a mirrored command this reader cannot read", "host.checks[0].mirrors",
@@ -20271,6 +20364,36 @@ def _collides_with_a_mirrored_command(data: dict) -> dict:
     if not checks or not isinstance(checks[0], dict) or not checks[0].get("mirrors"):
         checks.insert(0, {"workflow": "Planted", "mirrors": "a-mirrored-command"})
     return _a_local_check_of(command=checks[0]["mirrors"])(data)
+
+
+def _parts_planted(parts, mirrors: bool = True):
+    """An entry stating `parts`, beside a `mirrors` or with none (§ 2)."""
+    def plant(data: dict) -> dict:
+        entry = {"workflow": "Planted", "parts": parts}
+        if mirrors:
+            entry["mirrors"] = "a-task-runner every-task"
+        data.setdefault("host", {})["checks"] = [entry]
+        return data
+
+    return plant
+
+
+def _parts_beside_jobs(data: dict) -> dict:
+    """`parts` on the entry rather than on the job whose command it parts (§ 2)."""
+    data.setdefault("host", {})["checks"] = [{
+        "workflow": "Planted", "parts": ["a-task-runner one-task"],
+        "jobs": [{"job": "a-job", "mirrors": "a-task-runner every-task"}],
+    }]
+    return data
+
+
+def _a_jobs_blank_part(data: dict) -> dict:
+    """A job's own `parts`, held to the same shape as an entry's (§ 2)."""
+    data.setdefault("host", {})["checks"] = [{
+        "workflow": "Planted",
+        "jobs": [{"job": "a-job", "mirrors": "a-task-runner every-task", "parts": [""]}],
+    }]
+    return data
 
 
 def _several_commands_in_one_mirrors(data: dict) -> dict:

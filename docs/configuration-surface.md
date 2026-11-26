@@ -1805,6 +1805,34 @@ repository filters on paths — every entry of its own facet omits the key — s
 sits at the level the workflow file states it at is exercised by the reader's own planted violations
 and by the example that illustrates the form, and by no configuration this project runs on.
 
+### A task runner's suite, one of its tasks, and a run against the project's own database
+
+**Three calls that duplicate a host run went unrecognised by the guard on one**, each reproduced
+against the shipped matcher by an adopter measuring its migration. A mirror joined with `&&` never
+matched itself, the call being cut at its separators and the mirror not. A call running one task
+of a mirrored task runner did not match the runner's whole suite, the test being a prefix. And a
+run against that project's own billing or test database matched a mirror it does not duplicate,
+nothing on the surface saying so.
+
+The three answers sit where each fact belongs:
+
+- **The compound is a matching rule and nothing a project states**, so it is the guard's, at
+  [`schema.md § 18 → What may be guarded`](../plugins/mjolnir/config/schema.md#what-may-be-guarded-and-the-two-ways-a-refusal-stands-down).
+  This repository's own facet still never joins commands with `&&`, for the reason the section
+  above gives. The rule reaches a project that already does.
+- **Which tasks a suite covers is the project's fact**, and no derivation from a runner's name can
+  supply it. So it is a list beside the `mirrors` it parts, at
+  [`schema.md § 2 → A command that runs other commands`](../plugins/mjolnir/config/schema.md#a-command-that-runs-other-commands-and-the-parts-its-run-answers-for).
+  Its other consumer, `host_checks.py`, reads a part as the command, so a role is not told to run a
+  part locally that the guard then refuses.
+- **The database is the call's own fact.** A configuration names the variable and never its value,
+  so `unguarded_when_set` sits with the guard's other keys rather than on the facet: the facet
+  states what the host runs, and the variable states what this one call is.
+
+⚠️ **The exemption reads only what the call itself sets.** A variable exported in an earlier call is
+held by the shell, and nothing in the call shows it. A guard reading the environment would exempt
+every later call that never mentions the database.
+
 ## One entry's two events, and the types the pattern could not carry
 
 The same facet, a dimension over. `triggers` had two forms — an event and a base, or an event and a

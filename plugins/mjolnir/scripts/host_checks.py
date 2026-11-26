@@ -508,12 +508,16 @@ def _mirroring(configuration: config.Config, command: str,
     question of the same facet, and the pair § 1 makes the key is easy to reduce
     to its text in one of two places -- which is the per-consumer reading the
     facet exists to delete.
+
+    ⚠️ **A part the record states is the command too** (§ 2): the run answers for
+    each part of the command it mirrors, so asking about one of them reaches the
+    same record the guard refuses on.
     """
     wanted = " ".join(command.split())
     return [
         record
         for record in configuration.mirrors()
-        if record["normalised"] == wanted
+        if (record["normalised"] == wanted or wanted in record.get("parts", []))
         and record[config.COMMAND_ROOT_REF] == command_root
     ]
 
@@ -1171,6 +1175,30 @@ def self_test() -> int:
         f"and is {NO_ANSWER} about a change, never coverage",
         silent_answer["verdict"] == NO_ANSWER,
         f"answered {silent_answer['verdict']!r} -- {silent_answer['because']}",
+    )
+
+    print("\na part a mirrored command states")
+    # ⛔ § 2's `parts`, read here as the guard reads it: a part the run answers
+    # for that this consumer called unmirrored would send a role to run locally
+    # what the guard then refuses.
+    parted = _a_configuration([{
+        "workflow": "A workflow", "mirrors": "a-task-runner every-task",
+        "parts": ["a-task-runner one-task"], "triggers": "pull_request -> *",
+    }])
+    check(
+        "a stated part is mirrored by the run its command is",
+        mirrors(parted, "a-task-runner one-task")["mirrored"] is True,
+        "a part the facet states read as a command nothing mirrors",
+    )
+    check(
+        "and reaches a change that run reaches",
+        covers(parted, "a-task-runner one-task", A_PULL_REQUEST, "main")["verdict"] == REACHED,
+        "a part the facet states was not answered as its command's run",
+    )
+    check(
+        "while a part the list does not state is mirrored by nothing",
+        mirrors(parted, "a-task-runner a-third-task")["mirrored"] is False,
+        "a part outside the list read as mirrored",
     )
 
     print("\nwhat a trigger's event and ref reach")

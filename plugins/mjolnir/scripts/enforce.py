@@ -1281,19 +1281,56 @@ def in_command_position(call: str, wanted: str, launchers=()) -> bool:
 
     ⛔ **§ 17's whitespace rule is not spelled again here**: both sides are cut
     into words, and runs of whitespace are gone by the time anything is compared.
-    ⚠️ A compound `wanted` stands in no one position, so it matches nothing. ⚠️ And
-    only the outermost position of each segment is compared: a command behind a
+    ⚠️ Only the outermost position of each segment is compared: a command behind a
     runner is not read as the mirrored one, in a project listing launchers or not.
+
+    ⛔ **A compound `wanted` is matched segment by segment, in order and without a
+    gap** (§ 18). Cut at its separators it is several commands, and a call
+    running the same ones one after another is that compound: compared as one
+    position it matched nothing, its own call included. ⚠️ The last of them
+    keeps the prefix rule and the ones before it do not -- a flag added in the
+    middle of a chain is a different chain, while one added at its end is the
+    flagged form of the command the chain ends in.
     """
-    stated = position.segments(wanted)
-    if len(stated) != 1:
+    stated = [_outermost(segment) for segment in position.segments(wanted)]
+    if not stated or not all(stated):
         return False
-    for segment in position.segments(call, launchers):
-        # A negation stands before a command and is not one.
-        chain = position.command_chain(segment[1:] if segment[0] == "!" else segment)
-        if chain and [chain[0][0], *chain[0][1]][:len(stated[0])] == stated[0]:
+    ran = [_outermost(segment) for segment in position.segments(call, launchers)]
+    for start in range(len(ran) - len(stated) + 1):
+        window = ran[start:start + len(stated)]
+        if all(words == want for words, want in zip(window[:-1], stated[:-1])) and \
+                window[-1][:len(stated[-1])] == stated[-1]:
             return True
     return False
+
+
+def _outermost(segment: list[str]) -> list[str]:
+    """The command in a segment's outermost position, with its arguments."""
+    # A negation stands before a command and is not one.
+    chain = position.command_chain(segment[1:] if segment[:1] == ["!"] else segment)
+    return [chain[0][0], *chain[0][1]] if chain else []
+
+
+def _sets(call: str, names, launchers=()) -> str | None:
+    """The first of `names` this call sets, or `None` where it sets none (§ 18).
+
+    ⛔ **What the call itself sets, and nothing the shell already held.** A
+    variable assigned before a command, an `env` naming it, or an `export` of it
+    are the three ways one call sets one -- and an export made in an earlier call
+    is a fact about the shell rather than about this call, which is the one this
+    guard is asked about.
+    """
+    wanted = set(names)
+    for segment in position.segments(call, launchers):
+        words = segment[1:] if segment[:1] == ["!"] else segment
+        exporting = words[:1] == ["export"]
+        for word in words[1:] if words[:1] in (["export"], ["env"]) else words:
+            name, equals, _value = word.partition("=")
+            if not equals and not exporting:
+                break
+            if name in wanted:
+                return name
+    return None
 
 
 def _held_nothing(why: str, answer: str = UNESTABLISHED) -> dict:
@@ -1579,7 +1616,8 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
     records = [
         record for record in config.mirrors()
         if record.get("runs_normalised")
-        and in_command_position(command, record["runs_normalised"], launchers)
+        and any(in_command_position(command, form, launchers)
+                for form in [record["runs_normalised"], *record.get("parts_run", [])])
         and _call_is_in_the_root(config, record, cwd)
     ]
     if not records:
@@ -1606,6 +1644,16 @@ def already_run_guard(config, command: str, *, host=None, probe=None,
         return {"systemMessage": (
             f"{REPORT_PREFIX}: `{exempt}` is one of this project's `never_guard` commands, so "
             f"this call was not held to them ({GUARDED_CITATION})."
+        )}
+    setting = _sets(command, config.get("already_run.unguarded_when_set") or [], launchers)
+    if setting is not None:
+        # ⛔ The name and never its value, in the report as in the configuration:
+        # what the call set it to is the project's own database or account, and
+        # § 14 keeps a value out of anything this guard writes.
+        return {"systemMessage": (
+            f"{REPORT_PREFIX}: this call sets `{setting}`, one of this project's "
+            f"`unguarded_when_set` variables, so it was not held to the host's runs "
+            f"({GUARDED_CITATION})."
         )}
     held = environment if environment is not None else os.environ
     escape = config.get("already_run.escape")
@@ -2697,7 +2745,8 @@ A_FORM_MIRRORED_RUN = [{
 
 
 def _a_project(checks, never_guard=None, escape=None, operational_when=None,
-               repo: str = "an-owner/a-repository", command_roots=None):
+               repo: str = "an-owner/a-repository", command_roots=None,
+               unguarded_when_set=None):
     """A loadable configuration carrying this facet and this guard's own keys.
 
     ⛔ Built from an example and loaded through the shared reader rather than
@@ -2726,6 +2775,8 @@ def _a_project(checks, never_guard=None, escape=None, operational_when=None,
         stated["escape"] = escape
     if operational_when is not None:
         stated["operational_when"] = operational_when
+    if unguarded_when_set is not None:
+        stated["unguarded_when_set"] = unguarded_when_set
     data["already_run"] = stated
     return reader.load_text(yaml.safe_dump(data), ".", check_paths=False)
 
@@ -4239,6 +4290,99 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             "a-shell -c 'a-printing-command a-mirrored-command'", project=listed)))
         check("and an unlisted launcher's text is not read",
               not denied(already("a-shell -c 'a-mirrored-command'")))
+
+        # ⛔ § 18's compound mirror, reproduced at `af2edba` as matching nothing --
+        # its own call included, the call being cut at its separators and the
+        # mirror not.
+        out.append("")
+        out.append("A compound mirror is matched as the commands it runs, in order:")
+        compound = _a_project([{"workflow": "A workflow",
+                                "mirrors": "a-first-command && a-second-command",
+                                "triggers": "pull_request -> *"}])
+        check("the same compound call is refused",
+              denied(already("a-first-command && a-second-command", project=compound)))
+        check("and the same commands behind another separator are the same compound",
+              denied(already("a-first-command; a-second-command", project=compound)))
+        check("and a flag on the last of them is still its flagged form",
+              denied(already("a-first-command && a-second-command --a-flag", project=compound)))
+        check("while a flag on one before the last is a different chain",
+              not denied(already("a-first-command --a-flag && a-second-command",
+                                 project=compound)))
+        check("one of its commands alone is not the compound",
+              not denied(already("a-second-command", project=compound)))
+        check("nor are its commands with another between them",
+              not denied(already("a-first-command && a-third-command && a-second-command",
+                                 project=compound)))
+        check("and a call that only carries its text is not matched",
+              not denied(already("a-printing-command 'a-first-command && a-second-command'",
+                                 project=compound)))
+
+        # ⛔ § 2's `parts`: a call running one task of a mirrored multi-task
+        # command matched nothing at `af2edba`, the test being a prefix.
+        out.append("")
+        out.append("A part a mirrored command states is answered for by the same run:")
+        parted = _a_project([{"workflow": "A workflow", "mirrors": "a-task-runner every-task",
+                              "parts": ["a-task-runner one-task", "a-task-runner another-task"],
+                              "triggers": "pull_request -> *"}])
+        check("a stated part is refused",
+              denied(already("a-task-runner one-task", project=parted)))
+        check("and the refusal names the workflow whose run answers for it",
+              "A workflow" in reason(already("a-task-runner one-task", project=parted)))
+        check("a part the list does not state is not guarded",
+              not denied(already("a-task-runner a-third-task", project=parted)))
+        check("and a call that only carries a part's text is not matched",
+              not denied(already("a-printing-command 'a-task-runner one-task'", project=parted)))
+        check("while the command itself is still refused",
+              denied(already("a-task-runner every-task", project=parted)))
+        unparted = _a_project([{"workflow": "A workflow", "mirrors": "a-task-runner every-task",
+                                "triggers": "pull_request -> *"}])
+        check("and a project stating no parts guards no part, as before",
+              not denied(already("a-task-runner one-task", project=unparted)))
+        jobbed_parts = _a_project([{
+            "workflow": "A workflow", "triggers": "pull_request -> *",
+            "jobs": [{"job": "a-job", "mirrors": "a-task-runner every-task",
+                      "parts": ["a-task-runner one-task"]}],
+        }])
+        check("a job's own part is refused on that job's run",
+              denied(already("a-task-runner one-task", project=jobbed_parts,
+                             jobs=[{"name": "a-job", "steps": [{"name": "a-step"}]}])))
+        formed_parts = _a_project([{**A_FORM_MIRRORED_RUN[0],
+                                    "mirrors": "a-task-runner every-task",
+                                    "parts": ["a-task-runner one-task"]}],
+                                  command_roots=A_ROOT_REACHED_THROUGH_A_FORM)
+        check("a part in a root reached through a form is matched as that root runs it",
+              denied(already("a-wrapper a-task-runner one-task", project=formed_parts)))
+        check("and not in the form the project wrote it, which is not what runs",
+              not denied(already("a-task-runner one-task", project=formed_parts)))
+        check("and proceeds where that job executed nothing",
+              not denied(already("a-task-runner one-task", project=jobbed_parts,
+                                 jobs=[{"name": "another-job",
+                                        "steps": [{"name": "a-step"}]}])))
+
+        # ⛔ § 18's `unguarded_when_set`: a run against a project's own database
+        # is not the host's verdict, and the variable the call sets is what says
+        # so -- named, its value never stated.
+        out.append("")
+        out.append("A call setting a variable the project names is not held to the host's runs:")
+        setting = _a_project(A_MIRRORED_RUN, unguarded_when_set=["A_DATABASE"])
+        for label, call in (
+            ("assigned before the command", "A_DATABASE=a-value a-mirrored-command"),
+            ("handed through `env`", "env A_DATABASE=a-value a-mirrored-command"),
+            ("exported earlier in the same call",
+             "export A_DATABASE=a-value && a-mirrored-command"),
+        ):
+            check(f"a call setting it {label} proceeds",
+                  not denied(already(call, project=setting)))
+        set_once = already("A_DATABASE=a-secret-value a-mirrored-command", project=setting)
+        check("and the answer names the variable and never its value",
+              "A_DATABASE" in said(set_once) and "a-secret-value" not in said(set_once),
+              said(set_once)[:200])
+        check("an argument spelled like an assignment sets nothing, and is refused",
+              denied(already("a-mirrored-command A_DATABASE=a-value", project=setting)))
+        check("a variable the project does not name is refused",
+              denied(already("ANOTHER_VARIABLE=a-value a-mirrored-command", project=setting)))
+        check("and a project naming none refuses the same call, as before",
+              denied(already("A_DATABASE=a-value a-mirrored-command")))
 
         # --- the two ways a refusal stands down -----------------------------
         out.append("")
