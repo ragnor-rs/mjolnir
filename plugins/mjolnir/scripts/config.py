@@ -9370,6 +9370,12 @@ def _validate_declared_sections(data: dict, facts: dict) -> None:
             "requires beyond the procedure's -- a list of entries, or `[]` where it "
             "requires none.",
         )
+    # ⛔ Nothing declared is answered before the fence is asked for: a tree whose
+    # branch predates the key carries a surface with no fence, and `surface_for`
+    # reads that surface, so refusing there would make every such tree's
+    # configuration unreadable the moment the installed reader moved on.
+    if not declared:
+        return
     prefix = f"{DECLARED}."
     entry_keys = {path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)}
     if not entry_keys:
@@ -17538,6 +17544,26 @@ def self_test() -> int:
                 ),
                 f"reported {stood.unavailable()!r}",
             )
+
+    print("\n§ 4.4, the sections a project declares, against a surface without the fence:")
+    with open(SURFACE, encoding="utf-8") as handle:
+        unfenced = surface_facts(handle.read())
+    unfenced["declared"] = {
+        path for path in unfenced["declared"] if not path.startswith(f"{DECLARED}.")
+    }
+    check(
+        "a surface that has lost § 4.4's entry fence is refused where a section is declared",
+        _refused(_a_declared_section_of()(_a_valid_example()), facts=unfenced) == DECLARED,
+        "an entry was held to no key at all",
+    )
+    # ⛔ The direction `surface_for` exists for: a tree whose branch predates the
+    # key carries a surface with no fence, and a project declaring nothing there
+    # has to stay readable, or every guard reading it holds nothing.
+    check(
+        "and a project declaring nothing still reads against that surface",
+        _refused(_a_valid_example(), facts=unfenced) is None,
+        "a tree cut before the key would read as unconfigured",
+    )
 
     print("\n§ 20, where a collected step falls and who answers it:")
     # ⛔ The arm the plant list cannot reach, the surface's own fence being what it
