@@ -1328,10 +1328,10 @@ def self_test() -> int:
         # And one it cannot: no configuration of its own, and a carrier whose role nothing here
         # ships yet.
         short = os.path.join(stage, "not-served")
-        os.makedirs(os.path.join(short, ".claude", SKILLS_DIR, "its-breakdown"))
-        with open(os.path.join(short, ".claude", SKILLS_DIR, "its-breakdown", "SKILL.md"), "w",
+        os.makedirs(os.path.join(short, ".claude", SKILLS_DIR, "its-summary"))
+        with open(os.path.join(short, ".claude", SKILLS_DIR, "its-summary", "SKILL.md"), "w",
                   encoding="utf-8") as handle:
-            handle.write("---\nname: its-breakdown\n---\n")
+            handle.write("---\nname: its-summary\n---\n")
 
         # And one nothing can be said about: a carrier the map does not name.
         opaque = os.path.join(stage, "unmapped")
@@ -1347,7 +1347,7 @@ def self_test() -> int:
         with open(carriers_file, "w", encoding="utf-8") as handle:
             handle.write("carriers:\n"
                          "  its-filer: { role: file }\n"
-                         "  its-breakdown: { role: hours_breakdown }\n")
+                         "  its-summary: { role: session_summary }\n")
 
         def run(argv: list[str]) -> tuple[int, str]:
             buffer = io.StringIO()
@@ -1363,7 +1363,7 @@ def self_test() -> int:
         check("a project it cannot serve is NOT READY and every gap is named",
               code == 1 and "NOT READY" in text
               and "no configuration written" in text and "1 role(s) unshipped" in text
-              and "hours_breakdown" in text)
+              and "session_summary" in text)
 
         code, text = run([opaque, "--carriers", carriers_file, "--no-host"])
         check("a carrier nothing classifies is CANNOT ESTABLISH and exits 2, never NOT READY",
