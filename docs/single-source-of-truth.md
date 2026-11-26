@@ -322,11 +322,11 @@ Stated, because an unstated limit reads later as coverage.
   marker, which is the *quoting* failure, and it is what makes the line-start form the sound one. A
   table cell is not part of that argument — the check excludes cells by a separate condition the
   grammar does not reach — so the residue here is a reviewer's.
-- **A link with no anchor on it.** What no check reaches is the link that names no heading: a row
-  in the README pointing at a carrier directory resolves against nothing — so renaming a carrier
-  and updating this script's role map leaves such a link dead and the build green. ⚠️ Measured by
-  doing exactly that: the one path that fails loudly is the role map itself, and the rest fail in
-  silence.
+- **A link with no anchor on it.** No check of this script reaches the link that names no heading:
+  a row in the README pointing at a carrier directory is resolved by none of them. ⛔ **What holds it
+  is the documents run below**, which resolves every relative link in a governed document against
+  the index ([`schema.md § 38 → A link
+  resolves`](../plugins/mjolnir/config/schema.md#a-link-resolves-to-something-the-repository-holds)).
 - **A markdown file no role claims, on either end of check 8.** That check holds a link whose
   target is already in the role map, so a citation into an untracked document, or out of one, is
   skipped in silence rather than refused — the same residue check 0's loud-residue argument leaves,
@@ -4485,8 +4485,8 @@ project's configuration, and `plugins/mjolnir/scripts/documents.py` is the one i
 reads them. Two independent implementations in two other projects were what argued for it, and the
 counts behind that are in [`configuration-surface.md`](configuration-surface.md#the-document-checks-two-implementations-and-the-claim-measured-rather-than-taken).
 
-Ten checks, each declaring which of the three kinds it is, and the run prints the kind beside the
-verdict so that a reader can tell what a green is worth:
+Each check declares which of the three kinds it is, and the run prints the kind beside the verdict
+so that a reader can tell what a green is worth:
 
 | Name | Check | Kind |
 |---|---|---|
@@ -4494,6 +4494,7 @@ verdict so that a reader can tell what a green is worth:
 | a document names only what its row allows | the enforced edge, in the direction a filename appearing is the defect | computed |
 | a row names only edges the text carries | the same edge, in the direction nothing else reports | computed |
 | every document is reachable from an entry point | a document nothing names and nothing addresses | computed |
+| every link resolves | each relative link against the index and each fragment against its target's headings, an address outside the repository never fetched and a target the project exempts skipped | computed |
 | no forbidden name appears | each stated pattern over the governed set, a pattern that cannot be evaluated reported rather than read as no match | forbidding |
 | a table keeps its shape | every row of a table carrying the same number of cell delimiters, an escaped pipe counted as a cell's own character | computed |
 | a table row keeps its table | a run of pipe lines with no delimiter row, which renders as a paragraph | computed |
@@ -4523,6 +4524,10 @@ only through its carrier's suite is a facet nothing has ever run over real text 
   answered one would satisfy the boundary's letter and leave the adopting project writing the
   whole working procedure for a name back ([`schema.md § 38 → What a red
   says`](../plugins/mjolnir/config/schema.md#what-a-red-says-and-what-stays-in-a-projects-own-script)).
+- **A link to another host.** ⛔ An address with a scheme is never fetched, so a page that moved on
+  someone else's site is not reported: a network read would make the verdict a fact about the day
+  the run happened ([`schema.md § 38 → A link
+  resolves`](../plugins/mjolnir/config/schema.md#a-link-resolves-to-something-the-repository-holds)).
 - **Whether a document is true.** Every check here is structural. A row that is current, an edge
   that resolves and a table that renders say nothing about whether the sentences are right, which
   is the limit the quoting kind exists to tempt a project past.

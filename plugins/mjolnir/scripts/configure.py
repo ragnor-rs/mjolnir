@@ -1377,12 +1377,19 @@ ANSWERED_BY: dict[str, Answer] = {
         "sentence quoted at a document outside the governed set is a check over "
         "a file nothing else here reads (§ 38).",
     ),
+    "documents.exempt_targets": ask(
+        "Does any document link to a file the build writes rather than the "
+        "repository holds -- generated reference pages, a rendered site? ⛔ Every "
+        "other relative link is held to a file the index carries and a heading "
+        "that file has. Omit the key where there is none: omitted, nothing is "
+        "exempt (§ 38).",
+    ),
     "documents.box_diagrams.held": ask(
         "Should diagrams drawn in box characters be held to their own alignment "
         "-- every corner, tee and cross meeting a line that reaches back, columns "
-        "counted by display width? ⚠️ The one key directly under `documents` "
-        "that may be left out: leaving the block out and answering no are the "
-        "same answer, and either holds no diagram (§ 38).",
+        "counted by display width? ⚠️ This block may be left out: leaving it out "
+        "and answering no are the same answer, and either holds no diagram "
+        "(§ 38).",
     ),
     "documents.box_diagrams.exempt.document": ask(
         "Is any diagram drawn this way on purpose -- reproducing a terminal's own "
