@@ -172,6 +172,9 @@ COLLECTIONS = {
         "each key is a deploy target's own name (§ 33), chosen by the project, "
         "so the question is asked once per target it judges on rather than once "
         "per name",
+    "tracker.relations":
+        "each key is the project's own word for a relation that blocks nothing "
+        "(§ 3), so the question is asked once per relation it links",
 }
 
 # The two leaf names that are a facet's own absence record. ⛔ Covered by the
@@ -416,6 +419,15 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.create_fields.value": ask(
         "What value does every filing send in that field, where one value suits "
         "them all?",
+    ),
+    "tracker.relations.*.type": ask(
+        "Which relations that block nothing does this project link, and which of "
+        "the tracker's link types is each written as? None is an answer: every "
+        "relation then stays prose in the body.",
+    ),
+    "tracker.relations.*.side": ask(
+        "Where that link type is worded differently each way, which wording does "
+        "the item named first read -- outward or inward?",
     ),
     "tracker.policy.forbid_on_item": ask(
         "Which classes of content may not be written onto an item here?",
