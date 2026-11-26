@@ -782,6 +782,15 @@ ANSWERED_BY: dict[str, Answer] = {
         "Which command prints what a tree started that is still up, and nothing where "
         "nothing is? Unstated, no removal asks.",
     ),
+    "branch_model.resources_running": ask(
+        "Which command lists every running resource with the tree it belongs to, one per "
+        "line as the tree's path, a tab, and the resource? Unstated, a resource whose tree "
+        "is gone is found by nothing.",
+    ),
+    "branch_model.resource_stop": ask(
+        "Which command stops a resource whose tree is gone? Unstated, the sweep names it "
+        "and stops nothing.",
+    ),
     "branch_model.prune_on_merge": ask(
         "Should a tree also be cleaned up right after a merge the session makes with a "
         "bare command, once the host confirms it? Unstated, the next session's sweep "
