@@ -201,6 +201,12 @@ host:
     - workflow: "Item sections"
       mirrors: "python3 plugins/mjolnir/scripts/item_sections.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]
+    # ⚠️ This project states no deploy target, so there is no background run here to follow.
+    # This run holds the start, the hand-over, the bounded wait and the three readings against
+    # planted commands, which is the only place they can be held.
+    - workflow: "Deploy background run"
+      mirrors: "python3 plugins/mjolnir/scripts/deploy_run.py --self-test"
+      triggers: ["pull_request -> *", "push -> main"]
     - workflow: "Installer"
       mirrors: "python3 plugins/mjolnir/scripts/install.py --self-test"
       triggers: ["pull_request -> *", "push -> main"]

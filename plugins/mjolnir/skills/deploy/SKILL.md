@@ -386,9 +386,38 @@ whole command.
 
 | the entry says | what happens here |
 |---|---|
-| `command` | the command **step 3 printed** is run **whole**, in the directory it printed; nothing is prefixed to it, nothing is read out of it, and ⛔ no choice is put into it by hand |
+| `command` | the command **step 3 printed** is run **whole**, in the directory it printed; nothing is prefixed to it, nothing is read out of it, and ⛔ no choice is put into it by hand. Where the entry states a background run, it is started as below instead |
 | `dispatch` | the run is asked for through the port, against the entry's `ref` and carrying every input step 3 printed |
 | `by_hand` | ⛔ **nothing is run.** The workflow, the ref and every input are handed over, and the reply reports **no deploy made** |
+
+⛔ **Where step 3's resolution carries a `background` block, the command is not run here at all but
+started by its one consumer**, which is
+[`§ 33 → A run put in the background`](../../config/schema.md#a-run-put-in-the-background-and-what-is-handed-over-while-it-runs)'s
+order performed rather than followed by eye:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/deploy_run.py" start --target "<the entry's name>" \
+  --choose "<a choice's name>=<a value>"
+```
+
+- ⛔ **The log and the follow command it prints go to the person before anything waits**, as a
+  message of their own, so a run the session is about to block on can be followed while it runs.
+- **Then the wait, bounded per call**, repeated until the run is no longer running:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/deploy_run.py" wait --target "<the entry's name>" --up-to 540
+  ```
+
+  Exit 5 is the run still running, and the call is made again rather than read as an outcome.
+  ⛔ **Step 7 is not entered until the state is `ended`**, and a `lost` run, ended with no status
+  written, holds every advance, every `after` step and the grouping's mark: what it delivered is
+  reported **unestablished**, with the log named for a person to read.
+- **Exit 1 is a run of this target still in flight from an earlier session**, and that run is waited
+  on and read rather than started again; `status` lists every run the store records, which is what a
+  session resuming a deploy reads first.
+- ⚠️ **A session that ends during the wait leaves the record behind** in the artifact store, and
+  that record is the report of the run in flight; the reply says so where the pass ends before the
+  run does.
 
 ⚠️ **A dispatch made inside the port is not a shell call**, so the rails that read one — § 19's and
 § 21's — never saw it. The go in step 5 stands in that place, which is why it is asked for every

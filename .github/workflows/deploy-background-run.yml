@@ -1,0 +1,35 @@
+name: Deploy background run
+
+# A deploy target's command run in the background: started detached, its log handed over before
+# any wait, and its outcome read only once it has ended. Held to § 33 of
+# plugins/mjolnir/config/schema.md; no copy of it is carried here.
+#
+# ⚠️ This repository states no deploy target, so there is no real run to follow. What this run holds
+# is the module itself, against commands the suite plants.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind. The module starts local processes and reads files; it reaches no host
+# and no tracker.
+permissions: {}
+
+jobs:
+  deploy-background-run:
+    name: Deploy background run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Pinned for the reason the sibling workflows pin it: the module runs on the shared reader,
+      # which needs the parser.
+      - name: Install PyYAML
+        run: python3 -m pip install --disable-pip-version-check "pyyaml==6.0.3"
+
+      # One step, one command, and the same string `host.checks` states this run mirrors.
+      - name: Start, follow and read a background run
+        run: python3 plugins/mjolnir/scripts/deploy_run.py --self-test

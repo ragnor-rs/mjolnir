@@ -3547,7 +3547,14 @@ class Config:
             command = _CHOICE_PLACED.sub(lambda found: sent[found.group(1)], command)
         root = entry.get(DEPLOY_CODE_ROOT)
         view = self.root(root) if root is not None else self.only_root
-        return {**answer, **view.command(command, entry.get(COMMAND_ROOT_REF))}
+        # ⚠️ `None` where the entry states no background run, which is the
+        # foreground invocation every target had before the key existed.
+        background = dict(entry["background"]) if "background" in entry else None
+        return {
+            **answer,
+            "background": background,
+            **view.command(command, entry.get(COMMAND_ROOT_REF)),
+        }
 
     def deploy_batch(
         self, target: str, chosen: list[str] | None = None, commit: str | None = None
@@ -5874,6 +5881,7 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
         _validate_choices(where, entry, facts)
         _validate_batch_placements(where, entry)
         _validate_tree(where, entry, facts)
+        _validate_background(where, entry, facts)
         # ⛔ § 16's list, cited rather than given a second grammar here -- the
         # division § 17 already has with the same section. What this facet does
         # with it is hold its shape and name it; evaluating a precondition is
@@ -6702,6 +6710,59 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                 "`command`, in a `batch` and in a step's `command`, and nowhere "
                 "else (§ 33).",
             )
+
+
+def _validate_background(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `background` on one entry, which no marker on the surface can reach.
+
+    ⚠️ An entry that omits the key is held to nothing here and the surface's
+    fence is not asked for: a tree whose surface predates the key is read against
+    its own surface, and a reader that demanded the fence first would refuse
+    every such tree whole.
+    """
+    if "background" not in entry:
+        return
+    at = f"{where}.background"
+    # ⛔ The shape first, for the reason `tree` checks it first: a dispatch is a
+    # run the host holds and § 29 watches, so a local log beside one is a fact
+    # nothing reads.
+    if entry.get("invoke") != "command":
+        raise ConfigError(
+            at,
+            f"is stated beside `invoke: {entry.get('invoke')}`, which runs no local "
+            "command to put in the background (§ 33). Only a `command` target states one.",
+        )
+    block = entry["background"]
+    if not isinstance(block, dict):
+        raise ConfigError(
+            at,
+            "must be a mapping stating where the run's log is (§ 33); omit it where "
+            "the command runs in the foreground.",
+        )
+    prefix = "deploy.background."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a background run could be "
+            "held to nothing; § 33 states its keys in the entry's own fence.",
+        )
+    for key in block:
+        if key not in declared:
+            raise ConfigError(
+                f"{at}.{key}",
+                "is a key § 33 does not declare on a background run, so nothing reads "
+                f"it. The keys it declares are: {', '.join(sorted(declared))}.",
+            )
+    log = block.get("log")
+    if not isinstance(log, str) or not log.strip():
+        raise ConfigError(
+            f"{at}.log",
+            "required, and a non-empty string (§ 33): the file the run's output is "
+            "written to, relative to the directory the command runs in.",
+        )
 
 
 def _validate_tree(where: str, entry: dict, facts: dict) -> None:
@@ -18625,6 +18686,45 @@ def self_test() -> int:
         said == "deploy[0].tree", f"reported {said!r}",
     )
 
+    print("\n§ 33's background run, the green side:")
+    loaded = _a_valid_example()
+    loaded["deploy"] = [_a_deploy_target(background={"log": "deploy.log"})]
+    refusal = _refused(loaded)
+    check("a command target stating a background run and its log loads",
+          refusal is None, f"refused on {refusal!r}")
+    got = choosing(background={"log": "deploy.log"})
+    check(
+        "and the resolved target carries the block as stated",
+        isinstance(got, dict) and got["background"] == {"log": "deploy.log"},
+        f"answered {got!r}",
+    )
+    got = choosing()
+    check(
+        "a target stating none resolves with no background run, invoked as before",
+        isinstance(got, dict) and got["background"] is None, f"answered {got!r}",
+    )
+    said = ""
+    try:
+        _validate_background(
+            "deploy[0]", {"invoke": "command", "background": {"log": "deploy.log"}},
+            {"declared": set()},
+        )
+    except ConfigError as refused:
+        said = refused.key
+    check(
+        "a surface that has lost the background keys is refused where one is stated",
+        said == "deploy[0].background", f"reported {said!r}",
+    )
+    said = None
+    try:
+        _validate_background("deploy[0]", {"invoke": "command"}, {"declared": set()})
+    except ConfigError as refused:
+        said = refused.key
+    check(
+        "and a target stating none still reads against a surface without the fence",
+        said is None, f"refused on {said!r}",
+    )
+
     # ⛔ The one arm the plant list above cannot hold, and it is held on the
     # refusal's **text** rather than on its key. Two rules refuse
     # `deploy[].command_root` — this facet's *the shape never reads it* and
@@ -20286,6 +20386,29 @@ def _planted_violations():
                      {"invoke": shape, "command": _ABSENT, "ref": "a-ref",
                       "workflow": _a_workflow_the_example_states(),
                       "tree": [_a_tree_condition()]})
+                    for shape in ("dispatch", "by_hand")
+                ),
+            )
+        ),
+        # § 33's background run, one plant per arm.
+        *(
+            (label, f"deploy[0].{key}", at("deploy", [_a_deploy_target(**changed)]))
+            for label, key, changed in (
+                ("a background run that is not a block", "background",
+                 {"background": "deploy.log"}),
+                ("a background run stating no log", "background.log", {"background": {}}),
+                ("a background run whose log is empty", "background.log",
+                 {"background": {"log": " "}}),
+                ("a background run whose log is not a string", "background.log",
+                 {"background": {"log": ["deploy.log"]}}),
+                ("a background run with a key § 33 does not declare", "background.follow",
+                 {"background": {"log": "deploy.log", "follow": "tail -f deploy.log"}}),
+                *(
+                    (f"a background run on a {shape} target, which runs no local command",
+                     "background",
+                     {"invoke": shape, "command": _ABSENT, "ref": "a-ref",
+                      "workflow": _a_workflow_the_example_states(),
+                      "background": {"log": "deploy.log"}})
                     for shape in ("dispatch", "by_hand")
                 ),
             )

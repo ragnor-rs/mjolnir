@@ -1351,6 +1351,10 @@ ANSWERED_BY: dict[str, Answer] = {
     "deploy.tree.branch": ask(
         "Which branch must the tree be on?",
     ),
+    "deploy.background.log": ask(
+        "Is this target's command run in the background, and where is its log written? "
+        "⚠️ Run in the foreground is an answer: the key is then omitted (§ 33).",
+    ),
     "deploy.requires": ask(
         "Which preconditions does it need that it does not check itself?",
     ),
