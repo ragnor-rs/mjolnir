@@ -3402,6 +3402,11 @@ class Config:
         self.get("host.landing.bases")
         return host_landing_bases(self.answering.data)
 
+    def classification_for(self, labels: list[str]) -> dict:
+        """§ 4.9's verdict on every label one item carries."""
+        self.get(CLASSIFICATION_KEY)
+        return classification_for(self.answering.data, labels)
+
     def release(self) -> dict | None:
         """§ 34's `release`, or `None` where no file here carries a version.
 
@@ -10608,6 +10613,217 @@ def host_pull_request_title(data: dict) -> dict | None:
     }
 
 
+CLASSIFICATION_KEY = "work_item.classification"
+# The facets § 4.9 names whose `label` carrier owns every label opening with its
+# prefix, so a label one of them carries is that facet's fact and not a stray.
+CLASSIFICATION_PREFIXED = (
+    "work_item.type",
+    "work_item.estimate",
+    "work_item.priority",
+    "work_item.code_root",
+    "work_item.grouping",
+)
+
+
+def _label_owner(data: dict, label: str) -> str | None:
+    """The key § 4.9 says accounts for a label other than the classification set.
+
+    ⛔ The owners are the ones the section lists and no others: a prefixed facet
+    carried on labels, § 27's map read off a label, a `label_absent` gate and a
+    route. Whatever else a repository's label set holds -- a host default, a label
+    left over from older practice -- has no owner, which is the case the facet is
+    there to refuse.
+    """
+    for facet in CLASSIFICATION_PREFIXED:
+        prefix = _get(data, f"{facet}.label_prefix")
+        if (
+            _get(data, f"{facet}.carrier") == "label"
+            and isinstance(prefix, str) and prefix
+            and label.startswith(prefix)
+        ):
+            return f"{facet}.label_prefix"
+    prefix = _get(data, f"{PEOPLE_KEY}.label_prefix")
+    if (
+        _get(data, f"{PEOPLE_KEY}.key") == "label"
+        and isinstance(prefix, str) and prefix
+        and label.startswith(prefix)
+    ):
+        return f"{PEOPLE_KEY}.label_prefix"
+    gate = _get(data, "readiness")
+    for index, entry in enumerate(gate if isinstance(gate, list) else []):
+        if (
+            isinstance(entry, dict) and entry.get("check") == "label_absent"
+            and str(entry.get("label")) == label
+        ):
+            return f"readiness[{index}]"
+    routes = _get(data, ROUTES_KEY)
+    for index, entry in enumerate(routes if isinstance(routes, list) else []):
+        if isinstance(entry, dict) and entry.get("label") is not None and str(
+            entry["label"]
+        ) == label:
+            return f"{ROUTES_KEY}[{index}]"
+    return None
+
+
+def _count(data: dict, key: str, floor: int) -> int | None:
+    """One of § 4.9's two bounds, held to being a whole number no lower than `floor`.
+
+    ⛔ A boolean is refused although Python reads it as a number: `at_most: true`
+    is somebody's yes to a question the key does not ask, and read as 1 it would
+    refuse every item carrying two values.
+    """
+    value = _get(data, f"{CLASSIFICATION_KEY}.{key}")
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value < floor:
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.{key}",
+            f"is {value!r}; § 4.9 states it as a whole number of labels, no lower "
+            f"than {floor}.",
+        )
+    return value
+
+
+def work_item_classification(data: dict) -> dict | None:
+    """§ 4.9's facet, held to its shape: `None` where the project states none.
+
+    ⛔ Optional, and the absence is the old behaviour rather than a gap: the facet
+    is new, and a key made required would invalidate every configuration written
+    before it. `carrier: none` with its reason is the stated absence; the reason
+    itself is the surface's `# absent_reason` marker, held where every facet's is.
+    """
+    facet = _get(data, CLASSIFICATION_KEY)
+    if facet is None:
+        return None
+    if not isinstance(facet, dict):
+        raise ConfigError(
+            CLASSIFICATION_KEY,
+            f"is {facet!r}; § 4.9 states it as a block with a `carrier`.",
+        )
+    carrier = facet.get("carrier")
+    if carrier is None:
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.carrier",
+            "required where the facet is written: § 4.9 reads `label` or `none` "
+            "here, and a block with neither says nothing about which.",
+        )
+    if carrier == "none":
+        return {"carrier": "none",
+                "absent_reason": " ".join(str(facet.get("absent_reason")).split())}
+    name = facet.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.name",
+            f"is {name!r}; required when the carrier is `label`. It is what a report "
+            "calls the axis, so a refusal can say which classification an item "
+            "lacks (§ 4.9).",
+        )
+    values = facet.get("values")
+    if not isinstance(values, list) or not values:
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.values",
+            f"is {values!r}; § 4.9 states the closed set as a list, written as one "
+            "even where it holds one label. A single label written bare reads as "
+            "its letters, each of them a label nothing carries.",
+        )
+    for index, value in enumerate(values):
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(
+                f"{CLASSIFICATION_KEY}.values[{index}]",
+                f"is {value!r}, which names no label (§ 4.9).",
+            )
+        owner = _label_owner(data, value)
+        if owner:
+            raise ConfigError(
+                f"{CLASSIFICATION_KEY}.values[{index}]",
+                f"is {value!r}, which `{owner}` already reads as its own label. Two "
+                "keys reading one label each as their own fact disagree about what "
+                "the item carries (§ 4.9).",
+            )
+    if len(set(values)) != len(values):
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.values",
+            f"repeats a label in {values!r} (§ 4.9).",
+        )
+    at_least = _count(data, "at_least", 0)
+    at_least = 1 if at_least is None else at_least
+    at_most = _count(data, "at_most", max(at_least, 1))
+    if at_least > len(values):
+        raise ConfigError(
+            f"{CLASSIFICATION_KEY}.at_least",
+            f"is {at_least}, and `values` holds {len(values)}: no item could carry "
+            "enough of them, so every filing would be refused (§ 4.9).",
+        )
+    return {
+        "carrier": "label",
+        "name": name.strip(),
+        "values": [value.strip() for value in values],
+        "at_least": at_least,
+        "at_most": at_most,
+    }
+
+
+def classification_for(data: dict, labels: list[str]) -> dict:
+    """§ 4.9's verdict on the labels one item carries.
+
+    ⛔ Every problem is named, not the first: a verify step that heard about one
+    stray label would fix it and be refused again on the count.
+    """
+    facet = work_item_classification(data)
+    if facet is None:
+        return {
+            "verdict": "unstated",
+            "detail": f"`{CLASSIFICATION_KEY}` is not stated, so no label set is held "
+            "and the item is filed as it was before the key existed (§ 4.9).",
+        }
+    if facet["carrier"] == "none":
+        return {
+            "verdict": "none",
+            "absent_reason": facet["absent_reason"],
+            "detail": "the project classifies with no closed set, by its own stated "
+            "reason, so nothing is held (§ 4.9).",
+        }
+    held = [str(label) for label in labels]
+    allowed = set(facet["values"])
+    classified = [label for label in held if label in allowed]
+    owned = {}
+    stray = []
+    for label in held:
+        if label in allowed:
+            continue
+        owner = _label_owner(data, label)
+        if owner:
+            owned[label] = owner
+        else:
+            stray.append(label)
+    problems = []
+    if len(classified) < facet["at_least"]:
+        problems.append(
+            f"carries {len(classified)} {facet['name']} label(s) and needs at least "
+            f"{facet['at_least']}, out of {', '.join(facet['values'])}"
+        )
+    if facet["at_most"] is not None and len(classified) > facet["at_most"]:
+        problems.append(
+            f"carries {len(classified)} {facet['name']} label(s) "
+            f"({', '.join(classified)}) and allows at most {facet['at_most']}"
+        )
+    for label in stray:
+        problems.append(
+            f"carries {label!r}, which is not in the {facet['name']} set and which no "
+            "other key accounts for"
+        )
+    return {
+        "verdict": "refused" if problems else "holds",
+        "name": facet["name"],
+        "values": facet["values"],
+        "at_least": facet["at_least"],
+        "at_most": facet["at_most"],
+        "classified": classified,
+        "accounted_elsewhere": owned,
+        "problems": problems,
+    }
+
+
 def host_landing_bases(data: dict) -> list[str]:
     """§ 2's `host.landing.bases`, held to its shape: the branches a change lands on.
 
@@ -12703,6 +12919,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     # gate refusing every title the finishing role writes.
     host_pull_request_title(data)
     host_landing_bases(data)
+    work_item_classification(data)
 
     # § 17. The verdicts no host run produces, and the one facet on this surface
     # whose entries carry a command the procedure runs for a verdict. Requiredness
@@ -14729,6 +14946,7 @@ MARKED_ABSENT_CAPABLE = [
     SPEC_CORPUS_KEY,
     "test_tiers",
     "verify",
+    CLASSIFICATION_KEY,
     "work_item.code_root",
     "work_item.due_date",
     "work_item.estimate",
@@ -18438,6 +18656,54 @@ def self_test() -> int:
     stated = _refused(unstated)
     check("a configuration stating no routes at all loads", stated is None,
           f"refused {stated!r}")
+    # § 4.9 from the green side, and the verdict the filing role reads twice.
+    classified = at_path(_a_valid_example(), CLASSIFICATION_KEY, _a_classification())
+    stated = _refused(classified)
+    check("a classification set on labels loads", stated is None, f"refused {stated!r}")
+    stated = _refused(at_path(_a_valid_example(), CLASSIFICATION_KEY,
+                              {"carrier": "none", "absent_reason": "labels classify nothing"}))
+    check("a classification stated as none with its reason loads", stated is None,
+          f"refused {stated!r}")
+    routed = at_path(
+        _with_typed_routes(_a_valid_example(),
+                           [{"label": "design", "carrier": "c", "kind": "skill"}]),
+        CLASSIFICATION_KEY, _a_classification(at_most=1),
+    )
+    stated = _refused(routed)
+    check("a classification beside a route and a type label loads", stated is None,
+          f"refused {stated!r}")
+    for wanted, labels, problems in [
+        ("holds", ["backend"], 0),
+        ("holds", ["frontend", "design",
+                   f"{_get(routed, 'work_item.type.label_prefix')}{PLANTED_ROUTE_TYPE}"], 0),
+        ("refused", [], 1),
+        ("refused", ["backend", "frontend"], 1),
+        ("refused", ["backend", "wontfix"], 1),
+        ("refused", ["good first issue"], 2),
+    ]:
+        answer = classification_for(routed, labels)
+        check(f"§ 4.9 reads {labels!r} as {wanted} with {problems} problem(s)",
+              answer["verdict"] == wanted and len(answer["problems"]) == problems,
+              f"answered {answer!r}")
+    answer = classification_for(routed, ["frontend", "design"])
+    check("§ 4.9 names the key that accounts for a label outside its set",
+          answer["accounted_elsewhere"] == {"design": f"{ROUTES_KEY}[0]"},
+          f"answered {answer!r}")
+    answer = classification_for(routed, ["backend", "wontfix"])
+    check("§ 4.9 names the stray label in its refusal",
+          any("'wontfix'" in problem for problem in answer["problems"]),
+          f"answered {answer!r}")
+    bare = _a_valid_example()
+    bare.get("work_item", {}).pop("classification", None)
+    answer = classification_for(bare, ["good first issue"])
+    check("a project stating no classification holds nothing and says so",
+          answer["verdict"] == "unstated" and _refused(bare) is None,
+          f"answered {answer!r}")
+    answer = classification_for(at_path(_a_valid_example(), CLASSIFICATION_KEY,
+                                        {"carrier": "none", "absent_reason": "r"}), [])
+    check("a classification stated as none holds nothing and quotes its reason",
+          answer["verdict"] == "none" and answer["absent_reason"] == "r",
+          f"answered {answer!r}")
 
     # § 4.8's stated default from the green side: it loads, the map answers with
     # the rule named, a value given wins, and what the map does not cover is
@@ -22566,6 +22832,31 @@ def _planted_violations():
          at("host.landing.bases", "release/*")),
         ("a landing base written blank, which matches nothing", "host.landing.bases[0]",
          at("host.landing.bases", ["  "])),
+        # § 4.9's facet, one plant per refusal it makes at load.
+        ("a classification written with no carrier", f"{CLASSIFICATION_KEY}.carrier",
+         at(CLASSIFICATION_KEY, _a_classification(carrier=None))),
+        ("a classification set written as one string", f"{CLASSIFICATION_KEY}.values",
+         at(CLASSIFICATION_KEY, _a_classification(values="backend"))),
+        ("a classification label written blank", f"{CLASSIFICATION_KEY}.values[1]",
+         at(CLASSIFICATION_KEY, _a_classification(values=["backend", " "]))),
+        ("a classification label written twice", f"{CLASSIFICATION_KEY}.values",
+         at(CLASSIFICATION_KEY, _a_classification(values=["backend", "backend"]))),
+        ("a classification carried on labels with no name", f"{CLASSIFICATION_KEY}.name",
+         at(CLASSIFICATION_KEY, _a_classification(name=None))),
+        ("a classification bound written as a yes", f"{CLASSIFICATION_KEY}.at_most",
+         at(CLASSIFICATION_KEY, _a_classification(at_most=True))),
+        ("a classification upper bound below the lower one", f"{CLASSIFICATION_KEY}.at_most",
+         at(CLASSIFICATION_KEY, _a_classification(at_least=2, at_most=1))),
+        ("a classification needing more labels than its set holds",
+         f"{CLASSIFICATION_KEY}.at_least",
+         at(CLASSIFICATION_KEY, _a_classification(at_least=3))),
+        ("a classification label a route already reads as its own",
+         f"{CLASSIFICATION_KEY}.values[0]",
+         lambda data: at(CLASSIFICATION_KEY, _a_classification())(_with_typed_routes(
+             data, [{"label": "backend", "carrier": "c", "kind": "skill"}]))),
+        ("a classification stated as none with no reason",
+         f"{CLASSIFICATION_KEY}.absent_reason",
+         at(CLASSIFICATION_KEY, {"carrier": "none"})),
         # § 10's entries. ⚠️ The `claimed_by` and `cap` plants are the two whose
         # refusal direction is the permissive one: each of them leaves a reader
         # reporting the resource as configured while no call ever claims it.
@@ -26584,6 +26875,22 @@ PLANTED_CARRIER = "a-carrier-of-the-projects-own"
 TYPE_LABEL_HELD = object()
 
 
+def _a_classification(**over) -> dict:
+    """§ 4.9's facet on labels over a two-label set, with `over` written in."""
+    facet = {"carrier": "label", "name": "component", "values": ["backend", "frontend"]}
+    facet.update(over)
+    return {key: value for key, value in facet.items() if value is not None}
+
+
+def at_path(data: dict, path: str, value) -> dict:
+    """`data` with `value` written at the dotted `path`, intermediate blocks made."""
+    node, parts = data, path.split(".")
+    for part in parts[:-1]:
+        node = node.setdefault(part, {})
+    node[parts[-1]] = value
+    return data
+
+
 def _with_typed_routes(data: dict, routes: list) -> dict:
     """§ 7's routes written in, over a § 4.1 type carried as a prefixed label.
 
@@ -27227,6 +27534,14 @@ def main(argv: list[str]) -> int:
         "carrier that is not where its kind puts it, are each a stop",
     )
     parser.add_argument(
+        "--classification-for",
+        nargs="*",
+        metavar="LABEL",
+        help="every label one item carries, held against § 4.9's closed set: "
+        "holds, refused with each problem named, none where the project states "
+        "no set, or unstated where it writes no facet",
+    )
+    parser.add_argument(
         "--commitment",
         action="store_true",
         help="§ 4.2's commitment: each carried value the gate commits an item "
@@ -27413,6 +27728,8 @@ def main(argv: list[str]) -> int:
         # project's rather than a root's.
         if args.route_for:
             answer = config.route_for(args.route_for)
+        if args.classification_for is not None:
+            answer = config.classification_for(args.classification_for)
         # The project's, for § 27's reason above: statuses and the work-item
         # facets are not stated per root.
         if args.commitment:

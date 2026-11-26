@@ -458,6 +458,23 @@ retry the create.
 Then set what the project carries, each through its own operation, taking the stated fallback where
 a capability is absent: the labels, the assignee, and the relations below.
 
+**The labels that classify the item come from
+[`§ 4.9`](../../config/schema.md#49-classification--the-closed-set-of-labels-an-item-is-filed-under)'s
+set and from nothing else**, where the project states one. Ask the reader before `set_labels`, with
+every label the item is about to carry:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --classification-for <every label the item will carry>
+```
+
+- **`holds`** ⇒ write them.
+- **`refused`** ⇒ each problem is named. Change the labels and ask again; never write over a
+  refusal.
+- **`none` or `unstated`** ⇒ the project holds no set, and the labels are written as before.
+- **A request the set cannot place** — no value in it fits — is reported in the reply with the set
+  named. No label is invented, and the item is not left unclassified: which label it needs is then
+  the person's to answer, and § 4.9 states why.
+
 **Relations are recorded through `link_dependency`, in the tracker, never as a line of prose in the
 body** — except where that capability is absent, which is the one case its fallback allows.
 [`§ 3 → An edge is a relation`](../../config/schema.md#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it)
@@ -490,10 +507,14 @@ nothing is waiting on.
 ## 6. Verify, and report
 
 Read each item back rather than trusting the write. Check the body rendered, the semantic sections
-are present and filled, the type and the template agree, every label the project requires is
-attached, the item is in the configured language throughout, and every relation reads correctly
+are present and filled, the type and the template agree, the labels the item carries hold against
+§ 4.9's set, the item is in the configured language throughout, and every relation reads correctly
 from **both** ends — the reverse end is a write to a different item, so it is the one most easily
 skipped.
+
+The labels are checked by asking `--classification-for` again with every label the read-back item
+carries, not the labels this role meant to write. A `refused` answer is a filing that is not done:
+fix the labels and read the item back again.
 
 **Read the language check literally, against the fetched text.** Where the request arrived in
 another language, one heading or one acceptance condition slips through in it, and nobody catches it
@@ -511,6 +532,8 @@ Then report, in the register
 - **on the parent outcome**: the check item written, the parent, and the condition it serves — and
   that no item was filed, said plainly;
 - every relation written, and which other items were edited to carry the reverse end;
+- the labels each item carries and § 4.9's verdict on the read-back, and every request the set
+  could not place, with the set named;
 - **which copy of the specification corpus was read** — the ref, and which of § 39's three
   outcomes it was: the version's own, the **fallback** to the integration branch, or a ref this
   clone does not hold and so left **unread**. **Where the project carries no corpus, that no
