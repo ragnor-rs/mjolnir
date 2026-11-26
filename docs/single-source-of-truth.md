@@ -322,11 +322,11 @@ Stated, because an unstated limit reads later as coverage.
   marker, which is the *quoting* failure, and it is what makes the line-start form the sound one. A
   table cell is not part of that argument — the check excludes cells by a separate condition the
   grammar does not reach — so the residue here is a reviewer's.
-- **A link with no anchor on it.** What no check reaches is the link that names no heading: a row
-  in the README pointing at a carrier directory resolves against nothing — so renaming a carrier
-  and updating this script's role map leaves such a link dead and the build green. ⚠️ Measured by
-  doing exactly that: the one path that fails loudly is the role map itself, and the rest fail in
-  silence.
+- **A link with no anchor on it.** No check of this script reaches the link that names no heading:
+  a row in the README pointing at a carrier directory is resolved by none of them. ⛔ **What holds it
+  is the documents run below**, which resolves every relative link in a governed document against
+  the index ([`schema.md § 38 → A link
+  resolves`](../plugins/mjolnir/config/schema.md#a-link-resolves-to-something-the-repository-holds)).
 - **A markdown file no role claims, on either end of check 8.** That check holds a link whose
   target is already in the role map, so a citation into an untracked document, or out of one, is
   skipped in silence rather than refused — the same residue check 0's loud-residue argument leaves,
@@ -4083,6 +4083,30 @@ already bounds in the other direction. ⛔ **What is not weakened by it is the a
 unconditional, so a project that evaded this refusal still reaches a person — what it would have
 lost is the reader saying so at the load.
 
+## A deploy's tree, read without a write
+
+`plugins/mjolnir/scripts/deploy_tree.py --self-test` runs in the `Deploy tree carrier` workflow,
+with no credential and no network. ⛔ The rule is
+[schema § 33 → What the tree must be](../plugins/mjolnir/config/schema.md#what-the-tree-must-be-for-the-deploy-and-for-the-advance)
+and this document states none of it. The reader's suite holds the list's shape — one plant per
+refusal, each red with the refusal removed — and this suite holds the readings.
+
+**What the suite holds.** Every condition the surface's alternation states has a reading and none
+else does, so a member added there reddens here rather than reading as met. Each reading is taken
+on a repository the suite builds with a bare remote of its own, in the state that meets it and in
+the state that does not: an untracked file, a commit ahead of the upstream, a branch with no
+upstream, a detached commit, a linked tree, a commit the repository does not resolve. Each `holds`
+value is held to the deploy and the advance it stops, and a directory that is no repository, or
+that could not be read, is held as not met rather than as met.
+
+**The write the reading may not make is asserted on the index itself**: a tracked file's stat is
+moved so that a status would refresh the index, and the arm compares its bytes and its time before
+and after. ⚠️ **Run both ways** — with git's optional locks left on, that arm alone reddens.
+
+⚠️ **And nothing here holds the facet against a real project's tree.** No target in this repository
+states a condition, so a deploy against a project that states one is the first exercise of that
+half, which is a limit of this record rather than of the rule.
+
 ## A released write, against the change that would rewrite it
 
 `plugins/mjolnir/scripts/check_live_data_record.py --self-test` runs in the `Live data record`
@@ -4461,8 +4485,8 @@ project's configuration, and `plugins/mjolnir/scripts/documents.py` is the one i
 reads them. Two independent implementations in two other projects were what argued for it, and the
 counts behind that are in [`configuration-surface.md`](configuration-surface.md#the-document-checks-two-implementations-and-the-claim-measured-rather-than-taken).
 
-Ten checks, each declaring which of the three kinds it is, and the run prints the kind beside the
-verdict so that a reader can tell what a green is worth:
+Each check declares which of the three kinds it is, and the run prints the kind beside the verdict
+so that a reader can tell what a green is worth:
 
 | Name | Check | Kind |
 |---|---|---|
@@ -4470,6 +4494,7 @@ verdict so that a reader can tell what a green is worth:
 | a document names only what its row allows | the enforced edge, in the direction a filename appearing is the defect | computed |
 | a row names only edges the text carries | the same edge, in the direction nothing else reports | computed |
 | every document is reachable from an entry point | a document nothing names and nothing addresses | computed |
+| every link resolves | each relative link against the index and each fragment against its target's headings, an address outside the repository never fetched and a target the project exempts skipped | computed |
 | no forbidden name appears | each stated pattern over the governed set, a pattern that cannot be evaluated reported rather than read as no match | forbidding |
 | a table keeps its shape | every row of a table carrying the same number of cell delimiters, an escaped pipe counted as a cell's own character | computed |
 | a table row keeps its table | a run of pipe lines with no delimiter row, which renders as a paragraph | computed |
@@ -4499,6 +4524,10 @@ only through its carrier's suite is a facet nothing has ever run over real text 
   answered one would satisfy the boundary's letter and leave the adopting project writing the
   whole working procedure for a name back ([`schema.md § 38 → What a red
   says`](../plugins/mjolnir/config/schema.md#what-a-red-says-and-what-stays-in-a-projects-own-script)).
+- **A link to another host.** ⛔ An address with a scheme is never fetched, so a page that moved on
+  someone else's site is not reported: a network read would make the verdict a fact about the day
+  the run happened ([`schema.md § 38 → A link
+  resolves`](../plugins/mjolnir/config/schema.md#a-link-resolves-to-something-the-repository-holds)).
 - **Whether a document is true.** Every check here is structural. A row that is current, an edge
   that resolves and a table that renders say nothing about whether the sentences are right, which
   is the limit the quoting kind exists to tempt a project past.
@@ -4609,6 +4638,29 @@ commands, so the carrier cannot go uncalled.
 - **That a line was printed by a comparison rather than typed.** The check reads the reply's own
   text.
 - **That the create followed the second reading immediately.** Nothing sees the gap between them.
+
+## What a deploy's batch command is handed, and what its answer is matched against
+
+`plugins/mjolnir/scripts/batch.py --self-test` runs in the `Batch carrier` workflow, with no
+credential and no network. ⛔ The rule is
+[`schema.md § 33`](../plugins/mjolnir/config/schema.md#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against),
+and this document states none of it. The placements a `batch` may carry are held by the
+`Config reader` run, which refuses each one § 33 does not state.
+
+What the suite holds: an advance handed the items in the role before the one it advances to, and a
+precondition handed every item short of its bar rather than those; the identifiers arriving on the
+command's input and the target, the commit, the purpose and a choice reaching it where it places
+them; both differences of the match named, an unplaceable item included; a tracker with no search
+kept apart from a search that failed; a command that failed stopped rather than read as empty; and
+that the deploying role names the carrier, so it cannot go uncalled.
+
+### What it deliberately does not hold
+
+- **That the command answers the question § 33 asks it.** Whether an item's code is in what is
+  deployed is the project's command; nothing here reads inside it.
+- **That the commit handed over is the one the deploy serves.** The carrier holds its shape; which
+  commit it is was established by the role's preflight.
+- **That the role reported what the carrier printed.** Nothing reads the reply.
 
 ## What a deployed item is judged against, and the verdict the carrier is barred from
 

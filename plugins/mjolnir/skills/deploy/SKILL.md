@@ -110,6 +110,28 @@ what this step does is run it.
   [`§ 10`](../../config/schema.md#which-tree-a-verdict-belongs-to)'s rule decides what a verdict
   taken here is about. ⚠️ **Several sessions may share one checkout**, so a preflight that staged
   anything would be staging somebody else's work.
+- **And held to what the entry's `tree` states**, which is
+  [`§ 33 → What the tree must be`](../../config/schema.md#what-the-tree-must-be-for-the-deploy-and-for-the-advance)
+  and is read by its own carrier rather than by eye:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/deploy_tree.py" --target "<the entry's name>" \
+    --at-commit "<the commit this invocation names>"
+  ```
+
+  ⚠️ **`--at-commit` is passed only where the invocation names a commit**, and is never filled in
+  with the tree's own. Exit 1 is a **stop before the go**, every condition not met named with what
+  the tree held; exit 4 lets the deploy run and holds every advance, which step 5 shows and step 8
+  reads again; exit 3 is a target stating no condition, reported as that and never as conditions
+  met; exit 2 is a configuration that could not answer, and a stop before the go naming it.
+  ⛔ **Nothing is fetched or pulled to meet a condition** — that is the project's own command,
+  run before the deploy is asked for.
+- **The commit this deploy serves is established, written whole**: the one the invocation names,
+  where it names one, and otherwise read where the act itself reads it — the commit the entry's
+  `ref` names on the host for a `dispatch` or a `by_hand` target, and the commit the code root is
+  checked out at for a `command` target. It is what step 5 shows as what is being deployed and
+  what step 4a hands the batch. ⛔ **One nothing could establish is reported unestablished, never
+  guessed.**
 - ⚠️ **A command target may contend on something the project declared exclusive**
   ([`§ 10`](../../config/schema.md#exclusive-resources)). A refusal there is a place to come back
   for rather than a failure: the deploy is retried once one frees, and the reply says it waited.
@@ -134,8 +156,27 @@ what this step does is run it.
 the entry's `batch` command names the candidates, and each candidate's **role is read from the
 tracker at the point it is advanced** in step 8 — never from a value read here.
 
-- Run the command, read the identifiers it printed, and ⛔ **say in the reply that it is the only
-  source of candidates**, so that *nothing owed* and *nobody looked* are not one sentence.
+- ⛔ **The command is run through the carrier and never by hand**, because what it is handed is
+  § 33's and the match is mechanical
+  ([`§ 33 → What the batch command is handed`](../../config/schema.md#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against)):
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/batch.py" run --target "<the entry's name>" \
+    --commit "<the commit this deploy serves>" --choose "<a choice's name>=<a value>"
+  ```
+
+  ⛔ **`--choose` is exactly what step 3 was handed**, so the batch is asked about the values the go
+  shows; ⚠️ `--commit` is the object name step 3's preflight established, and it is omitted only
+  where nothing was established — a command placing `{deploy:commit}` is then refused, which is a
+  stop before the go rather than a value to supply.
+- **Each purpose's answer is reported as it came back**: what was handed, what was carried, every
+  item handed and not returned (in the role, and not in what this deploy carries) with its title,
+  every identifier returned and not handed, and every one the port could not place. ⛔ **Where the
+  backlog went unread the reply says the command is the only source of candidates**, so that
+  *nothing owed* and *nobody looked* are not one sentence; ⚠️ and a backlog read at its bound is
+  reported as possibly short.
+- ⛔ **A refusal or a failed run is a stop before the go**, named as it came back: a command that
+  failed is an unread batch and never an empty one.
 - A candidate the tracker does not answer about is reported **unanswered**, never dropped.
 - ⛔ **An entry whose `advances` is `none` still has a batch worth reporting** where the project
   states a command, and has none where it does not — in which case the reply says the deploy
@@ -176,9 +217,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/port.py" \
   --short-of "<the entry's requires_role>" --in-grouping "<the entry's grouping>"
 ```
 
-- ⛔ **Where the entry names no grouping the same question is asked over the batch's own
-  candidates** — `--short-of <role> --argument <each identifier>`, which is § 33's other arm and not
-  a weaker form of this one.
+- ⛔ **Where the entry names no grouping the same question is asked over what the batch's
+  `precondition` run carried** — `--short-of <role> --argument <each identifier>`, which is § 33's
+  other arm and not a weaker form of this one. ⚠️ **Never over the `advance` run's**: that run is
+  handed items the bar may already have passed, which is the precondition that holds nothing.
 - ⛔ **Anything short holds the whole target and nothing is invoked.** The reply names **every** such
   item with the role it stands in, never the first, and ⛔ **the remedy is not this role's**: § 4.2
   maps that role to a status somebody else writes, so the stop is reported and the deploy ends.
@@ -258,10 +300,10 @@ another batch is not one for this.
 
 **Show, in the question:** the target and that the entry states it live, what is being deployed,
 every choice with the value taken and whether it was chosen or is the default, ⛔ **every warning
-step 3's answer carries**, every item in the batch, every candidate step 4a could
-not place, and ⛔ **every `after` step the deploy will still owe once it has run** — the `before` ones
-having been performed or stopped on in step 4b, so a go reached at all is a go over a target nothing
-is holding.
+step 3's answer carries**, ⛔ **every tree condition step 3 found holding the advance**, every item
+in the batch, every candidate step 4a could not place, and ⛔ **every `after` step the deploy will
+still owe once it has run** — the `before` ones having been performed or stopped on in step 4b, so a
+go reached at all is a go over a target nothing is holding.
 
 ⛔ **A go is for the values it showed.** Anybody asking for another value is asking for another
 deploy: step 3 resolves it and this question is put again.
@@ -407,6 +449,13 @@ What a run delivered is read from its **log**, through the port's own operation,
 still reported — what the deploy carried is a fact about the deploy — and ⛔ **the reply says the
 target writes nothing on an item** rather than leaving a reader to read silence as a failed move.
 
+⛔ **Where the entry states a tree condition holding the advance, step 3's command is run again
+here, before any move**, by
+[`§ 33`](../../config/schema.md#what-the-tree-must-be-for-the-deploy-and-for-the-advance)'s rule
+that a command which changed the tree changes the answer. A condition not met now holds **every**
+item and the grouping's mark in step 9; the reply names it and what the tree held, and nothing is
+moved.
+
 ⛔ **Otherwise: only the items step 4a put in the batch, and only once step 7 came out clean for
 each** — which includes every `after` step that item's own change owes. The move goes through the
 port, asked for as a **role** and never as a status word, and this role asks as the writer the
@@ -506,10 +555,13 @@ the facts, with a table where the content enumerates.
   for it** — ⚠️ which on a target asked for no go is the only place they are shown;
 - **how the delivery was established** — what was read, and from where. ⛔ Never an exit status
   standing in for it;
+- **every tree condition the entry states, whether it was met, what the tree held and what it
+  stopped** — or that the entry states none;
 - **every item advanced**, and **every item in the batch that was not**, with what held it —
   ⛔ including every item left alone because the tracker already held it at or past that role;
-- **every candidate the batch command named that the tracker answered differently about**, and
-  ⛔ **that the command is the batch's only source of candidates**;
+- **every candidate the batch command named that the tracker answered differently about**, every
+  item it was handed and did not return, and ⛔ **where the backlog went unread, that the command is
+  the batch's only source of candidates**;
 - **the grouping this target was scoped to, and whether it was read** — ⛔ never its length alone,
   an unread set and an empty one being the same list; the value it was read at, and where that value
   came from (the tracker's own mark, or this role's invocation);

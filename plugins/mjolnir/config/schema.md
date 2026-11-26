@@ -8155,9 +8155,13 @@ deploy:
       default:    "<the value a run that chooses nothing takes>"
       joined_by:  "<what joins several values, where a run may choose more than one>"
       warnings:   "<a value, mapped to what the go says about choosing it>"
+    tree:                      # a list; one entry per condition the tree is held to
+      condition:  clean | on_branch | at_remote_tip | primary_checkout | at_commit
+      holds:      deploy | advance | both
+      branch:     "<the branch the tree must be on, where the condition is `on_branch`>"
     requires:     "<§ 16's list, cited there and not restated>"
     advances:     "<one of § 4.2's own roles, read there — or `none`>"
-    batch:        "<a command printing one item identifier per line>"
+    batch:        "<a command handed identifiers on its input, printing the ones this deploy carries>"
     grouping:     "<a grouping § 4.8 carries, by the name that facet keys it on — or `none`>"
     requires_role: "<one of § 4.2's own roles, read there — or `none`>"
     publishes:    false
@@ -8322,8 +8326,12 @@ added here would close those. A value needing a space is a word the project's ow
 
 ⛔ **The command and the declaration agree in both directions**: a declared choice the command never
 places would be shown in a go and reach nothing, and a placed name no choice declares would reach
-the shell as written. Each is refused with the name. ⚠️ **A choice reaches `command` and no other
-command of the entry**, so a placement written in any other key is refused too.
+the shell as written. Each is refused with the name. ⚠️ **A choice reaches `command` and `batch` and
+no other command of the entry**, so a placement written in any other key is refused too — and one
+`batch` places is held to the plain words above whatever the target's shape, since
+[the batch](#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against) runs in a
+shell on every shape. `batch` need not place a choice, and a name it places that no choice declares
+is refused.
 
 ⛔ **The go shows every choice with the value taken, whether it was chosen or is the default, and
 every warning declared for a value taken.** A go is for the values it showed: a different selection
@@ -8332,10 +8340,12 @@ go**, and the values and their warnings are in the reply.
 
 ### What runs before the target is confirmed, and what it may not do
 
-⛔ **The preflight writes nothing.** It reads the tree, the target's stated preconditions and
-whatever the project's own command checks for itself, and it stages nothing, checks nothing out and
-touches no machine — ⚠️ **which one copy states as a rule about a shared workspace** rather than as
-caution: several sessions stand in one checkout, and a deploy needs no working tree of its own.
+⛔ **The preflight writes nothing.** It reads the tree and holds it to what the entry's
+[`tree`](#what-the-tree-must-be-for-the-deploy-and-for-the-advance) states, it reads the target's
+stated preconditions and whatever the project's own command checks for itself, and it stages
+nothing, checks nothing out and touches no machine — ⚠️ **which one copy states as a rule about a
+shared workspace** rather than as caution: several sessions stand in one checkout, and a deploy
+needs no working tree of its own.
 
 ⛔ **`requires` is [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s
 list and this facet writes no second grammar for it**, which is the division § 17 already has with
@@ -8359,6 +8369,51 @@ is about to start asserts the released commit is contained in that branch and re
 with the version already spent. ⛔ **That write is the project's step and not the preflight**, and
 what the surface asks of it is what that copy already does: the window it opens is named, and a
 failed deploy is not repaired by moving the branch back.
+
+### What the tree must be, for the deploy and for the advance
+
+⛔ **`tree` states what the tree a deploy runs from must be, and each condition says what it holds.**
+The key is omitted where nothing is required of the tree, and such a target reports what is
+uncommitted and holds nothing on it — the behaviour every target had before the key existed.
+
+| `condition` | met where |
+|---|---|
+| `clean` | git reports no change in the tree — staged, unstaged or untracked; what the tree ignores is not read |
+| `on_branch` | the branch checked out is the one `branch` names |
+| `at_remote_tip` | the tree's commit is its branch's upstream as last fetched; a branch with no upstream does not meet it |
+| `primary_checkout` | the tree is the repository's primary checkout rather than a linked tree |
+| `at_commit` | the tree's commit is the one the invocation names; an invocation naming none does not meet it |
+
+| `holds` | a condition not met |
+|---|---|
+| `deploy` | stops the deploy in the preflight, before any go is asked for, and nothing is invoked |
+| `advance` | lets the deploy run and holds every item's advance, the grouping's mark included |
+| `both` | does both |
+
+⛔ **The vocabulary is closed, and a condition outside it is refused where it is written.** Every
+condition was measured as a requirement of some adopter's deploy, and one of them stops its deploy
+on these readings where another lets the deploy run and holds the advance — so what a condition
+holds is the entry's to state, and neither is derived from liveness. ⛔ `branch` is stated where the
+condition is `on_branch` and refused beside any other, and one condition stated twice is refused.
+
+⛔ **The tree is the directory the target's command runs in, and only a `command` target states
+one.** A `dispatch` or a `by_hand` target is built by the host from `ref`, so a deploy that uses no
+local tree has no tree to hold, and `tree` beside either is refused with the shape named.
+
+⛔ **The reading writes nothing, and that includes git's own bookkeeping.** No fetch, no pull, and
+the index is not refreshed as a side effect of reading it. ⚠️ **So `at_remote_tip` is read against
+the upstream as last fetched**, and the report says so: bringing the tree up to date stays the
+project's own command, run before the deploy is asked for.
+
+⛔ **A condition not met names itself and what it held** — the condition, what the tree held
+instead, and whether the deploy or the advance is what it stops. ⛔ **A condition that could not be
+read is not met**, by [§ 11](#a-report-names-what-it-could-not-establish): a tree nothing could read
+reads exactly like a tree that met everything otherwise.
+
+⛔ **A condition that holds the advance is read twice**: in the preflight, so the go shows that no
+item will move, and again where the advance is made, for the reason
+[`The batch`](#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong) reads an item's role
+there: a command that changed the tree changes the answer.
 
 ### The batch, and the two ways of assembling one that are wrong
 
@@ -8388,10 +8443,12 @@ a short item holds the whole target —
 states the distinction where it states the key.
 
 ⛔ **`batch` is a command, and the batch is what it returns intersected with what the tracker says
-now.** The command is handed the identifiers and answers which of them this deploy carries; the
-item's role is read from the tracker **where it is advanced** and never from a value read earlier,
-which is [§ 32](#32-a-status-that-moves-backwards)'s rule met by its first caller. An identifier the
-command returns whose role is something else is **named and not advanced**.
+now.** The command is handed the identifiers
+[below](#what-the-batch-command-is-handed-and-what-its-answer-is-matched-against) states and answers
+which of them this deploy carries; the item's role is read from the tracker **where it is
+advanced** and never from a value read earlier, which is
+[§ 32](#32-a-status-that-moves-backwards)'s rule met by its first caller. An identifier the command
+returns whose role is something else is **named and not advanced**.
 
 ⛔ **The command is asked whether an item's code is in what is being deployed, and never what
 changed since the last deploy.** A range answers *no* for an item whose code landed earlier and
@@ -8404,8 +8461,60 @@ answer alone advances an item whose code never reached what was deployed — nam
 card that moved without its code landing. The command's answer alone advances an item the tracker no
 longer holds in that role. ⚠️ **And nothing here checks the command**, which is
 [§ 12](#12-ordering)'s position for its own: what the surface can do is state what the command is
-asked, and what the role does is **say that the command is the batch's only source of candidates**,
-so that *nothing owed* and *nobody looked* are not one sentence.
+asked, and what the role does is **name what the command was handed** — and, where the tracker
+could not be read, **say that the command is the batch's only source of candidates**, so that
+*nothing owed* and *nobody looked* are not one sentence.
+
+### What the batch command is handed, and what its answer is matched against
+
+⛔ **The command is run once per purpose, and the purpose decides which identifiers it is handed.**
+Each run hands it the identifiers on its input, one per line, in the directory `command` runs in on
+a `command` target and at the code root on any other; it prints the identifiers this deploy carries,
+one per line, a leading `#` read as no part of one.
+
+| purpose | run where the entry states | handed | what it returns is |
+|---|---|---|---|
+| `advance` | an `advances` role | every item the tracker holds in the role immediately before `advances` — the role above derives | the batch, before the role is read again where each item is advanced |
+| `precondition` | a `requires_role` role, with `grouping: none` | every item the tracker holds in a role short of `requires_role`, in § 4.2's own order | the items holding the target: short of the bar, and carried by this deploy |
+| `report` | neither | nothing | what the deploy carried, reported and advanced nowhere |
+
+⛔ **A bar over a grouping is never this command's to answer**: the grouping's own items are that
+set ([`Publishing a grouping`](#publishing-a-grouping-and-the-precondition-that-holds-the-whole-target)),
+and the command is run for the advance alone. ⚠️ **The precondition is handed what is short, and
+never only what the advance draws from** — every item the advance draws from may already have passed
+the bar, and a bar read over those alone holds nothing.
+
+⛔ **Both differences are named, in both directions, for every purpose that handed anything.** An
+item handed and not returned is in the role and not in what this deploy carries — named with its
+title, which is the item with no commit found that would otherwise go unreported where no grouping
+is named. An identifier returned and not handed is named and not acted on, and one the tracker holds
+and the port could not place is named as unplaced, by
+[§ 11](#a-report-names-what-it-could-not-establish).
+
+**What the run hands it beside the identifiers**, each where the command places it:
+
+| placed as | what reaches the command |
+|---|---|
+| `{deploy:target}` | the target's `name` |
+| `{deploy:commit}` | the commit this deploy serves, as the run established it — an object name, seven to sixty-four lowercase hexadecimal characters |
+| `{deploy:purpose}` | `advance`, `precondition` or `report` |
+| `{choose:<name>}` | the value [the run's choice](#a-choice-made-for-one-run-and-how-its-value-reaches-the-target) takes — the one the go shows |
+
+⛔ **Every value is a word a shell reads as itself, for the reason a choice's is**, so nothing is
+quoted at the substitution: a placement § 33 does not state is refused at the load, a
+`{deploy:target}` on a target whose name is not one plain word is refused there too, and a commit
+that is not an object name is refused before anything runs. ⚠️ **A command placing nothing and
+reading nothing on its input is run as written**, and its answer is matched exactly as any other's —
+which is what a project stating nothing new keeps: the items it advances are the ones it advanced
+before, and what is added is the naming.
+
+⛔ **The tracker's half is read through [§ 3](#the-operations-and-what-an-absent-capability-does)'s
+`search_items`, across every state, under a bound the carrier states**, and each item is placed by
+the port against `statuses`. ⚠️ **A read at its bound is reported as possibly short.** Where the
+capability is absent the command is handed nothing, what it returns is the only source of
+candidates, and nothing it left out can be named — said in those words, by the rule above. ⛔ **A
+read that failed is a stop, and so is a command that exited other than zero**: neither is a batch
+that carried nothing.
 
 ### What a deploy verifies, and what it reports
 
@@ -9284,6 +9393,7 @@ documents:
       derived_from: ["docs/requirements.md"] # recorded and held acyclic, never read against the text
   forbidden: []                    # required_when: documents.carrier = list
   quoted: []                       # required_when: documents.carrier = list
+  exempt_targets: ["site/**"]      # link targets the build writes and no index holds; omitted, none
   box_diagrams:                    # optional: absent holds no diagram, as today
     held: true                     # a boolean; `false` holds no diagram
     exempt: []                     # `[]` where no block is exempt
@@ -9464,6 +9574,30 @@ answered `<p>| 32 | … |</p>` by the host's own renderer while every check over
 green, each of them holding a **line** or holding the document against this surface and none holding
 its blocks.
 
+### A link resolves to something the repository holds
+
+⛔ **Every relative link in a governed document resolves, and it is held as a **computed** check**:
+the target against the index, and a fragment against the headings of the document it lands in.
+A link to a file that is gone and a link into a heading that was renamed each render as a working
+link, and no other check here reads either — a reader follows one and lands on a missing page or at
+the top of a document.
+
+| what a link carries | what it is held to |
+|---|---|
+| a relative path, or one opening with `/` for the repository's root | a file, or a directory above one, that the index holds — ⚠️ the index and not the disk, since a file nobody added is a target the host does not serve |
+| a fragment, on a markdown target or on none | a heading of that document, slugged the way the host slugs it with its `-1` suffix on a repeat, or an anchor the document writes |
+| an address with a scheme, or one opening with `//` | ⛔ nothing: it is **not fetched**, since a network read would make the verdict a fact about the day the run happened |
+| a line range, or a fragment on a file that is not markdown | nothing: the host answers both and no heading carries either |
+
+⚠️ **A destination a renderer shows rather than follows is not a link** — one inside a fence, a code
+span or a comment — since prose that documents a link's own syntax would otherwise be refused.
+
+⛔ **`exempt_targets` names the targets a link may reach that no index holds**, as globs: a file the
+build writes is the case it exists for. ⚠️ **It may be omitted, and that is not the default this
+section refuses elsewhere**: an omitted `files` or `graph` would default to a check that never
+fires, while an omitted exemption list defaults to *nothing exempt*, which is the strictest reading
+available. A project that states nothing is held on every link.
+
 ### A box diagram's edges, held where a project turns the check on
 
 ⛔ **A diagram drawn in box characters is held to its own alignment, and it is held as a
@@ -9490,10 +9624,10 @@ the box-drawing block names each character by its arms — `UP`, `DOWN`, `LEFT`,
 the same rule and no table of them can drift from the block.
 
 ⛔ **The check is the project's to turn on**, by `box_diagrams.held: true`, and a project that states
-no `box_diagrams` block holds no diagram — which makes it the one key directly under `documents`
-that is not required, and the exception is stated rather than slipped in: the key arrived after
-every configuration in § 1's sense had been written, and a required key would refuse each of them
-for a check none of them asked for. ⚠️ **`held: false` and the block absent are the same answer**,
+no `box_diagrams` block holds no diagram — which makes it a key directly under `documents` that is
+not required, as `exempt_targets` is, and the exception is stated rather than slipped in: the key
+arrived after every configuration in § 1's sense had been written, and a required key would refuse
+each of them for a check none of them asked for. ⚠️ **`held: false` and the block absent are the same answer**,
 and the run says no diagram is held rather than reporting the diagrams as aligned.
 
 ⛔ **A block is exempted by a row of `exempt`, and the row names the block by its own text** — an
@@ -9531,12 +9665,12 @@ this is what happened.
 
 ⛔ **A project's own domain-specific computed checks stay in that project's own script, and this
 facet neither carries them nor names them.** What a shared mechanism can hold is the graph, the file
-set, the forbidden names, a document's block structure and its box diagrams' alignment; whether a
-project's five request shapes each have a home in its layout is a property of that project's
-subject matter, and a key pointing at a command that answers it would satisfy
+set, the links, the forbidden names, a document's block structure and its box diagrams' alignment;
+whether a project's five request shapes each have a home in its layout is a property of that
+project's subject matter, and a key pointing at a command that answers it would satisfy
 [§ 36](#why-a-utility-has-no-home-on-this-surface-from-either-direction)'s letter and deliver
 nothing. ⚠️ **So the facet's coverage is a boundary and not a claim of completeness**: a project's
-document rules are expressible here to the extent that they are the five things above.
+document rules are expressible here to the extent that they are the things above.
 
 ### `carrier: none`, and the configurations this key refuses
 
@@ -9549,10 +9683,13 @@ asked what holds a document answers *nothing is stated* rather than *the documen
 and has not written its rows yet, which is this facet at its most drifted and the state it most
 needs to tell apart from the other.
 
-⛔ **Stated as a list, the block states every key and none is defaulted**, `box_diagrams` alone
-excepted for the reason its own subsection states. `forbidden: []` and `quoted: []` are a project
-forbidding and quoting nothing, written; `files`, `entry_points` and `graph` carry no empty form, a
-governed set with nothing in it being a check that never fires while reading as one that does.
+⛔ **Stated as a list, the block states every key and none is defaulted**, `exempt_targets` and
+`box_diagrams` excepted, each for the reason its own subsection states —
+[the link check's](#a-link-resolves-to-something-the-repository-holds) and
+[the diagram check's](#a-box-diagrams-edges-held-where-a-project-turns-the-check-on).
+`forbidden: []` and `quoted: []` are a project forbidding and quoting nothing, written; `files`,
+`entry_points` and `graph` carry no empty form, a governed set with nothing in it being a check
+that never fires while reading as one that does.
 
 ⛔ **This key is required of every project, so it invalidates every configuration written before
 it** — [§ 1](#the-surface-is-resolved-beside-the-configuration)'s own
