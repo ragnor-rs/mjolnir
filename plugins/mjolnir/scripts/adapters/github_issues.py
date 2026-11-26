@@ -87,6 +87,7 @@ from adapters import _code_host_comments as conversation  # noqa: E402
 from adapters import _code_host_dependency as relation  # noqa: E402
 from adapters import _code_host_milestone as milestone  # noqa: E402
 from adapters import _code_host_type as native_type  # noqa: E402
+from adapters import _search as coverage  # noqa: E402
 
 KIND = "github-issues"
 
@@ -108,6 +109,19 @@ CLOSED = "closed"
 # Deliberately a shade over-broad -- a leading `-`, any spacing -- because the
 # wrong direction here is the silent one, and the words are refused by name.
 STATE_QUALIFIER = re.compile(r"-?\b(?:state|is)\s*:\s*(?:open|closed)\b", re.IGNORECASE)
+
+# A term that would choose the texts searched. ⛔ Refused rather than honoured, for
+# the state qualifier's reason one question over: which texts a term is matched in
+# is `tracker.search.texts`, and a qualifier riding in with the terms would answer
+# for other texts than the ones the answer reports it searched (§ 3).
+TEXT_QUALIFIER = re.compile(r"-?\bin\s*:", re.IGNORECASE)
+
+# The texts this host's issue search can match a term in, by § 3's names, and the
+# qualifier each takes. ⚠️ With no qualifier the host matches the title, the body
+# and the comments -- its own documented default, not measured here -- which is
+# what a project stating no `texts` keeps.
+SEARCHABLE = {"title": "title", "body": "body"}
+SEARCHED_BEFORE = ("title", "body", "comments")
 
 # What the host's client writes to stderr when the thing asked for is not there.
 # ⛔ Carried as a constant rather than spelled into a condition, because *absent*
@@ -355,7 +369,11 @@ def _label_exists(repo: str, label: str) -> bool:
 
 
 def search_items(
-    terms: str | None = None, *, labels: list[str] | None = None, limit: int = 100
+    terms: str | None = None,
+    *,
+    labels: list[str] | None = None,
+    fields: dict | None = None,
+    limit: int = 100,
 ) -> dict:
     """The items a query matches, in both shapes § 3 states, across both states.
 
@@ -406,10 +424,37 @@ def search_items(
     so a candidate moves from this answer into that one with nothing renamed.
     `body` is **not** among them: judging a candidate means reading its body, and
     that is a `read_item` per candidate rather than a list call pulling every
-    body in the backlog.
+    body in the backlog -- which is a different thing from **matching** a term
+    in the body, which the host's search does itself.
+
+    ⛔ **The texts a term is matched in are `tracker.search.texts`** (§ 3), sent
+    as the host's own qualifier, and the answer names what it searched and what
+    it did not. ⛔ **And a field is refused, every one**: a plain issue carries no
+    field a query can filter on, so a field asked for -- listed in
+    `tracker.search.fields` or not -- is a question this tracker cannot ask
+    rather than one it answered with nothing.
     """
     repo = _repo()
+    for name in fields or {}:
+        if name in coverage.stated_fields(_bound):
+            raise coverage.unqueryable(
+                name,
+                "a plain issue carries no field a query can filter on -- the "
+                "labels classification rides are this tracker's one filter.",
+            )
+        raise coverage.not_admitted(name, ())
     query = (terms or "").strip()
+    if query and TEXT_QUALIFIER.search(query):
+        raise port.ConfigError(
+            "tracker.operations.search_items",
+            f"was asked for `{query}`, whose `in:` qualifier would choose the texts "
+            "a term is matched in. That is `tracker.search.texts`, and the answer "
+            "reports the texts it searched -- a qualifier in the terms would make "
+            "that report wrong. Drop it, and state the texts there (§ 3).",
+        )
+    searched, missed = coverage.coverage(
+        _bound, reachable=tuple(SEARCHABLE), default=SEARCHED_BEFORE, terms=bool(query)
+    )
     if query and STATE_QUALIFIER.search(query):
         raise port.ConfigError(
             "tracker.operations.search_items",
@@ -428,7 +473,10 @@ def search_items(
     ]
     for label in labels or []:
         args += ["--label", label]
-    args += ["--search", query or RECENT_FIRST]
+    sent = query or RECENT_FIRST
+    if query and _bound is not None and _bound.get(coverage.TEXTS_KEY) is not None:
+        sent = f"{query} in:{','.join(SEARCHABLE[text] for text in searched)}"
+    args += ["--search", sent]
     items = _gh(args)
     if labels and not items:
         unknown = [label for label in labels if not _label_exists(repo, label)]
@@ -439,16 +487,16 @@ def search_items(
                 f"a label {repo} has -- so the empty answer is this search never "
                 "running, not this tracker holding no such item."
             )
-    return {
+    return coverage.reported({
         # ⚠️ The query as **sent**, not as handed in: the filing role records every
         # query against its hit count, and a record of the unstripped argument is a
         # record of something the host was never asked.
-        "terms": query or RECENT_FIRST,
+        "terms": sent,
         "labels": list(labels or []),
         "limit": limit,
         "at_limit": len(items) >= limit,
         "items": items,
-    }
+    }, searched, missed)
 
 
 def create_item(
@@ -1202,6 +1250,13 @@ ADAPTER = port.Adapter(binder=bind, operations={
 #     field of its own to write, and what another tracker keeps in a field -- an
 #     estimate, a date, a code root -- reaches a plain issue as a label or as body
 #     text, which is that operation's own stated fallback.
+#   * `link_relation` and `read_relations`, because this host has no link type a
+#     project can name: what it records between two issues is the dependency,
+#     which is `link_dependency`'s, and a parent and its sub-issues, which is a
+#     decomposition the host counts progress over rather than a relation that
+#     blocks nothing. Mapping a project's *related* onto the hierarchy would file
+#     one item as a piece of another. So the relation stays the prose line a body
+#     already carries, which is § 3's stated fallback.
 #
 # ⛔ Written once, here, and read by the suite rather than restated in it: one more
 # absence would otherwise be an operation nobody noticed going missing -- which is
@@ -1209,6 +1264,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # the checklist ones*.
 DELIBERATELY_ABSENT = (
     "set_field",
+    "link_relation",
+    "read_relations",
     "checklist_read",
     "checklist_write",
     "checklist_item_delete",

@@ -172,6 +172,9 @@ COLLECTIONS = {
         "each key is a deploy target's own name (§ 33), chosen by the project, "
         "so the question is asked once per target it judges on rather than once "
         "per name",
+    "tracker.relations":
+        "each key is the project's own word for a relation that blocks nothing "
+        "(§ 3), so the question is asked once per relation it links",
 }
 
 # The two leaf names that are a facet's own absence record. ⛔ Covered by the
@@ -409,6 +412,16 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.transitions.resolve": ask(
         "How is a transition resolved -- by the status it reaches, or by its own id?",
     ),
+    "tracker.transitions.fields.status": ask(
+        "Which statuses does this tracker refuse to move an item into without a "
+        "field set as part of the move -- a resolution, for instance?",
+    ),
+    "tracker.transitions.fields.field": ask(
+        "Which field does a move to that status need, by the name the site gives it?",
+    ),
+    "tracker.transitions.fields.value": ask(
+        "What value does every move to that status send in that field?",
+    ),
     "tracker.create_fields.field": ask(
         "Which fields does this tracker refuse to create an item without, beyond "
         "its project, type, title and body?",
@@ -416,6 +429,23 @@ ANSWERED_BY: dict[str, Answer] = {
     "tracker.create_fields.value": ask(
         "What value does every filing send in that field, where one value suits "
         "them all?",
+    ),
+    "tracker.relations.*.type": ask(
+        "Which relations that block nothing does this project link, and which of "
+        "the tracker's link types is each written as? None is an answer: every "
+        "relation then stays prose in the body.",
+    ),
+    "tracker.relations.*.side": ask(
+        "Where that link type is worded differently each way, which wording does "
+        "the item named first read -- outward or inward?",
+    ),
+    "tracker.search.texts": ask(
+        "Which texts should a duplicate search match its terms in -- the title, the "
+        "body, or both? Leave it unstated to keep what this tracker searches today.",
+    ),
+    "tracker.search.fields": ask(
+        "Which fields record an item's area well enough that a duplicate search "
+        "should be able to filter on them?",
     ),
     "tracker.policy.forbid_on_item": ask(
         "Which classes of content may not be written onto an item here?",
@@ -522,6 +552,15 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "work_item.grouping.ref_prefix": ask(
         "What does a ref claiming a whole grouping start with?",
+    ),
+    "work_item.grouping.default_from": ask(
+        "Where the grouping is named on each request, does another facet decide "
+        "its usual value -- the priority or the type, say? Leave it unstated to "
+        "keep asking for the grouping on every item.",
+    ),
+    "work_item.grouping.default_map": ask(
+        "For each value of that facet, which grouping does an item carrying it go "
+        "into? A value you leave out is asked for.",
     ),
     "work_item.template.carrier": ask(
         "Where does the body a new item is written to come from?",
@@ -635,6 +674,18 @@ ANSWERED_BY: dict[str, Answer] = {
     ),
     "commit.trailer": ask(
         "What trailer does a commit here carry, if any?",
+    ),
+    "commit.branch_rules.branches": ask(
+        "Is there a branch a commit may carry only some paths onto -- a release "
+        "branch that takes documents and no code, say? None is the answer for a "
+        "project where every branch takes what a commit stages.",
+    ),
+    "commit.branch_rules.paths": ask(
+        "Which paths may a commit on those branches carry?",
+    ),
+    "commit.branch_rules.otherwise": ask(
+        "And a commit carrying any other path -- does it stop, or leave that path "
+        "out and commit the rest?",
     ),
 
     # --- § 7. Carrier ------------------------------------------------------
@@ -781,6 +832,15 @@ ANSWERED_BY: dict[str, Answer] = {
     "branch_model.resource_up": ask(
         "Which command prints what a tree started that is still up, and nothing where "
         "nothing is? Unstated, no removal asks.",
+    ),
+    "branch_model.resources_running": ask(
+        "Which command lists every running resource with the tree it belongs to, one per "
+        "line as the tree's path, a tab, and the resource? Unstated, a resource whose tree "
+        "is gone is found by nothing.",
+    ),
+    "branch_model.resource_stop": ask(
+        "Which command stops a resource whose tree is gone? Unstated, the sweep names it "
+        "and stops nothing.",
     ),
     "branch_model.prune_on_merge": ask(
         "Should a tree also be cleaned up right after a merge the session makes with a "
@@ -1521,6 +1581,31 @@ ANSWERED_BY: dict[str, Answer] = {
         "single entry, and the ref is that grouping's `ref_prefix` joined onto "
         "the value the item carries — no second key states a branch-naming "
         "scheme (§ 39, § 4.8).",
+    ),
+    "spec_corpus.while_working.roles": ask(
+        "Besides the filing role, which always reads it, should the starting "
+        "or implementing role read the copy that governs the item they hold? "
+        "⚠️ Leaving both out is a real answer and keeps the corpus a filing "
+        "read. ⛔ Where the starting role reads it, a contradiction between the "
+        "item and the specification stops the start (§ 39).",
+    ),
+    "spec_corpus.while_working.files": ask(
+        "Should those roles load less than the whole corpus, so the window is "
+        "not filled? ⛔ A document is loaded only where it matches both these "
+        "globs and the corpus's own, so this can narrow and never widen; "
+        "leaving it out loads the whole corpus (§ 39).",
+    ),
+
+    # --- § 42. Whether the work is already built ---------------------------
+    "built_check.points": ask(
+        "Where should a role read the code to see whether an item's work is already "
+        "built — when filing, when starting, when implementing? Unstated, it reads at "
+        "none of them, which is how every role behaves today (§ 42).",
+    ),
+    "built_check.on_finding": ask(
+        "When that reading finds the work built or partly built, should the role report "
+        "it and carry on, or stop and ask you? Unstated, it reports. It never closes, "
+        "reopens or rewrites an item itself (§ 42).",
     ),
 
     # --- § 41. What a deployed item is judged against ----------------------

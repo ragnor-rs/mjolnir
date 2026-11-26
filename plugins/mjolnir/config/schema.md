@@ -1872,9 +1872,16 @@ tracker:
   project_key: "KEY"            # required_when: tracker.kind = jira
   transitions:
     resolve: by_name
+    fields:                     # what a move to one status carries
+      - status: "<a status word>"
+        field: "<the field's name>"
+        value: "<the value>"
   create_fields:                # the fields the site requires before it will create an item
     - field: "<the field's name>"
       value: []                 # absent: the filing states it
+  relations:                    # absent: nothing is linked but a dependency
+    related:
+      type: "<link type>"
 ```
 
 ```yaml
@@ -1914,6 +1921,18 @@ A project writing no such list sends what a filing already sends. ⚠️ **Read 
 implementation alone**, which is why it is in this block: no other tracker here refuses a create
 for a field.
 
+⛔ **A field a move needs goes with the move, and `transitions.fields` states which.** Each entry
+names a status word from [§ 4.2](#42-status--an-ordered-set-of-name-role-writer), a field the way
+the site names it, and the value a move to that status sends in it — a resolution on a move to a
+finished status is the measured case. ⛔ **The move sends the fields stated for its status and no
+other**, and none is chosen for it: a transition whose screen requires a field nobody stated fails
+naming the transition. A field the transition does not offer, or a value outside the ones it lists,
+is refused before the move. The item is then read back with its status and every stated field, and
+a field that did not land is reported rather than the move retried. ⛔ **The reader refuses an entry
+missing any of the three, a status no entry of `statuses` names, and one field stated twice for one
+status.** A project writing no such list moves an item as it did before the key existed. ⚠️ Read by
+this kind's implementation alone, for the reason `create_fields` is.
+
 ⛔ **A field holding several values is written whole: the write replaces the list**, as `set_labels`
 does, and an empty list clears it. Each member takes the shape of the element type the site states,
 and an element type the implementation has no shape for is refused by name.
@@ -1951,6 +1970,8 @@ operations the survey reached and says which it did not.
 | `item_number` | the identifier the branch name and the pull request carry | the number is read from the argument the role was given, and a role with neither stops rather than inventing one |
 | `link_dependency` | one item recorded as blocked by another | the dependency is written into both items' bodies as prose, which is the one case [`An edge is a relation`](#an-edge-is-a-relation-and-a-body-keeps-the-reasoning-about-it) below admits prose carrying an edge at all |
 | `read_blockers` | the items one item is recorded as blocked by, each with its own state — ⛔ never a verdict about whether the item may start, the bar being § 5's and not a tracker's | § 5's `no_open_blockers` has no source, so it reports **no answer** and never *no blockers*, by § 2's rule that absence of signal is not an answer; and a prose edge `link_dependency`'s fallback wrote is read for the report rather than for the verdict |
+| `link_relation` | one item recorded as standing in a relation to another that blocks nothing, under a name the project maps in `tracker.relations` ([below](#a-relation-that-blocks-nothing)) — ⛔ never a dependency, which is `link_dependency`'s | the relation stays a line of prose in the item's own body, which is where it lived before the operation existed, and the report says it went there rather than to the tracker |
+| `read_relations` | the items one item is recorded as related to, each under the project's own relation name and read from that item's side — ⛔ never read by a readiness check | the relations are reported **unread**, never as none, by § 2's rule that absence of signal is not an answer |
 | `link_for_close` | the reference that closes the item when the branch lands | the pull request carries no closing reference, and the item moves separately: by `advance_on_merge` where that exists, by a reported move where it does not |
 | `read_closing_change` | `link_for_close`'s own read, after the fact: the change that closed one item and the commit that change landed as — ⛔ never a verdict about whether the item is done, which is the item's state and is `read_item`'s | the landed record names the item and reports the closing change **unread**: never *no change closed it*, and never the newest change on the branch, by § 2's rule that absence of signal is not an answer |
 | `read_closing_list` | `link_for_close`'s own read, before the fact: the items the host will close when one change lands, and every text in its title, its body, its commit messages and the merge call's own text that could close one — ⛔ never a verdict about which were meant, which is [the comparison](#what-a-merge-closes-and-the-comparison-that-holds-it) below | the report says what the merge closes went **unread**, and never that nothing but the intended items closes, by § 2's rule that absence of signal is not an answer |
@@ -1967,6 +1988,44 @@ operations the survey reached and says which it did not.
 | `checklist_write` | a check item added, or ticked | the change goes into the item's description, as `comment` above |
 | `checklist_item_delete` | a check item removed | the item is reworded and ticked instead |
 | `read_vocabulary` | the vocabularies the tracker itself states — its status words in their own order, its label set, its item types where it has native ones — each answered as **read**, as the tracker stating none, or as unestablished, and ⛔ never a verdict about which of them this project means, that being the facets' own question and a person's to answer. ⚠️ **An implementation may publish a vocabulary of its own beyond those three** where its tracker holds one the others do not: the measured case is a board's single-select columns, which is what makes *which field carries status* a question with a menu rather than a column picked out of several | every question about a status word, a label prefix or a type is **asked** rather than filled in, and the asking step's report names the reading it could not take; an unreadable vocabulary is never an empty one, by § 2's rule that absence of signal is not an answer |
+
+### What a search covers, and what it says it did not
+
+`search_items` matches a query's terms in some of an item's texts and filters on some of its
+fields. ⛔ **Which texts and which fields is the project's to state.** A duplicate known only by its
+body, or only by the area a field records, is the one a title search misses. Nothing in that
+search's answer would show the miss.
+
+```yaml
+tracker:
+  search:
+    texts: [title, body]        # the texts a query's terms are matched in; absent: the implementation's own
+    fields: []                  # the fields a query may filter on beyond the implementation's own
+```
+
+- **`texts`** names the texts a term is matched in, out of the list shown. A term matches an item
+  when it appears in **any** of them, and a query matches when every term does. ⚠️ **Where the key
+  is absent, each implementation matches in what it matched before this key existed**, so a project
+  that states nothing new searches as it always did.
+- ⛔ **A text is searched wherever the tracker can search it**, whether by a native query or by
+  reading the text alongside the item. A stated text the tracker cannot reach is not dropped
+  silently. Every answer names the texts it searched (`texts_searched`) and the stated ones it did
+  not (`texts_not_searched`), so the report of a duplicate check states its coverage rather than
+  implying it. ⛔ **Where none of the stated texts can be searched, a query carrying terms is
+  refused** with the key named. Terms matched in nothing would answer with no items, and that
+  answer cannot be told from a tracker holding no such item.
+- **`fields`** names fields a query may filter on, as the tracker names them, beyond those the
+  implementation already queries. A field holding several values matches when any one of them is
+  the value asked for.
+- ⛔ **A field the tracker cannot query is refused, never answered as no match.** That covers a
+  field asked for that neither the implementation nor this list admits, a listed field the tracker
+  does not have, and a listed field it holds but cannot query. Each is refused naming the key. An
+  empty answer is what a field nothing carries looks like, so it cannot also be what a field
+  nothing could ask about looks like.
+
+⛔ **The filing role's keyword-independent sweep filters by these fields** where the request names
+an area one of them records, and its report carries each answer's two lists. That is the coverage
+[`skills/file-work-item/`](../skills/file-work-item/) reports.
 
 ### An item's comments, and what an unread one is
 
@@ -2143,6 +2202,47 @@ rather than a value of it. The measurement behind it is in
 tracker's own form for both halves is recorded, the absence included. ⛔ **And no tracker's own name
 for the relation reaches a role**: the procedure names the two operations above, which is the same
 rule that keeps a tracker's name out of a carrier.
+
+### A relation that blocks nothing
+
+⛔ **Two items related without one waiting on the other are linked through `link_relation` and
+read through `read_relations`, under a name the project chooses** — *related*, *duplicates*, *split
+from*. A tracker with link types stores the relation where a reader of the item sees it, and this
+gives a project the means to put it there rather than in a sentence.
+
+```yaml
+tracker:
+  relations:                    # absent: no relation is linked, and every one stays prose
+    related:                    # the project's own word, which is what a role passes and reads back
+      type: "<link type>"       # the tracker's own name for a type worded the same both ways
+    duplicates:
+      type: "<link type>"       # a type worded differently each way
+      side: outward             # which of its two wordings the first item reads: outward or inward
+```
+
+- ⛔ **A relation never answers a readiness check.** § 5's `no_open_blockers` reads `read_blockers`
+  and nothing else, and `read_blockers` reads the dependency alone, so a related item that is open
+  holds nothing back. ⛔ **A relation mapped onto the link type the dependency itself is written
+  as is refused** by the implementation that writes it, before anything is sent — the same link
+  read through both operations would make a blocker readable as a relation, and the other way
+  round.
+- ⛔ **The side is held by a round trip, never by the type's wording.** Where a type is worded
+  differently each way, `link_relation` writes the item named first on the stated side, and
+  `read_relations` on each of the two items answers with the name whose side that item reads. The
+  suite of each implementation holds this the way it holds the dependency's direction: by writing
+  the link and reading it back from both ends.
+- ⛔ **A name maps to one wording, and one wording to one name.** Two names over one type and side
+  give the read-back two answers, and a sided name beside an unsided one on the same type gives it
+  the same choice, so the reader refuses either at load. ⚠️ A link of a type no name maps is
+  reported with the wording the tracker gave it and no name, never dropped and never assigned one.
+- ⚠️ **Where the tracker has no link types, both operations are absent** and take the fallbacks
+  above: the relation is the line of prose a body already carries, and nothing reads it as more.
+  ⛔ **A name the project does not map is refused rather than defaulted**, so a role links only
+  what `tracker.relations` names, and a project stating no `relations` links nothing — it files
+  exactly as it did before this key existed.
+
+⚠️ **What prose still keeps is the reasoning**, by the test above: why two items are related is a
+sentence, and that they are is the relation.
 
 ## 4. Work-item facets
 
@@ -2571,6 +2671,8 @@ work_item:
     closes_items: false          # required when a grouping is carried
     closed_by: orderer           # required when a grouping is carried; one of § 4.2's writers
     ref_prefix: "release/"       # when a ref is named after the grouping's own value
+    default_from: priority       # under `current: stated` only; a § 4 facet that lists its values
+    default_map: {}              # that facet's value -> this grouping's value; with default_from
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2615,10 +2717,38 @@ really use — the same reason its `field:` values are placeholders.
 ⛔ **`current` is the key a procedure may not do without, and neither value is derivable from the
 other.** A grouping the tracker itself marks as the open or dated one is `discoverable`, and a
 procedure reads it; one the tracker holds several of at once is `stated`, and the grouping arrives
-on the invocation of the role that needs it. ⚠️ **The permissive reading is the expensive one**:
-a procedure that guessed the current grouping under `stated` would put a new item into whichever
-one it picked, and a grouping is the one field whose wrong value is invisible on the item itself —
-every other facet's wrong value reads as wrong where it is written.
+on the invocation of the role that needs it, or from the default the project maps below.
+⚠️ **The permissive reading is the expensive one**: a procedure that guessed the current grouping
+under `stated` would put a new item into whichever one it picked, and a grouping is the one field
+whose wrong value is invisible on the item itself — every other facet's wrong value reads as wrong
+where it is written.
+
+**A stated grouping may have a default the project maps from another facet, and that map is the
+project's answer rather than a guess.** `default_from` names the facet and `default_map` carries
+one entry per value of it, so a project whose release scope follows the tier writes that rule once
+instead of having it asked for on every item. The value is decided in one order, and a role reads
+it through `config.py --grouping-default` rather than applying the map itself:
+
+| what is in hand | the grouping written | what the report says |
+|---|---|---|
+| a value given on the request | that value, whatever the map says | that it was given |
+| no value given, and the source facet's value is a key of the map | the map's value | the rule: which facet, which value, which entry |
+| no value given, and the source value is missing or not a key of the map | nothing until a person answers | that it was asked for, and why the map did not answer |
+
+- ⛔ **Only under `current: stated`.** A `discoverable` grouping is named by the tracker, and a map
+  beside it would be a second answer free to disagree with the first, so the reader refuses it.
+- ⛔ **The source is a facet of § 4 that lists its `values`, and every key of the map is one of
+  them.** The set is read off this section's fences rather than listed here, and a key outside it is
+  an entry no item can ever reach. The source facet has to be carried, since a facet with no carrier
+  has no value to map from.
+- ⛔ **The source value is the one handed or already on the item, never derived.** § 4.6's rule
+  stands: a map from the tier does not license working out the tier, and an item with no tier gets
+  the grouping asked for.
+- ⚠️ **A map can go stale, and that is the cost the project accepts by stating one.** An entry
+  naming a grouping that has since closed fills the field with that grouping's name. The report
+  names the rule every time it is used, so the reader of the item sees where the value came from.
+- ⚠️ **Neither key without the other**: a source with no map, or a map with no source, is refused
+  with both keys named. A project that states neither is asked for the grouping exactly as before.
 
 ⛔ **`closed_by` is [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s writer argument one
 level up: a role that closes a grouping is refused where this is not the writer that role asks
@@ -2885,6 +3015,10 @@ commit:
     finish: explicit | all
     review: explicit | all
   trailer: none | read_from_history | "<literal trailer line>" # required
+  branch_rules:                              # default: []
+    - branches: ["release/*"]                # globs on the branch the commit lands on
+      paths: ["docs/*", "*.md"]              # what a commit there may contain
+      otherwise: stop | leave_out
 ```
 
 ### What staging is per, and the two rules that hold regardless
@@ -2934,6 +3068,41 @@ per-role form in the message — the same cost
 [§ 2](#a-workflow-whose-jobs-mirror-more-than-one-command) states beside its own withdrawn
 tolerance, and taken for the same reason: a second way of stating one fact is a second way for two
 roles to disagree about it.
+
+### What a commit may contain on a given branch
+
+`staging` says how a role picks its paths. `branch_rules` says which paths a commit may carry at
+all, by the branch it lands on. The measured case is a bookkeeping commit that has to keep code
+off a release branch while documents may go there, which no per-role value can express.
+
+- **A rule applies to a commit whose branch matches one of its `branches` globs.** The branch is
+  the one the commit lands on, read in the tree, never composed.
+- **A path is admitted when it matches one of the rule's `paths` globs**, in
+  [§ 30](#30-the-changes-that-do-not-go-through-the-loop)'s glob grammar: matched against
+  the repository-relative path, with `*` crossing a directory separator, and `**` refused.
+- ⛔ **Where several rules match one branch, every one of them applies.** A path has to be
+  admitted by each, so adding a rule can only narrow what a branch accepts.
+- **`otherwise` decides a commit carrying a path that is not admitted.** `stop` makes no commit and
+  names every such path. `leave_out` commits the admitted paths alone and names every path it
+  left out. ⚠️ Where any matching rule that refused a path says `stop`, the commit stops.
+- ⛔ **What was left out is named in the role's reply, and is left in the tree untouched.** A
+  path dropped silently reads exactly like a path that was never changed.
+- ⚠️ **A `leave_out` that admits nothing makes no commit**, and says so, rather than making an
+  empty commit.
+- **A branch that no rule matches behaves as it does today**, and so does a project that states
+  no rule. The answer then says the branch is unruled, which is a stated absence rather than an
+  admission.
+
+⛔ **One command answers, and every committing role asks it before its commit.** That is each
+role [§ 6's block](#6-commit-behaviour) gives a `staging` entry to, and the commit's staged
+paths are what is handed over:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <staged paths> --on-branch <branch>
+```
+
+⚠️ **The rule is read and applied by the role, and nothing on the host enforces it.** A commit
+made by hand, outside every role, is held to nothing here.
 
 ### Authorship is procedure, not configuration
 
@@ -3807,6 +3976,8 @@ branch_model:
   mechanics: "<path to the project's own setup and teardown steps>"   # null where it has none
   teardown: "<the command that stops what a tree started>"   # may be left unwritten; read only under worktree
   resource_up: "<the command that prints what a tree started and is still up>"   # may be left unwritten; read only under worktree
+  resources_running: "<the command that lists every running resource with its tree>"   # may be left unwritten; read only under worktree
+  resource_stop: "<the command that stops a resource whose tree is gone>"   # may be left unwritten; refused without resources_running
   prune_on_merge: false                      # may be left unwritten; read only under worktree
   prune_on_open: remove | list               # may be left unwritten (remove); read only under worktree
   regenerable: ["<an ignored path a rebuild writes again>"]   # required_when: branch_model.kind = worktree
@@ -3846,6 +4017,9 @@ for — which is the condition that was met for § 9's `script`, and that retire
 a removal happens where no role is reading steps. What runs it, and when, is
 [below](#the-teardown-a-removal-runs-first). ⛔ **`resource_up` is a reading and not a step**: it
 answers whether anything a tree started [is still up](#the-resource-a-tree-started-and-the-removal-it-holds).
+⛔ **`resources_running` is the same reading turned round**: it starts from the resources rather
+than the trees, so it finds one whose tree is [already gone](#a-resource-whose-tree-is-gone), and
+`resource_stop` is the one step taken on what it finds.
 
 ⛔ **`mechanics` is steps and never a location, and `tree_dir` is the location.** The two were conflated
 while the second key was absent, which left *where a tree goes* stated in no facet and carried by
@@ -4539,6 +4713,33 @@ it keeps keeps its claim whole. A project stating none has none asked.
 - ⛔ **The sweep asks inside its own bound.** With less than a second of it left the check is not
   asked, which is the unanswered row.
 
+### A resource whose tree is gone
+
+⛔ **Where `resources_running` is stated, the sweep below asks it once, after the trees**, so a
+resource left running by a tree that no longer exists is found. ⚠️ **Asking each tree cannot find
+one**: `resource_up` is asked about a tree, and a removed tree is in no list of trees to ask about.
+A project stating none has none asked, and its sweep is what it was.
+
+- **It prints one running resource per line: the tree's path, a tab, and the resource.** A relative
+  path is read against the main checkout, where it runs. ⛔ **A line with no tab is named as
+  unread**, never guessed at.
+- ⛔ **A resource whose path is no longer there is named on the event that opens a session**, with
+  the path and what became of it. It is asked after the removals, so a tree the same sweep removed
+  counts as gone. ⚠️ **A path that is still there is never gone**, whatever repository it belongs
+  to: a listing that reaches the whole machine names another clone's live work too.
+- ⛔ **A listing that fails, cannot be started or does not finish in `10` seconds is reported as
+  unanswered**, never as nothing running.
+- ⛔ **Nothing is stopped unless `resource_stop` is stated.** Where it is, it runs once per resource
+  found, at the main checkout, with the tree in `MJOLNIR_TREE` and the resource in
+  `MJOLNIR_RESOURCE`. ⛔ **Only a path one level under `tree_dir` is stopped**, that being where a
+  tree this procedure cut sat; a gone path anywhere else is named and left. ⛔ **A stop that exited
+  zero is read back**: the listing is asked again, and a resource it still names is reported as
+  still up. A stop that fails is reported with its exit and the end of what it printed.
+- ⛔ **The stop has to be repeatable.** Every session that opens runs the sweep, so two opening at
+  once can each stop the same resource.
+- ⛔ **Each command runs inside the sweep's own bound**, and one there is no time left for is not
+  started and is named as not run.
+
 ### Pruning a tree whose branch has landed
 
 ⛔ **A tree whose branch has landed is removed, and there are two carriers: the merge, and the
@@ -4771,11 +4972,12 @@ branch_model:
 this rule in a project that already holds trees needs the verdicts before the first removal, and
 the sweep run by hand gives them on request. The list-only run takes every reading a removing run
 takes, so each tree gets the verdict a removing run would act on. Only the removal is skipped, with
-what it carries: the teardown, the branch, the published ref, and the clearing of a registration
-whose directory is gone. ⚠️ **The resource check the release asks is read, since it writes
-nothing**, and a tree it would keep is kept in the list. ⛔ **Where a teardown runs first, that
-check reads what the teardown left**, so a list that runs no teardown cannot read it: the tree is
-listed with that proviso stated, and never listed as certain.
+what it carries: the teardown, the branch, the published ref, the clearing of a registration
+whose directory is gone, and the stop command for a resource whose tree is gone, which is named
+with what a removing sweep would do about it. ⚠️ **The resource check the release asks is read,
+since it writes nothing**, and a tree it would keep is kept in the list. ⛔ **Where a teardown runs
+first, that check reads what the teardown left**, so a list that runs no teardown cannot read it:
+the tree is listed with that proviso stated, and never listed as certain.
 
 ```yaml
 branch_model:
@@ -10094,6 +10296,9 @@ spec_corpus:
   files: ["<a glob the corpus matches>"]  # required_when: spec_corpus.carrier = repository
   load_bearing: ["<a glob read whole>"]   # required_when: spec_corpus.carrier = repository
   grouping: "<the release scope>"         # where the project carries several groupings
+  while_working:                          # optional; absent, the filing role alone reads the corpus
+    roles: ["start | implement"]          # required in the block; a non-empty list of those two
+    files: ["<a glob the corpus matches>"] # optional; narrows what those roles load
   absent_reason: "…"                      # required where the carrier is none
   revisit_when: "…"
 ```
@@ -10108,7 +10313,8 @@ way.
 
 ⛔ **This is a facet and no further leg of [§ The loop](#the-loop)**, which is § 38's own rule
 beside it: nothing is added to that list, no `carriers` key answers for it and no role enters it.
-What is carried is a block of configuration and the read the filing role performs with it.
+What is carried is a block of configuration and the read the filing role performs with it — and,
+where the project names them, the same read performed by the starting and implementing roles.
 
 ### Which copy governs, and why the working tree is never it
 
@@ -10191,6 +10397,56 @@ a marker's question and a shape rule's. An empty corpus is a step that reads not
 as one that reads something, and `carrier: none` is how a project says that instead; an empty
 load-bearing list is a project stating that every document in its corpus is reached by keyword,
 which is a decision rather than an omission.
+
+### The roles that read it while the work is done, and what narrows their read
+
+**The filing role reads the governing copy wherever a corpus is carried; `while_working.roles`
+names which of the starting and implementing roles read it too**, for the item they hold.
+⛔ **An absent block is neither of them**, so a project stating nothing new reads its corpus at
+filing alone. The read is the filing role's own — the same command, the same three outcomes, the
+same ref — with the item's version in place of the request's. ⚠️ **It is opted into rather than
+defaulted** because it costs the window on every item a role takes, and a corpus written for filing
+decisions is not necessarily one the work is held to; the project is what knows which.
+
+- ⛔ **The filing role is not a value of the list.** It reads whenever the carrier is `repository`,
+  so naming it would be a key that changes nothing, and it is refused.
+- ⛔ **The version is the value the item carries for this facet's grouping, read off the item by
+  the role and never worked out** — [§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)'s
+  field whose wrong value is invisible on the item. ⛔ **An item carrying no value is a stop
+  reported as unanswered, and never the fallback**: that arm is for a version with no branch, and
+  taking it here would read *the item names no version* as *the version has no branch yet*.
+- **The starting role reads after its gate and before its claim.** ⛔ **A contradiction between the
+  item and the governing copy stops the start**, reported with the ref it was read at: either the
+  item or the specification is wrong, and which one is a person's decision rather than a claim the
+  session then holds. ⚠️ **The unread outcome is not yet a stop there**: the report names the one
+  fetch that would read it, a fetch is the role's own call, and a second unread answer is the stop.
+- **The implementing role reads with the item, before the work.** ⛔ **A contradiction met there is
+  a decision and is asked**, by [§ Nothing is deferred](#nothing-is-deferred): the work is held to
+  the copy that governs it, and a pass that chose between the two silently has decided the question
+  the stop at the start exists to put.
+- ⛔ **Every run reports which copy it read** — the outcome and the ref — so a fallback read is
+  never mistaken for the version's own, which is this facet's fallback rule arriving at two more
+  roles.
+- ⛔ **What the contradiction is stays the role's reading and not the carrier's**, exactly as it is
+  at filing.
+
+⛔ **Three statements a role at either leg keeps apart**: *no corpus is configured*
+(`carrier: none`, the subsection below); *this project does not have this role read its corpus* (a
+corpus carried, the role not in `roles`); and a verdict about a corpus actually read. ⚠️ **The
+middle one is new to these two roles and is the one most easily printed as the third** — a role
+not asked to read anything has found nothing to disagree with for a reason that says nothing about
+the specification.
+
+**`while_working.files` narrows what those roles load, so the window is not filled.** ⛔ **A
+document is loaded only where it matches both this list and `files`**, so the list can narrow the
+corpus and never widen it — a glob reaching outside the corpus loads nothing outside it.
+`load_bearing` then divides what is left, as it divides the whole corpus at filing. ⚠️ **No size
+cap is offered in its place**, for the carrier's own reason: a truncated specification is the wrong
+copy one step further on, so what is loaded is a project's statement rather than a cut a carrier
+makes. ⛔ **`files: []` here is refused**, by the corpus's own rule: a narrowing to nothing is a read
+that opens nothing while reading as one that opens something, and leaving a role out of `roles` is
+how a project says that instead. ⛔ **A narrowing that matches nothing at the ref is reported as an
+empty corpus**, never as a specification that agrees.
 
 ### `carrier: none`, and the two answers it must not collapse into one
 
@@ -10645,6 +10901,108 @@ section states: the absent form is stated here and in every shipped example in t
 the record the change lands with says that configurations outside this repository are refused until
 each writes the key. ⚠️ **No check here can reach them**, they being files in repositories this one
 cannot open.
+
+## 42. Whether the work is already built, and where a role asks
+
+```yaml
+built_check:
+  points: [file, start, implement] # default: []
+  on_finding: report | stop        # default: report
+```
+
+**An item states work, and the code may already do it.** The filing role searches the tracker and
+not the code, and the starting and implementing roles take an item's statement as still true. So an
+item whose work landed under another item gets filed, started and implemented again. A closed
+duplicate whose work was never built is found by the filing role, read as already handled, and the
+request is dropped. ⛔ **This facet makes the question a step**: before a role acts on an item, it
+reads the code against what the item asks and reports what it found.
+
+⛔ **This is a facet and no further leg of [§ The loop](#the-loop)**, which is § 38's rule and
+§ 39's beside it. No `carriers` key answers for it and no role enters it. It is a step inside the
+three roles `points` names, and each of those roles' own files says where the step falls.
+
+### The three points, and what each one reads
+
+| point | the role | what is read against the code | where the step falls |
+|---|---|---|---|
+| `file` | the filing role | the request, and every **closed** item its duplicate search found above the lowest tier | after the duplicate check and before anything is written |
+| `start` | the starting role | the chosen item | after the readiness gate and before the claim, so a stop leaves no ref behind |
+| `implement` | the implementing role | the item in hand | after its condition is read and before any edit |
+
+⛔ **`points` names where the step runs, and a point it does not name runs nothing.** The list the
+fence shows is the vocabulary, as `session.parts`'s is, and the default is the empty list. The list
+is a set, so a point named twice is refused, and so is a name outside the three. ⛔ **`points: []`, or the
+block unwritten, is every role as it was before this facet existed.** No step runs and no reply
+mentions one. That is the default, because a step that reads the code on every item has a cost a
+project should choose to pay.
+
+### The finding, and what it has to carry
+
+⛔ **The finding is held per acceptance bullet**, because an item half built and an item not built
+read the same at the level of the whole item. Each bullet gets one of three verdicts:
+
+| verdict | what it has to carry |
+|---|---|
+| `built` | at least one citation: a path in the tree, a commit, or a change on the host that answers the bullet |
+| `absent` | nothing more. It is the claim that the code does not answer the bullet, and it states what was read |
+| `unestablished` | what could not be read, and why. ⛔ **Never folded into `absent`**: a bullet nobody could check is not a bullet the code fails |
+
+⛔ **A `built` with no citation is refused**, which is the case this facet exists to stop: a role
+that believes an item is done without being able to point at where. A path cited has to exist in the
+tree the role is standing in, with any line it names, and a commit cited has to resolve in its
+repository. A citation that does neither is refused, not passed on. ⚠️ **A change on the host is
+held to its form only**, since checking it would mean asking the host. A path or a commit is the
+stronger citation for that reason. ⚠️ **What a citation cannot establish is that the cited code
+answers the bullet.** That is the role's reading. What the carrier holds is that the reading
+pointed at something real.
+
+An item stating no acceptance condition ([§ 4.4](#44-template)) is read against its stated outcome,
+as one bullet, and the finding says so.
+
+The item's verdict is derived from its bullets, and nothing writes it by hand:
+
+| the bullets | the item |
+|---|---|
+| every one `built` | `built` |
+| every one `absent` | `absent` |
+| some `built` and some not | `partly built` |
+| none `built`, and some `unestablished` | `unestablished`. ⛔ Never `absent`: a bullet nobody could check might be built |
+
+### What a finding does, and what it never does
+
+`on_finding` decides what happens when the item's verdict is anything but `absent`:
+
+- **`report`** puts the finding in the role's reply and the role carries on.
+- **`stop`** puts the finding to the person and stops the role until they answer. At `start` the
+  stop comes before the claim, so nothing is published while the question is open.
+
+⛔ **An `absent` verdict carries on under either value.** The work is not built, so the item stands
+as written.
+
+⛔ **The step closes nothing, reopens nothing and rewrites nothing by itself.** What it may do is
+offer. Closing an item whose work is built, reopening one, or rewriting a body are a person's call,
+or the call of the role whose act it already is. A finding that names an act it performed is
+refused. ⚠️ **The cost is a step that only ever informs.** That is the point: the reading is a
+judgement about code, and a judgement that silently closes items is one nobody can audit afterwards.
+
+### A closed item whose work is absent
+
+⛔ **At `file`, a closed duplicate whose work is `absent` or `partly built` is offered for reopening,
+beside filing anew.** The duplicate check finds it and [§ 3](#a-duplicate-is-the-item-rewritten-never-a-second-item-filed)
+would otherwise send the request to it. That is right only where its work exists. Where it does not,
+the closed item's history is worth keeping, and a new item loses it. Which of the two to take is a
+person's choice: the filing role asks, and the step does neither.
+
+⚠️ **The opposite case needs no offer.** A closed duplicate whose work is `built` is the duplicate
+check's ordinary outcome, and the finding is the citation that makes it believable.
+
+### The carrier, and what it holds
+
+`plugins/mjolnir/scripts/built.py` is the one carrier. `decide --point` says whether the step runs
+at a point and what a finding does there. `check --file` reads a finding, refuses the shapes above,
+derives the item's verdict, and prints what the role does next and what it offers. ⛔ **What the
+carrier never does is read the code**: which code answers a bullet is a reading only the role can
+take, and the carrier holds the reading to its shape.
 
 ## What the toolkit installs into a project, and what takes it out
 

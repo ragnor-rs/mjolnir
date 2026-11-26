@@ -91,6 +91,12 @@ BUDGET_SECONDS = 40
 # rare case instead of the ordinary one, and nothing outside those calls can close it.
 RESERVE_SECONDS = 15
 
+# The subsection the resource pass below performs, held to the surface the same way as `ANCHOR`.
+RESOURCE_ANCHOR = "a-resource-whose-tree-is-gone"
+
+# How a stop command is told which resource it is for, beside the tree in `MJOLNIR_TREE` (§ 10).
+RESOURCE_VARIABLE = "MJOLNIR_RESOURCE"
+
 # ⛔ What the host's confirmation of a merge may cost, taken off the sweep's budget on that event
 # rather than added past it: the two run under one registered timeout.
 CONFIRM_TIMEOUT_SECONDS = 10
@@ -144,6 +150,23 @@ class Verdict:
 
 
 @dataclass
+class Orphan:
+    """A resource the project's listing says is up, for a tree that is not one of this repository's.
+
+    ⛔ **`outcome` has no default**, for `Verdict.reason`'s reason: a resource named with nothing
+    said about what became of it reads as one somebody already dealt with.
+    """
+
+    tree: str
+    resource: str
+    outcome: str
+    stopped: bool = False
+
+    def line(self) -> str:
+        return f"{self.resource} is up for `{self.tree}`, which is not a tree here — {self.outcome}"
+
+
+@dataclass
 class Report:
     """What one sweep did, including what it did not reach.
 
@@ -154,6 +177,7 @@ class Report:
     verdicts: list[Verdict] = field(default_factory=list)
     unreached: list[str] = field(default_factory=list)
     unestablished: list[str] = field(default_factory=list)
+    orphans: list[Orphan] = field(default_factory=list)
 
     @property
     def removed(self) -> list[Verdict]:
@@ -187,6 +211,7 @@ class Report:
                 f"not looked at ({len(self.unreached)}, the budget of {BUDGET_SECONDS}s "
                 f"ran out): {', '.join(self.unreached)}"
             )
+        out += [orphan.line() for orphan in self.orphans]
         for item in self.unestablished:
             out.append(f"unestablished: {item}")
         return out
@@ -218,6 +243,9 @@ class Report:
             if v.attention
         ]
         said += [f"not looked at: {', '.join(self.unreached)}"] if self.unreached else []
+        # ⛔ Every one, stopped or not: a stop the sweep ran on its own is an act a person is owed
+        # a sentence about, and one it did not run is a resource still up with nobody watching it.
+        said += [orphan.line() for orphan in self.orphans]
         said += [f"not established: {i}" for i in self.unestablished]
         if not said:
             return ""
@@ -541,6 +569,8 @@ def sweep(
     tree_dir: str | Path | None = None,
     teardown: str | None = None,
     resource_up: str | None = None,
+    resources_running: str | None = None,
+    resource_stop: str | None = None,
     here: str | None = None,
     remote: str = "origin",
     budget: float = BUDGET_SECONDS,
@@ -556,7 +586,8 @@ def sweep(
     """Remove every tree whose branch has landed, and report what was kept and why.
 
     `listing` takes every reading a removing run takes and stops at the removal: the tree it would
-    have removed is a `listed` verdict, and no tree, branch, ref or registration is touched. ⛔ The
+    have removed is a `listed` verdict, no tree, branch, ref or registration is touched, and no
+    resource whose tree is gone is stopped. ⛔ The
     decision is `_decide`'s in both runs, so the two cannot disagree about which tree goes.
 
     `only` narrows the sweep to the tree holding that one branch, which is what the carrier on a
@@ -639,7 +670,159 @@ def sweep(
     # ⛔ Not on a list-only run, which writes nothing to the repository at all.
     if not listing and any(tree.prunable for tree in trees):
         claim.git(root, "worktree", "prune", check=False)
+    if resources_running:
+        try:
+            _gone_trees(
+                report,
+                root,
+                tree_dir,
+                resources_running,
+                resource_stop,
+                lambda: budget - (clock() - started),
+                list_only=listing,
+            )
+        except claim.ClaimError as error:
+            # ⛔ Contained for the reason one tree's failure is: the verdicts above are already
+            # acts, and an exception here would discard their record.
+            report.unestablished.append(
+                "which resources are up for a tree that is gone: "
+                f"{' '.join(str(error).split())}"
+            )
     return report
+
+
+def _listed(
+    root: str | Path, command: str, left: float
+) -> tuple[list[tuple[str, str]], list[str], str | None]:
+    """`(each (tree, resource) the listing printed, lines naming no tree, why it went unanswered)`.
+
+    A line is the tree's path, a tab, and the resource. A relative path is read against the main
+    checkout, where the command runs.
+    """
+    bound = min(claim.RESOURCE_UP_SECONDS, left)
+    if bound < claim.RESOURCE_UP_FLOOR_SECONDS:
+        return [], [], (
+            f"it was not asked: {max(bound, 0):.0f}s were left of the time this run may take"
+        )
+    said, complained, why = claim.run_at_checkout(root, command, bound)
+    if why is not None:
+        return [], [], why + claim._ended(complained)  # noqa: SLF001 -- the sibling's own cut
+    base = claim.main_checkout(root)
+    pairs: list[tuple[str, str]] = []
+    unread: list[str] = []
+    for line in said.splitlines():
+        if not line.strip():
+            continue
+        tree, tab, resource = line.partition("\t")
+        if not tab or not tree.strip() or not resource.strip():
+            unread.append(" ".join(line.split()))
+            continue
+        pairs.append(
+            (os.path.realpath(os.path.join(base, tree.strip())), " ".join(resource.split()))
+        )
+    return pairs, unread, None
+
+
+def _gone_trees(
+    report: Report,
+    root: str | Path,
+    tree_dir: str | Path | None,
+    listing: str,
+    stop: str | None,
+    left,
+    *,
+    list_only: bool = False,
+) -> None:
+    """Name every listed resource whose tree is gone, and stop it only where `stop` is stated.
+
+    The rule is § 10's *A resource whose tree is gone* and is not restated here. ⛔ Asked after
+    the trees, so a tree this sweep just removed reads as gone, and its resource with it.
+    `tree_dir` is what decides whether a gone path was a tree this procedure cut.
+    """
+    pairs, unread, why = _listed(root, listing, left())
+    if why is not None:
+        report.unestablished.append(
+            f"which resources are up for a tree that is gone: the listing went unanswered: {why}"
+        )
+        return
+    report.unestablished += [
+        f"a line the resource listing printed names no tree, so it was not read: {line}"
+        for line in unread
+    ]
+    # ⛔ **Gone is a path that is not there**, never a path that is not one of this repository's
+    # trees: a listing that reaches the whole machine names another clone's live stack too, and
+    # reading that as gone handed it to the stop. Reproduced in this pass's own review.
+    gone = [(tree, resource) for tree, resource in pairs if not os.path.lexists(tree)]
+    if not stop:
+        report.orphans += [
+            Orphan(tree, resource, "nothing stops it: this project states no stop command")
+            for tree, resource in gone
+        ]
+        return
+    if list_only:
+        # ⛔ The stop is an act, and a list-only run performs none: each resource is named with
+        # what a removing sweep would do about it.
+        report.orphans += [
+            Orphan(tree, resource, (
+                "a removing sweep runs the stop command on it where the path is under this "
+                "project's tree directory; a list runs none, so it is still up"
+            ))
+            for tree, resource in gone
+        ]
+        return
+    main = claim.main_checkout(root)
+    ran: list[Orphan] = []
+    for tree, resource in gone:
+        if not claim.a_work_tree(tree, main, tree_dir):
+            # ⛔ Named and not stopped: a path outside the tree directory is not a tree this
+            # procedure cut, so what ran there is not this sweep's to stop.
+            report.orphans.append(Orphan(tree, resource, (
+                "the stop command was not run: the path is not under this project's tree "
+                "directory, so it was not a tree this procedure cut"
+            )))
+            continue
+        bound = min(claim.RESOURCE_UP_SECONDS, left())
+        if bound < claim.TEARDOWN_FLOOR_SECONDS:
+            report.orphans.append(Orphan(tree, resource, (
+                f"the stop command was not run: {max(bound, 0):.0f}s were left of the time this "
+                "run may take, and it is not started with less than "
+                f"{claim.TEARDOWN_FLOOR_SECONDS}s"
+            )))
+            continue
+        said, _, failed = claim.run_at_checkout(
+            root,
+            stop,
+            bound,
+            {claim.TREE_VARIABLE: tree, RESOURCE_VARIABLE: resource},
+            stderr=subprocess.STDOUT,
+        )
+        if failed is not None:
+            report.orphans.append(Orphan(
+                tree, resource,
+                f"the stop command failed, so it is still up: {failed}"
+                + claim._ended(said),  # noqa: SLF001 -- the sibling's own cut
+            ))
+            continue
+        ran.append(Orphan(tree, resource, ""))
+    if not ran:
+        return
+    # ⛔ Read back rather than believed: a stop that exited zero is a claim about the resource,
+    # and the listing is what answers it.
+    after, _, why = _listed(root, listing, left())
+    for orphan in ran:
+        if why is not None:
+            orphan.outcome = (
+                "the stop command exited zero, and whether it is gone could not be read back: "
+                f"{why}"
+            )
+        elif (orphan.tree, orphan.resource) in after:
+            orphan.outcome = "the stop command exited zero and the listing still names it"
+        else:
+            orphan.outcome = (
+                "stopped by the project's stop command, and the listing no longer names it"
+            )
+            orphan.stopped = True
+        report.orphans.append(orphan)
 
 
 def _decide(
@@ -953,6 +1136,8 @@ def answer(payload: dict, *, run=None) -> dict:
             tree_dir=stated,
             teardown=loaded.get("branch_model.teardown"),
             resource_up=loaded.get("branch_model.resource_up"),
+            resources_running=loaded.get("branch_model.resources_running"),
+            resource_stop=loaded.get("branch_model.resource_stop"),
             # ⛔ **The session's directory and not this process's.** The one stop between a live
             # session and the removal of its own tree is *standing in it*, and a hook runs in a
             # process of its own; every other hook in this plugin reads the session's directory
@@ -1147,12 +1332,12 @@ def check_the_surface_still_states_this(text: str) -> list[str]:
     anchors = {
         _anchor(line.lstrip("#").strip()) for line in text.splitlines() if line.startswith("#")
     }
-    if ANCHOR not in anchors:
-        return [
-            f"this carrier cites `{ANCHOR}`, which is not a heading of the surface. Either the "
-            "subsection was reworded or the rule it performs is gone."
-        ]
-    return []
+    return [
+        f"this carrier cites `{cited}`, which is not a heading of the surface. Either the "
+        "subsection was reworded or the rule it performs is gone."
+        for cited in (ANCHOR, RESOURCE_ANCHOR)
+        if cited not in anchors
+    ]
 
 
 def check_the_carrier_still_calls_this(text: str) -> list[str]:
@@ -1445,6 +1630,166 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             "a check that names nothing is told the tree, and the removal follows it",
             not Path(tree).exists() and len(report.removed) == 1
             and ran.read_text().strip() == os.path.realpath(_trees(tmp)) + "/1-landed",
+            report.report(),
+        )
+
+    print("\na resource whose tree is gone is named, and stopped only by a stated command:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        _origin, work = _world(tmp)
+        live = str(Path(_trees(tmp)) / "2-live")
+        claim.take(work, "feature/2-live", live)
+        gone = os.path.realpath(_trees(tmp)) + "/9-gone"
+        state, log = Path(tmp) / "running", Path(tmp) / "stopped"
+        listing = f"cat '{state}'"
+
+        def running(*lines: str) -> None:
+            state.write_text("".join(f"{line}\n" for line in lines))
+
+        def swept(**rest) -> Report:
+            return sweep(work, [], "procedure", tree_dir=_trees(tmp),
+                         occupants=lambda _p: [], **rest)
+
+        running(f"{gone}\tstack-gone", f"{os.path.realpath(live)}\tstack-live",
+                f"{os.path.realpath(work)}\tstack-main")
+        report = swept()
+        suite.ok(
+            "a project stating no listing has nothing listed, and its sweep is what it was",
+            not report.orphans and "stack-gone" not in report.report(),
+            report.report(),
+        )
+        report = swept(resources_running=listing)
+        suite.ok(
+            "⛔ a resource whose tree is gone is named on the event, with the tree it was for",
+            [(o.tree, o.resource) for o in report.orphans] == [(gone, "stack-gone")]
+            and "stack-gone" in report.message() and gone in report.message(),
+            report.report(),
+        )
+        suite.ok(
+            "⛔ and a resource whose tree is still here is not, the main checkout included",
+            "stack-live" not in report.report() and "stack-main" not in report.report(),
+            report.report(),
+        )
+        suite.ok(
+            "⛔ nothing is stopped where no stop command is stated, and the report says so",
+            Path(state).read_text().count("stack-gone") == 1
+            and not report.orphans[0].stopped and "no stop command" in report.message(),
+            report.report(),
+        )
+        running("trees/9-gone\tstack-relative")
+        report = swept(resources_running=listing)
+        suite.ok(
+            "a relative tree path is read against the main checkout",
+            [o.tree for o in report.orphans]
+            == [os.path.join(os.path.realpath(work), "trees", "9-gone")],
+            report.report(),
+        )
+        running("a line with no tree in it")
+        report = swept(resources_running=listing)
+        suite.ok(
+            "⛔ a line naming no tree is named as unread, never guessed at",
+            not report.orphans and "names no tree" in report.message()
+            and "a line with no tree in it" in report.message(),
+            report.report(),
+        )
+        report = swept(resources_running="echo away >&2; exit 1")
+        suite.ok(
+            "⛔ a listing that fails is unanswered on the event, never read as nothing running",
+            not report.orphans and "went unanswered" in report.message()
+            and "away" in report.message(),
+            report.report(),
+        )
+        ticks = iter([0.0])
+        report = swept(resources_running=f"touch '{log}'",
+                       clock=lambda: next(ticks, float(BUDGET_SECONDS)))
+        suite.ok(
+            "⛔ a listing the sweep's bound leaves no time for is not asked, and that is reported",
+            not log.exists() and "not asked" in report.message(),
+            report.report(),
+        )
+
+        running(f"{gone}\tstack-gone")
+        stop = (f'printf "%s|%s\\n" "$MJOLNIR_TREE" "$MJOLNIR_RESOURCE" >> \'{log}\'; '
+                f": > '{state}'")
+        report = swept(resources_running=listing, resource_stop=stop, listing=True)
+        suite.ok(
+            "⛔ a list-only run names the resource and runs no stop, saying a removing sweep would",
+            not log.exists() and [(o.resource, o.stopped) for o in report.orphans]
+            == [("stack-gone", False)] and "a list runs none" in report.message(),
+            report.report(),
+        )
+        report = swept(resources_running=listing, resource_stop=stop)
+        suite.ok(
+            "⛔ a stated stop runs once per resource, told the tree and the resource",
+            log.read_text() == f"{gone}|stack-gone\n",
+            log.read_text() if log.exists() else "it did not run",
+        )
+        suite.ok(
+            "⛔ and a stop the listing no longer names is reported stopped, on the event",
+            [o.stopped for o in report.orphans] == [True] and "stopped by" in report.message(),
+            report.report(),
+        )
+        running(f"{gone}\tstack-gone")
+        report = swept(resources_running=listing, resource_stop="true")
+        suite.ok(
+            "⛔ a stop that exits zero is read back, and one still listed is still up",
+            [o.stopped for o in report.orphans] == [False]
+            and "still names it" in report.message(),
+            report.report(),
+        )
+        other = Path(tmp) / "another-clone"
+        other.mkdir()
+        outside = os.path.realpath(tmp) + "/elsewhere/9-gone"
+        running(f"{os.path.realpath(other)}\tsomebody-elses-stack", f"{outside}\tstack-outside")
+        log.unlink()
+        report = swept(resources_running=listing, resource_stop=stop)
+        suite.ok(
+            "⛔ a path still there is not gone, whatever repository it belongs to",
+            "somebody-elses-stack" not in report.report(),
+            report.report(),
+        )
+        suite.ok(
+            "⛔ and a gone path outside the tree directory is named and never stopped",
+            [(o.resource, o.stopped) for o in report.orphans] == [("stack-outside", False)]
+            and not log.exists() and "not under this project's tree directory" in report.message(),
+            report.report(),
+        )
+        running(f"{gone}\tstack-gone")
+        report = swept(resources_running=listing, resource_stop="echo refused; exit 4")
+        suite.ok(
+            "⛔ a stop that fails is reported with its exit and what it said",
+            [o.stopped for o in report.orphans] == [False]
+            and "exited 4" in report.message() and "refused" in report.message(),
+            report.report(),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        work, _branch, tree = _landed_world(tmp)
+        real_checkout = claim.main_checkout
+
+        def unreadable(_root):
+            raise claim.ClaimError("the main checkout could not be read")
+
+        claim.main_checkout = unreadable
+        try:
+            report = sweep(work, [], "procedure", tree_dir=_trees(tmp),
+                           occupants=lambda _p: [], remove=_never_removes(),
+                           read=lambda _b: _landed_status(tree),
+                           resources_running="true")
+        finally:
+            claim.main_checkout = real_checkout
+        suite.ok(
+            "⛔ a pass that cannot run is unestablished, and the tree verdicts are kept",
+            len(report.verdicts) == 1 and "the main checkout could not be read" in report.message(),
+            report.report(),
+        )
+        listing = f"printf '%s\\tstack-a\\n' '{os.path.realpath(tree)}'"
+        report = sweep(work, [], "procedure", tree_dir=_trees(tmp), occupants=lambda _p: [],
+                       resources_running=listing)
+        suite.ok(
+            "⛔ asked after the removals, so a tree this sweep removed counts as gone",
+            len(report.removed) == 1
+            and [o.resource for o in report.orphans] == ["stack-a"],
             report.report(),
         )
 
@@ -2490,20 +2835,29 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         suite.ok(
             "a project that states neither command hands the sweep none",
             handed["kwargs"]["teardown"] is None
-            and handed["kwargs"]["resource_up"] is None,
+            and handed["kwargs"]["resource_up"] is None
+            and handed["kwargs"]["resources_running"] is None
+            and handed["kwargs"]["resource_stop"] is None,
             str(handed.get("kwargs")),
         )
         configured = where / ".claude" / "mjolnir.yaml"
         as_shipped = configured.read_text()
         configured.write_text(
             as_shipped.replace("branch_model:\n", "branch_model:\n  teardown: a-command\n"
-                               "  resource_up: a-check\n", 1)
+                               "  resource_up: a-check\n  resources_running: a-listing\n"
+                               "  resource_stop: a-stop\n", 1)
         )
         answer({"cwd": str(where)}, run=record)
         suite.ok(
             "⛔ and a stated one reaches it",
             handed["kwargs"]["teardown"] == "a-command"
             and handed["kwargs"]["resource_up"] == "a-check",
+            str(handed.get("kwargs")),
+        )
+        suite.ok(
+            "⛔ and so do a stated resource listing and its stop",
+            handed["kwargs"]["resources_running"] == "a-listing"
+            and handed["kwargs"]["resource_stop"] == "a-stop",
             str(handed.get("kwargs")),
         )
         configured.write_text(as_shipped)
@@ -2820,6 +3174,12 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             surface.replace("### Pruning a tree whose branch has landed", "### Something else")
         )),
     )
+    suite.ok(
+        "⛔ and when the heading of the resource pass is gone",
+        bool(check_the_surface_still_states_this(
+            surface.replace("### A resource whose tree is gone", "### Something else")
+        )),
+    )
     carrier = CARRIER.read_text(encoding="utf-8")
     suite.ok(
         "the carrier still registers this script on the event that opens a session",
@@ -2933,6 +3293,8 @@ def main(argv: list[str]) -> int:
                 tree_dir=stated,
                 teardown=loaded.get("branch_model.teardown"),
                 resource_up=loaded.get("branch_model.resource_up"),
+                resources_running=loaded.get("branch_model.resources_running"),
+                resource_stop=loaded.get("branch_model.resource_stop"),
                 listing=args.listing,
             )
         except claim.ClaimError as error:

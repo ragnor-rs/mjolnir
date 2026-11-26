@@ -93,6 +93,25 @@ reported as **unused** rather than silently dropped. ⛔ **And no tier is ever d
 the request's urgency, not from what the item blocks — which is the facet's own rule and the reason
 an argument that carries none leaves the item unranked.
 
+**Which grouping the item goes into is read through one command, never decided here.**
+[`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into) states the
+order: a value given on the request wins, then the project's stated map from another facet, and
+otherwise the grouping is asked for.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --grouping-default [--grouping <name>] \
+  [--from-value <the item's value of the mapped facet>] [--given <the grouping on the request>]
+```
+
+- ⛔ **`--from-value` is the value handed or already on the item**, never one worked out — a map
+  from the tier is not a licence to rank the work, which is the paragraph above.
+- **`map`** ⇒ the item goes into that grouping, and ⛔ **the report names the rule** the answer
+  carries, so the reader of the item can see the value was the project's map and not a choice.
+- **`ask`** ⇒ the grouping is asked for, with the answer's reason, before anything is written.
+- **`discoverable`** ⇒ the tracker names the current grouping, and it is read there.
+- ⚠️ **A project carrying no grouping is a refusal naming the facet**, and the item is filed with
+  none.
+
 ## 0a. The specification that governs, read before anything is judged against it
 
 **Where the project keeps a specification corpus of its own, it is read here** —
@@ -114,11 +133,11 @@ parent or new, and the contradiction outcome stops the write — so a corpus rea
 corpus read after the decisions it was for. ⚠️ **Once per request and not once per unit**: the copy
 is a fact about the version, so the split does not multiply the read.
 
-- ⛔ **The version arrives on the invocation and is never worked out.**
+- ⛔ **The version is the grouping § 0 resolved, and is never worked out here.**
   [`§ 4.8`](../../config/schema.md#48-grouping--what-a-set-of-items-is-planned-into) makes which
   grouping an item is in the one field whose wrong value is invisible on the item itself, so a
-  version this role picked is a corpus read at a branch nobody chose. Where the request does not
-  say which version, **ask**.
+  version this role picked is a corpus read at a branch nobody chose. It is the value given on the
+  request or the project's stated map; where neither answers, **ask**.
 - ⚠️ **Three outcomes, and the report carries whichever one it was.** The version's own copy; the
   **fallback** to the integration branch, which is correct and is said out loud; and a branch the
   remote advertises that this clone does not hold, which is reported **unread**. ⛔ **The second and
@@ -207,7 +226,11 @@ nobody writes on items finds nothing.
 
 **2b. The keyword-independent sweep.** Pull items with **no keyword at all** and read every title
 against the request: filtered by the request's own area where the tracker can filter by a field,
-and otherwise the most recently updated, bounded and with the bound reported. ⛔ **This layer is
+and otherwise the most recently updated, bounded and with the bound reported. ⛔ **Which fields
+record an area, and which texts a term is matched in, are the project's**
+([`§ 3`](../../config/schema.md#what-a-search-covers-and-what-it-says-it-did-not)). This role reads
+them and does not choose them. A field the search refuses is reported as refused, never as a filter
+that found nothing. ⛔ **This layer is
 not optional and it is the one that gets dropped** — it is the only layer that can catch a
 duplicate whose wording shares nothing with the request, which is what a reworded duplicate is.
 
@@ -300,6 +323,32 @@ read is the exact failure this section exists to prevent.
 shippable, somebody else owns it, or it is large enough that the parent cannot be sized while it is
 inside. ⛔ **"It is easier to track separately" is not one of those** — that is what the parent's
 checklist is for. Where a child is genuinely right, the relation is recorded at both ends in § 5.
+
+**3b. Whether the work is already built, where the project runs that step here.**
+[`§ 42`](../../config/schema.md#42-whether-the-work-is-already-built-and-where-a-role-asks)
+states the step, the finding and what it does, and ⛔ **none of it is restated here**. What is this
+role's is where it falls and what it is run over: after the duplicate check and the relationships
+above, before anything is written, over the request and over every **closed** candidate 2c tiered
+above Low.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" decide --point file
+```
+
+- **It exits 3** ⇒ the project runs no step here, and the reply mentions none.
+- **It exits 0** ⇒ read the code against each bullet the request states, and against each closed
+  candidate's own acceptance condition. Write one finding per item in the form `built.py form`
+  prints — the request's under the identifier `request`, in the state the form gives an item
+  nobody closed — and hand each one over with
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" check --file <the finding> --root <code-root>`.
+  ⛔ **A refusal is fixed and handed over again.**
+- **What comes back decides what this role does**: proceed with the finding in the reply, stop and
+  put it to the person, or ⛔ **ask, with the two offers it names**, which is the closed candidate
+  whose work is absent or only partly built. § 3's duplicate outcome would send the request to that
+  item. Reopening it keeps its history, and filing anew starts clean. Which one is the person's
+  choice.
+- ⛔ **Nothing is reopened, closed or rewritten by this step.** Whichever offer the person takes is
+  then carried out by § 3 or by §§ 4–6, as that outcome already is.
 
 ## 4. Type, template, and the body
 
@@ -411,6 +460,14 @@ an agreed merge order — all of that is sequencing, and none of it is a relatio
 cosmetic: a readiness gate refuses an item whose blocker is still open, so a merge order written up
 as a relation turns finished work into work that reads as blocked.
 
+**A related item that blocks nothing is linked through `link_relation`, under a name the project
+maps** — the umbrella step 2c relates rather than absorbs into is the measured case.
+[`§ 3 → A relation that blocks nothing`](../../config/schema.md#a-relation-that-blocks-nothing)
+states the rule; ⛔ **where the capability is absent or the project maps no name for the relation,
+it stays the prose line the body already carries**, which is that operation's fallback and not a
+gap to fill. ⛔ **Never as a dependency instead**, which would hold one item back on another nothing
+waits for.
+
 ⚠️ **Tolerating and requiring are different, and the test is each consumer's own acceptance
 condition** ([`§ Nothing is deferred`](../../config/schema.md#nothing-is-deferred)). An item every
 consumer can be built *tolerating* is not a blocker, and recording it as one stops work that
@@ -433,7 +490,8 @@ Then report, in the register
 
 - what was resolved — the root, the configuration file, the repository and the tracker;
 - every item filed or rewritten, with its identifier and title;
-- **the duplicate-search coverage**: every query with its hit count, the sweep in 2b and its bound,
+- **the duplicate-search coverage**: every query with its hit count and the texts its answer says
+  it searched and did not, the sweep in 2b and its bound,
   and every candidate above Low with its tier and its relationship. Where a candidate was found and
   an item was filed anyway, name it, the relationship, and the grounds — that is the decision this
   report exists to record;
@@ -457,6 +515,8 @@ Then report, in the register
   ```
 
 - the type and the template used, or that the project carries neither;
+- **the grouping each item went into, and where it came from**: given on the request, the
+  project's map with the rule it named, or asked for and answered;
 - **which code repository each item was written against**, where the project carries several — and
   where its carrier is `none`, that the item states none and the root reaches a later role on its
   invocation ([`§ 4.7`](../../config/schema.md#47-code-root));

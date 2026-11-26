@@ -62,8 +62,10 @@ from adapters.jira import (  # noqa: E402
     create_item,
     item_number,
     link_dependency,
+    link_relation,
     advance_on_merge,
     read_blockers,
+    read_relations,
     read_item,
     read_vocabulary,
     search_items,
@@ -112,15 +114,48 @@ FIELDS = [
     # this implementation has no shape for its type.
     {"id": "customfield_10020", "name": "Sprint", "schema": {"type": "array", "items": "json"}},
     # One list field per element type a write is shaped for.
-    {"id": "components", "name": "Parts", "schema": {"type": "array", "items": "component"}},
+    {"id": "components", "name": "Parts", "schema": {"type": "array", "items": "component"},
+     "searchable": True, "clauseNames": ["component"]},
     {"id": "fixVersions", "name": "Ships in", "schema": {"type": "array", "items": "version"}},
-    {"id": "customfield_10050", "name": "Areas", "schema": {"type": "array", "items": "option"}},
+    {"id": "customfield_10050", "name": "Areas", "schema": {"type": "array", "items": "option"},
+     "searchable": True, "clauseNames": ["cf[10050]", "Areas"]},
     {"id": "customfield_10051", "name": "Readers", "schema": {"type": "array", "items": "user"}},
-    {"id": "customfield_10052", "name": "Words", "schema": {"type": "array", "items": "string"}},
+    {"id": "customfield_10052", "name": "Words", "schema": {"type": "array", "items": "string"},
+     "searchable": False, "clauseNames": ["cf[10052]"]},
     # A number field, which is shaped, so the refusal above is about the type
     # and not about the field being custom.
     {"id": "customfield_10030", "name": "Story points", "schema": {"type": "number"}},
+    # The field a move to a finished status offers, as the host's own catalogue
+    # states it.
+    {"id": "resolution", "name": "Resolution", "schema": {"type": "resolution"}},
 ]
+
+# What a move into the finished category offers beside the status, as the host
+# answers it under `expand=transitions.fields`: keyed by the field's id, with the
+# values the move takes. ⚠️ Answered only where the expansion is asked for, which
+# is what the host does -- so a move asked without it reads as offering nothing.
+RESOLUTIONS = ["Done", "Won't Do"]
+MOVE_OFFERS = {
+    "resolution": {
+        "name": "Resolution",
+        "required": True,
+        "schema": {"type": "resolution"},
+        "allowedValues": [{"name": name} for name in RESOLUTIONS],
+    },
+    "customfield_10030": {
+        "name": "Story points", "required": False, "schema": {"type": "number"},
+    },
+    # One field per remaining shape a move's read-back compares by: a list, a
+    # composite and a document.
+    "components": {"name": "Parts", "schema": {"type": "array", "items": "component"}},
+    "timetracking": {"name": "Time tracking", "schema": {"type": "timetracking"}},
+    "description": {"name": "Description", "schema": {"type": "string"}},
+    # Offered and of a type no write is shaped for, so the refusal of it is about
+    # the type rather than the move.
+    "customfield_10020": {
+        "name": "Sprint", "required": False, "schema": {"type": "array", "items": "json"},
+    },
+}
 
 # Two fields carrying one name, which this tracker allows and which has no
 # reading. ⛔ Kept out of the default catalogue and added by the case that wants
@@ -402,8 +437,9 @@ class _Host:
             }
         return answer
 
-    def _answer_transitions(self, path: str, _params, _body) -> dict:
+    def _answer_transitions(self, path: str, params, _body) -> dict:
         issue = self.item(path)
+        expanded = "transitions.fields" in str((params or {}).get("expand") or "")
         here = issue["fields"]["status"]["name"]
         offered = []
         for index, name in enumerate(_status_names(self.configuration)):
@@ -413,27 +449,38 @@ class _Host:
             # leads to. Every workflow is free to name a verb nothing like its
             # target, and a fixture whose two fields agreed would let an
             # implementation matching the wrong one read as correct.
-            offered.append({
+            category = _category(self.configuration, name)
+            move = {
                 "id": str(10 + index),
                 "name": f"a verb {index}",
-                "to": {
-                    "name": name,
-                    "statusCategory": {"key": _category(self.configuration, name)},
-                },
-                "hasScreen": False,
+                "to": {"name": name, "statusCategory": {"key": category}},
+                "hasScreen": category == "done",
                 "isAvailable": True,
-            })
+            }
+            if expanded:
+                move["fields"] = dict(MOVE_OFFERS) if category == "done" else {}
+            offered.append(move)
         return {"transitions": offered}
 
     def _do_transition(self, path: str, _params, body) -> None:
         issue = self.item(path)
         wanted = str(((body or {}).get("transition") or {}).get("id"))
-        for move in self._answer_transitions(path, {}, None)["transitions"]:
+        sent = (body or {}).get("fields") or {}
+        expand = {"expand": "transitions.fields"}
+        for move in self._answer_transitions(path, expand, None)["transitions"]:
             if move["id"] == wanted:
+                unoffered = sorted(set(sent) - set(move["fields"]))
+                if unoffered:
+                    # The host's own refusal of a field the move has no screen
+                    # for, which is a `400` naming it.
+                    return 400, json.dumps({"errors": {
+                        name: "Field cannot be set." for name in unoffered
+                    }})
                 issue["fields"]["status"] = {
                     "name": move["to"]["name"],
                     "statusCategory": move["to"]["statusCategory"],
                 }
+                issue["fields"].update(sent)
                 return None
         raise AssertionError(
             f"this suite's host was asked for transition `{wanted}`, which it did "
@@ -492,10 +539,15 @@ class _Host:
                 )
             self.issues[key]["fields"]["issuelinks"].append({
                 "id": f"link-{len(self.issues[key]['fields']['issuelinks']) + 1}",
+                # ⚠️ The dependency's own wording for its own type, and a
+                # wording of the type's own name for any other: which side an
+                # entry is read from is the fact under test, and a fixture
+                # wording every type as the dependency would let a relation
+                # read back in words that belong to a blocker.
                 "type": {
                     "name": kind,
-                    "inward": under_test.INWARD_READS,
-                    "outward": under_test.OUTWARD_READS,
+                    "inward": under_test.INWARD_READS if kind == BLOCKS else f"is {kind} of",
+                    "outward": under_test.OUTWARD_READS if kind == BLOCKS else str(kind),
                 },
                 # ⚠️ The summary as well as the status, because the host puts both
                 # in a link payload. A fixture carrying only what the code read at
@@ -1146,6 +1198,134 @@ def self_test() -> int:
         f"reported {reported!r} after {twice_over.calls}",
     )
 
+    # --- the fields a move carries (§ 3's `transitions.fields`) ---------------
+    check(
+        "a project stating no move fields asks for no field offers and sends the "
+        "transition alone",
+        "expand" not in params_of(moved, "transitions")
+        and set(body_of(moved, "transition")) == {"transition"},
+        f"asked {params_of(moved, 'transitions')!r}, sent {body_of(moved, 'transition')!r}",
+    )
+    finished = _role_status(configuration, "terminal")
+
+    def stating(entries) -> object:
+        stated = _example_configuration()
+        stated.data["tracker"]["transitions"]["fields"] = entries
+        bind(stated)
+        return stated
+
+    stating([
+        {"status": finished, "field": "Resolution", "value": RESOLUTIONS[0].lower()},
+        {"status": finished, "field": "Story points", "value": 3},
+    ])
+    carried = host()
+    answered = with_host(carried, lambda: set_state(key(1), status=finished))
+    check(
+        "a move to a status that states fields asks the host what the move offers",
+        params_of(carried, "transitions").get("expand") == "transitions.fields",
+        f"asked {params_of(carried, 'transitions')!r}",
+    )
+    check(
+        "and sends exactly the stated fields, shaped by type, beside the transition",
+        body_of(carried, "transition").get("fields")
+        == {"resolution": {"name": RESOLUTIONS[0].lower()}, "customfield_10030": 3}
+        and carried.writes() == ["transition"],
+        f"sent {carried.sent_for('transition')!r} after {carried.calls}",
+    )
+    check(
+        "and the item is read back with the status and every stated field",
+        got(answered, "status") == finished
+        and (got(answered, "fields") or {}).get("Story points") == 3
+        and ((got(answered, "fields") or {}).get("Resolution") or {}).get("name")
+        == RESOLUTIONS[0].lower(),
+        f"read {answered!r}",
+    )
+    stating([
+        {"status": finished, "field": "Parts", "value": ["One", "Two"]},
+        {"status": finished, "field": "Time tracking", "value": "2h"},
+        {"status": finished, "field": "Description", "value": "a closing note"},
+    ])
+    shaped = host()
+    answered = with_host(shaped, lambda: set_state(key(1), status=finished))
+    check(
+        "a list, a composite and a document a move carries each read back as landed",
+        got(answered, "status") == finished
+        and (got(answered, "fields") or {}).get("Time tracking") == {"originalEstimate": "2h"},
+        f"read {answered!r}",
+    )
+    for field, kept in (
+        ("Parts", lambda sent: {**sent, "components": [{"name": "One"}]}),
+        ("Time tracking", lambda sent: {**sent, "timetracking": {"originalEstimate": "1h"}}),
+        ("Description", lambda sent: {**sent, "description": as_document("another note")}),
+    ):
+        def altering(path, _params, body, kept=kept):
+            return short_host._do_transition(
+                path, {}, {**body, "fields": kept(body.get("fields") or {})}
+            )
+
+        short_host = host()
+        short_host.answers["transition"] = altering
+        reported = with_host(
+            short_host, lambda: unavailable(lambda: set_state(key(1), status=finished))
+        )
+        check(
+            f"and `{field}` read back as something else is reported, not taken as landed",
+            reported is not None and f"`{field}`" in reported,
+            f"got {reported!r}",
+        )
+    elsewhere = host()
+    with_host(elsewhere, lambda: set_state(key(1), status=second))
+    check(
+        "a move to a status the list states nothing for carries nothing",
+        "expand" not in params_of(elsewhere, "transitions")
+        and set(body_of(elsewhere, "transition")) == {"transition"},
+        f"sent {elsewhere.sent_for('transition')!r}",
+    )
+    stating([{"status": second, "field": "Story points", "value": 3}])
+    unoffered = host()
+    reported = with_host(unoffered, lambda: refused(lambda: set_state(key(1), status=second)))
+    check(
+        "a field the transition does not offer is refused before the move",
+        reported == "tracker.transitions.fields" and not unoffered.writes(),
+        f"reported {reported!r} after {unoffered.calls}",
+    )
+    stating([{"status": finished, "field": "Resolution", "value": "a resolution nobody has"}])
+    disallowed = host()
+    reported = with_host(
+        disallowed, lambda: refused(lambda: set_state(key(1), status=finished))
+    )
+    check(
+        "a value outside the ones the transition takes is refused before the move",
+        reported == "tracker.transitions.fields" and not disallowed.writes(),
+        f"reported {reported!r} after {disallowed.calls}",
+    )
+    stating([{"status": finished, "field": "Sprint", "value": "a sprint"}])
+    unshaped = host()
+    reported = with_host(unshaped, lambda: refused(lambda: set_state(key(1), status=finished)))
+    check(
+        "a field whose type has no shape here is refused before the move",
+        reported == "tracker.transitions.fields.Sprint" and not unshaped.writes(),
+        f"reported {reported!r} after {unshaped.calls}",
+    )
+    stating([{"status": finished, "field": "Resolution", "value": RESOLUTIONS[0]}])
+
+    def dropping(path, _params, body):
+        """A host that takes the move and keeps none of its fields."""
+        return carried_host._do_transition(path, {}, {"transition": body["transition"]})
+
+    carried_host = host()
+    carried_host.answers["transition"] = dropping
+    reported = with_host(
+        carried_host, lambda: unavailable(lambda: set_state(key(1), status=finished))
+    )
+    check(
+        "a stated field that did not land is reported, and the move is not retried",
+        reported is not None and "`Resolution`" in reported
+        and carried_host.calls.count("transition") == 1,
+        f"got {reported!r} after {carried_host.calls}",
+    )
+    bind(configuration)
+
     # --- `create_item` --------------------------------------------------------
     typeless = host()
     reported = with_host(typeless, lambda: refused(lambda: create_item("a title", "a body")))
@@ -1790,6 +1970,184 @@ def self_test() -> int:
         f"got {reported!r}",
     )
 
+    # --- a relation that blocks nothing, asserted as a round trip -------------
+    #
+    # ⛔ The names and the types are read off the example rather than written
+    # here: the example is the configuration a project of this kind writes, and a
+    # literal would be a second statement of it. What is asserted is the shape §
+    # 3 states -- a name per wording, a side held from both ends, and no relation
+    # ever reaching the dependency's read.
+    relations = configuration.get("tracker.relations") or {}
+    unsided = sorted(name for name, mapped in relations.items() if not mapped.get("side"))
+    sided = {mapped["side"]: name for name, mapped in relations.items() if mapped.get("side")}
+    check(
+        "the example maps one relation worded the same both ways and one named per side",
+        bool(unsided) and set(sided) == {"inward", "outward"},
+        f"maps {relations!r}",
+    )
+    if unsided and set(sided) == {"inward", "outward"}:
+        for first, then in (("outward", "inward"), ("inward", "outward")):
+            sideways = host()
+
+            def _relate_and_read(named=sided[first]):
+                link_relation(key(1), key(2), named)
+                return read_relations(key(1)), read_relations(key(2))
+
+            answered = with_host(sideways, _relate_and_read)
+            of_first, of_other = answered if isinstance(answered, tuple) else ({}, {})
+            check(
+                f"a relation linked as `{sided[first]}` reads back under it on the item named first",
+                [(entry.get("relation"), entry.get("key"))
+                 for entry in got(of_first, "relations") or []] == [(sided[first], key(2))],
+                f"read {got(of_first, 'relations')!r}",
+            )
+            check(
+                f"and under `{sided[then]}` on the other item, the side held from both ends",
+                [(entry.get("relation"), entry.get("key"))
+                 for entry in got(of_other, "relations") or []] == [(sided[then], key(1))],
+                f"read {got(of_other, 'relations')!r}",
+            )
+        both_same = host()
+
+        def _relate_unsided():
+            link_relation(key(1), key(2), unsided[0])
+            return read_relations(key(1)), read_relations(key(2))
+
+        answered = with_host(both_same, _relate_unsided)
+        of_first, of_other = answered if isinstance(answered, tuple) else ({}, {})
+        check(
+            "a relation worded the same both ways reads back under its one name from either end",
+            [entry.get("relation") for entry in got(of_first, "relations") or []] == [unsided[0]]
+            and [entry.get("relation") for entry in got(of_other, "relations") or []]
+            == [unsided[0]],
+            f"read {got(of_first, 'relations')!r} and {got(of_other, 'relations')!r}",
+        )
+        # ⛔ The readiness separation, on the same link: the other item is open,
+        # so a relation read as a dependency would hold the first one back.
+        held_back = host()
+
+        def _relate_then_blockers():
+            link_relation(key(1), key(2), unsided[0])
+            return read_blockers(key(1)), read_blockers(key(2)), read_item(key(2))
+
+        answered = with_host(held_back, _relate_then_blockers)
+        of_first, of_other, other_item = (
+            answered if isinstance(answered, tuple) else ({}, {}, {})
+        )
+        check(
+            "a relation to an open item is a blocker of neither item",
+            got(other_item, "state") != "done"
+            and keys_of(of_first, "blockers") == []
+            and keys_of(of_other, "blockers") == [],
+            f"read {got(of_first, 'blockers')!r} and {got(of_other, 'blockers')!r}",
+        )
+        dependency_only = host()
+
+        def _depend_then_relations():
+            link_dependency(key(1), key(2))
+            return read_relations(key(1)), read_relations(key(2))
+
+        answered = with_host(dependency_only, _depend_then_relations)
+        of_first, of_other = answered if isinstance(answered, tuple) else ({}, {})
+        check(
+            "and a dependency is a relation of neither item, named or not",
+            all(got(answer, part) == [] for answer in (of_first, of_other)
+                for part in ("relations", "unnamed")),
+            f"read {of_first!r} and {of_other!r}",
+        )
+
+    # ⛔ A name the project does not map is refused before anything is sent, and
+    # so is every name where the project maps none: that is what keeps a project
+    # stating no `relations` filing exactly as it did.
+    unmapped = host()
+    reported = with_host(
+        unmapped, lambda: refused(lambda: link_relation(key(1), key(2), "<no such name>"))
+    )
+    check(
+        "a relation name the project does not map is refused, naming it, and nothing is sent",
+        reported == "tracker.relations.<no such name>" and unmapped.writes() == [],
+        f"reported {reported!r} after {unmapped.writes()}",
+    )
+    stated = configuration.data["tracker"].pop("relations", None)
+    try:
+        for name in sorted(stated or {}):
+            none_mapped = host()
+            reported = with_host(
+                none_mapped, lambda: refused(lambda: link_relation(key(1), key(2), name))
+            )
+            check(
+                f"with no `relations` stated, `{name}` is refused and nothing is sent",
+                reported == f"tracker.relations.{name}" and none_mapped.writes() == [],
+                f"reported {reported!r} after {none_mapped.writes()}",
+            )
+        # ⛔ And the dependency's own type is never a relation, mapped or not.
+        configuration.data["tracker"]["relations"] = {"waits": {"type": BLOCKS}}
+        onto_blocks = host()
+        reported = with_host(
+            onto_blocks, lambda: refused(lambda: link_relation(key(1), key(2), "waits"))
+        )
+        check(
+            "a relation mapped onto the dependency's own type is refused before anything is sent",
+            reported == "tracker.relations.waits.type" and onto_blocks.writes() == [],
+            f"reported {reported!r} after {onto_blocks.writes()}",
+        )
+        read_through = host()
+
+        def _depend_then_read_as_mapped():
+            link_dependency(key(1), key(2))
+            return read_relations(key(1))
+
+        answered = with_host(read_through, _depend_then_read_as_mapped)
+        check(
+            "and a dependency is not read back as one even where a name maps that type",
+            got(answered, "relations") == [] and got(answered, "unnamed") == [],
+            f"read {answered!r}",
+        )
+    finally:
+        configuration.data["tracker"].pop("relations", None)
+        if stated is not None:
+            configuration.data["tracker"]["relations"] = stated
+
+    # ⚠️ A link of a type no name maps is reported, never dropped and never named.
+    unnamed_link = host(issues=None)
+    unnamed_link.issues[key(1)]["fields"]["issuelinks"] = [{
+        "id": "link-9",
+        "type": {"name": "<a type no name maps>", "inward": "is mirrored by",
+                 "outward": "mirrors"},
+        "outwardIssue": {
+            "key": key(2),
+            "fields": {"status": {"name": initial, "statusCategory": {"key": "new"}}},
+        },
+    }]
+    answered = with_host(unnamed_link, lambda: read_relations(key(1)))
+    check(
+        "a link of a type no name maps is reported under `unnamed` with the tracker's wording",
+        got(answered, "relations") == []
+        and [(entry.get("key"), entry.get("reads"))
+             for entry in got(answered, "unnamed") or []] == [(key(2), "this item mirrors it")],
+        f"read {answered!r}",
+    )
+    unread_relations = host(issues=None)
+    unread_relations.issues[key(1)]["fields"].pop("issuelinks", None)
+    reported = with_host(
+        unread_relations, lambda: unavailable(lambda: read_relations(key(1)))
+    )
+    check(
+        "an answer carrying no links field is a failed call, not an item with no relation",
+        reported is not None and "no links field" in reported,
+        f"got {reported!r}",
+    )
+    elsewhere_relations = host()
+    reported = with_host(
+        elsewhere_relations,
+        lambda: refused(lambda: link_relation(foreign(1), key(1), unsided[0] if unsided else "")),
+    )
+    check(
+        "a key from another project is refused before a relation is written",
+        reported == "tracker.project_key" and elsewhere_relations.writes() == [],
+        f"reported {reported!r} after {elsewhere_relations.writes()}",
+    )
+
     # --- searching ------------------------------------------------------------
     #
     # ⛔ The query is bounded by the project, and that is the **host's** rule
@@ -1887,6 +2245,57 @@ def self_test() -> int:
         ),
         f"states {QUERYABLE!r}",
     )
+
+    # --- what a search covers (§ 3) -------------------------------------------
+    #
+    # ⛔ The texts a term is matched in, and the fields beyond the three above, are
+    # the project's; every answer names what it searched.
+    answered = with_host(host(), lambda: search_items("dup"))
+    check(
+        "a project stating no texts matches the summary alone, as before, and says so",
+        'summary ~ "dup"' in str(got(answered, "jql"))
+        and "description" not in str(got(answered, "jql"))
+        and got(answered, "texts_searched") == ["title"]
+        and got(answered, "texts_not_searched") == [],
+        f"answered {answered!r}",
+    )
+    covering = _example_configuration()
+    covering.data["tracker"]["search"] = {
+        "texts": ["title", "body"], "fields": ["Parts", "Areas", "Sprint", "Words"],
+    }
+    bind(covering)
+    answered = with_host(host(), lambda: search_items("dup word"))
+    check(
+        "stated texts match each term in either, natively, and the answer says which",
+        '(summary ~ "dup" OR description ~ "dup")' in str(got(answered, "jql"))
+        and '(summary ~ "word" OR description ~ "word")' in str(got(answered, "jql"))
+        and got(answered, "texts_searched") == ["title", "body"],
+        f"answered {answered!r}",
+    )
+    for name, clause in (("Parts", 'component = "core"'), ("Areas", 'cf[10050] = "core"')):
+        answered = with_host(host(), lambda name=name: search_items(fields={name: "core"}))
+        check(
+            f"a listed list-valued field `{name}` filters by the clause the catalogue states",
+            clause in str(got(answered, "jql")),
+            f"sent {got(answered, 'jql')!r}",
+        )
+    for name, refused_on, why in (
+        ("Sprint", "tracker.search.fields", "states no clause"),
+        ("Words", "tracker.search.fields", "is marked unsearchable"),
+        ("Absent", "tracker.search.fields", "the site does not have"),
+        ("Story points", "tracker.operations.search_items.Story points", "is not listed"),
+    ):
+        if name == "Absent":
+            covering.data["tracker"]["search"]["fields"].append("Absent")
+        asked = host()
+        reported = with_host(
+            asked, lambda name=name: refused(lambda: search_items(fields={name: "x"})))
+        check(
+            f"a field that {why} is refused naming `{refused_on}`, never answered as no match",
+            reported == refused_on and not any("search" in call for call in asked.calls),
+            f"reported {reported!r} after {asked.calls}",
+        )
+    bind(configuration)
 
     # --- § 33's publishing set, by one bounded query --------------------------
     #

@@ -182,6 +182,52 @@ carries one root this is the root it has**, whatever an item carries; where the 
 `none` the root arrives on this role's invocation and the reply says so, which is a stated absence
 § 4.7 reports rather than a fault.
 
+**Then the specification copy that governs the item, after the list and before the claim** —
+[`§ 39 → The roles that read it while the work is done`](../../config/schema.md#the-roles-that-read-it-while-the-work-is-done-and-what-narrows-their-read)
+states who reads it, when and what each outcome means, and ⛔ **this file restates none of it**,
+the filing and implementing roles reading the same rule:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/spec_corpus.py" --role start \
+  --version <the value the item carries for the corpus's grouping> [--keyword <a term from the item>]…
+```
+
+- ⛔ **The version is read off the item and never worked out.** An item carrying none is run
+  without `--version`: a project that has this role read nothing still answers as it did, and
+  ⛔ **only the carrier's refusal for the missing version is the stop**, reported as unanswered.
+- ⛔ **A contradiction between the item and what comes back stops the start before the claim**,
+  reported with the ref it was read at. Whether there is one is this role's reading of the text and
+  not the carrier's.
+- ⚠️ **An unread answer names one fetch**: run it and read again, and a second unread answer is the
+  stop.
+- ⛔ **The reply carries the first line of the report as it came back** — which copy, the fallback,
+  *no corpus is configured*, or *not asked* — and never turns either of the last two into *nothing
+  contradicts the item*.
+
+**Then whether the work is already built, where the project runs that step here.**
+[`§ 42`](../../config/schema.md#42-whether-the-work-is-already-built-and-where-a-role-asks) states
+the step, the finding and what it does. ⛔ **None of it is restated here.** What is this role's is
+where the step falls: after the gate and before the claim, so a stop leaves no ref behind.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" decide --point start
+```
+
+- **It exits 3** ⇒ the project runs no step here. Nothing is read and the reply mentions none.
+- **It exits 0** ⇒ read the code at `<code-root>` against each acceptance bullet of the item, write
+  the finding in the form `built.py form` prints, and hand it over:
+
+  ```bash
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/built.py" check --file <the finding> --root <code-root>
+  ```
+
+  ⛔ **A refusal is fixed and handed over again**, never worked around. What comes back says what
+  this role does: **proceed** to the claim with the finding in the reply, or **stop** before the
+  claim with the finding put to the person. ⛔ **Nothing is closed, reopened or rewritten here.**
+  An item whose work is built is the person's to close.
+- ⚠️ **An auto-picked item that stops here is not skipped to the next candidate.** The finding is a
+  question about this item, and a pass that fell through would bury it.
+
 ## 4. The claim is the branch
 
 **The claim is the branch, and publishing the ref is what makes it one.** The rule, both arms of

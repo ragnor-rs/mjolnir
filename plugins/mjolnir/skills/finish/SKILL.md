@@ -159,6 +159,16 @@ the project measured holding two different modes held them in two of its own car
 rides an item's branch into a pull request, which is the reason this role's entry is usually the
 stricter one. ⚠️ A mode that merely looks like the project's answer is the wrong entry read.
 
+⛔ **Then ask what the branch admits, with the staged paths, before the commit**
+([`§ 6 → What a commit may contain on a given branch`](../../config/schema.md#what-a-commit-may-contain-on-a-given-branch),
+which states every verdict and what each one does):
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <the staged paths> --on-branch <the item's branch>
+```
+
+The reply names every path it left out. A `stop` is a stop of this pass, with those paths named.
+
 A dirty tree here is **derived** from the branch model rather than configured, which is § 6's
 derivation over [`§ 10`](../../config/schema.md#10-branch-model)'s key. Report what was found,
 state plainly that nothing was stashed or moved, and leave it alone.

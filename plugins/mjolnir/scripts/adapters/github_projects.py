@@ -101,6 +101,7 @@ from adapters import _code_host_comments as conversation  # noqa: E402
 from adapters import _code_host_dependency as relation  # noqa: E402
 from adapters import _code_host_milestone as milestone  # noqa: E402
 from adapters import _code_host_type as native_type  # noqa: E402
+from adapters import _search as coverage  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
 
 KIND = "github-projects"
@@ -930,6 +931,22 @@ fragment itemPage on ProjectV2ItemConnection {
 }
 """
 
+# The same read with each card's body in it, asked only where a search matches
+# terms in the body (§ 3). ⚠️ Not the default read: every body on the board in one
+# listing is what a search matching titles alone never needed.
+ITEMS_WITH_BODIES_QUERY = (
+    ITEMS_QUERY.replace("        title\n        state\n", "        title\n        body\n        state\n", 1)
+    .replace("... on PullRequest { number title state url }",
+             "... on PullRequest { number title body state url }", 1)
+    .replace("... on DraftIssue { title }", "... on DraftIssue { title body }", 1)
+)
+
+# The texts a term is matched in, by § 3's names, each the key a card entry
+# carries it under. ⚠️ Before `tracker.search.texts` existed the title alone was
+# matched, which is what a project stating none keeps.
+SEARCHABLE = ("title", "body")
+SEARCHED_BEFORE = ("title",)
+
 # What a card's content is, by the host's typename. A board holds all three, and
 # only the first is addressable by the number a role carries.
 CONTENT_KINDS = {
@@ -956,7 +973,7 @@ def card_entry(node: dict, status_field: str | None) -> dict:
         if "labels" in content
         else []
     )
-    return {
+    entry = {
         "kind": CONTENT_KINDS.get(typename, typename),
         "number": content.get("number"),
         "title": content.get("title"),
@@ -967,9 +984,20 @@ def card_entry(node: dict, status_field: str | None) -> dict:
         "fields": fields,
         "status": fields.get(status_field) if status_field else None,
     }
+    # ⛔ A body that was not read is left out rather than carried as `None`: an
+    # unread body is never a card with an empty one.
+    if "body" in content:
+        entry["body"] = content.get("body")
+    return entry
 
 
-def matches(entry: dict, words: list[str], labels: list[str], fields: dict) -> bool:
+def matches(
+    entry: dict,
+    words: list[str],
+    labels: list[str],
+    fields: dict,
+    texts: list[str] | tuple = ("title",),
+) -> bool:
     """Whether one card answers the query.
 
     ⛔ Matched on the title and the card's own field values, which is what a board
@@ -983,15 +1011,17 @@ def matches(entry: dict, words: list[str], labels: list[str], fields: dict) -> b
     direction is deliberate: this is the duplicate check, and the failure that
     costs something is a near-duplicate the search did not surface, not a
     candidate the role reads and sets aside.
+
+    ⛔ **A term matches in any of the texts searched** (§ 3), and a field holding
+    several values matches when any one of them is the value asked for.
     """
-    title = (entry.get("title") or "").lower()
-    if any(word not in title for word in words):
+    if not coverage.term_in(words, [entry.get(text) or "" for text in texts]):
         return False
     carried = {label.get("name") for label in entry.get("labels") or []}
     if any(label not in carried for label in labels):
         return False
     for name, value in (fields or {}).items():
-        if entry["fields"].get(name) != value:
+        if not coverage.holds(entry["fields"].get(name), value):
             return False
     return True
 
@@ -1037,19 +1067,34 @@ def search_items(
     answer *is* empty -- a hit proves the label exists and spends no call proving
     it -- while a field name is checked against the board already resolved, which
     costs nothing.
+
+    ⛔ **The texts a term is matched in are `tracker.search.texts`** (§ 3): the
+    title from the board read, and the body by asking the same read for it --
+    where it is asked for and only then. ⚠️ A field listed in
+    `tracker.search.fields` that the board does not have is refused naming that
+    list, since the list is what said it could be asked about.
     """
     owner, number = _address()
     status_field = _configuration().get(STATUS_FIELD_NAME)
     status_field = str(status_field) if status_field else None
+    listed = coverage.stated_fields(_configuration())
     for name in (fields or {}):
-        _field(name, key=f"tracker.project.field.{name}")
+        _field(name, key=coverage.FIELDS_KEY if name in listed
+               else f"tracker.project.field.{name}")
+    words = [word for word in (terms or "").lower().split() if word]
+    searched, missed = coverage.coverage(
+        _configuration(), reachable=SEARCHABLE, default=SEARCHED_BEFORE, terms=bool(words)
+    )
+    bodies = bool(words) and "body" in searched
     nodes = _paged(
-        lambda cursor: _page(owner, number, cursor),
+        lambda cursor: _page(owner, number, cursor, bodies=bodies),
         what=f"the items of project {number}",
     )
     entries = [card_entry(node, status_field) for node in nodes]
-    words = [word for word in (terms or "").lower().split() if word]
-    matched = [entry for entry in entries if matches(entry, words, labels or [], fields or {})]
+    matched = [
+        entry for entry in entries
+        if matches(entry, words, labels or [], fields or {}, searched)
+    ]
     if labels and not matched:
         unknown = [label for label in labels if not _label_exists(_repo(), label)]
         if unknown:
@@ -1060,20 +1105,21 @@ def search_items(
                 f"{_repo()} has -- so the empty answer is this search never "
                 "running, not this board holding no such item."
             )
-    return {
+    return coverage.reported({
         "terms": terms or "",
         "labels": list(labels or []),
         "fields": dict(fields or {}),
-        "matched_on": "title, labels and field values",
+        "matched_on": "the searched texts, labels and field values",
         "scanned": len(entries),
         "limit": limit,
         "at_limit": len(matched) > limit,
         "items": matched[:limit],
-    }
+    }, searched, missed)
 
 
-def _page(owner: str, number: int, cursor):
-    owned = _graphql(ITEMS_QUERY, owner=owner, number=number, after=cursor)["repositoryOwner"]
+def _page(owner: str, number: int, cursor, *, bodies: bool = False):
+    query = ITEMS_WITH_BODIES_QUERY if bodies else ITEMS_QUERY
+    owned = _graphql(query, owner=owner, number=number, after=cursor)["repositoryOwner"]
     if owned is None or owned.get("projectV2") is None:
         raise HostUnavailable(
             f"`{owner}` has no project number {number} this credential can see, so "
@@ -1998,9 +2044,17 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # about one grouping, and the endpoint that would do it is the board's settings.
 # ⚠️ So § 3's stated fallback is what the bootstrap gets here: the run names the
 # grouping it would have created and writes nothing anywhere else.
+#
+# `link_relation` and `read_relations` are absent for the plain-issues module's
+# reason, a card being a view over an issue: the host records the dependency and
+# a parent's sub-issues between issues and no link type a project can name, so a
+# relation that blocks nothing stays the prose line a body carries -- § 3's stated
+# fallback, and the same answer that module gives on the same host.
 DELIBERATELY_ABSENT = (
     "mark_grouping_released",
     "create_grouping",
+    "link_relation",
+    "read_relations",
     "checklist_read",
     "checklist_write",
     "checklist_item_delete",

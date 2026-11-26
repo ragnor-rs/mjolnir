@@ -113,6 +113,7 @@ if _SCRIPTS not in sys.path:
 import port  # noqa: E402
 from adapters._policy import forbidden  # noqa: E402
 from adapters import _comments  # noqa: E402
+from adapters import _search as coverage  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
 
 KIND = "trello"
@@ -898,8 +899,20 @@ def checklist_read(number: int) -> dict:
 # power-up and whose read shape is unmeasured here.
 QUERYABLE = ("status", "state", "title")
 
+# The texts a term is matched in, by § 3's names, each the key a card entry carries
+# it under. ⚠️ Before `tracker.search.texts` existed the title alone was matched,
+# which is what a project stating none keeps.
+SEARCHABLE = ("title", "body")
+SEARCHED_BEFORE = ("title",)
 
-def matches(entry: dict, words: list[str], labels: list[str], fields: dict) -> bool:
+
+def matches(
+    entry: dict,
+    words: list[str],
+    labels: list[str],
+    fields: dict,
+    texts: list[str] | tuple = ("title",),
+) -> bool:
     """Whether one card answers the query.
 
     ⚠️ **Every term is a substring of the title, in any order and whatever the
@@ -908,11 +921,10 @@ def matches(entry: dict, words: list[str], labels: list[str], fields: dict) -> b
     failure that costs something is a near-duplicate the search did not surface,
     not a candidate the role reads and sets aside.
 
-    ⛔ Matched on the title and never the body. A body is one read per card, and
-    the layer that judges a candidate does that read itself.
+    ⛔ **A term matches in any of the texts searched** (§ 3) -- the title, and the
+    description where the search asked for it.
     """
-    title = (entry.get("title") or "").lower()
-    if any(word not in title for word in words):
+    if not coverage.term_in(words, [entry.get(text) or "" for text in texts]):
         return False
     carried = {label.get("name") for label in entry.get("labels") or []}
     if any(label not in carried for label in labels):
@@ -951,35 +963,71 @@ def search_items(
     duplicate check that never ran. ⚠️ A label is resolved against the board
     already read, which costs nothing, and ⚠️ an **ambiguous** label name is
     refused as well: two labels with one name would match two different sets.
+
+    ⛔ **The texts a term is matched in are `tracker.search.texts`** (§ 3). The
+    description is matched by one more read of the same index asking for it,
+    made only where the body is searched, and held to the same ceiling. ⛔ **A
+    field listed in `tracker.search.fields` is refused all the same**: anything
+    beyond the three above is a custom field, which needs a power-up and whose
+    shape is unmeasured here.
     """
     board = _board()
+    listed = coverage.stated_fields(_configuration())
     for name in fields or {}:
-        if name not in QUERYABLE:
-            raise ConfigError(
-                f"tracker.operations.search_items.{name}",
-                f"is not a field this tracker answers a query on. Queryable here "
-                f"are: {', '.join(QUERYABLE)}. Anything else on a card is a custom "
-                "field, which needs a power-up on the board and whose shape is "
-                "unmeasured here -- so a query on it is refused rather than "
-                "answered with the cards that do not match.",
+        if name in QUERYABLE:
+            continue
+        if name in listed:
+            raise coverage.unqueryable(
+                name,
+                "anything on a card beyond its title, list and archived state is a "
+                "custom field, which needs a power-up and whose shape is unmeasured "
+                "here.",
             )
+        raise coverage.not_admitted(name, QUERYABLE)
     for name in labels or []:
         _label_named(name, key="tracker.operations.search_items")
-    entries = [_shaped(card, board) for card in board["cards"]]
     words = [word for word in (terms or "").lower().split() if word]
+    searched, missed = coverage.coverage(
+        _configuration(), reachable=SEARCHABLE, default=SEARCHED_BEFORE, terms=bool(words)
+    )
+    descriptions = _descriptions(board["board"]) if words and "body" in searched else {}
+    entries = []
+    for card in board["cards"]:
+        entry = _shaped(card, board)
+        if str(card.get("id")) in descriptions:
+            entry["body"] = descriptions[str(card.get("id"))]
+        entries.append(entry)
     matched = [
-        entry for entry in entries if matches(entry, words, list(labels or []), fields or {})
+        entry for entry in entries
+        if matches(entry, words, list(labels or []), fields or {}, searched)
     ]
-    return {
+    return coverage.reported({
         "terms": terms or "",
         "labels": list(labels or []),
         "fields": dict(fields or {}),
-        "matched_on": "the title, the labels, the list and whether the card is archived",
+        "matched_on": "the searched texts, the labels, the list and whether the card is archived",
         "scanned": len(entries),
         "limit": limit,
         "at_limit": len(matched) > limit,
         "items": matched[:limit],
-    }
+    }, searched, missed)
+
+
+def _descriptions(board: str) -> dict:
+    """Every card's description, by card id, in one read of the board's index.
+
+    ⛔ Held to the collection ceiling as the index read is: an answer filling it
+    cannot be told from one the host cut, and a card missing here would be a
+    description the search reports it matched in and never read.
+    """
+    cards = _call("GET", f"/boards/{board}/cards/all", fields="id,desc")
+    if isinstance(cards, list) and len(cards) >= COLLECTION_CEILING:
+        raise HostUnavailable(
+            f"the descriptions of board `{board}` came back with {len(cards)} card(s), "
+            f"which is the {COLLECTION_CEILING} a collection answers at most, so an "
+            "answer that fills it cannot be told from one the host cut."
+        )
+    return {str(card.get("id")): card.get("desc") or "" for card in cards or []}
 
 
 # --- writing -----------------------------------------------------------------
@@ -1596,9 +1644,15 @@ ADAPTER = port.Adapter(binder=bind, operations={
 # so there is no object of that kind to create, read or mark. ⚠️ All three move
 # together the moment a project here carries one, which is one condition rather
 # than three.
+#
+# `link_relation` and `read_relations` join the dependency's pair for its reason:
+# with no relation between two cards there is no link type to name, so a relation
+# that blocks nothing stays prose on the card, which is § 3's stated fallback.
 DELIBERATELY_ABSENT = (
     "link_dependency",
     "read_blockers",
+    "link_relation",
+    "read_relations",
     "link_for_close",
     "read_closing_change",
     "read_closing_list",

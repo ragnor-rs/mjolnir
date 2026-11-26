@@ -115,6 +115,7 @@ if _SCRIPTS not in sys.path:
 
 import port  # noqa: E402
 from adapters._policy import forbidden  # noqa: E402
+from adapters import _search as coverage  # noqa: E402
 from adapters import _comments  # noqa: E402
 from port import ConfigError, HostUnavailable  # noqa: E402
 
@@ -203,6 +204,18 @@ PAGES_AT_MOST = 50
 # answers in, which is what lets a caller filter on what it just read.
 QUERYABLE = ("status", "type", "priority")
 
+# The texts a term is matched in, by § 3's names, and the clause this host matches
+# each with. ⛔ Both natively: the host's text clause searches a field's words, so
+# a body is matched by the query rather than by reading every description back.
+# ⚠️ Before `tracker.search.texts` existed the summary alone was matched, which is
+# what a project stating none keeps.
+TEXT_CLAUSES = {"title": "summary", "body": "description"}
+SEARCHED_BEFORE = ("title",)
+
+# A clause name this host takes unquoted: a plain word, or a custom field's
+# `cf[N]`. ⚠️ Anything else -- a display name with a space in it -- is quoted.
+BARE_CLAUSE = re.compile(r"^(?:[A-Za-z_][A-Za-z0-9_]*|cf\[\d+\])$")
+
 # What the operations above own, by the **id** this tracker gives the field.
 # ⛔ Refused with that operation named, rather than falling through to the
 # refusal below it: a facet pointing here is pointing at a value this procedure
@@ -244,6 +257,9 @@ SHAPES = {
     "priority": NAMED,
     "issuetype": NAMED,
     "version": NAMED,
+    # A resolution, written by the name the site gives it -- the field a move to a
+    # finished status was found to need, stated in § 3's `transitions.fields`.
+    "resolution": NAMED,
     "option": OPTION,
 }
 
@@ -916,6 +932,10 @@ def _links_of(issue: dict) -> dict:
         elif kind == BLOCKS and outward:
             blocks.append(entry)
         else:
+            # ⚠️ The side is carried as well as the sentence, because the
+            # relation names a project maps (§ 3) are keyed on it: the sentence
+            # is the tracker's wording, and two types may share one.
+            entry["side"] = "inward" if inward else "outward"
             entry["reads"] = (
                 f"this item {(link.get('type') or {}).get('inward')} it"
                 if inward
@@ -1078,6 +1098,8 @@ def as_query(
     terms: str | None,
     labels: list[str] | None,
     fields: dict | None,
+    *,
+    texts: list[str] | tuple = ("summary",),
 ) -> str:
     """The query one search sends, bounded by the project.
 
@@ -1094,7 +1116,10 @@ def as_query(
     """
     clauses = [f"project = {_quoted(project, what='the project key')}"]
     for word in (terms or "").split():
-        clauses.append(f"summary ~ {_quoted(word, what='a term')}")
+        # ⛔ A term matches in **any** searched text (§ 3), so the texts are one
+        # disjunction per term and the terms stay a conjunction.
+        either = [f"{text} ~ {_quoted(word, what='a term')}" for text in texts]
+        clauses.append(either[0] if len(either) == 1 else f"({' OR '.join(either)})")
     for label in labels or []:
         clauses.append(f"labels = {_quoted(label, what='a label')}")
     for name, value in (fields or {}).items():
@@ -1129,18 +1154,37 @@ def search_items(
     difference from the implementation next door: this host answers an unknown
     label with a refusal naming it rather than with an empty list, so the
     distinction it has to buy with an extra call arrives here for free.
+
+    ⛔ **The texts a term is matched in are `tracker.search.texts`** (§ 3), each
+    by the host's own text clause, and the answer names what it searched. ⛔ **A
+    field beyond the three above is admitted by `tracker.search.fields` alone**,
+    resolved by name against the site's own catalogue and queried by the clause
+    name the catalogue states for it -- so a field holding several values, a
+    component's or a custom one's, is asked about natively and matches when any
+    of its values is the one asked for. A listed field the site does not have, or
+    holds and marks unsearchable, is refused naming the list. ⚠️ The catalogue's
+    `searchable` and `clauseNames` are read from the published reference and not
+    yet from a live site.
     """
-    for name in fields or {}:
-        if name not in QUERYABLE:
-            raise ConfigError(
-                f"tracker.operations.search_items.{name}",
-                f"is not a field this tracker answers a query on here. Queryable "
-                f"are: {', '.join(QUERYABLE)}. Anything else is a field whose "
-                "query shape is site-specific -- a name resolves to an id per "
-                "site, and two sites spell the same question differently -- so it "
-                "is refused rather than answered with the items that do not match.",
-            )
-    jql = as_query(_project_key(), terms, labels, fields)
+    admitted = coverage.stated_fields(_configuration())
+    asked: dict = {}
+    for name, value in (fields or {}).items():
+        if name in QUERYABLE:
+            asked[name] = value
+        elif name in admitted:
+            asked[_clause_for(name)] = value
+        else:
+            raise coverage.not_admitted(name, QUERYABLE)
+    searched, missed = coverage.coverage(
+        _configuration(),
+        reachable=tuple(TEXT_CLAUSES),
+        default=SEARCHED_BEFORE,
+        terms=bool((terms or "").split()),
+    )
+    jql = as_query(
+        _project_key(), terms, labels, asked or None,
+        texts=[TEXT_CLAUSES[text] for text in searched],
+    )
     found: list[dict] = []
     token, pages, cut = None, 0, False
     while True:
@@ -1156,7 +1200,7 @@ def search_items(
         if pages >= PAGES_AT_MOST:
             cut = True
             break
-    return {
+    return coverage.reported({
         "jql": jql,
         "terms": terms or "",
         "labels": list(labels or []),
@@ -1167,7 +1211,24 @@ def search_items(
         # bound, and this module's ceiling on how far it follows the cursor.
         "at_limit": len(found) >= limit or cut,
         "items": found[:limit],
-    }
+    }, searched, missed)
+
+
+def _clause_for(name: str) -> str:
+    """The clause a listed field is queried by, from the site's catalogue.
+
+    ⛔ Refused naming `tracker.search.fields` where the site has no such field,
+    has two, marks it unsearchable or states no clause for it -- each a field
+    nothing could ask about, which an empty answer must not stand in for.
+    """
+    found = _field_named(name, key=coverage.FIELDS_KEY)
+    if found.get("searchable") is False:
+        raise coverage.unqueryable(name, "this site marks it unsearchable.")
+    clauses = [str(clause) for clause in found.get("clauseNames") or [] if clause]
+    if not clauses:
+        raise coverage.unqueryable(name, "this site states no clause a query names it by.")
+    clause = clauses[0]
+    return clause if BARE_CLAUSE.match(clause) else _quoted(clause, what="a field's clause")
 
 
 # --- writing -----------------------------------------------------------------
@@ -1476,16 +1537,121 @@ def create_item(
     return item
 
 
-def transitions(key: str) -> list[dict]:
+def transitions(key: str, *, with_fields: bool = False) -> list[dict]:
     """Every move this item can make right now, with the status each leads to.
 
     ⚠️ Right **now**, for this account: what is on offer depends on the item's
     type, on where it stands and on what the workflow lets this credential do.
     Measured on a live site, one type offered three of the project's nine
     statuses and another offered all nine.
+
+    `with_fields` asks the host for the fields each move offers, keyed by the
+    field's id. ⚠️ Asked for only where a move states fields to carry, so a
+    project stating none makes exactly the call it made before that key existed.
     """
-    answer = _call("GET", f"/issue/{_addressed(key, operation='transitions')}/transitions") or {}
+    params = {"expand": "transitions.fields"} if with_fields else None
+    answer = _call(
+        "GET",
+        f"/issue/{_addressed(key, operation='transitions')}/transitions",
+        params=params,
+    ) or {}
     return list(answer.get("transitions") or [])
+
+
+# § 3's statement of the fields a move to a status carries.
+MOVE_FIELDS = "tracker.transitions.fields"
+
+
+def _move_fields(status: str) -> list[tuple[str, object]]:
+    """The fields and values this project states for a move to one status (§ 3)."""
+    return [
+        (str(entry["field"]), entry.get("value"))
+        for entry in _configuration().get(MOVE_FIELDS) or []
+        if isinstance(entry, dict) and str(entry.get("status")) == str(status)
+    ]
+
+
+def _outside_allowed(offered: dict, shaped) -> str | None:
+    """The values a move takes in one field where `shaped` is not among them.
+
+    ⚠️ Only where the move lists the values it takes and the value is a named
+    one: a field listing none takes whatever its type takes, which
+    `_shaped_value` has already held.
+    """
+    allowed = offered.get("allowedValues") if isinstance(offered, dict) else None
+    if not isinstance(allowed, list) or not isinstance(shaped, dict) or len(shaped) != 1:
+        return None
+    member = str(next(iter(shaped.values()))).casefold()
+    named = sorted({
+        str(one[part])
+        for one in allowed if isinstance(one, dict)
+        for part in ANSWERED_AS if one.get(part) is not None
+    })
+    if member in {name.casefold() for name in named}:
+        return None
+    return ", ".join(named) or "nothing at all"
+
+
+def _move_body(status: str, move: dict, wanted: list, key: str) -> dict:
+    """`{id: shaped}` for each stated field, every refusal made before the move."""
+    offered = move.get("fields") if isinstance(move.get("fields"), dict) else {}
+    body = {}
+    for name, value in wanted:
+        guard = f"{MOVE_FIELDS}.{name}"
+        found = _field_named(name, key=guard)
+        if found["id"] not in offered:
+            raise ConfigError(
+                MOVE_FIELDS,
+                f"states `{name}` for a move to `{status}`, and the transition "
+                f"that reaches it from where item {key} stands does not offer "
+                f"that field. Offered: "
+                f"{', '.join(sorted(map(str, offered))) or 'no field at all'}. "
+                "⛔ The move is not made: the host would refuse the field or drop "
+                "it, and either way the item would reach the status without what "
+                "the project says the move carries.",
+            )
+        shaped = _shaped_value(found, value, guard=guard, named=name, where="set_state")
+        outside = _outside_allowed(offered[found["id"]], shaped)
+        if outside is not None:
+            raise ConfigError(
+                MOVE_FIELDS,
+                f"states `{value}` in `{name}` for a move to `{status}`, which that "
+                f"transition does not take. It takes: {outside}. The move is not made.",
+            )
+        body[found["id"]] = shaped
+    return body
+
+
+def _not_held(wanted: dict, item: dict) -> str:
+    """Which stated fields did not read back as written, in words; empty for none.
+
+    ⚠️ A named value is compared without case, because this host matches a name
+    that way and answers with its own spelling.
+    """
+    held = item.get("fields") or {}
+    short = []
+    for name, shaped in wanted.items():
+        back = held.get(name)
+        if isinstance(shaped, list):
+            missing = _not_landed({name: shaped}, item)
+            landed = not missing
+        elif isinstance(shaped, dict) and shaped.get("type") == "doc":
+            landed = back is not None and as_text(back) == as_text(shaped)
+        elif isinstance(shaped, dict) and set(shaped) & set(IDENTIFIED_BY.values()):
+            member = str(next(iter(shaped.values()))).casefold()
+            landed = isinstance(back, dict) and member in {
+                str(back[part]).casefold()
+                for part in ANSWERED_AS if back.get(part) is not None
+            }
+        elif isinstance(shaped, dict):
+            landed = isinstance(back, dict) and all(
+                back.get(part) == value for part, value in shaped.items()
+            )
+        else:
+            landed = back == shaped
+        if not landed:
+            short.append(f"`{name}`")
+    return ", ".join(short)
 
 
 def set_state(key: str, *, status: str) -> dict:
@@ -1503,11 +1669,20 @@ def set_state(key: str, *, status: str) -> dict:
     returned unwritten, so a role advancing to a role the item already holds
     spends no write -- and does not meet a workflow that offers no transition
     from a status to itself.
+
+    ⛔ **The move carries the fields § 3's `transitions.fields` states for this
+    status, and nothing else.** Each is resolved by name, held to the fields the
+    transition offers and the values it takes, and shaped by its type -- all
+    before the move, so a refusal is a move that did not happen. The item is then
+    read back with its status and every stated field, and a field that did not
+    land is reported rather than the move retried: the status has moved either
+    way.
     """
     item = read_item(key)
     if item["status"] == str(status):
         return item
-    offered = transitions(key)
+    wanted = _move_fields(status)
+    offered = transitions(key, with_fields=bool(wanted))
     matching = [
         move for move in offered if ((move.get("to") or {}).get("name")) == str(status)
     ]
@@ -1538,13 +1713,32 @@ def set_state(key: str, *, status: str) -> dict:
             "the type, since what a workflow offers differs between them.",
         )
     move = matching[0]
-    # ⚠️ A transition the host marks as having a screen may require a field to be
-    # filled as part of the move. Nothing is sent with it: a value this module
-    # invented would be written onto the item as though somebody had chosen it,
-    # so a screen with a required field comes back as a failure naming the
-    # transition -- which is the remedy being a person's rather than a default's.
-    _call("POST", f"/issue/{_addressed(key)}/transitions", body={"transition": {"id": move.get("id")}})
-    return read_item(key)
+    fields = _move_body(status, move, wanted, key)
+    body = {"transition": {"id": move.get("id")}}
+    if fields:
+        body["fields"] = fields
+    # ⚠️ A transition whose screen requires a field this project states nothing
+    # for comes back as a failure naming the transition. Nothing is invented for
+    # it: a value this module chose would be written onto the item as though
+    # somebody had chosen it, so the remedy is the project stating the field.
+    _call("POST", f"/issue/{_addressed(key)}/transitions", body=body)
+    if not wanted:
+        return read_item(key)
+    names = [name for name, _ in wanted]
+    moved = read_item(key, fields=names)
+    short = _not_held(
+        {name: fields[_field_named(name, key=MOVE_FIELDS)["id"]] for name in names},
+        moved,
+    )
+    if moved.get("status") != str(status) or short:
+        raise HostUnavailable(
+            f"item {key} was moved and read back in `{moved.get('status')}`"
+            f"{', without ' + short if short else ''}, where the move was to "
+            f"`{status}` carrying {', '.join(f'`{name}`' for name in names)}. ⛔ "
+            "Reported rather than retried: a second move from wherever the item "
+            "now stands is a different transition."
+        )
+    return moved
 
 
 def set_field(key: str, field: str, value) -> dict:
@@ -1810,6 +2004,108 @@ def read_blockers(key: str) -> dict:
     return {"key": item["key"], "blockers": list(item["blocked_by"])}
 
 
+def _relation(name: str) -> tuple[str, str | None]:
+    """The link type and side the project maps one relation name onto (§ 3).
+
+    ⛔ **A name the project does not map is refused, never defaulted**, so a
+    project stating no `relations` links nothing and files as it did before the
+    key existed. ⛔ **And a name mapped onto the dependency's own type is refused
+    before anything is sent**: that link is `read_blockers`'s, and the same link
+    read as a relation would hand a readiness gate a blocker it cannot see, or a
+    relation it would hold an item back on.
+    """
+    mapped = (_configuration().get("tracker.relations") or {}).get(name)
+    if not isinstance(mapped, dict):
+        raise ConfigError(
+            f"tracker.relations.{name}",
+            "is not a relation this project maps, so nothing is linked. A role "
+            "links only what `tracker.relations` names, and keeps any other "
+            "relation as prose in the body (§ 3).",
+        )
+    if mapped.get("type") == BLOCKS:
+        raise ConfigError(
+            f"tracker.relations.{name}.type",
+            f"is `{BLOCKS}`, the type a dependency is written as. That link is "
+            "`link_dependency`'s, and a relation never answers a readiness check "
+            "(§ 3).",
+        )
+    return mapped["type"], mapped.get("side")
+
+
+def link_relation(item: str, other: str, relation: str) -> dict:
+    """One item recorded as standing in a non-blocking relation to another.
+
+    ⛔ **The side is what `item` reads, and the call's positions run the other
+    way** -- the inversion `link_dependency` documents: the issue a call puts in
+    `outwardIssue` is the one that reads the type's **inward** wording. So an
+    item reading `inward` goes in the outward position, and the suite holds that
+    by reading the link back from both ends rather than by reading this call.
+
+    ⚠️ A type worded the same both ways states no side and is written as
+    `outward`: either position reads the same there, and the read-back answers
+    with the unsided name from either end.
+
+    ⛔ Both keys go through `read_item` first, so the project guard covers the
+    write exactly as it covers the dependency's.
+    """
+    kind, side = _relation(relation)
+    on_item = read_item(item)["key"]
+    on_other = read_item(other)["key"]
+    reads_inward = side == "inward"
+    _call(
+        "POST",
+        "/issueLink",
+        body={
+            "type": {"name": kind},
+            "inwardIssue": {"key": on_other if reads_inward else on_item},
+            "outwardIssue": {"key": on_item if reads_inward else on_other},
+        },
+    )
+    return {"item": on_item, "other": on_other, "relation": relation}
+
+
+def read_relations(key: str) -> dict:
+    """The items this one is related to, each under the project's own name.
+
+    The read half of `link_relation`, and ⛔ **it makes no call of its own**, for
+    `read_blockers`'s reason: the links arrive with the item, and which side an
+    entry is read from is `_links_of`'s reading rather than a second one here.
+
+    ⛔ **The dependency's own type never appears here**: `_links_of` sorts it into
+    the blocker lists before anything reaches `links`, so this answer and
+    `read_blockers`'s cannot both carry one link.
+
+    ⚠️ **A link of a type the project maps no name for is carried under
+    `unnamed`**, with the wording the tracker gave it -- never dropped, which
+    would read as fewer relations than the item has, and never assigned the
+    nearest name, which would read as a relation nobody made.
+
+    ⛔ **An answer that did not carry the links at all is a failed call**, by
+    `read_blockers`'s rule: unread is not none.
+    """
+    item = read_item(key)
+    if "links" not in item:
+        raise HostUnavailable(
+            f"the answer for {key} carried no links field, so what it is related "
+            "to could not be read. An unreadable answer is not the same as an "
+            "item with no recorded relation."
+        )
+    names = {}
+    for name, mapped in (_configuration().get("tracker.relations") or {}).items():
+        if isinstance(mapped, dict) and mapped.get("type") != BLOCKS:
+            for side in ((mapped.get("side"),) if mapped.get("side") else ("inward", "outward")):
+                names[(mapped.get("type"), side)] = name
+    named, unnamed = [], []
+    for link in item["links"]:
+        entry = {name: link.get(name) for name in ("key", "title", "url", "status", "state")}
+        relation = names.get((link.get("type"), link.get("side")))
+        if relation is None:
+            unnamed.append({**entry, "reads": link.get("reads")})
+        else:
+            named.append({**entry, "relation": relation})
+    return {"key": item["key"], "relations": named, "unnamed": unnamed}
+
+
 def advance_on_merge(key: str) -> dict:
     """Whether something other than this credential moved the item.
 
@@ -2041,6 +2337,8 @@ ADAPTER = port.Adapter(binder=bind, operations={
     "assign": assign,
     "link_dependency": link_dependency,
     "read_blockers": read_blockers,
+    "link_relation": link_relation,
+    "read_relations": read_relations,
     "advance_on_merge": advance_on_merge,
     "grouping_items": grouping_items,
     # ⛔ The operations this tracker has nothing to implement against are named
