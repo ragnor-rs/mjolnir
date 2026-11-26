@@ -3146,6 +3146,9 @@ class Config:
             "reached_by": entry["invoke"],
             DEPLOY_CODE_ROOT: entry.get(DEPLOY_CODE_ROOT),
             "choices": shown,
+            # ⚠️ Empty where the entry states none, which is a stated absence the
+            # carrier reading it reports rather than a list of conditions all met.
+            "tree": [dict(one) for one in entry.get("tree") or ()],
         }
         if entry["invoke"] != "command":
             # ⚠️ The two halves cannot meet: a name in both is refused at the load.
@@ -5132,6 +5135,7 @@ def _validate_deploy(data: dict, facts: dict, mapped_roles: set) -> None:
                         f"{where}.inputs", "names an input that is not a string (§ 33)."
                     )
         _validate_choices(where, entry, facts)
+        _validate_tree(where, entry, facts)
         # ⛔ § 16's list, cited rather than given a second grammar here -- the
         # division § 17 already has with the same section. What this facet does
         # with it is hold its shape and name it; evaluating a precondition is
@@ -5480,6 +5484,93 @@ def _validate_choices(where: str, entry: dict, facts: dict) -> None:
                 path,
                 f"places the choice {name!r}, which is read in a `command` target's "
                 "`command` and nowhere else (§ 33).",
+            )
+
+
+def _validate_tree(where: str, entry: dict, facts: dict) -> None:
+    """§ 33's `tree` on one entry, which no marker on the surface can reach.
+
+    ⚠️ An entry that omits the key is held to nothing here: a target stating no
+    condition reports what is uncommitted and holds nothing on it, as before.
+    """
+    if "tree" not in entry:
+        return
+    at = f"{where}.tree"
+    # ⛔ The shape before the list, for the reason `command` and `ref` are refused
+    # in both directions above: a dispatch is built by the host from `ref`, so a
+    # condition on a local tree beside one is a fact nothing reads.
+    if entry.get("invoke") != "command":
+        raise ConfigError(
+            at,
+            f"is stated beside `invoke: {entry.get('invoke')}`, which builds from "
+            "`ref` on the host and runs from no local tree (§ 33). Only a `command` "
+            "target states one.",
+        )
+    conditions = entry["tree"]
+    if not isinstance(conditions, list) or not conditions:
+        raise ConfigError(
+            at,
+            "must be a non-empty list of the conditions the tree is held to (§ 33); "
+            "omit it where nothing is required of the tree.",
+        )
+    prefix = "deploy.tree."
+    declared = {
+        path[len(prefix):] for path in facts["declared"] if path.startswith(prefix)
+    }
+    if not declared:
+        raise ConfigError(
+            at,
+            "the surface declares no key under this one, so a condition could be "
+            "held to nothing; § 33 states a condition's keys in the entry's own fence.",
+        )
+    kinds = vocabulary(facts, "deploy.tree.condition", "a deploy tree condition")
+    holds = vocabulary(facts, "deploy.tree.holds", "what a tree condition holds")
+    seen: list[str] = []
+    for index, stated in enumerate(conditions):
+        here = f"{at}[{index}]"
+        if not isinstance(stated, dict):
+            raise ConfigError(
+                here, "must be a mapping stating a condition and what it holds (§ 33)."
+            )
+        for key in stated:
+            if key not in declared:
+                raise ConfigError(
+                    f"{here}.{key}",
+                    "is a key § 33 does not declare on a tree condition, so nothing "
+                    f"reads it. The keys it declares are: {', '.join(sorted(declared))}.",
+                )
+        kind = stated.get("condition")
+        if kind not in kinds:
+            raise ConfigError(
+                f"{here}.condition",
+                f"is {kind!r}; the surface states {' | '.join(kinds)} (§ 33).",
+            )
+        if kind in seen:
+            raise ConfigError(
+                f"{here}.condition",
+                f"states {kind!r} a second time (§ 33), so one reading would hold two "
+                "things and the list would say which only by its order.",
+            )
+        seen.append(kind)
+        if stated.get("holds") not in holds:
+            raise ConfigError(
+                f"{here}.holds",
+                f"is {stated.get('holds')!r}; the surface states {' | '.join(holds)} "
+                "(§ 33). What a condition not met stops is the entry's to state.",
+            )
+        if kind == "on_branch":
+            branch = stated.get("branch")
+            if not isinstance(branch, str) or not branch.strip():
+                raise ConfigError(
+                    f"{here}.branch",
+                    "required, and a non-empty branch name, where the condition is "
+                    "`on_branch` (§ 33).",
+                )
+        elif "branch" in stated:
+            raise ConfigError(
+                f"{here}.branch",
+                f"is stated beside the condition {kind!r}, which never reads it "
+                "(§ 33). It is read where the condition is `on_branch`.",
             )
 
 
@@ -15452,6 +15543,44 @@ def self_test() -> int:
         said == "deploy[0].choices", f"reported {said!r}",
     )
 
+    print("\n§ 33's tree conditions, the green side:")
+    every = [
+        _a_tree_condition(),
+        _a_tree_condition(condition="on_branch", branch="main", holds="both"),
+        _a_tree_condition(condition="at_remote_tip", holds="advance"),
+        _a_tree_condition(condition="primary_checkout"),
+        _a_tree_condition(condition="at_commit", holds="advance"),
+    ]
+    loaded = _a_valid_example()
+    loaded["deploy"] = [_a_deploy_target(tree=every)]
+    refusal = _refused(loaded)
+    check(
+        "a target stating every condition, each holding one of the three, loads",
+        refusal is None, f"refused on {refusal!r}",
+    )
+    got = choosing(tree=every)
+    check(
+        "and the resolved target carries its conditions as stated",
+        isinstance(got, dict) and got["tree"] == every, f"answered {got!r}",
+    )
+    got = choosing()
+    check(
+        "a target stating no condition answers an empty list rather than omitting it",
+        isinstance(got, dict) and got["tree"] == [], f"answered {got!r}",
+    )
+    said = ""
+    try:
+        _validate_tree(
+            "deploy[0]", {"invoke": "command", "tree": [_a_tree_condition()]},
+            {"declared": set()},
+        )
+    except ConfigError as refused:
+        said = refused.key
+    check(
+        "a surface that has lost a tree condition's keys is refused, with the key named",
+        said == "deploy[0].tree", f"reported {said!r}",
+    )
+
     # ⛔ The one arm the plant list above cannot hold, and it is held on the
     # refusal's **text** rather than on its key. Two rules refuse
     # `deploy[].command_root` — this facet's *the shape never reads it* and
@@ -16872,6 +17001,41 @@ def _planted_violations():
                  "choices[0].warnings", {"warnings": {"most": "slow"}}),
                 ("a warning stating nothing", "choices[0].warnings",
                  {"warnings": {"all": " "}}),
+            )
+        ),
+        # § 33's tree conditions, one plant per arm.
+        *(
+            (label, f"deploy[0].{key}", at("deploy", [_a_deploy_target(**changed)]))
+            for label, key, changed in (
+                ("tree conditions that are not a list", "tree",
+                 {"tree": {"condition": "clean"}}),
+                ("a tree list carrying nothing", "tree", {"tree": []}),
+                ("a tree condition that is not a block", "tree[0]", {"tree": ["clean"]}),
+                ("a tree condition with a key § 33 does not declare", "tree[0].when",
+                 {"tree": [_a_tree_condition(when="always")]}),
+                ("a tree condition outside the vocabulary", "tree[0].condition",
+                 {"tree": [_a_tree_condition(condition="tidy")]}),
+                ("a tree condition with no condition", "tree[0].condition",
+                 {"tree": [_a_tree_condition(condition=_ABSENT)]}),
+                ("a tree condition stated twice", "tree[1].condition",
+                 {"tree": [_a_tree_condition(), _a_tree_condition(holds="advance")]}),
+                ("a tree condition holding something outside the vocabulary",
+                 "tree[0].holds", {"tree": [_a_tree_condition(holds="release")]}),
+                ("a tree condition holding nothing stated", "tree[0].holds",
+                 {"tree": [_a_tree_condition(holds=_ABSENT)]}),
+                ("a branch condition naming no branch", "tree[0].branch",
+                 {"tree": [_a_tree_condition(condition="on_branch")]}),
+                ("a branch condition naming an empty branch", "tree[0].branch",
+                 {"tree": [_a_tree_condition(condition="on_branch", branch=" ")]}),
+                ("a branch beside a condition that never reads it", "tree[0].branch",
+                 {"tree": [_a_tree_condition(branch="main")]}),
+                *(
+                    (f"a tree on a {shape} target, which runs from no local tree", "tree",
+                     {"invoke": shape, "command": _ABSENT, "ref": "a-ref",
+                      "workflow": _a_workflow_the_example_states(),
+                      "tree": [_a_tree_condition()]})
+                    for shape in ("dispatch", "by_hand")
+                ),
             )
         ),
         ("choices that are not a list", "deploy[0].choices",
@@ -19859,6 +20023,13 @@ def _a_choice(**overrides) -> dict:
     if "values" in overrides and "warnings" not in overrides:
         choice.pop("warnings")
     return {key: value for key, value in choice.items() if value is not _ABSENT}
+
+
+def _a_tree_condition(**overrides) -> dict:
+    """One § 33 tree condition, minimal and correct."""
+    condition = {"condition": "clean", "holds": "deploy"}
+    condition.update(overrides)
+    return {key: value for key, value in condition.items() if value is not _ABSENT}
 
 
 def _a_deploy_target(**overrides) -> dict:
