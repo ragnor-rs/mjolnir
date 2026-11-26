@@ -1288,6 +1288,10 @@ def stop_held(
     if after:
         return said + [f"{tree} still holds {', '.join(after)}, so no place was released and "
                        "the tree is kept"]
+    if store is None:
+        # ⛔ Unread, never "held nothing": with no store named, whether a place is held is unknown.
+        return said + ["no lease store could be named, so whether it held a place is unknown "
+                       "and none was released; the tree is kept"]
     given = enforce_release_tree(store, tree, now)
     places = (
         f"released {len(given)} place(s) it held on " + ", ".join(
@@ -3393,6 +3397,15 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             (state / "1-landed").exists() and any("not asked" in line for line in said),
             "; ".join(said),
         )
+        _start()
+        said = stop_held(root, branch, trees, up, stop_cmd, None, _plenty)
+        suite.ok(
+            "⛔ a store that could not be named is said as unknown, never as no place held",
+            any("whether it held a place is unknown" in line for line in said)
+            and not any("held no place" in line for line in said),
+            "; ".join(said),
+        )
+        _start()
         suite.ok(
             "a merge whose branch no tree holds stops nothing and says nothing",
             stop_held(root, "feature/9-elsewhere", trees, up, stop_cmd, store, _plenty) == []
