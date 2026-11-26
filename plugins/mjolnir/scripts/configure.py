@@ -1191,6 +1191,18 @@ ANSWERED_BY: dict[str, Answer] = {
     "deploy.choices.warnings": ask(
         "Is there a value a person should be warned about before they approve it?",
     ),
+    "deploy.tree.condition": ask(
+        "Must the tree this target's command runs from be anything -- clean, on a "
+        "given branch, at its remote tip, the primary checkout, or at the commit the "
+        "invocation names? ⚠️ Nothing is an answer: the key is then omitted (§ 33).",
+    ),
+    "deploy.tree.holds": ask(
+        "Where that condition is not met, what does it stop -- the deploy, the "
+        "advance of its items, or both?",
+    ),
+    "deploy.tree.branch": ask(
+        "Which branch must the tree be on?",
+    ),
     "deploy.requires": ask(
         "Which preconditions does it need that it does not check itself?",
     ),

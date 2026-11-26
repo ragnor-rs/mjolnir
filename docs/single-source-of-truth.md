@@ -4083,6 +4083,30 @@ already bounds in the other direction. ⛔ **What is not weakened by it is the a
 unconditional, so a project that evaded this refusal still reaches a person — what it would have
 lost is the reader saying so at the load.
 
+## A deploy's tree, read without a write
+
+`plugins/mjolnir/scripts/deploy_tree.py --self-test` runs in the `Deploy tree carrier` workflow,
+with no credential and no network. ⛔ The rule is
+[schema § 33 → What the tree must be](../plugins/mjolnir/config/schema.md#what-the-tree-must-be-for-the-deploy-and-for-the-advance)
+and this document states none of it. The reader's suite holds the list's shape — one plant per
+refusal, each red with the refusal removed — and this suite holds the readings.
+
+**What the suite holds.** Every condition the surface's alternation states has a reading and none
+else does, so a member added there reddens here rather than reading as met. Each reading is taken
+on a repository the suite builds with a bare remote of its own, in the state that meets it and in
+the state that does not: an untracked file, a commit ahead of the upstream, a branch with no
+upstream, a detached commit, a linked tree, a commit the repository does not resolve. Each `holds`
+value is held to the deploy and the advance it stops, and a directory that is no repository, or
+that could not be read, is held as not met rather than as met.
+
+**The write the reading may not make is asserted on the index itself**: a tracked file's stat is
+moved so that a status would refresh the index, and the arm compares its bytes and its time before
+and after. ⚠️ **Run both ways** — with git's optional locks left on, that arm alone reddens.
+
+⚠️ **And nothing here holds the facet against a real project's tree.** No target in this repository
+states a condition, so a deploy against a project that states one is the first exercise of that
+half, which is a limit of this record rather than of the rule.
+
 ## A released write, against the change that would rewrite it
 
 `plugins/mjolnir/scripts/check_live_data_record.py --self-test` runs in the `Live data record`

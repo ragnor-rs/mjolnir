@@ -8155,6 +8155,10 @@ deploy:
       default:    "<the value a run that chooses nothing takes>"
       joined_by:  "<what joins several values, where a run may choose more than one>"
       warnings:   "<a value, mapped to what the go says about choosing it>"
+    tree:                      # a list; one entry per condition the tree is held to
+      condition:  clean | on_branch | at_remote_tip | primary_checkout | at_commit
+      holds:      deploy | advance | both
+      branch:     "<the branch the tree must be on, where the condition is `on_branch`>"
     requires:     "<§ 16's list, cited there and not restated>"
     advances:     "<one of § 4.2's own roles, read there — or `none`>"
     batch:        "<a command printing one item identifier per line>"
@@ -8332,10 +8336,12 @@ go**, and the values and their warnings are in the reply.
 
 ### What runs before the target is confirmed, and what it may not do
 
-⛔ **The preflight writes nothing.** It reads the tree, the target's stated preconditions and
-whatever the project's own command checks for itself, and it stages nothing, checks nothing out and
-touches no machine — ⚠️ **which one copy states as a rule about a shared workspace** rather than as
-caution: several sessions stand in one checkout, and a deploy needs no working tree of its own.
+⛔ **The preflight writes nothing.** It reads the tree and holds it to what the entry's
+[`tree`](#what-the-tree-must-be-for-the-deploy-and-for-the-advance) states, it reads the target's
+stated preconditions and whatever the project's own command checks for itself, and it stages
+nothing, checks nothing out and touches no machine — ⚠️ **which one copy states as a rule about a
+shared workspace** rather than as caution: several sessions stand in one checkout, and a deploy
+needs no working tree of its own.
 
 ⛔ **`requires` is [§ 16](#16-what-a-run-executed-and-the-count-that-is-the-only-evidence-it-ran)'s
 list and this facet writes no second grammar for it**, which is the division § 17 already has with
@@ -8359,6 +8365,51 @@ is about to start asserts the released commit is contained in that branch and re
 with the version already spent. ⛔ **That write is the project's step and not the preflight**, and
 what the surface asks of it is what that copy already does: the window it opens is named, and a
 failed deploy is not repaired by moving the branch back.
+
+### What the tree must be, for the deploy and for the advance
+
+⛔ **`tree` states what the tree a deploy runs from must be, and each condition says what it holds.**
+The key is omitted where nothing is required of the tree, and such a target reports what is
+uncommitted and holds nothing on it — the behaviour every target had before the key existed.
+
+| `condition` | met where |
+|---|---|
+| `clean` | git reports no change in the tree — staged, unstaged or untracked; what the tree ignores is not read |
+| `on_branch` | the branch checked out is the one `branch` names |
+| `at_remote_tip` | the tree's commit is its branch's upstream as last fetched; a branch with no upstream does not meet it |
+| `primary_checkout` | the tree is the repository's primary checkout rather than a linked tree |
+| `at_commit` | the tree's commit is the one the invocation names; an invocation naming none does not meet it |
+
+| `holds` | a condition not met |
+|---|---|
+| `deploy` | stops the deploy in the preflight, before any go is asked for, and nothing is invoked |
+| `advance` | lets the deploy run and holds every item's advance, the grouping's mark included |
+| `both` | does both |
+
+⛔ **The vocabulary is closed, and a condition outside it is refused where it is written.** Every
+condition was measured as a requirement of some adopter's deploy, and one of them stops its deploy
+on these readings where another lets the deploy run and holds the advance — so what a condition
+holds is the entry's to state, and neither is derived from liveness. ⛔ `branch` is stated where the
+condition is `on_branch` and refused beside any other, and one condition stated twice is refused.
+
+⛔ **The tree is the directory the target's command runs in, and only a `command` target states
+one.** A `dispatch` or a `by_hand` target is built by the host from `ref`, so a deploy that uses no
+local tree has no tree to hold, and `tree` beside either is refused with the shape named.
+
+⛔ **The reading writes nothing, and that includes git's own bookkeeping.** No fetch, no pull, and
+the index is not refreshed as a side effect of reading it. ⚠️ **So `at_remote_tip` is read against
+the upstream as last fetched**, and the report says so: bringing the tree up to date stays the
+project's own command, run before the deploy is asked for.
+
+⛔ **A condition not met names itself and what it held** — the condition, what the tree held
+instead, and whether the deploy or the advance is what it stops. ⛔ **A condition that could not be
+read is not met**, by [§ 11](#a-report-names-what-it-could-not-establish): a tree nothing could read
+reads exactly like a tree that met everything otherwise.
+
+⛔ **A condition that holds the advance is read twice**: in the preflight, so the go shows that no
+item will move, and again where the advance is made, for the reason
+[`The batch`](#the-batch-and-the-two-ways-of-assembling-one-that-are-wrong) reads an item's role
+there: a command that changed the tree changes the answer.
 
 ### The batch, and the two ways of assembling one that are wrong
 
