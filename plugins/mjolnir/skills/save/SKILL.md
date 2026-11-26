@@ -214,8 +214,13 @@ role adds which entry to read:
   and the reply names every path left out:
 
   ```bash
-  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <the staged paths> --on-branch <that branch>
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <the staged paths> --on-branch <that branch> \
+    --ahead <every path the branch's unpushed commits carry>
   ```
+
+  `--ahead` is given with no path where nothing is unpushed. The answer's `commit` paths are
+  committed first and pushed only where `push` is true. Its `local` paths are committed after
+  them and never pushed. The reply names every commit left unpushed, with its paths.
 
 This is the one role that acts on an exempt change
 ([`§ 30`](../../config/schema.md#where-an-exempt-change-goes-and-the-one-role-it-runs)), and only

@@ -2779,13 +2779,22 @@ class Config:
             ),
         }
 
-    def commit_rule_for(self, paths: list[str], branch: str) -> dict:
+    def commit_rule_for(
+        self, paths: list[str], branch: str, ahead: list[str] | None = None
+    ) -> dict:
         """§ 6's answer on one commit: which of its staged paths a branch admits.
 
         Every rule whose `branches` matches applies, and a path has to be
-        admitted by each. Returns the verdict, the paths to commit, the paths
-        that were not admitted, and which rules decided it -- so a committing
-        role names what it left out without deriving any of it.
+        admitted by each. Returns the verdict, the paths to commit and whether
+        that commit is pushed, whether a push carrying the commits through
+        review may be made, the paths committed after the first and never pushed,
+        the paths that were not admitted, and which rules decided it -- so a
+        committing role names what it left out or kept local without deriving
+        any of it.
+
+        `ahead` is every path the branch's unpushed commits already carry, for
+        a rule that keeps commits local: a push publishes the branch's whole
+        history, so a commit pushed over a kept one would publish it too.
         """
         held = _changed_paths(paths, BRANCH_RULES_PATH)
         # ⛔ An empty list is refused rather than admitted: every path of
@@ -2816,6 +2825,9 @@ class Config:
             "branch": branch,
             "rules": [index for index, _ in applying],
             "commit": held,
+            "push": True,
+            "push_for_review": True,
+            "local": [],
             "left_out": [],
             "why": "",
         }
@@ -2825,44 +2837,100 @@ class Config:
                 "commit carries what was staged, as it does today (§ 6)."
             )
             return answer
-        refused, stops = [], False
-        for _, rule in applying:
-            outside = [
-                p for p in held if not any(_matches(p, g) for g in rule["paths"])
-            ]
-            if outside and rule["otherwise"] == OTHERWISE_STOPS:
-                stops = True
-            refused += [p for p in outside if p not in refused]
         named = ", ".join(f"[{index}]" for index, _ in applying)
-        if not refused:
-            answer["verdict"] = ADMITTED
-            answer["why"] = (
-                f"Every staged path is admitted on `{branch}` by "
-                f"`{BRANCH_RULES_PATH}` {named} (§ 6)."
+        keeps = any(rule.get("otherwise") == OTHERWISE_KEEPS for _, rule in applying)
+        if ahead is None and keeps:
+            raise ConfigError(
+                BRANCH_RULES_PATH,
+                f"keeps commits local on `{branch}` under {named}, and was handed no "
+                "unpushed path. ⛔ Not answered as nothing unpushed: a push publishes "
+                "every commit under it, so the answer needs what the branch already "
+                "holds unpushed. Pass `--ahead`, with no path where there is none "
+                "(§ 6).",
             )
-            return answer
-        answer["left_out"] = refused
-        if stops:
-            answer["verdict"] = STOPPED
-            answer["commit"] = []
+        ahead = _changed_paths(ahead, BRANCH_RULES_PATH) if ahead else []
+
+        def refusing(path: str) -> list[str]:
+            return [
+                rule.get("otherwise")
+                for _, rule in applying
+                if "paths" in rule and not any(_matches(path, g) for g in rule["paths"])
+            ]
+
+        stopped = [p for p in held if OTHERWISE_STOPS in refusing(p)]
+        left = [p for p in held if OTHERWISE_LEAVES in refusing(p)]
+        # ⛔ A path refused by a rule that leaves it out and by one that keeps it
+        # is left out: adding a rule can only narrow what a branch takes.
+        kept = [p for p in held if refusing(p) and p not in left]
+        never = any(rule.get("push") == PUSH_NEVER for _, rule in applying)
+        if stopped:
+            refused = [p for p in held if refusing(p)]
+            answer.update(
+                verdict=STOPPED, commit=[], push=False, push_for_review=False,
+                left_out=refused,
+            )
             answer["why"] = (
                 f"`{branch}` admits none of {', '.join(refused)} under "
                 f"`{BRANCH_RULES_PATH}` {named}, and a rule refusing one says "
                 "`stop`: no commit is made (§ 6)."
             )
             return answer
-        answer["verdict"] = LEFT_OUT
-        answer["commit"] = [p for p in held if p not in refused]
-        answer["why"] = (
-            f"`{branch}` admits none of {', '.join(refused)} under "
-            f"`{BRANCH_RULES_PATH}` {named}, so they are left out and stay in the "
-            "tree (§ 6)."
-        )
+        answer["left_out"] = left
+        answer["local"] = kept
+        answer["commit"] = [p for p in held if p not in left and p not in kept]
+        reasons = []
+        if left:
+            answer["verdict"] = LEFT_OUT
+            reasons.append(
+                f"`{branch}` admits none of {', '.join(left)} under "
+                f"`{BRANCH_RULES_PATH}` {named}, so they are left out and stay in "
+                "the tree."
+            )
+        elif kept:
+            answer["verdict"] = KEPT_LOCAL
+        else:
+            answer["verdict"] = ADMITTED
+            reasons.append(
+                f"Every staged path is admitted on `{branch}` by "
+                f"`{BRANCH_RULES_PATH}` {named}."
+            )
+        # Paths an earlier commit kept local: pushing over them publishes them.
+        unpushed = [p for p in ahead if refusing(p)]
+        if never:
+            reasons.append(
+                f"A rule says `push: {PUSH_NEVER}` on `{branch}`, so nothing is "
+                "pushed and every commit stays local."
+            )
+        elif unpushed:
+            reasons.append(
+                f"The branch already holds {', '.join(unpushed)} in an unpushed "
+                "commit, and a push would publish it too, so nothing is pushed and "
+                "every commit stays local."
+            )
+        if never or unpushed or not answer["commit"]:
+            # ⛔ Nothing is published, so a split buys nothing: what is committed
+            # goes in one local commit.
+            answer["commit"] = answer["commit"] + answer["local"]
+            answer["local"] = []
+            answer["push"] = False
+        if kept and not (never or unpushed):
+            them = "it" if len(kept) == 1 else "them"
+            reasons.append(
+                f"{', '.join(kept)} {'is' if len(kept) == 1 else 'are'} not admitted "
+                f"for publishing on `{branch}`, so "
+                + (f"a second commit carries {them} after the pushed one"
+                   if answer["local"] else f"the one commit carries {them}")
+                + " and is never pushed; the reply names that commit."
+            )
+        # A push that puts the commits in front of review -- a change's own
+        # branch -- carries a kept commit through review, and only `never` stops it.
+        answer["push_for_review"] = not never and bool(answer["commit"])
         if not answer["commit"]:
-            answer["why"] += (
-                " ⚠️ Nothing is left to commit, so no commit is made rather than an "
+            reasons.append(
+                "⚠️ Nothing is left to commit, so no commit is made rather than an "
                 "empty one."
             )
+        answer["why"] = " ".join(reasons) + " (§ 6)"
         return answer
 
     def exempt_for(self, paths: list[str], kind: str | None = None) -> dict:
@@ -5128,17 +5196,23 @@ ASK = "ask"
 # Hand-checked for the reason § 30's classes are: an entry's first key sits behind
 # a `- ` the walk cannot see.
 BRANCH_RULES_PATH = "commit.branch_rules"
-BRANCH_RULE_KEYS = ("branches", "paths", "otherwise")
+BRANCH_RULE_KEYS = ("branches", "paths", "otherwise", "push")
 OTHERWISE_PATH = f"{BRANCH_RULES_PATH}.otherwise"
-# The `otherwise` member that makes no commit. ⛔ One sentinel: the other member
-# is *whatever is not this*, and the vocabulary itself is the surface's.
+PUSH_PATH = f"{BRANCH_RULES_PATH}.push"
+# The `otherwise` members the reader acts on. ⛔ The vocabulary itself is the
+# surface's: these name the members whose meaning the code carries.
 OTHERWISE_STOPS = "stop"
-# The four answers `commit_rule_for` gives. `unruled` is a stated absence and
+OTHERWISE_LEAVES = "leave_out"
+OTHERWISE_KEEPS = "commit_local"
+# The `push` member that pushes nothing; the other is today's push.
+PUSH_NEVER = "never"
+# The five answers `commit_rule_for` gives. `unruled` is a stated absence and
 # not an admission: no rule matched, so the commit is today's.
 UNRULED = "unruled"
 ADMITTED = "admitted"
 STOPPED = "stop"
 LEFT_OUT = "leave_out"
+KEPT_LOCAL = "commit_local"
 # The flag a committing role asks before its commit, and which the suite looks for
 # in every committing carrier.
 COMMIT_RULE_FLAG = "--commit-rule-for"
@@ -11260,6 +11334,25 @@ def _branch_rules(data: dict, facts: dict) -> None:
                     f"{at}.branches[{position}]",
                     f"is {glob!r} and a branch glob is a non-empty string (§ 6).",
                 )
+        pushes = vocabulary(facts, PUSH_PATH, "whether a branch rule's commits are pushed")
+        if "push" in rule and rule["push"] not in pushes:
+            raise ConfigError(
+                f"{at}.push",
+                f"is {rule['push']!r}; § 6 states {' | '.join(pushes)}. Absent, "
+                "the commit is pushed as it is today.",
+            )
+        never = rule.get("push") == PUSH_NEVER
+        # ⛔ Only `push: never` may state no paths: a rule there says *commit,
+        # and publish nothing*, which narrows no path. Anywhere else a rule with
+        # no paths would admit everything and read as a rule holding something.
+        if never and "paths" not in rule:
+            if "otherwise" in rule:
+                raise ConfigError(
+                    f"{at}.otherwise",
+                    "is stated on a rule naming no `paths`, so there is no path it "
+                    "could be otherwise of (§ 6).",
+                )
+            continue
         globs = rule.get("paths")
         if not isinstance(globs, list) or not globs:
             raise ConfigError(
@@ -11267,10 +11360,19 @@ def _branch_rules(data: dict, facts: dict) -> None:
                 f"is {globs!r} and § 6 states a non-empty list of path globs. ⛔ An "
                 "empty list is not *admit nothing*: a rule admitting nothing is a "
                 "branch closed to commits, which is stated by `otherwise: stop` "
-                "over a glob, never by an empty value read either way.",
+                "over a glob, never by an empty value read either way. A branch "
+                "that takes commits and publishes none is `push: never` with no "
+                "`paths`.",
             )
         _held_to_the_class_globs(globs, at)
         published = vocabulary(facts, OTHERWISE_PATH, "what a branch rule does otherwise")
+        if never and rule.get("otherwise") == OTHERWISE_KEEPS:
+            raise ConfigError(
+                f"{at}.otherwise",
+                f"is `{OTHERWISE_KEEPS}` on a `push: {PUSH_NEVER}` rule, where every "
+                "commit already stays local, so it splits nothing. State `leave_out` "
+                "or `stop` for what the branch does not take (§ 6).",
+            )
         if rule.get("otherwise") not in published:
             raise ConfigError(
                 f"{at}.otherwise",
@@ -17498,6 +17600,59 @@ def self_test() -> int:
         answer = _rule_on(paths, branch, rules)
         got = (answer["verdict"], answer["commit"], answer["left_out"])
         check(f"{label} answers `{wanted[0]}`", got == wanted, f"answered {got!r}")
+    # The answer read whole: the first commit, whether it is pushed, the commit
+    # after it that never is, what was left out, and the change's own push.
+    keeps = [{**docs_only, "otherwise": "commit_local"}]
+    never = [{"branches": ["main"], "push": "never"}]
+    for label, paths, branch, rules, ahead, wanted in (
+        ("a document and a code file under `commit_local`", mixed, "release/1.2",
+         keeps, [], (KEPT_LOCAL, ["docs/notes.md"], True, ["app/main.py"], [], True)),
+        ("only code under `commit_local`", ["app/main.py"], "release/1.2", keeps, [],
+         (KEPT_LOCAL, ["app/main.py"], False, [], [], True)),
+        ("only documents under `commit_local`", ["docs/notes.md"], "release/1.2",
+         keeps, [], (ADMITTED, ["docs/notes.md"], True, [], [], True)),
+        # ⛔ A push publishes the branch's history, so a document pushed over an
+        # earlier kept commit would publish the code in it.
+        ("a document over a kept commit", ["docs/notes.md"], "release/1.2", keeps,
+         ["app/main.py"], (ADMITTED, ["docs/notes.md"], False, [], [], True)),
+        ("both kinds over a kept commit", mixed, "release/1.2", keeps,
+         ["app/main.py"], (KEPT_LOCAL, mixed, False, [], [], True)),
+        ("a document over an unpushed document", ["README.md"], "release/1.2", keeps,
+         ["docs/notes.md"], (ADMITTED, ["README.md"], True, [], [], True)),
+        ("a rule naming no paths under `push: never`", mixed, "main", never, None,
+         (ADMITTED, mixed, False, [], [], False)),
+        ("`push: never` beside a `leave_out`", mixed, "main",
+         never + [{"branches": ["main"], "paths": ["docs/*"], "otherwise": "leave_out"}],
+         None, (LEFT_OUT, ["docs/notes.md"], False, [], ["app/main.py"], False)),
+        ("`push: never` beside a `commit_local`", mixed, "main",
+         never + [{"branches": ["main"], "paths": ["docs/*"],
+                   "otherwise": "commit_local"}],
+         [], (KEPT_LOCAL, mixed, False, [], [], False)),
+        ("a path refused by a `leave_out` and a `commit_local`", mixed, "release/1.2",
+         keeps + drops, [], (LEFT_OUT, ["docs/notes.md"], True, [], ["app/main.py"],
+                             True)),
+        ("a stop over a kept path", mixed, "release/1.2", keeps + stops, [],
+         (STOPPED, [], False, [], ["app/main.py"], False)),
+        ("an unruled branch", mixed, "feature/7-x", keeps, None,
+         (UNRULED, mixed, True, [], [], True)),
+    ):
+        answer = _rule_on(paths, branch, rules, ahead)
+        got = (answer["verdict"], answer["commit"], answer["push"], answer["local"],
+               answer["left_out"], answer["push_for_review"])
+        check(f"{label} answers {wanted!r}", got == wanted, f"answered {got!r}")
+    split = _rule_on(mixed, "release/1.2", keeps, [])
+    check("and the split names the commit that is never pushed",
+          "never pushed" in split["why"] and "app/main.py" in split["why"], split["why"])
+    held = _rule_on(["docs/notes.md"], "release/1.2", keeps, ["app/main.py"])
+    check("and a push held by an unpushed commit says why",
+          "would publish it" in held["why"], held["why"])
+    try:
+        _rule_on(mixed, "release/1.2", keeps)
+        reported = None
+    except ConfigError as error:
+        reported = error.key
+    check("a `commit_local` branch asked with no `--ahead` stops rather than pushing",
+          reported == BRANCH_RULES_PATH, f"reported {reported!r}")
     left = _rule_on(["app/main.py"], "release/1.2", drops)
     check("and the reason says nothing is left to commit",
           "no commit is made" in left["why"], left["why"])
@@ -17536,6 +17691,8 @@ def self_test() -> int:
     check("the surface names some committing role, so what follows asserts something",
           bool(committing))
     for role in committing:
+        check(f"the `{role}` carrier hands `--ahead` with its commit's question",
+              "--ahead <" in asking.get(role, ""))
         check(f"the `{role}` carrier asks `{COMMIT_RULE_FLAG}` before its commit",
               COMMIT_RULE_FLAG in asking.get(role, ""),
               "no skill declares that carrier" if role not in asking else "")
@@ -21020,6 +21177,18 @@ def _planted_violations():
         ("a branch rule whose `otherwise` is not one", f"{BRANCH_RULES_PATH}[0].otherwise",
          at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "paths": ["docs/*"],
                                  "otherwise": "warn"}])),
+        ("a branch rule whose `push` is not one", f"{BRANCH_RULES_PATH}[0].push",
+         at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "paths": ["docs/*"],
+                                 "otherwise": "stop", "push": "later"}])),
+        ("a branch rule naming no paths that does push", f"{BRANCH_RULES_PATH}[0].paths",
+         at(BRANCH_RULES_PATH, [{"branches": ["r/*"], "otherwise": "stop"}])),
+        ("a `push: never` rule with an `otherwise` and no paths",
+         f"{BRANCH_RULES_PATH}[0].otherwise",
+         at(BRANCH_RULES_PATH, [{"branches": ["main"], "push": "never",
+                                 "otherwise": "stop"}])),
+        ("`commit_local` on a `push: never` rule", f"{BRANCH_RULES_PATH}[0].otherwise",
+         at(BRANCH_RULES_PATH, [{"branches": ["main"], "paths": ["docs/*"],
+                                 "push": "never", "otherwise": "commit_local"}])),
         # ⚠️ The out-of-alternation case is the generic enum rule's and is
         # planted there; what this arm answers is the *empty* value, which that
         # rule reads as absent and skips.
@@ -24093,7 +24262,7 @@ PLANTED_CLASSES = [
 NON_EXEMPT_PATH = "app/main.py"
 
 
-def _rule_on(paths, branch, rules):
+def _rule_on(paths, branch, rules, ahead=None):
     """§ 6's answer on one commit, under the branch rules handed (None: unstated)."""
     data = _a_valid_example()
     if rules is None:
@@ -24102,7 +24271,7 @@ def _rule_on(paths, branch, rules):
         data.setdefault("commit", {})["branch_rules"] = copy.deepcopy(rules)
     with open(SURFACE, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
-    return _resolve(data, EXAMPLES, facts, False).commit_rule_for(paths, branch)
+    return _resolve(data, EXAMPLES, facts, False).commit_rule_for(paths, branch, ahead)
 
 
 def _answer_on(paths, kind=None, *, classes=None, borderline=None,
@@ -27282,6 +27451,14 @@ def main(argv: list[str]) -> int:
         help="the branch the commit lands on, for `--commit-rule-for`",
     )
     parser.add_argument(
+        "--ahead",
+        nargs="*",
+        metavar="PATH",
+        help="every path the branch's unpushed commits already carry, for "
+        "`--commit-rule-for` on a branch whose rule keeps commits local; given "
+        "with no path where nothing is unpushed",
+    )
+    parser.add_argument(
         "--of-kind",
         metavar="KIND",
         help="what the change is, for a § 30 class that states `kinds`. Omitted, "
@@ -27537,11 +27714,14 @@ def main(argv: list[str]) -> int:
                     "cannot be asked about a commit with no branch: a rule is chosen "
                     "by the branch the commit lands on. Pass `--on-branch`.",
                 )
-            answer = config.commit_rule_for(args.commit_rule_for, args.on_branch)
-        elif args.on_branch is not None:
+            answer = config.commit_rule_for(
+                args.commit_rule_for, args.on_branch, args.ahead
+            )
+        elif args.on_branch is not None or args.ahead is not None:
             raise ConfigError(
                 BRANCH_RULES_PATH,
-                "cannot be asked about a branch with no staged path. Pass "
+                "cannot be asked about a branch or unpushed paths with no staged "
+                "path. Pass "
                 "`--commit-rule-for` with the commit's paths.",
             )
         if args.exempt_for:

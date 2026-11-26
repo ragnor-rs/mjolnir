@@ -2905,7 +2905,8 @@ commit:
   branch_rules:                              # default: []
     - branches: ["release/*"]                # globs on the branch the commit lands on
       paths: ["docs/*", "*.md"]              # what a commit there may contain
-      otherwise: stop | leave_out
+      otherwise: stop | leave_out | commit_local
+      push: always | never                   # absent, the commit is pushed as today
 ```
 
 ### What staging is per, and the two rules that hold regardless
@@ -2964,7 +2965,22 @@ off a release branch while documents may go there, which no per-role value can e
   admitted by each, so adding a rule can only narrow what a branch accepts.
 - **`otherwise` decides a commit carrying a path that is not admitted.** `stop` makes no commit and
   names every such path. `leave_out` commits the admitted paths alone and names every path it
-  left out. Where any matching rule that refused a path says `stop`, the commit stops.
+  left out. `commit_local` commits the admitted paths and pushes them, then commits the rest
+  after them and does not push that second commit. Where any matching rule that refused a path
+  says `stop`, the commit stops. A path refused under both `leave_out` and `commit_local` is left
+  out.
+- **`push: never` commits what the rule allows and pushes nothing.** Such a rule may state no
+  `paths`, and then it allows every path: that is how a branch that takes commits and publishes
+  none is stated. `commit_local` is refused under it, since every commit there stays local
+  already.
+- **A push publishes everything under it, so a push never goes over a commit a rule kept
+  local.** A role asking about a branch whose rule says `commit_local` passes `--ahead` with every
+  path the branch's unpushed commits carry, or with no path where there are none. Where one of
+  them is a path the branch does not admit, nothing is pushed and the whole commit stays local.
+  The answer refuses to be given without `--ahead` on such a branch.
+- **A commit kept local is named in the reply, and is never rewritten or dropped.** It stays in
+  the branch's history. It reaches the remote with a later push that carries it through review,
+  such as the finishing role's push of the change it belongs to.
 - **What was left out is named in the role's reply, and is left in the tree untouched.** A
   path dropped silently reads exactly like a path that was never changed.
 - **A `leave_out` that admits nothing makes no commit**, and says so, rather than making an
@@ -2978,8 +2994,15 @@ role [§ 6's block](#6-commit-behaviour) gives a `staging` entry to, and the com
 paths are what is handed over:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <staged paths> --on-branch <branch>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/config.py" --commit-rule-for <staged paths> --on-branch <branch> \
+  [--ahead [<unpushed paths>]]
 ```
+
+The answer names the paths for the first commit and whether that commit is pushed (`push`), the
+paths for the second commit, which is never pushed (`local`), and the paths left out. The
+bookkeeping role reads `push`. The finishing and reviewing roles push a change's branch, and that
+push puts the commits in front of review, so they read `push_for_review`, which only
+`push: never` makes false.
 
 The rule is read and applied by the role, and nothing on the host enforces it. A commit
 made by hand, outside every role, is held to nothing here.
