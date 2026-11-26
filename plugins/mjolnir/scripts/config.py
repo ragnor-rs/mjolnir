@@ -3368,7 +3368,7 @@ class Config:
     def landing_bases(self) -> list[str]:
         """§ 2's `host.landing.bases`: the branch globs a change lands on beside the
         integration branch, empty where the project lands on that branch alone."""
-        self.get("host.landing.method")
+        self.get("host.landing.bases")
         return host_landing_bases(self.answering.data)
 
     def release(self) -> dict | None:
