@@ -2593,14 +2593,14 @@ class Config:
             )
         key = self.get(f"{PEOPLE_KEY}.key")
         source = self.get(f"{PEOPLE_KEY}.source")
-        path = os.path.normpath(os.path.join(self.skills_root, str(source)))
+        path, tried = _untracked_source(self.skills_root, source)
         try:
             with open(path, encoding="utf-8") as handle:
                 mapping = _load_yaml(handle.read(), f"{PEOPLE_KEY}.source")
         except OSError as error:
             raise ConfigError(
                 f"{PEOPLE_KEY}.source",
-                f"names {source!r}, which did not open at {path!r} "
+                f"names {source!r}, which did not open {_tried(tried)} "
                 f"({error.__class__.__name__}). The pointer is the whole of what this "
                 "facet carries (§ 27), so one that does not resolve is reported -- the "
                 "map is not guessed at and the running user is not read instead.",
@@ -10879,20 +10879,80 @@ def _private_blocks(data: dict, facts: dict) -> list[str]:
     return named
 
 
+def _main_checkout_path(skills_root: str, path: str) -> str | None:
+    """Where `path`, inside the tree `skills_root` is in, sits in the main checkout.
+
+    `None` where there is no other place to look: `skills_root` is not in a git
+    tree, the tree is the main checkout itself, the repository is bare, or `path`
+    lies outside the tree. The main checkout is the parent of the repository's
+    common directory, which every tree of one repository shares (§ 28).
+    """
+    import subprocess  # noqa: PLC0415 -- read only where a tree lacks the file
+
+    try:
+        read = subprocess.run(
+            ["git", "-C", skills_root, "rev-parse", "--path-format=absolute",
+             "--show-toplevel", "--git-common-dir"],
+            capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return None
+    lines = read.stdout.splitlines()
+    if read.returncode != 0 or len(lines) != 2:
+        return None
+    top, common = (os.path.realpath(line) for line in lines)
+    if os.path.basename(common) != ".git":
+        return None
+    main = os.path.dirname(common)
+    held = os.path.realpath(path)
+    if main == top or os.path.commonpath([held, top]) != top:
+        return None
+    return os.path.join(main, os.path.relpath(held, top))
+
+
+def _untracked_source(skills_root: str, source) -> tuple[str, list[str]]:
+    """The path an untracked file the configuration points at is read from, and
+    every path tried for it.
+
+    ⛔ **A tree's own copy first, then the main checkout's** (§ 28): the file is
+    git-ignored by design, so a tree the procedure cuts is a fresh checkout that
+    carries none, and the same relative path resolved against the main checkout
+    is the one copy the machine holds. Where neither holds it, the first path is
+    the one to open and both are the ones a refusal names. The main checkout
+    reads exactly the one path it always read.
+    """
+    own = os.path.normpath(os.path.join(skills_root, str(source)))
+    if os.path.isfile(own):
+        return own, [own]
+    other = _main_checkout_path(skills_root, own)
+    if other is None:
+        return own, [own]
+    if os.path.isfile(other):
+        return other, [own, other]
+    return own, [own, other]
+
+
+def _tried(paths: list[str]) -> str:
+    """The paths an untracked file was looked for at, as a refusal names them."""
+    if len(paths) == 1:
+        return f"at {paths[0]!r}"
+    return f"at {paths[0]!r}, nor in the main checkout at {paths[1]!r}"
+
+
 def _read_private_file(skills_root: str, source, supplies: list[str]) -> dict:
     """§ 28's private file as a mapping of dotted path to value. Every failure stops.
 
     One reader for both halves of the facet, so the listed keys and the named
     blocks are held to one statement of what the file is.
     """
-    path = os.path.normpath(os.path.join(skills_root, str(source)))
+    path, tried = _untracked_source(skills_root, source)
     try:
         with open(path, encoding="utf-8") as handle:
             values = _load_yaml(handle.read(), PRIVATE_SOURCE_PATH)
     except OSError as error:
         raise ConfigError(
             PRIVATE_SOURCE_PATH,
-            f"names {source!r}, which did not open at {path!r} "
+            f"names {source!r}, which did not open {_tried(tried)} "
             f"({error.__class__.__name__}). It was to supply "
             f"{', '.join(supplies)} (§ 28), and a layer that is not there is "
             "reported by name rather than resolved to nothing -- a value "
@@ -19140,6 +19200,7 @@ def self_test() -> int:
     _not_implemented_suite(check, surface)
 
     _undeclared_suite(check)
+    _untracked_in_tree_suite(check)
 
     print("\n§ 33's choices, resolved for one run:")
 
@@ -26163,6 +26224,118 @@ def _example_without(path: str, _loaded) -> str | None:
 PLANTED_ROLE = "the role the work is for"
 PLANTED_IDENTITY = "an-identity-no-tracker-resolves"
 PLANTED_MAP_FILE = "a-role-to-person-map.yaml"
+
+
+def _untracked_in_tree_suite(check) -> None:
+    """§ 28's private file and § 27's map, read from a tree that carries neither.
+
+    ⛔ A real repository with a real second tree, because what is under test is
+    where git says the main checkout is: a fake of that answer would test the
+    fake. The files are git-ignored in it, as a project's are.
+    """
+    import subprocess  # noqa: PLC0415 -- the arms need a repository and a tree
+    import tempfile  # noqa: PLC0415
+
+    print("\n§ 28's untracked files, read from a tree that carries none of them:")
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+
+    def git(where: str, *args: str) -> None:
+        subprocess.run(
+            ["git", "-c", "user.name=suite", "-c", "user.email=suite@invalid",
+             "-c", "commit.gpgsign=false", "-C", where, *args],
+            capture_output=True, text=True, check=True, env=env,
+        )
+
+    def write(path: str, payload) -> None:
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(_yaml().safe_dump(payload, allow_unicode=True))
+
+    def refusal(read) -> str:
+        try:
+            read()
+        except ConfigError as error:
+            return f"{error.key}: {error}"
+        return ""
+
+    private_file, people_file = "private.yaml", "people.yaml"
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    with tempfile.TemporaryDirectory() as scratch:
+        main = os.path.join(scratch, "main")
+        tree = os.path.join(scratch, "tree")
+        os.makedirs(main)
+        git(main, "init", "-q")
+        with open(os.path.join(main, ".gitignore"), "w", encoding="utf-8") as handle:
+            handle.write(f"{private_file}\n{people_file}\n")
+        git(main, "add", ".gitignore")
+        git(main, "commit", "-q", "-m", "ignore the untracked files")
+        git(main, "worktree", "add", "-q", "-b", "an-item", tree)
+        write(os.path.join(main, private_file), {"a.key": "the main checkout's"})
+        write(os.path.join(main, people_file), {PLANTED_ROLE: PLANTED_IDENTITY})
+
+        def people_in(root: str):
+            data = _a_valid_example()
+            data[PEOPLE_KEY] = {"carrier": "file", "source": people_file, "key": "handle"}
+            return _resolve(data, root, facts, False).person_for(PLANTED_ROLE)
+
+        read = refusal(lambda: check(
+            "a tree lacking the private file reads the main checkout's",
+            _read_private_file(tree, private_file, ["a.key"])
+            == {"a.key": "the main checkout's"}, "read"))
+        if read:
+            check("a tree lacking the private file reads the main checkout's", False, read)
+        read = refusal(lambda: check(
+            "a tree lacking the people map reads the main checkout's",
+            people_in(tree)["identity"] == PLANTED_IDENTITY, "read"))
+        if read:
+            check("a tree lacking the people map reads the main checkout's", False, read)
+
+        block = sorted(facts.get("private_blocks") or {})[0]
+        write(os.path.join(main, private_file), {
+            "a.key": "the main checkout's", block: {"a": "block the file supplies"}})
+        named = {PRIVATE_KEY: {"carrier": PRIVATE_FILE, "source": private_file,
+                               "keys": [], "blocks": [{"block": block, "reason": "r"}]}}
+        read = refusal(lambda: check(
+            "a tree lacking the private file loads a named block from the main checkout's",
+            _get(_with_private_blocks(named, tree, facts)[0], block)
+            == {"a": "block the file supplies"}, "read"))
+        if read:
+            check("a tree lacking the private file loads a named block from the main "
+                  "checkout's", False, read)
+
+        write(os.path.join(tree, private_file), {"a.key": "the tree's own"})
+        check("a tree's own copy is read before the main checkout's",
+              _read_private_file(tree, private_file, ["a.key"])
+              == {"a.key": "the tree's own"}, "read the main checkout's")
+        os.remove(os.path.join(tree, private_file))
+
+        os.remove(os.path.join(main, private_file))
+        os.remove(os.path.join(main, people_file))
+        mains = os.path.join(os.path.realpath(main), private_file)
+        said = refusal(lambda: _read_private_file(tree, private_file, ["a.key"]))
+        check("held by neither, the private file is refused naming both paths",
+              said.startswith(PRIVATE_SOURCE_PATH)
+              and os.path.join(tree, private_file) in said and mains in said, said)
+        said = refusal(lambda: people_in(tree))
+        check("held by neither, the people map is refused naming both paths",
+              said.startswith(f"{PEOPLE_KEY}.source")
+              and os.path.join(tree, people_file) in said
+              and os.path.join(os.path.realpath(main), people_file) in said, said)
+
+        said = refusal(lambda: _read_private_file(main, private_file, ["a.key"]))
+        check("the main checkout reads and names only its own path",
+              os.path.join(main, private_file) in said
+              and "main checkout" not in said, said)
+        check("the main checkout is asked about no second path",
+              _untracked_source(main, private_file)[1]
+              == [os.path.join(main, private_file)],
+              f"{_untracked_source(main, private_file)}")
+        loose = os.path.join(scratch, "no-repository")
+        os.makedirs(loose)
+        check("a skills root in no repository is asked about no second path",
+              _untracked_source(loose, private_file)[1]
+              == [os.path.join(loose, private_file)],
+              f"{_untracked_source(loose, private_file)}")
 
 
 def _looked_up(role: str, mapping, *, key: str = "handle", written: bool = True,
