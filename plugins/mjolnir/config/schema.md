@@ -8678,6 +8678,8 @@ deploy:
       holds:      deploy | advance | both
       branch:     "<the branch the tree must be on, where the condition is `on_branch`>"
     requires:     "<§ 16's list, cited there and not restated>"
+    background:                # a block; omitted where the command is run in the foreground
+      log:        "<the file the run's output is written to, relative to the directory the command runs in>"
     advances:     "<one of § 4.2's own roles, read there — or `none`>"
     batch:        "<a command handed identifiers on its input, printing the ones this deploy carries>"
     grouping:     "<a grouping § 4.8 carries, by the name that facet keys it on — or `none`>"
@@ -9063,6 +9065,56 @@ resting on it** rather than the deploy, which is the same split one direction ov
 role adds to it is the list**: every item the batch left behind and why, every verification that was
 skipped rather than passed, every step still running, and what the deploy left standing — a spent
 version, a branch ahead of what the target serves, work queued behind the command that queued it.
+
+### A run put in the background, and what is handed over while it runs
+
+⛔ **`background` states that a target's command is run detached, and `log` states where its output
+goes.** It is a block on a `command` target alone, a dispatch being a run the host already holds and
+[§ 29](#29-the-hosts-run-operations) already watches. The key is omitted where the command is run in
+the foreground, and such a target is invoked exactly as one was before the key existed.
+
+| the key | what it states | what is refused where it is written |
+|---|---|---|
+| `log` | the file the run's output and errors are written to, relative to the directory the command runs in, or absolute | a value that is not a non-empty string, and the block beside a shape other than `command` |
+
+⛔ **The procedure performs the run and the project states only where its log is.** The command is
+started detached, with its output written to `log`, and the status it exits with is written to a
+file of its own. A log the command writes for itself is not this key: a command that put itself in
+the background would end before its work did, which is the measured failure
+[`What a deploy verifies`](#what-a-deploy-verifies-and-what-it-reports) already names.
+
+**Measured on one adopter's deploy**, which runs in the background and hands over a command to
+follow its log. ⚠️ **One carrier, reported by an audit and not re-verified here**, which is the
+whole of the evidence.
+
+The run, in order, and each row is a rule:
+
+| the order | what happens | what may not happen yet |
+|---|---|---|
+| 1. the start | the command is started detached; a record of the run is written to the store [§ 11](#the-store-and-when-an-in-tree-store-is-safe) names, beside the target's name, before anything waits | a second start of a target whose recorded run reads as still running |
+| 2. the hand-over | the person is given the log's path and a command that follows it | any wait. ⛔ The log is handed over **before** the role waits, so a person can follow a run the session is blocked on |
+| 3. the wait | the record is read until the run has ended, for a bounded time per call; a call that reaches its bound reports the run still running | reading an outcome. ⛔ A run still running is neither delivered nor failed |
+| 4. the outcome | the status the run exited with is read, and what [`What a deploy verifies`](#what-a-deploy-verifies-and-what-it-reports) reads follows from there | — |
+
+⛔ **Nothing advances while the run is in flight.** The advance below, the `after` steps and the
+grouping's mark each follow the outcome, and a run whose outcome could not be read holds all three
+exactly as a run still running does.
+
+⛔ **A run that ended with no status recorded is reported as lost, and never as delivered or
+failed.** Its process is gone and nothing wrote how it exited, which is
+[§ 11](#a-report-names-what-it-could-not-establish)'s case: the record names the log, and what the
+log says is a person's to read.
+
+⛔ **A session that ends before the run does leaves the record behind, and the record is the report
+of the run in flight.** It names the target, the command, the directory, the log, the process and
+when the run started. A later session reads it before starting the target again, and reads the
+outcome from it rather than starting a second run. ⚠️ **What it cannot carry is a machine other
+than this one**: the process is read on the machine that started it, and a record read elsewhere
+reports the run lost.
+
+⛔ **The one consumer is `deploy_run.py`**: `start --target <name>` performs rows 1 and 2,
+`wait --target <name> --up-to <seconds>` rows 3 and 4, and `status` reads every record in the
+store without waiting.
 
 ### What an advance requires, and what holds it
 
