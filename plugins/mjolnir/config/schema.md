@@ -5115,8 +5115,11 @@ exist.** Driving a deployed system needs a stack, a credential, indexed material
 the diff. One is a project's own command and may be a `checks_local` entry under
 [§ 17](#17-the-local-verdict-and-the-conditions-under-which-it-counts), read by a `local` check of
 [§ 13](#13-what-counts-as-done--an-ordered-check-list-and-who-answers-each-check); the other is
-mirrored as a host check like any other (§ 2). Measured in one project, where the two comparisons
-run in a workflow beside a suite the same workflow cannot start
+mirrored as a host check like any other (§ 2), and the install step writes it as a gate wherever
+this facet is carried
+([§ What the toolkit installs](#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)).
+Measured in one project, where the two comparisons run in a workflow beside a suite the same
+workflow cannot start
 ([the measurement](../../../docs/configuration-surface.md#the-register-nothing-compared-to-the-suite)).
 
 ⛔ **Both directions of the first comparison are held, and the failure that motivated it is the one
@@ -9067,6 +9070,7 @@ member of a list sits at no path a marker can reach:
 ```yaml
 deploy:
     live_data_step:
+      name:     "<this step's own name, stated on each step of a list and on no single block>"
       backup:
         run:    "<the command that dumps the live store, stated whole>"
         verify: "<the command that reads the dump back; its exit status is the verdict>"
@@ -9074,6 +9078,10 @@ deploy:
       apply:    "<the command that writes irreversibly to the live store>"
       apply_by: procedure | person
       order:    before_invoke | after_invoke
+      sides:
+        backup:   before_invoke | after_invoke
+        rehearse: before_invoke | after_invoke
+        apply:    before_invoke | after_invoke
       record:   "<a command printing the paths already applied to this store, one per line>"
 ```
 
@@ -9113,8 +9121,10 @@ reads; and `backup`, `apply`, `apply_by`, `order` and `record` are each required
 stated at all. ⚠️ **Four of those five because a step configured without one of them is a step whose
 ordering nothing can perform**, and the fifth for [§ 2](#2-code-host)'s reason instead: a project
 that never looked at what its store already holds and a project that decided nothing is released
-read identically otherwise. ⛔ **`rehearse` is the one key a block may omit**, and the subsection
-below states why.
+read identically otherwise. ⛔ **`rehearse` is the one command a block may omit**, and the subsection
+below states why; `sides` may be omitted too, being a placement rather than a command, and `name`
+is the list's and not the step's — both are stated under
+[the subsection on several steps](#several-steps-on-one-target-and-the-side-each-phase-falls-on).
 
 ### The backup is verified by a command, and never by the artifact it wrote
 
@@ -9205,12 +9215,14 @@ would have turned off the one rail this section is for.
 
 ### Where the step falls against the invocation, which the go names
 
-⛔ **`order` is required and states which side of § 33's invocation the step runs on.**
+⛔ **`order` is required and states which side of § 33's invocation the step runs on** — the whole
+of it, unless `sides` places a phase of it elsewhere
+([below](#several-steps-on-one-target-and-the-side-each-phase-falls-on)).
 
 | `order` | when the step runs |
 |---|---|
-| `before_invoke` | the whole step, ending at the apply, then § 33's invocation |
-| `after_invoke` | § 33's invocation, then the whole step |
+| `before_invoke` | every phase `sides` does not place elsewhere, ending at the apply, then § 33's invocation |
+| `after_invoke` | § 33's invocation, then every phase `sides` does not place elsewhere |
 
 ⛔ **It is a configured default and the go names it, so a person may overrule it for this deploy.**
 ⚠️ **Both halves are measured, from opposite ends**: one copy holds the order constant and always
@@ -9225,6 +9237,53 @@ a shortcoming: judging whether new code hard-requires a schema is knowledge of t
 which is [the boundary](#what-the-procedure-models-and-what-it-only-names-and-calls)'s middle
 column. What the role owes is to state the order it is taking, and to say that it took the
 configured one rather than a judgement of its own.
+
+### Several steps on one target, and the side each phase falls on
+
+⛔ **`live_data_step` is one block or a list of them, and each block's phases may fall on different
+sides of the invocation.** ⚠️ **Both halves are adopters' reports, read against the block as it
+stood rather than run**: one has to take its dump before the deploy and make its write after it,
+which a block whose `order` moves the backup with the write cannot state; the other runs several
+writes against its store, some owed before the new code and some after it, which one `apply`
+cannot state at all.
+
+| what the block states | what it means |
+|---|---|
+| a mapping | one step, exactly as the sections above describe it — ⛔ and **no `name`**, a name on the only step being a fact nothing reads |
+| a list of mappings | several steps, performed in the order listed on each side of the invocation; ⛔ **every one carries a `name`**, unique on the target, because the go, the reading and the report each address one step by it |
+| `sides`, omitted | every phase of the step falls where `order` says, which is the single block as it always was |
+| `sides`, stated | the phases it names — `backup`, `rehearse`, `apply` — fall where it says, and every phase it does not name falls where `order` says |
+
+⛔ **The alternation `before_invoke | after_invoke` is written in the order the two sides fall**, and
+the reader ranks the sides by it rather than by a second list of its own.
+
+⛔ **A write is never reached before its own verified backup, nor before its own rehearsal, whatever
+the placement.** The sides a step's phases fall on never run backwards through § 35's sequence —
+backup, then rehearsal, then write — and ⛔ **a step whose placement would is refused at the load
+with the phase named**, not discovered at a deploy that has already invoked the new code. ⚠️ **A
+`sides.rehearse` on a step stating no `rehearse`** is refused with it, being a placement of nothing.
+
+⛔ **The same holds when it is performed and not only when it is loaded.** A step's write is refused
+until its own reading is on record — the dump taken and read back, and the rehearsal run where one
+is stated — so a deploy that took the phases out of order, or a go that overrules `order` into a
+placement that would, reaches no write. ⚠️ **What the go may overrule is the configured side and
+never this rule**, which is the reason it is enforced where the write is made rather than trusted to
+whoever asked.
+
+⛔ **Each write has its own go, given after its own evidence.** A target listing several steps asks
+one go per write, after that step's own dump and rehearsal have been read, and ⛔ **a go on a listed
+step names that step** beside what every go names — a go naming another step, or none, licenses
+nothing. ⚠️ **Several gos inside one deploy is deliberate**, for the reason this section gives for a
+second ask beside § 33's: each write is irreversible, and each one's evidence is its own.
+
+⛔ **A stop names the writes made and the writes not made.** Where a target lists several steps, a
+stop anywhere in them — and above all one after the invocation, where the new code is already
+serving — reports each step by name as written, handed over or not made, ⚠️ **read from what was
+performed in this deploy rather than from what an earlier one left behind**. A report naming only
+the step that stopped leaves a reader not knowing which of the others the store already holds.
+
+⚠️ **A project that states neither a list nor `sides` gets exactly the step the sections above
+describe**, and nothing about it is reported differently.
 
 ### A record of the store's state is never rewritten
 
@@ -9251,7 +9310,9 @@ its three review classes that came from no copy at all.**
 
 ### The ordering, and what the role reports
 
-⛔ **The step is one ordered sequence and every stop in it stops the deploy rather than the step:**
+⛔ **Each step is one ordered sequence and every stop in it stops the deploy rather than the step**
+— the rows falling on whichever side of the invocation `order` and `sides` place them, never out of
+this order:
 
 | | what runs | what a failure does |
 |---|---|---|
@@ -9272,7 +9333,8 @@ this step adds to it is its own list**: whether the dump was verified and by wha
 rehearsal ran at all, what its output was read as, which order was taken and whether the configured
 one was overruled, whether the apply ran or was handed over, and — where it ran and failed —
 ⛔ **what the store is left holding**, which is the one fact a deploy report that stopped here
-cannot omit.
+cannot omit, and — where the target lists several steps — each of them by name as written, handed
+over or not made.
 
 ## 36. A skill that is no leg of the loop, and why none is carried here
 
@@ -9540,6 +9602,10 @@ documents:
     pattern:        "<the name or pattern that may not appear in a governed document>"
     reason:         "<what its appearance would mean>"
     stable_because: "<what keeps the forbidden thing from being reworded into something else>"
+    covers:         ["<a glob of governed documents the entry holds>"]  # omitted where it holds every one
+    exempt:                                                             # omitted where none is exempt
+      glob:   "<a glob of governed documents the entry does not hold>"
+      reason: "<why a document it matches may carry the forbidden thing>"
   quoted:
     sentence: "<the sentence quoted back at the document it came from>"
     document: "<the document it is quoted against>"
@@ -9594,6 +9660,28 @@ of that check would move back out of the facet into a script nobody compares aga
 ⛔ **The kind is stated and never derived from what the entry looks like.** A pattern and a quoted
 sentence are the same string to a reader, so a facet guessing between them would warn about the
 wrong half of a project's list.
+
+### Which documents a forbidding entry holds
+
+⛔ **A forbidding entry holds every governed document unless it states otherwise, and it may state
+otherwise in two ways.** `covers` narrows it to the governed documents its globs match; `exempt`
+lists globs the entry does not hold, each with the `reason` a document it matches may carry the
+forbidden thing. ⚠️ **The case that needs this is the one the kind creates**: a document that
+defines a ban names the banned thing, so an entry with no scope fails the very document that states
+it.
+
+⛔ **An entry stating neither key holds every governed document**, and that is the whole of the
+default. The globs are the governed set's own (`*` stops at a separator, `**` crosses one), and a
+document an entry holds is one `covers` matches, or any governed document where `covers` is omitted,
+and no `exempt` glob matches.
+
+⛔ **A scope matching nothing is a red, not a scope that holds nothing.** A `covers` glob that
+matches no governed document, an `exempt` glob that matches no document the entry would otherwise
+hold, and exemptions that together take out every document the entry covers are each reported by
+the check, so a scope that went stale when a file moved is not read as the entry having nothing to
+find. ⛔ **An exemption carries its reason, and `covers: []` and
+`exempt: []` are refused at load**: an empty `covers` would hold no document while reading as
+holding some, and the absent key is how an entry says it holds every one or exempts none.
 
 ### The two edges, and which of them is enforced
 
@@ -9769,6 +9857,10 @@ project's subject matter, and a key pointing at a command that answers it would 
 [§ 36](#why-a-utility-has-no-home-on-this-surface-from-either-direction)'s letter and deliver
 nothing. ⚠️ **So the facet's coverage is a boundary and not a claim of completeness**: a project's
 document rules are expressible here to the extent that they are the things above.
+
+⚠️ **How the shared check reaches a project's host is the install step's**, which writes it as a
+gate wherever this facet is carried
+([§ What the toolkit installs](#what-the-toolkit-installs-into-a-project-and-what-takes-it-out)).
 
 ### `carrier: none`, and the configurations this key refuses
 
@@ -10415,6 +10507,36 @@ does with it: the block is written where the project states one, and nothing abo
 here. A value that block states and the project does not is the `needs` rule above rather than a
 second mechanism.
 
+**A facet whose check this toolkit ships gets that check as a gate wherever the facet is carried.**
+The checks are [§ 38](#38-the-documents-a-project-holds-to-a-checkable-property)'s over the
+governed documents and [§ 15](#15-end-to-end-coverage-recorded)'s over the register and the change,
+beside [§ 20](#20-the-sections-a-pull-request-body-must-carry)'s over a body. Each is written as three things: a copy
+of its carrier with the project's facet rendered into it, the workflow that runs the copy, and the
+`host.checks` entry that registers the run. ⛔ **The copy runs with what a checkout holds and
+nothing else** — no toolkit, no configuration, no credential — which is why the facet is rendered in
+rather than read: a checkout carries neither the plugin nor, where a project withholds it, the
+configuration. ⚠️ **What the run reads beyond the tree is the event's own statement**: a change's
+base arrives with a pull-request event, so a gate whose check reads a base runs on that event and
+refuses where none is stated, rather than deriving one. ⚠️ **And § 38's documents are read from
+the skills root**, so where that root sits above the code root the gate would sit in, a checkout of
+that repository does not hold them, and the gate is refused as the next paragraph refuses one.
+⛔ **A facet stated absent gets no gate**,
+and a project that stops carrying one has the gate taken out, file and entry, which is the removable
+property above with nothing added.
+
+⛔ **A facet the repository does not commit is not committed by this step on the project's
+behalf.** The gate of § 38 or § 15 is refused, with the reason named and nothing written, where the
+facet it would render is withheld: a key under it
+[§ 28](#28-a-configured-value-a-repository-may-not-hold) routes to the untracked layer, or a
+configuration file the repository ignores. Written anyway, such a gate either commits what the
+project withheld or, reading the configuration instead, holds nothing on every run — the first a
+leak and the second a green over nothing. ⚠️ **Ignored and not untracked**: a configuration written
+and not yet added is one the project can commit, and refusing it would refuse every adoption on its
+first day. ⚠️ **And a gate already standing is left and reported**, which is the refusing
+property's *no partial install* rather than a removal nobody asked for. ⚠️ **The body gate of
+§ 20 and the title gate of [§ 2](#2-code-host) are not held to this**: a project stating nothing new
+keeps what those two write for it, and holding them here would change that.
+
 ⛔ **An artifact a mechanism will not act on unless it carries a mode is written with it.** The
 measured case is a hook: git treats a non-executable one as absent, so a rail installed without the
 bit is a rail that is not installed while the step reports it written. ⚠️ **And where the mechanism
@@ -10522,9 +10644,19 @@ neither is one that loads and **does not carry the change**. ⚠️ **A key the 
 this step has not written yet — and a key the reader cannot resolve at all is reported as unread
 rather than as wrong, the write being an act that can be made again.
 
-⛔ **A key this step cannot place in a file that already exists is reported and never appended.** A
-key appended blind is a key stated twice, and the reader resolves one of the two copies — so what
-comes back names the keys for whoever edits the file, with nothing written.
+⛔ **A key a file that already exists does not state yet is placed where its absence is verifiable,
+and reported everywhere else.** Verifiable means the file's text states the parent block and not the
+child, the parsed file holds a mapping there with no such child, and the parent's own line opens a
+block rather than a flow mapping or a scalar. The child then goes at the end of that block, at the
+indent its existing children use, and a top-level block the file does not have at all goes at the
+end of the file — ⛔ **provided the file it leaves parses to the old document with that one key
+added and nothing else moved**, since the read-back above compares only the keys that changed.
+⚠️ **This is what lets a person come back to setup** to answer a question the first
+run left open, without editing the generated file by hand. ⛔ **Every other shape is reported and
+never appended** — a parent in flow style, a parent stating a scalar or a list, a parent with no
+child to read an indent from: a key appended blind is a key stated twice, and the reader resolves
+one of the two copies, so what comes back names the keys for whoever edits the file, with nothing
+written.
 
 **The marker is the generation's and not the file's.** A file this step rendered carries a
 generated-by marker at its head, so the generation is discoverable later and so it can be unpicked

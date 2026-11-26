@@ -44,14 +44,17 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+# The facet this copy holds a change to. ⛔ `None` in the toolkit's own copy and
+# rendered by the install step, which is what lets a host run this file in a
+# checkout holding neither the toolkit nor the configuration.
+STATED = None
 
-import claim as carrier  # noqa: E402 -- the one derivation of the integration branch
-import config as reader  # noqa: E402 -- the one reader of the surface
+# Where the integration branch comes from when the run states no base. ⛔ `None`
+# above the sentinel, so a rendered copy carries no derivation of its own and
+# refuses rather than guessing; the toolkit's copy sets it below the sentinel to
+# the claim carrier's, the one derivation of which branch that is.
+DERIVE_BASE = None
 
 FACET = "e2e_register"
 
@@ -100,8 +103,14 @@ def integration(root: str) -> str:
     stated = os.environ.get("GITHUB_BASE_REF")
     if stated:
         return stated[len("refs/heads/"):] if stated.startswith("refs/heads/") else stated
+    if DERIVE_BASE is None:
+        raise Unreadable(
+            "this run states no base branch and this copy carries no derivation of one. "
+            "A rendered copy is run on a pull-request event, which states the base; run "
+            "anywhere else it has no change to hold."
+        )
     try:
-        return carrier.integration_branch(root, "origin")
+        return DERIVE_BASE(root)
     except Exception as exc:  # the carrier names what it could not derive
         raise Unreadable(f"the integration branch could not be derived: {exc}") from exc
 
@@ -458,6 +467,10 @@ CHECKS = [
 ]
 
 
+def run(subject: Subject) -> dict[str, list[str]]:
+    return {name: check(subject) for name, check in CHECKS}
+
+
 # --- what the run reports rather than holds ---------------------------------
 #
 # ⛔ Neither of these is a verdict, and both are § 15's: what is deliberately
@@ -497,6 +510,132 @@ def reported(subject: Subject) -> list[str]:
         "names nothing."
     )
     return out
+
+
+def hold(root: str, facet: dict) -> int:
+    """Read one subject, run both comparisons, print the verdict, return the status.
+
+    ⛔ One function for both callers -- the toolkit's own `main` below the
+    sentinel and the vendored copy's `vendored_main` above it -- so the two
+    cannot print different verdicts over the same change.
+    """
+    try:
+        subject = read_subject(root, facet)
+    except Unreadable as exc:
+        print(f"nothing could be held: {exc}", file=sys.stderr)
+        return 1
+
+    results = run(subject)
+    for name, found in results.items():
+        print(f"  {'FAIL' if found else 'ok  '}  {name}")
+    print("\nWhat this run reports rather than refuses:")
+    for line in reported(subject):
+        print(f"  - {line}")
+
+    problems = [problem for found in results.values() for problem in found]
+    if problems:
+        print(f"\n{len(problems)} problem(s):\n")
+        for problem in problems:
+            print(f"  - {problem}")
+        return 1
+    print(
+        f"\nEvery case under `{subject.suite}` has a row, every row names a case, and this "
+        "change carries a case, a row, or a written exemption."
+    )
+    return 0
+
+
+def vendored_main(argv: list[str]) -> int:
+    """The rendered copy's entry point: the facet rendered in, the checkout read.
+
+    ⛔ **It reads no configuration and imports nothing of the toolkit's**: the
+    checkout holds this file, the suite and the register, and the event states
+    the base -- nothing else is assumed to be there.
+    """
+    parser = argparse.ArgumentParser(
+        description="Hold this repository's end-to-end register and this change to both.",
+    )
+    # ⛔ Strict: an argument this copy does not take is refused rather than
+    # ignored, so a flag meant for the toolkit's copy is never read as a run.
+    parser.parse_args(argv)
+    if not STATED:
+        print(
+            "This copy holds no facet, so there is no register to hold. The facet is "
+            "the project's own and is rendered in by the install step.",
+            file=sys.stderr,
+        )
+        return 2
+    return hold(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), STATED)
+
+
+# ---- the vendored half ends here ------------------------------------------
+#
+# ⛔ The line above is the sentinel `render` splits on, and everything below it
+# is the toolkit's own entry point, the renderer and the suite. Nothing below
+# states a rule about a register or a change: a rule down here would be one the
+# host's own run of the rendered copy never executes.
+
+import tempfile  # noqa: E402
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+
+import claim as carrier  # noqa: E402 -- the one derivation of the integration branch
+import config as reader  # noqa: E402 -- the one reader of the surface
+
+
+def _from_the_claim_carrier(root: str) -> str:
+    return carrier.integration_branch(root, "origin")
+
+
+DERIVE_BASE = _from_the_claim_carrier
+
+RENDER_SENTINEL = "# ---- the vendored half ends here "
+
+# What the rendered copy ends with, in place of everything below the sentinel.
+# ⛔ Nothing in it moves between runs, which is the install step's own
+# byte-identical property reaching an artifact whose body is generated.
+RENDER_TAIL = 'if __name__ == "__main__":\n    sys.exit(vendored_main(sys.argv[1:]))\n'
+
+# The line the facet is rendered over, matched whole.
+PLACEHOLDER = "STATED = None"
+
+
+def render(stated) -> str:
+    """This file's vendored half, with one project's facet rendered in.
+
+    ⛔ The half above the sentinel and not the whole file: the suite below plants
+    a register and cases of its own, and a whole-file copy would carry them into
+    an adopting repository.
+    """
+    import ast
+    import pprint
+    with open(os.path.abspath(__file__), encoding="utf-8") as handle:
+        source = handle.read()
+    head = source.split(RENDER_SENTINEL)[0]
+    if head.count(PLACEHOLDER) != 1:
+        raise ValueError(
+            f"the vendored half states {head.count(PLACEHOLDER)} {PLACEHOLDER!r} lines "
+            "where a render needs exactly one to substitute"
+        )
+    literal = pprint.pformat(stated, width=88, sort_dicts=False)
+    # ⛔ Read back before it is written: a value the literal does not reproduce
+    # would be a gate holding a facet the project does not state.
+    if ast.literal_eval(literal) != stated:
+        raise ValueError("the facet does not survive as a Python literal")
+    return head.replace(PLACEHOLDER, f"STATED = {literal}", 1) + RENDER_TAIL
+
+
+def from_config(configuration) -> dict:
+    """The facet as the plain types a rendered copy's literal carries."""
+    def plain(value):
+        if isinstance(value, dict):
+            return {str(key): plain(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [plain(item) for item in value]
+        return value
+    return plain(configuration.get(FACET))
 
 
 # --- the planted violations -------------------------------------------------
@@ -684,10 +823,6 @@ EXEMPTIONS = [
     ("a row naming its case as a link target", _a_row_naming_its_case_as_a_link),
     ("a table under a later heading of the same document", _a_second_heading_after_the_table),
 ]
-
-
-def run(subject: Subject) -> dict[str, list[str]]:
-    return {name: check(subject) for name, check in CHECKS}
 
 
 # --- the suite --------------------------------------------------------------
@@ -923,31 +1058,7 @@ def main(argv: list[str]) -> int:
         )
         return 2
 
-    root = config.code_root
-    try:
-        subject = read_subject(root, facet)
-    except Unreadable as exc:
-        print(f"nothing could be held: {exc}", file=sys.stderr)
-        return 1
-
-    results = run(subject)
-    for name, found in results.items():
-        print(f"  {'FAIL' if found else 'ok  '}  {name}")
-    print("\nWhat this run reports rather than refuses:")
-    for line in reported(subject):
-        print(f"  - {line}")
-
-    problems = [problem for found in results.values() for problem in found]
-    if problems:
-        print(f"\n{len(problems)} problem(s):\n")
-        for problem in problems:
-            print(f"  - {problem}")
-        return 1
-    print(
-        f"\nEvery case under `{subject.suite}` has a row, every row names a case, and this "
-        "change carries a case, a row, or a written exemption."
-    )
-    return 0
+    return hold(config.code_root, facet)
 
 
 if __name__ == "__main__":

@@ -3587,6 +3587,33 @@ invocation`](../plugins/mjolnir/config/schema.md#where-the-step-falls-against-th
 hard-requires a schema is knowledge of that project's code, which is the boundary's middle column,
 and a role that attempted it would be guessing under a key the project already answered.
 
+### Two adopters a single block could not state
+
+⚠️ **Both copies read above carry one write per deploy, and the facet was cut to that**: one `apply`,
+and one `order` moving the whole step — dump, rehearsal and write — to one side of the image.
+⚠️ **Two adopters then reported shapes it cannot state**, read against the block as it stood rather
+than run:
+
+| the adopter's step | what one block does with it |
+|---|---|
+| the dump has to be taken before the image, and the write made after it | `order` moves the dump with the write, so either the dump lands after the new code has served or the write lands before it |
+| several writes against one store, some owed before the image and some after | one `apply` holds one write, so the rest are performed outside the procedure and outside every rail on it |
+
+⛔ **So the block became a list of steps, and each step's phases a placement of their own** —
+[`schema.md § 35 → Several steps on one target`](../plugins/mjolnir/config/schema.md#several-steps-on-one-target-and-the-side-each-phase-falls-on).
+⚠️ **The placement is not free, and that is what keeps it the same facet**: every rail the single
+block carried was a statement about the order *dump → verify → rehearse → go → write*, so a
+placement is admitted only where it never runs that sequence backwards — refused at the load, where
+an adopter reads it, and refused again at the write, where a deploy taken out of order would
+otherwise reach the store. ⛔ **Each write keeps its own go after its own evidence**, since the
+reason for a second ask inside one deploy — the evidence did not exist when the first was put —
+holds per write and not per target. ⚠️ **And a stop now names every write made and not made**: with
+several writes falling after the image, a report naming only the one that failed leaves a reader not
+knowing which of the others the store, and the new code reading it, already has.
+
+⚠️ **A single block with no `sides` is exactly the facet it was**, which is what the two copies
+above state and what every configuration written before this change carries.
+
 ### The forbidding rule no copy carries
 
 ⛔ **Neither copy forbids editing a write that has already been applied, and the facet does.** Both
@@ -3934,6 +3961,25 @@ subject is a *lone* line of pipes, whose red belongs to the block check and is p
 container and a blank value had been one branch, so the suite asserted one arm three times and
 reported two it had never exercised. The branches are split, and every one of the facet's thirty-
 eight planted violations now names its own.
+
+### A ban fails the document that states it
+
+⛔ **A forbidding entry with no scope holds every governed document, including the one that defines
+the ban**, and that document has to name the banned thing to define it. An adopter audit found the
+gap by reading the shipped surface and code, without running them. That is why
+[`schema.md § 38 → Which documents a forbidding entry holds`](../plugins/mjolnir/config/schema.md#which-documents-a-forbidding-entry-holds)
+lets an entry narrow itself with `covers` and take documents out with `exempt`, each exemption
+carrying its reason.
+
+⚠️ **Both keys are omitted rather than defaulted to an empty list.** The absent key keeps the
+unscoped meaning every configuration already had. An empty list would read as a decision and hold
+nothing, which is the state the facet's `graph: []` refusal already exists against.
+
+A scope glob matching nothing is reported by the check rather than refused by the reader, because
+the reader opens no tree: it holds the shape, and the check, which reads the governed set, holds
+the match. An exemption is judged against what its entry would otherwise hold rather than against
+the whole governed set, because an exempt glob that only matches documents `covers` already leaves
+out reads as an exemption doing its job and does nothing.
 
 ### What the facet cannot express, measured on the project it came from
 

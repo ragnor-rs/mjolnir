@@ -71,6 +71,7 @@ answer is not the same thing as a write that would have been wrong.
 from __future__ import annotations
 
 import argparse
+import copy
 import fnmatch
 import json
 import os
@@ -1294,8 +1295,27 @@ ANSWERED_BY: dict[str, Answer] = {
         "own ruling about an act that cannot be undone, never inferred from the "
         "command's shape.",
     ),
+    "deploy.live_data_step.name": ask(
+        "Does this target perform more than one live data write? ⚠️ Where it "
+        "does, each is a step of its own with a name -- the go, the reading and "
+        "the report address one step by it -- and a target with one step names "
+        "none (§ 35).",
+    ),
     "deploy.live_data_step.order": ask(
         "Does the write happen before this target is invoked, or after it?",
+    ),
+    "deploy.live_data_step.sides.backup": ask(
+        "Does the dump fall on a different side of the invocation from the "
+        "write? ⛔ Never after it: a write is not reached before its own "
+        "verified backup, and a placement that would is refused (§ 35).",
+    ),
+    "deploy.live_data_step.sides.rehearse": ask(
+        "Does the rehearsal fall on a different side of the invocation from the "
+        "write? ⛔ Never after it, the go being given on its output (§ 35).",
+    ),
+    "deploy.live_data_step.sides.apply": ask(
+        "Does the write fall on a different side of the invocation from the "
+        "dump? ⚠️ Omitted, it falls where the order above says (§ 35).",
     ),
     "deploy.live_data_step.record": ask(
         "Which command prints what has already been applied to this store, one "
@@ -1382,6 +1402,20 @@ ANSWERED_BY: dict[str, Answer] = {
         "This is the whole soundness condition of the forbidding kind: a name "
         "that was renamed rather than removed still refers to something, and "
         "the check then refuses correct prose (§ 38).",
+    ),
+    "documents.forbidden.covers": ask(
+        "Does it hold only some of the governed documents? Name them as globs, "
+        "or omit the key and it holds every one. ⛔ A glob matching no governed "
+        "document is a red, not a scope that holds nothing (§ 38).",
+    ),
+    "documents.forbidden.exempt.glob": ask(
+        "Is any document allowed to carry it -- the one that defines the ban, "
+        "say? Name it as a glob, or omit `exempt` where none is (§ 38).",
+    ),
+    "documents.forbidden.exempt.reason": ask(
+        "And why may that document carry it? ⛔ Stated, because an exemption "
+        "with no reason cannot be told from a check somebody switched off "
+        "(§ 38).",
     ),
     "documents.quoted.sentence": ask(
         "Is any sentence quoted back at the document it came from? ⛔ This is "
@@ -1995,7 +2029,7 @@ def interrogate(skills_root: str, answers: dict | None = None) -> dict:
         })
 
     report.append(_definitions(skills_root, detected))
-    report.append(_vocabularies(answers, menus))
+    report.append(_vocabularies(answers, menus, detected))
     return {
         "code_root": code_root,
         "detected": detected,
@@ -2100,17 +2134,26 @@ class _Provisional:
     required key is written, which is exactly the state this step is in: a
     provisional view that went through the reader would be refused for want of
     the answers the interrogation is trying to make unnecessary.
+
+    ⛔ **What the first pass detected answers a key the answers do not.** A
+    detected value is never put back as a question, so a view built from the
+    answers alone would hide from the tracker the one address it was read for --
+    `host.repo` being the whole address of a tracker that is the code host's own.
+    An answer still wins over a detection, since it is the person's statement.
     """
 
-    def __init__(self, answers: dict):
+    def __init__(self, answers: dict, detected: dict | None = None):
         self._answers = answers
+        self._detected = detected or {}
 
     def get(self, path: str, default=None):
         found = _at(self._answers, path)
+        if found is None:
+            found = self._detected.get(path)
         return default if found is None else found
 
 
-def _vocabularies(answers: dict, menus: dict) -> dict:
+def _vocabularies(answers: dict, menus: dict, detected: dict | None = None) -> dict:
     """The vocabularies the tracker itself states, through the port.
 
     ⛔ Through the port and never around it: the operation is the one seam a
@@ -2130,7 +2173,7 @@ def _vocabularies(answers: dict, menus: dict) -> dict:
                 "this step is run again with it in hand",
         }
     try:
-        tracker = tracker_port.Port(_Provisional(answers))
+        tracker = tracker_port.Port(_Provisional(answers, detected))
         if not tracker.implements(READ_VOCABULARY):
             return {
                 "reading": TRACKER_VOCABULARY,
@@ -2159,6 +2202,30 @@ def _vocabularies(answers: dict, menus: dict) -> dict:
         reading = published.get(vocabulary)
         if isinstance(reading, dict) and reading.get("answer") == READ:
             menus[key] = reading["values"]
+    # ⛔ A reading in which no vocabulary was established is unestablished, each
+    # part's reason named: a board that could not be addressed answers every part
+    # unestablished, and `read` there would say the tracker was interrogated when
+    # none of it was. ⚠️ Not *any* part unestablished -- a tracker may state one
+    # unestablished by design (a site-wide label set), and that reading still
+    # read what it could, which the parts beside it carry.
+    established = [
+        one for one in published.values()
+        if isinstance(one, dict)
+        and one.get("answer") != tracker_port.VOCABULARY_UNESTABLISHED
+    ]
+    if published and not established:
+        return {
+            "reading": TRACKER_VOCABULARY,
+            "answer": UNESTABLISHED,
+            "because":
+                f"`{kind}` could not establish any vocabulary: "
+                + "; ".join(
+                    f"{name}: {one.get('because')}"
+                    for name, one in sorted(published.items())
+                    if isinstance(one, dict)
+                ),
+            "vocabularies": published,
+        }
     return {
         "reading": TRACKER_VOCABULARY,
         "answer": READ,
@@ -2408,12 +2475,15 @@ def edited(text: str, answers: dict) -> tuple[str, list[str], list[str]]:
     change nothing it was not asked to. Everything else -- comments, blank lines,
     key order, the terminator -- is the file's own and is not rewritten.
 
-    ⛔ **A path this cannot place is reported rather than appended.** A key whose
-    block is written in a shape this editor does not reach is a key a blind
-    append would state **twice**, and a reader resolving the first copy would then
-    read a configuration nobody wrote. ⚠️ Which is why the caller reads the edit
-    back: a file that loads and does not carry the change is the second condition,
-    and it exists because this one cannot be made total.
+    ⛔ **A key the file does not state yet is inserted where it is verifiably
+    absent, and reported where it is not.** `_inserted` places it inside the
+    deepest block the file already has, or at the end of the file where even
+    its top-level block is absent. A key whose block is written in a shape
+    this editor does not reach -- flow style, a scalar, a list -- is a key a
+    blind append would state **twice**, and a reader resolving the first copy
+    would then read a configuration nobody wrote. ⚠️ Which is why the caller
+    reads the edit back: a file that loads and does not carry the change is
+    the second condition, and it exists because this one cannot be made total.
     """
     current = yaml.safe_load(text) or {}
     changed: list[str] = []
@@ -2425,7 +2495,12 @@ def edited(text: str, answers: dict) -> tuple[str, list[str], list[str]]:
             continue
         at = _line_of(lines, path)
         if at is None:
-            unplaced.append(path)
+            grown = _inserted(lines, path, wanted)
+            if grown is None:
+                unplaced.append(path)
+            else:
+                lines = grown
+                changed.append(path)
             continue
         indent = len(lines[at]) - len(lines[at].lstrip())
         ends = "\r\n" if lines[at].endswith("\r\n") else "\n"
@@ -2471,11 +2546,21 @@ def _line_of(lines: list[str], path: str) -> int | None:
     in, and is therefore the kind of defect that holds on one file and not on the
     next.
     """
+    matched, found = _deepest(lines, path)
+    return found if matched == len(path.split(".")) else None
+
+
+def _deepest(lines: list[str], path: str) -> tuple[int, int | None]:
+    """`(how many leading segments of the path the file states, the line of the last)`.
+
+    The second is `None` where not even the first segment is stated. The bounds
+    are `_line_of`'s, which this is the whole of.
+    """
     want = path.split(".")
     found = None
     at, outer = 0, -1
     for depth, segment in enumerate(want):
-        found = None
+        here = None
         for index in range(at, len(lines)):
             match = KEY_LINE.match(lines[index])
             if not match:
@@ -2484,26 +2569,136 @@ def _line_of(lines: list[str], path: str) -> int | None:
             if depth and indent <= outer:
                 break
             if depth and indent > outer and match.group("key") == segment:
-                found, outer = index, indent
+                here, outer = index, indent
                 break
             if not depth and indent == 0 and match.group("key") == segment:
-                found, outer = index, indent
+                here, outer = index, indent
                 break
-        if found is None:
+        if here is None:
+            return depth, found
+        found, at = here, here + 1
+    return len(want), found
+
+
+def _inserted(lines: list[str], path: str, wanted) -> list[str] | None:
+    """The lines with this path added, or `None` where adding it could state a key twice.
+
+    ⛔ **Placed only where the absence is verifiable on both readings of the
+    file**: the text states the parent and not the child, the parsed file holds
+    a mapping at the parent and no such child in it, and the parent's own line
+    opens a block -- nothing after its colon but a comment. A parent in flow
+    style (`host: {kind: github}`) parses as a mapping and fails the third, so
+    it stays reported. The child goes at the end of the parent's block, at the
+    indent its existing children use; a parent with no children to read that
+    indent from is reported rather than given one.
+
+    ⚠️ A top-level block absent from the file is appended at its end, which is
+    where a block nothing states can go without splitting another.
+
+    ⛔ **And the insertion is held to what it was for before it is returned**:
+    the new text has to parse to the old document with this one path added and
+    nothing else moved. The caller's read-back compares only the keys it
+    changed, so a sibling the placement disturbed -- a keep-chomped block
+    scalar losing its trailing lines, a block landing after a document's end
+    marker -- would otherwise pass in silence or fail as the wrong refusal.
+    """
+    want = path.split(".")
+    matched, parent = _deepest(lines, path)
+    if matched == len(want):  # pragma: no cover -- the caller found the line
+        return None
+    now = yaml.safe_load("".join(lines)) or {}
+    held = now
+    for segment in want[:matched]:
+        held = held.get(segment) if isinstance(held, dict) else None
+    if not isinstance(held, dict) or want[matched] in held:
+        return None
+
+    value = wanted
+    for segment in reversed(want[matched + 1:]):
+        value = {segment: value}
+    rendered = yaml.safe_dump(
+        {want[matched]: value}, sort_keys=False, allow_unicode=True, width=10 ** 6,
+    ).rstrip("\n").splitlines()
+    sample = lines[parent] if parent is not None else (lines[0] if lines else "\n")
+    ends = "\r\n" if sample.endswith("\r\n") else "\n"
+    grown = list(lines)
+
+    expected = copy.deepcopy(now)
+    place = expected
+    for segment in want[:-1]:
+        place = place.setdefault(segment, {})
+    place[want[-1]] = wanted
+
+    def held_to(candidate: list[str]) -> list[str] | None:
+        try:
+            return candidate if yaml.safe_load("".join(candidate)) == expected else None
+        except yaml.YAMLError:
             return None
-        at = found + 1
-    return found
+
+    if parent is None:
+        if grown and not grown[-1].endswith("\n"):
+            grown[-1] += ends
+        return held_to(grown + [one + ends for one in rendered])
+
+    opener = KEY_LINE.match(grown[parent])
+    after = grown[parent][opener.end():].strip()
+    if after and not after.startswith("#"):
+        return None
+    outer = len(opener.group("indent"))
+    ends_at = _end_of(grown, parent, outer)
+    indent = None
+    for index in range(parent + 1, ends_at):
+        stripped = grown[index].strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("-"):
+            return None
+        indent = len(grown[index]) - len(grown[index].lstrip())
+        break
+    if indent is None:
+        return None
+    while ends_at > parent + 1 and not grown[ends_at - 1].strip():
+        ends_at -= 1
+    if not grown[ends_at - 1].endswith("\n"):
+        grown[ends_at - 1] += ends
+    grown[ends_at:ends_at] = [" " * indent + one + ends for one in rendered]
+    return held_to(grown)
 
 
 def _end_of(lines: list[str], at: int, indent: int) -> int:
-    """One past the last line belonging to the key stated at `at`."""
+    """One past the last line belonging to the key stated at `at`.
+
+    ⛔ **A sequence entry at the key's own indent belongs to the key**, and that
+    is the shape `render` itself writes: `yaml.safe_dump` puts a block
+    sequence's `- ` at its parent key's column. Judged by indent alone, the block
+    of such a list is its key line and nothing else, so an edit replaced that one
+    line and left the old entries under it for the reader to append to the new
+    ones -- every top-level list in a file this module rendered then refused its
+    own second run. ⚠️ No other line at that column can continue the key, since
+    a mapping's next key there is a sibling and a `- ` there under a scalar is
+    not YAML.
+
+    ⚠️ **A comment at or left of that column is the block's only where an entry
+    follows it**: one written between two entries is inside the list, and one
+    written after the last is about whatever key comes next, so it ends the
+    block and stays where it was.
+    """
+    ended = None
     for index in range(at + 1, len(lines)):
         stripped = lines[index].strip()
         if not stripped:
             continue
-        if len(lines[index]) - len(lines[index].lstrip()) <= indent:
-            return index
-    return len(lines)
+        column = len(lines[index]) - len(lines[index].lstrip())
+        if column == indent and (stripped == "-" or stripped.startswith("- ")):
+            ended = None
+            continue
+        if column <= indent and stripped.startswith("#"):
+            ended = index if ended is None else ended
+            continue
+        if column <= indent:
+            return index if ended is None else ended
+        ended = None
+    return len(lines) if ended is None else ended
 
 
 def write(skills_root: str, answers: dict, *, dry_run: bool = False) -> dict:
@@ -3176,12 +3371,104 @@ def self_test() -> int:
     out, changed, unplaced = edited(
         siblings, {"host": {"landing": {"kind": "a-kind"}}})
     check("a key one block does not have is not found in the block beside it",
-          unplaced == ["host.landing.kind"] and not changed and out == siblings,
-          f"changed {changed!r}, left {out!r}")
+          changed == ["host.landing.kind"] and not unplaced
+          and out == siblings.replace(
+              "    method: squash\n",
+              "    method: squash\n    kind: a-kind\n")
+          and yaml.safe_load(out)["host"]["runs"] == {"kind": "github"},
+          f"changed {changed!r}, unplaced {unplaced!r}, left {out!r}")
     check("while the key the block does have is still reached",
           edited(siblings, {"host": {"runs": {"kind": "a-kind"}}})[1]
           == ["host.runs.kind"],
           f"changed {edited(siblings, {'host': {'runs': {'kind': 'x'}}})[1]!r}")
+
+    # ⛔ A key new to a block the file already has, which is how a person comes
+    # back to setup to answer what the first run left open. The block is found,
+    # the child is verifiably absent from it, and the block is in the shape the
+    # renderer writes -- so the child goes in, and nothing is stated twice.
+    root = _a_tree({})
+    answers = _an_example("github-issues.yaml")
+    assert "pull_request_title" not in answers["host"], (
+        "the example states the key, so this arm would assert nothing"
+    )
+    write(root, answers)
+    path = os.path.join(root, config.CONFIG_PATH)
+    with open(path, encoding="utf-8") as handle:
+        first = handle.read()
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(first.replace("host:\n", "host:  # argued out with the team\n", 1))
+    answers["host"]["pull_request_title"] = {
+        "reference": "#<number>", "repeated": False, "into": ["*"]}
+    written = write(root, answers)
+    with open(path, encoding="utf-8") as handle:
+        grown = handle.read()
+    check("a key new to a block the file has is placed and the read-back holds",
+          written["holds"] and sorted(written["changed"]) == [
+              "host.pull_request_title.into", "host.pull_request_title.reference",
+              "host.pull_request_title.repeated"],
+          f"held {written['holds']!r}, said {written['report']!r}")
+    resolved = config.load_text(grown, root, check_paths=False)
+    check("and the reader resolves it inside that block",
+          resolved.get("host.pull_request_title.reference") == "#<number>"
+          and resolved.get("host.kind") == answers["host"]["kind"]
+          and grown.count("\nhost:") == 1 and grown.count("pull_request_title:") == 1,
+          f"left {grown!r}")
+    check("with the file's own comment still there",
+          "argued out with the team" in grown, "the comment was taken out")
+    again = write(root, answers)
+    with open(path, encoding="utf-8") as handle:
+        after = handle.read()
+    check("and a second run leaves the file byte-identical",
+          again["holds"] and not again["changed"] and after == grown,
+          f"changed {again.get('changed')!r}")
+
+    # ⛔ A top-level block the file does not have at all goes at its end, which
+    # is where a block nothing states can go without splitting another.
+    out, changed, unplaced = edited(
+        "host:\n  kind: github\n", {"tracker": {"kind": "a-kind"}})
+    check("a top-level block absent from the file is placed at its end",
+          out == "host:\n  kind: github\ntracker:\n  kind: a-kind\n"
+          and changed == ["tracker.kind"] and not unplaced,
+          f"left {out!r}, unplaced {unplaced!r}")
+    out, changed, unplaced = edited(
+        "host:\n  kind: github", {"tracker": {"kind": "a-kind"}})
+    check("even where the file carries no terminator",
+          yaml.safe_load(out) == {"host": {"kind": "github"},
+                                  "tracker": {"kind": "a-kind"}},
+          f"left {out!r}")
+
+    # ⛔ The case the refusal is for, which stands: a parent in flow style
+    # parses as a mapping, so only its own line says it is not a block.
+    for shape, text in (
+        ("a parent written in flow style", "host: {kind: github}\n"),
+        # ⚠️ Across lines, so the continuation reads like a child indent and
+        # the opener's own line is the only thing saying this is not a block.
+        ("a parent in flow style across lines",
+         "host: {kind: github,\n  runs: {kind: github}}\n"),
+        ("a parent stating a scalar", "host: github\n"),
+        ("a parent stating nothing to read a child indent from", "host:\nother: 1\n"),
+    ):
+        out, changed, unplaced = edited(text, {"host": {"repo": "an/repo"}})
+        check(f"{shape} is still reported, never edited",
+              unplaced == ["host.repo"] and not changed and out == text,
+              f"changed {changed!r}, left {out!r}")
+
+    # ⛔ A placement that would move anything but its own key is reported, the
+    # caller's read-back reading only the keys it changed. Both found by review
+    # rather than by a failing case: a keep-chomped scalar ending the parent's
+    # block loses its trailing lines to the insertion, and a block appended
+    # after a document's end marker is a file that no longer parses.
+    for shape, text, answers, path in (
+        ("a placement that would change a sibling's value",
+         "host:\n  note: |+\n    kept\n\n\ntracker:\n  kind: x\n",
+         {"host": {"repo": "an/repo"}}, "host.repo"),
+        ("a placement after a document's end marker",
+         "host:\n  kind: github\n...\n", {"tracker": {"kind": "x"}}, "tracker.kind"),
+    ):
+        out, changed, unplaced = edited(text, answers)
+        check(f"{shape} is reported, never edited",
+              unplaced == [path] and not changed and out == text,
+              f"changed {changed!r}, left {out!r}")
 
     # ⚠️ The one thing an edit does **not** keep, stated as a bound rather than
     # found later: a key whose value is a list is replaced whole -- an entry's
@@ -3201,6 +3488,88 @@ def self_test() -> int:
           f"left {out!r}")
     check("while the keys beside the list are untouched",
           "kind: github" in out, f"left {out!r}")
+
+    # ⛔ A list in the shape `render` itself writes, edited by a second run on
+    # the file the first run wrote: `yaml.safe_dump` puts a block sequence's
+    # entries at the parent key's own column, and an editor judging the block by
+    # indent alone replaced the key line and left the old entries under it. Every
+    # top-level list the renderer emits, plus two nested ones, each changed alone
+    # and held to the read-back, to one statement of the key, and to a second run
+    # that leaves the bytes alone. ⚠️ The change per key is one the reader
+    # accepts -- an order a facet may hold, or an entry fewer -- so a refusal
+    # here is the editor's and not the answers'.
+    print("\nA list in the shape the renderer writes, edited by a second run:")
+    rendered_lists = _an_example("jira.yaml")
+    rendered_lists.setdefault("already_run", {})["never_guard"] = [
+        "a-mirrored-command", "another-mirrored-command"]
+    rendered_lists["tracker"].setdefault("policy", {})["forbid_on_item"] = [
+        "credentials", "file_paths"]
+    changes = {
+        "statuses": lambda entries: entries[::-1],
+        "readiness": lambda entries: entries[:-1],
+        "done": lambda entries: entries[:-1],
+        "reversals": lambda entries: entries[:-1],
+        "deploy": lambda entries: entries[::-1],
+        "checks_local": lambda entries: entries[::-1],
+        "body_sections": lambda entries: entries[:-1],
+        "already_run.never_guard": lambda entries: entries[:-1],
+        "tracker.policy.forbid_on_item": lambda entries: entries[::-1],
+    }
+    for key, change in changes.items():
+        root = _a_tree({})
+        first = write(root, rendered_lists)
+        path = os.path.join(root, config.CONFIG_PATH)
+        before_text = open(path, encoding="utf-8").read()
+        leaf = key.rpartition(".")[2]
+        column = "  " * key.count(".")
+        assert first["holds"] and re.search(
+            rf"^{column}{leaf}:\n{column}- ", before_text, re.M), (
+            f"the first run did not render `{key}` with its entries at the key's "
+            "own column, so this arm would assert nothing"
+        )
+        answers = copy.deepcopy(rendered_lists)
+        parent, _, _ = key.rpartition(".")
+        holder = _at(answers, parent) if parent else answers
+        holder[leaf] = change(holder[leaf])
+        assert holder[leaf] != _at(rendered_lists, key), (
+            f"the change to `{key}` changed nothing, so this arm would assert nothing"
+        )
+        second = write(root, answers)
+        after = open(path, encoding="utf-8").read()
+        check(f"`{key}` changed alone in a rendered file is written and read back",
+              second["holds"] and second["changed"] == [key],
+              f"held {second['holds']}, changed {second['changed']!r}, "
+              f"said {second['report'][-1:]!r}")
+        check(f"and the file states `{key}` once, carrying the new list",
+              len(re.findall(rf"^{column}{leaf}:", after, re.M)) == 1
+              and _at(yaml.safe_load(after), key) == holder[leaf],
+              f"left {_at(yaml.safe_load(after) or {}, key)!r}")
+        third = write(root, answers)
+        check(f"and a run after the edit of `{key}` leaves the bytes alone",
+              third["holds"] and not third["changed"]
+              and open(path, encoding="utf-8").read() == after,
+              f"changed {third['changed']!r}")
+
+    # ⛔ The same shape after a person has written into it: a comment at the
+    # list key's own column ended the block where it stood, so the entries
+    # below it survived the edit and the reader appended them. One written
+    # after the last entry is about the next key and has to stay with it.
+    for where, text in (
+        ("between the key and its entries", "a: 1\nlist:\n# a note\n- x\n- y\nb: 2\n"),
+        ("between two entries", "a: 1\nlist:\n- x\n# a note\n- y\nb: 2\n"),
+        ("between two entries of a nested list",
+         "a: 1\nouter:\n  list:\n  - x\n  # a note\n  - y\n  k: 1\nb: 2\n"),
+    ):
+        nested = "outer" in text
+        wanted = ({"a": 1, "outer": {"list": ["z"], "k": 1}, "b": 2} if nested
+                  else {"a": 1, "list": ["z"], "b": 2})
+        out, changed, _ = edited(text, wanted)
+        check(f"a comment {where} is taken with the list rather than ending it",
+              yaml.safe_load(out) == wanted, f"left {yaml.safe_load(out)!r}")
+    after_the_list = "a: 1\nlist:\n- x\n- y\n# about b\nb: 2\n"
+    out, changed, _ = edited(after_the_list, {"a": 1, "list": ["z"], "b": 2})
+    check("while a comment after the last entry stays with the key after it",
+          out == "a: 1\nlist:\n- z\n# about b\nb: 2\n", f"left {out!r}")
 
     print("\nWhat the interrogation reads, and what it reports it could not:")
     root = _a_tree({})
@@ -3261,6 +3630,116 @@ def self_test() -> int:
     check("and the reason says the question has not been answered yet",
           "has not been answered" in nothing["because"],
           f"said {nothing['because']!r}")
+
+    # ⛔ The tracker half with the tracker answered and its address only
+    # detected: the first pass reads the slug off the remote, and a tracker that
+    # is the code host's own is addressed by nothing else. Driven through
+    # `interrogate` in a real tree, against a transport standing in for the host.
+    from adapters import github_issues
+    addressing = {
+        "tracker": {"kind": "github-issues"},
+        "branch_model": {"kind": "worktree"},
+        "host": {"landing": {"method": "squash", "delete_branch": "host"}},
+    }
+
+    def a_host(args, parse):
+        if args[:2] == ["label", "list"]:
+            return [{"name": "a-label"}, {"name": "another-label"}]
+        if args[:2] == ["api", "graphql"]:
+            return {"data": {"repository": {"issueTypes": None}}}
+        raise tracker_port.HostUnavailable(f"no answer planted for {args!r}")
+
+    def tracker_reading(seen):
+        return next(one for one in seen["report"]
+                    if one["reading"] == TRACKER_VOCABULARY)
+
+    standing_transport = github_issues.TRANSPORT
+    github_issues.TRANSPORT = a_host
+    try:
+        remoted = _a_tree({"a-file": "a line\n"})
+        _git(remoted, "init", "-q")
+        _git(remoted, "remote", "add", "origin",
+             "https://a-host.example/an-owner/a-name.git")
+        seen = interrogate(remoted, addressing)
+        reading = tracker_reading(seen)
+        check("with the repository detected and not answered, the slug is "
+              "detected", seen["detected"].get("host.repo") == "an-owner/a-name",
+              f"detected {seen['detected']!r}")
+        check("and the tracker's vocabularies are read through it",
+              reading["answer"] == READ, f"answered {reading!r}")
+        check("and the labels come back as the menu they are",
+              seen["menus"].get("work_item.type.label_prefix")
+              == ["a-label", "another-label"], f"menus {seen['menus']!r}")
+        check("and the statuses with them",
+              bool(seen["menus"].get("statuses")), f"menus {seen['menus']!r}")
+
+        bare = _a_tree({"a-file": "a line\n"})
+        _git(bare, "init", "-q")
+        try:
+            seen = interrogate(bare, addressing)
+            crashed = None
+        except Exception as error:  # the defect this holds: a traceback
+            seen, crashed = None, error
+        check("with no remote and nothing answered, interrogation does not crash",
+              crashed is None, f"raised {crashed!r}")
+        reading = tracker_reading(seen) if seen else {}
+        check("and the tracker reading is unestablished",
+              reading.get("answer") == UNESTABLISHED, f"answered {reading!r}")
+        check("and its reason names `host.repo`",
+              "host.repo" in str(reading.get("because")),
+              f"said {reading.get('because')!r}")
+    finally:
+        github_issues.TRANSPORT = standing_transport
+
+    # ⛔ The aggregate, held in both directions against the shapes trackers
+    # publish: a part unestablished by design beside parts that came back is
+    # still a reading taken, and a reading with no part established is not one.
+    class _Published:
+        performed, detail = True, "a stand-in for the port"
+
+        def __init__(self, result):
+            self.result = result
+
+    def through(published):
+        class APort:
+            def __init__(self, configuration):
+                pass
+
+            def implements(self, operation):
+                return True
+
+            def invoke(self, operation):
+                return _Published(published)
+
+        standing_port = tracker_port.Port
+        tracker_port.Port = APort
+        try:
+            return _vocabularies({"tracker": {"kind": "a-kind"}}, {}, {})
+        finally:
+            tracker_port.Port = standing_port
+
+    def part(answer, values=None):
+        return {"answer": answer, "values": values, "because": f"a part {answer}"}
+
+    designed = through({
+        "statuses": part(tracker_port.VOCABULARY_READ, ["a-status"]),
+        "types": part(tracker_port.VOCABULARY_READ, ["a-type"]),
+        "labels": part(tracker_port.VOCABULARY_UNESTABLISHED),
+    })
+    check("a part unestablished by design beside parts read leaves the reading "
+          "read", designed["answer"] == READ, f"answered {designed!r}")
+    nothing_read = through({
+        "statuses": part(tracker_port.VOCABULARY_UNESTABLISHED),
+        "labels": part(tracker_port.VOCABULARY_UNESTABLISHED),
+    })
+    check("a reading with no part established is unestablished",
+          nothing_read["answer"] == UNESTABLISHED, f"answered {nothing_read!r}")
+    check("and it names each part's reason",
+          nothing_read["because"].count("a part unestablished") == 2,
+          f"said {nothing_read['because']!r}")
+    boardless = _vocabularies({"tracker": {"kind": "github-projects"}}, {}, {})
+    check("a board-addressed tracker with no board is unestablished, not read",
+          boardless["answer"] == UNESTABLISHED, f"answered {boardless!r}")
 
     print("\nThe head marker: at the head, not moving, and removable:")
     root = _a_tree({})

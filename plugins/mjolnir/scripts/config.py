@@ -3250,6 +3250,7 @@ class Config:
             return {
                 "target": None,
                 "found": None,
+                "steps": [],
                 "reads_record": False,
                 "names": [
                     entry.get("name")
@@ -3263,10 +3264,11 @@ class Config:
             }
         entry = stated[0]
         block = entry.get("live_data_step")
-        if not isinstance(block, dict):
+        if not isinstance(block, (dict, list)):
             return {
                 "target": dict(entry),
                 "found": None,
+                "steps": [],
                 "reads_record": False,
                 "names": [target],
                 "report": [
@@ -3276,9 +3278,20 @@ class Config:
                     "§ 33 states. ⛔ Not a step that found nothing to do."
                 ],
             }
+        # ⛔ One shape for every caller, whichever the target states: a single
+        # block is one step whose name is `None`, and a list is its steps in the
+        # order stated -- each with the side every phase falls on, derived once
+        # (§ 35).
+        listed = block if isinstance(block, list) else [block]
+        steps = [
+            dict(step, name=step.get("name"), sides=live_data_sides(step))
+            for step in listed
+        ]
         return {
             "target": dict(entry),
-            "found": dict(block),
+            "found": block,
+            "steps": steps,
+            "listed": isinstance(block, list),
             # ⚠️ `is False` rather than `not`: a target that said nothing about
             # being live is refused at the load, so the only two readings here are
             # the two the configuration states — and a truthy read would make an
@@ -5961,14 +5974,84 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
     if "live_data_step" not in entry:
         return
     at = f"{where}.live_data_step"
-    block = entry["live_data_step"]
-    if not isinstance(block, dict):
+    stated = entry["live_data_step"]
+    if isinstance(stated, dict):
+        # ⛔ One step, exactly as it always was -- and no `name`, a name on the
+        # only step being a fact nothing reads (§ 35).
+        if "name" in stated:
+            raise ConfigError(
+                f"{at}.name",
+                "is stated on a single step, where nothing reads it (§ 35). A name "
+                "is what addresses one step of a list; a target with one step "
+                "states the block alone.",
+            )
+        _validate_one_live_data_step(at, stated, facts, listed=False)
+        return
+    if not isinstance(stated, list) or not stated:
         raise ConfigError(
             at,
-            "must be a mapping; a step states at least a backup, the command that "
-            "writes, who performs it and which side of the invocation it falls on "
-            "(§ 35). Omit the key entirely where this target writes no live data.",
+            "must be a mapping, or a non-empty list of them; a step states at "
+            "least a backup, the command that writes, who performs it and which "
+            "side of the invocation it falls on (§ 35). Omit the key entirely "
+            "where this target writes no live data.",
         )
+    seen: set = set()
+    for index, block in enumerate(stated):
+        here = f"{at}[{index}]"
+        if not isinstance(block, dict):
+            raise ConfigError(
+                here, "must be a mapping, one step of the target's list (§ 35)."
+            )
+        # ⛔ Every step of a list carries a name, unique on the target: the go,
+        # the reading and the report each address one step by it (§ 35).
+        name = block.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ConfigError(
+                f"{here}.name",
+                "required of every step of a list, and a non-empty string: the "
+                "go, the reading and the report each address one step by it "
+                "(§ 35).",
+            )
+        if name in seen:
+            raise ConfigError(
+                f"{here}.name",
+                f"is {name!r}, which an earlier step of this target already "
+                "carries; a name addresses one step and two would be one go "
+                "licensing either write (§ 35).",
+            )
+        seen.add(name)
+        _validate_one_live_data_step(here, block, facts, listed=True)
+
+
+# § 35's sequence, which the sides a step's phases fall on may never run
+# backwards through. ⛔ Phases rather than commands: `backup.verify` belongs to
+# the backup and falls where it does.
+LIVE_DATA_PHASES = ("backup", "rehearse", "apply")
+
+
+def live_data_sides(block: dict) -> dict:
+    """Which side of the invocation each phase of one step falls on.
+
+    ⛔ The one derivation of a step's placement, which the loader holds and the
+    carrier performs: a phase `sides` does not name falls where `order` says, and
+    a `rehearse` the step does not state has no side at all.
+    """
+    placed = block.get("sides") if isinstance(block.get("sides"), dict) else {}
+    out = {}
+    for phase in LIVE_DATA_PHASES:
+        if phase == "rehearse" and not (
+            isinstance(block.get("rehearse"), str) and block["rehearse"].strip()
+        ):
+            out[phase] = None
+            continue
+        out[phase] = placed.get(phase, block.get("order"))
+    return out
+
+
+def _validate_one_live_data_step(
+    at: str, block: dict, facts: dict, *, listed: bool
+) -> None:
+    """One step of § 35, whether it is the target's only one or one of a list."""
     # ⛔ Read off § 35's own entry fence rather than listed here, which is
     # `_validate_deploy`'s own rule read one level down: a key added to that fence
     # is accepted with no edit in this module.
@@ -5986,6 +6069,11 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
         )
     top = {path.split(".")[0] for path in declared}
     for stated_key in block:
+        if stated_key == "name" and not listed:
+            raise ConfigError(
+                f"{at}.name",
+                "is stated on a single step, where nothing reads it (§ 35).",
+            )
         if stated_key not in top:
             raise ConfigError(
                 f"{at}.{stated_key}",
@@ -6072,6 +6160,74 @@ def _validate_live_data_step(where: str, entry: dict, facts: dict) -> None:
                 f"{at}.{key}",
                 f"is {block[key]!r}; the surface states {' | '.join(stated)}.",
             )
+    _validate_live_data_sides(at, block, declared, facts)
+
+
+def _validate_live_data_sides(at: str, block: dict, declared: set, facts: dict) -> None:
+    """`sides`, and the placement no deploy may perform: a write ahead of its evidence.
+
+    ⛔ **Refused at the load rather than discovered at a deploy** that has already
+    invoked the new code (§ 35). The sides are ranked by the order the surface's
+    own `order` alternation is written in, which § 35 states is the order they
+    fall -- a second list of them here would be free to disagree with it.
+    """
+    if "sides" in block:
+        sides = block["sides"]
+        if not isinstance(sides, dict):
+            raise ConfigError(
+                f"{at}.sides",
+                "must be a mapping of a phase -- backup, rehearse, apply -- to the "
+                "side of the invocation it falls on (§ 35). Omit it where every "
+                "phase falls where `order` says.",
+            )
+        inside = {
+            path[len("sides."):]
+            for path in declared
+            if path.startswith("sides.") and "." not in path[len("sides."):]
+        }
+        for phase, side in sides.items():
+            if phase not in inside:
+                raise ConfigError(
+                    f"{at}.sides.{phase}",
+                    "is a phase § 35 does not declare under `sides`, so it is a "
+                    "placement nothing performs. The phases it declares are: "
+                    f"{', '.join(sorted(inside))}.",
+                )
+            stated = vocabulary(
+                facts, f"deploy.live_data_step.sides.{phase}",
+                "which side of the invocation a phase falls on",
+            )
+            if side not in stated:
+                raise ConfigError(
+                    f"{at}.sides.{phase}",
+                    f"is {side!r}; the surface states {' | '.join(stated)}.",
+                )
+        if "rehearse" in sides and "rehearse" not in block:
+            raise ConfigError(
+                f"{at}.sides.rehearse",
+                "places a rehearsal this step does not state, which is a placement "
+                "of nothing (§ 35). State `rehearse`, or omit its side.",
+            )
+    rank = vocabulary(
+        facts, "deploy.live_data_step.order",
+        "which side of the invocation a live data step falls on",
+    )
+    placed = live_data_sides(block)
+    previous = None
+    for phase in LIVE_DATA_PHASES:
+        side = placed[phase]
+        if side is None:
+            continue
+        if previous is not None and rank.index(side) < rank.index(placed[previous]):
+            raise ConfigError(
+                f"{at}.sides.{phase}",
+                f"puts the {phase} {side}, ahead of the {previous} it follows "
+                f"({placed[previous]}). ⛔ A write is never reached before its own "
+                "verified backup, nor before its own rehearsal, whatever the "
+                "placement, and an order a deploy could not perform is refused "
+                "here rather than discovered after the invocation (§ 35).",
+            )
+        previous = phase
 
 
 # § 34's one capture, and the one name in this module that is a *grammar* rather
@@ -6742,8 +6898,21 @@ def _validate_documents(data: dict, facts: dict) -> None:
                 "empty list is the statement; an omission is refused by the "
                 "marker before this runs.",
             )
-        entry_keys = _documents_entries(_get(data, "documents"), key, facts) if value \
+        declared_paths = _documents_entries(_get(data, "documents"), key, facts) if value \
             else set()
+        # ⚠️ **First segments**, for `_validate_deploy`'s stated reason: the fence
+        # declares a block on a forbidding entry (`exempt`), so it contributes
+        # `exempt.glob`, and the key an entry is held to is `exempt`.
+        entry_keys = {path.split(".")[0] for path in declared_paths}
+        scope = {name for name in FORBIDDEN_SCOPE if key == "forbidden" and value}
+        if scope - entry_keys:
+            raise ConfigError(
+                f"documents.{key}",
+                f"the surface declares no {', '.join(sorted(scope - entry_keys))} on "
+                "a forbidding entry, which this reader holds as optional (§ 38). A "
+                "surface that has lost the scope keys is refused rather than read as "
+                "making them required.",
+            )
         for index, entry in enumerate(value):
             where = f"documents.{key}[{index}]"
             if not isinstance(entry, dict):
@@ -6755,11 +6924,13 @@ def _validate_documents(data: dict, facts: dict) -> None:
                         f"is a key § 38 does not declare on a `{key}` entry. The "
                         f"keys it declares are: {', '.join(sorted(entry_keys))}.",
                     )
+            if scope:
+                _a_forbidding_scope(entry, where, declared_paths)
             # ⛔ Absence and a blank value are two arms, which is `_a_document`'s
             # own division one level over and for the same measured reason: a key
             # nobody wrote and a key somebody emptied are reached by different
             # mistakes, and one message names the wrong one half the time.
-            for needed in sorted(entry_keys):
+            for needed in sorted(entry_keys - scope):
                 if needed not in entry:
                     raise ConfigError(
                         f"{where}.{needed}",
@@ -6892,6 +7063,88 @@ def _validate_box_diagrams(data: dict, facts: dict, rows: dict) -> None:
                 "cannot be evaluated is refused here rather than read as matching "
                 "nothing.",
             ) from None
+
+
+# The keys of a forbidding entry that narrow which documents it holds, and the
+# only keys of a § 38 entry that are omitted rather than stated. ⛔ Named here
+# because the surface's fence marks no key of a list member optional -- every
+# other key of an entry is required -- and the reader refuses a surface whose
+# fence has lost either of them rather than reading the loss as a requirement.
+FORBIDDEN_SCOPE = ("covers", "exempt")
+
+
+def _a_forbidding_scope(entry: dict, where: str, declared_paths: set) -> None:
+    """§ 38's `covers` and `exempt` on one forbidding entry, where either is stated.
+
+    ⛔ **What a glob matches is not held here**: the governed set is the tree's,
+    and this reader opens no tree. A glob matching nothing is the check's red,
+    read where the governed set is.
+    """
+    if "covers" in entry:
+        covers = entry["covers"]
+        if not isinstance(covers, list):
+            raise ConfigError(
+                f"{where}.covers",
+                "must be a list of globs (§ 38). One glob is a list of one, so that "
+                "a second can be added without changing shape.",
+            )
+        if not covers:
+            raise ConfigError(
+                f"{where}.covers",
+                "carries no glob (§ 38), so the entry holds no document while "
+                "reading as holding some. Omit the key where the entry holds every "
+                "governed document.",
+            )
+        for at, glob in enumerate(covers):
+            _a_document(glob, f"{where}.covers[{at}]", "a glob of governed documents")
+    if "exempt" not in entry:
+        return
+    exempt = entry["exempt"]
+    if not isinstance(exempt, list):
+        raise ConfigError(
+            f"{where}.exempt",
+            "must be a list of exemptions, each a glob and its reason (§ 38).",
+        )
+    if not exempt:
+        raise ConfigError(
+            f"{where}.exempt",
+            "carries no exemption (§ 38). Omit the key where no document is exempt; "
+            "an empty list reads as a decision nobody can find the subject of.",
+        )
+    inside = {
+        path[len("exempt."):] for path in declared_paths if path.startswith("exempt.")
+    }
+    for at, item in enumerate(exempt):
+        here = f"{where}.exempt[{at}]"
+        if not isinstance(item, dict):
+            raise ConfigError(
+                here,
+                "must be a mapping of the glob exempted and why (§ 38). A bare glob "
+                "is an exemption with no reason, which nobody can tell from a "
+                "check somebody switched off.",
+            )
+        for stated_key in item:
+            if stated_key not in inside:
+                raise ConfigError(
+                    f"{here}.{stated_key}",
+                    "is a key § 38 does not declare on an exemption. The keys it "
+                    f"declares are: {', '.join(sorted(inside))}.",
+                )
+        _a_document(item.get("glob"), f"{here}.glob",
+                    "a glob of governed documents the entry does not hold")
+        reason = item.get("reason")
+        if reason is None:
+            raise ConfigError(
+                f"{here}.reason",
+                "required (§ 38): why a document this glob matches may carry the "
+                "forbidden thing.",
+            )
+        if not isinstance(reason, str) or not reason.strip():
+            raise ConfigError(
+                f"{here}.reason",
+                "must be prose, and is written blank or as something else (§ 38). An "
+                "exemption whose reason is gone is a check switched off.",
+            )
 
 
 def _validate_spec_corpus(data: dict) -> None:
@@ -15344,6 +15597,37 @@ def self_test() -> int:
         check(f"{label} is refused, with the key named", broken == key,
               f"reported {broken!r}")
 
+    # ⛔ § 38's scope keys from the green side: an entry stating both loads, and
+    # one stating neither loads too -- the scope keys being the only keys of an
+    # entry this reader holds as optional, which a refusal of either would undo.
+    for label, entry in (
+        ("a forbidding entry stating what it covers and what it exempts",
+         _a_forbidden_name(covers=["*.md"], exempt=[_an_exemption()])),
+        ("a forbidding entry stating no scope at all", _a_forbidden_name()),
+    ):
+        scoped = _a_valid_example()
+        scoped["documents"] = _a_documents_of(forbidden=[entry])
+        broken = _refused(scoped)
+        check(f"{label} loads", broken is None, f"refused {broken!r}")
+
+    # ⛔ And the surface that has lost the scope keys from its entry fence: this
+    # reader names them optional, so a fence without them is refused rather than
+    # left to make every other key read as the whole of an entry.
+    with open(SURFACE, encoding="utf-8") as handle:
+        surface_text = handle.read()
+    unscoped_surface = re.sub(
+        r"\n    covers: .*\n    exempt: .*\n      glob: .*\n      reason: .*\n", "\n",
+        surface_text, count=1,
+    )
+    lost = _a_valid_example()
+    lost["documents"] = _a_documents_of(forbidden=[_a_forbidden_name()])
+    broken = _refused(lost, facts=surface_facts(unscoped_surface))
+    check(
+        "a surface whose forbidding entry has lost its scope keys is refused",
+        unscoped_surface != surface_text and broken == "documents.forbidden",
+        f"stripped {unscoped_surface != surface_text}, refused {broken!r}",
+    )
+
     # ⛔ § 38's `box_diagrams`, the green side of the arms planted above: the
     # block stated with an exemption loads, and so does a facet stating no block
     # at all -- which is every configuration written before the key, and which
@@ -16510,6 +16794,25 @@ def self_test() -> int:
         # and a reader guessing at that would refuse configurations it cannot read.
         ("an apply carrying a flag that suppresses a prompt loads",
          {"live_data_step": _a_live_data_step(apply="a-write --assume-yes")}),
+        # ⛔ The two shapes § 35's several-steps subsection exists for, each as the
+        # adopter reported it: a dump before the deploy and the write after it,
+        # and several writes on one target falling on both sides.
+        ("a backup before the invocation and the write after it loads",
+         {"live_data_step": _a_live_data_step(
+             rehearse="a-dry-run", order=_the_sides()[0],
+             sides={"rehearse": _the_sides()[1], "apply": _the_sides()[1]})}),
+        ("several named steps on one target, on both sides, load",
+         {"live_data_step": [
+             _a_listed_step("before", order=_the_sides()[0]),
+             _a_listed_step("after", order=_the_sides()[1]),
+             _a_listed_step("split", order=_the_sides()[0],
+                            sides={"apply": _the_sides()[1]}),
+         ]}),
+        # ⚠️ And a side that repeats what `order` already says, which is not a
+        # placement out of order and must not read as one.
+        ("a side naming the side order already states loads",
+         {"live_data_step": _a_live_data_step(
+             order=_the_sides()[0], sides={"apply": _the_sides()[0]})}),
     ):
         loaded = _a_valid_example()
         loaded["deploy"] = [_a_deploy_target(**overrides)]
@@ -18010,6 +18313,65 @@ def _planted_violations():
          "deploy[0].live_data_step.apply",
          at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
              apply="STORE=a-url printf 'y\\n' | a-write"))])),
+        # ⛔ Several steps, and the side each phase falls on. Every placement plant
+        # is one a deploy could not perform -- a write or a rehearsal ahead of the
+        # evidence it follows -- and each is refused at the load with the phase
+        # named, which is the whole of § 35's rule for it.
+        ("a write placed before the backup it follows", "deploy[0].live_data_step.sides.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             order=_the_sides()[1], sides={"apply": _the_sides()[0]}))])),
+        ("a write placed before the rehearsal it follows",
+         "deploy[0].live_data_step.sides.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             rehearse="a-dry-run",
+             sides={"rehearse": _the_sides()[1], "apply": _the_sides()[0]}))])),
+        ("a rehearsal placed before the backup it follows",
+         "deploy[0].live_data_step.sides.rehearse",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             rehearse="a-dry-run",
+             sides={"backup": _the_sides()[1], "rehearse": _the_sides()[0],
+                    "apply": _the_sides()[1]}))])),
+        ("a side for a rehearsal the step does not state",
+         "deploy[0].live_data_step.sides.rehearse",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             sides={"rehearse": _the_sides()[0]}))])),
+        ("a side for a phase § 35 does not declare",
+         "deploy[0].live_data_step.sides.record",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             sides={"record": _the_sides()[0]}))])),
+        ("a side outside its alternation", "deploy[0].live_data_step.sides.apply",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             sides={"apply": "whenever"}))])),
+        ("sides that are not a mapping", "deploy[0].live_data_step.sides",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             sides=_the_sides()[1]))])),
+        ("a name on a target's only step", "deploy[0].live_data_step.name",
+         at("deploy", [_a_deploy_target(live_data_step=_a_live_data_step(
+             name="the-only-one"))])),
+        ("an empty list of steps", "deploy[0].live_data_step",
+         at("deploy", [_a_deploy_target(live_data_step=[])])),
+        ("a step of a list that is not a block", "deploy[0].live_data_step[1]",
+         at("deploy", [_a_deploy_target(live_data_step=[
+             _a_listed_step("first"), "a write"])])),
+        ("a step of a list carrying no name", "deploy[0].live_data_step[1].name",
+         at("deploy", [_a_deploy_target(live_data_step=[
+             _a_listed_step("first"), _a_live_data_step()])])),
+        ("two steps of one target sharing a name", "deploy[0].live_data_step[1].name",
+         at("deploy", [_a_deploy_target(live_data_step=[
+             _a_listed_step("twice"), _a_listed_step("twice")])])),
+        # ⚠️ And a listed step is held to every rule a single one is: the plant is
+        # one step down the list, so a reader that validated only the first would
+        # pass it.
+        ("a later step of a list placing its write before its backup",
+         "deploy[0].live_data_step[1].sides.apply",
+         at("deploy", [_a_deploy_target(live_data_step=[
+             _a_listed_step("first"),
+             _a_listed_step("second", order=_the_sides()[1],
+                            sides={"apply": _the_sides()[0]})])])),
+        ("a later step of a list with nothing to apply",
+         "deploy[0].live_data_step[1].apply",
+         at("deploy", [_a_deploy_target(live_data_step=[
+             _a_listed_step("first"), _a_listed_step("second", apply=_ABSENT)])])),
         # § 34's shape, one plant per arm. ⛔ Every one of them replaces the whole
         # facet rather than editing the base example's, which is this list's rule
         # for `_a_deploy_target` read one facet over: a plant that broke one key
@@ -18334,6 +18696,37 @@ def _planted_violations():
         ("a forbidden pattern whose reason is blank", "documents.forbidden[0].reason",
          at("documents",
             _a_documents_of(forbidden=[_a_forbidden_name(reason="   ")]))),
+        # ⛔ The scope keys, which are the only keys of an entry that are omitted
+        # rather than stated: every arm below is one a project reaches by a
+        # different mistake, and each would otherwise leave an entry holding
+        # nothing while reading as holding something.
+        ("a covers written as one bare glob", "documents.forbidden[0].covers",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(covers="docs/*.md")]))),
+        ("a covers carrying no glob", "documents.forbidden[0].covers",
+         at("documents", _a_documents_of(forbidden=[_a_forbidden_name(covers=[])]))),
+        ("a covers glob written blank", "documents.forbidden[0].covers[0]",
+         at("documents", _a_documents_of(forbidden=[_a_forbidden_name(covers=["  "])]))),
+        ("an exempt that is not a list", "documents.forbidden[0].exempt",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=_an_exemption())]))),
+        ("an exempt carrying no exemption", "documents.forbidden[0].exempt",
+         at("documents", _a_documents_of(forbidden=[_a_forbidden_name(exempt=[])]))),
+        ("an exemption written as a bare glob", "documents.forbidden[0].exempt[0]",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=["a-document.md"])]))),
+        ("an exemption with no glob", "documents.forbidden[0].exempt[0].glob",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=[_an_exemption(glob=_ABSENT)])]))),
+        ("an exemption with no reason", "documents.forbidden[0].exempt[0].reason",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=[_an_exemption(reason=_ABSENT)])]))),
+        ("an exemption whose reason is blank", "documents.forbidden[0].exempt[0].reason",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=[_an_exemption(reason=" ")])]))),
+        ("a key § 38 declares on no exemption", "documents.forbidden[0].exempt[0].until",
+         at("documents", _a_documents_of(
+             forbidden=[_a_forbidden_name(exempt=[_an_exemption(until="later")])]))),
         ("a quoted list that is not a list", "documents.quoted",
          at("documents", _a_documents_of(quoted="a sentence"))),
         # ⛔ The optional key's three arms. Omitting it is accepted and held by
@@ -21173,6 +21566,28 @@ def _a_member_of(path: str) -> str:
     return stated[0]
 
 
+def _the_sides() -> tuple[str, str]:
+    """§ 35's two sides of the invocation, earlier first, read off the surface.
+
+    ⛔ Read rather than spelled, for `_a_member_of`'s reason, and ⚠️ **the pair and
+    not the first member alone**: every placement arm needs a side that falls after
+    another, which one member cannot give it.
+    """
+    stated = facts_for("deploy.live_data_step.order")
+    if len(stated) != 2:
+        raise ConfigError(
+            "deploy.live_data_step.order",
+            f"states {stated!r} rather than two sides, so the placement arms would "
+            "assert an order between sides that are not there.",
+        )
+    return stated[0], stated[1]
+
+
+def _a_listed_step(name: str, **overrides) -> dict:
+    """One step of a target's § 35 list: the smallest block, carrying a name."""
+    return _a_live_data_step(name=name, **overrides)
+
+
 def _a_release_file(**overrides) -> dict:
     """§ 34's smallest valid version-carrying file, to break one key of at a time.
 
@@ -21364,6 +21779,13 @@ def _a_forbidden_name(**overrides) -> dict:
         "reason": "the component was deleted, so a document naming it describes nothing",
         "stable_because": "the name was removed rather than renamed",
     }
+    entry.update(overrides)
+    return {key: value for key, value in entry.items() if value is not _ABSENT}
+
+
+def _an_exemption(**overrides) -> dict:
+    """§ 38's smallest valid exemption on a forbidding entry."""
+    entry = {"glob": "a-document.md", "reason": "it is the document that defines the ban"}
     entry.update(overrides)
     return {key: value for key, value in entry.items() if value is not _ABSENT}
 

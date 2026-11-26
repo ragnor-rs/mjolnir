@@ -103,7 +103,15 @@ def _stepped(configuration: reader.Config) -> list[dict]:
         read = configuration.live_data_step(entry.get("name"))
         if read["found"] is None or not read["reads_record"]:
             continue
-        out.append({"target": entry["name"], "record": read["found"]["record"]})
+        # ⛔ Every step's own listing, a target that lists several reading each:
+        # a store written by the second step is held exactly as one written by
+        # the first (§ 35). ⚠️ A listing two steps share is read once.
+        seen = set()
+        for step in read["steps"]:
+            if step["record"] in seen:
+                continue
+            seen.add(step["record"])
+            out.append({"target": entry["name"], "record": step["record"]})
     return out
 
 
@@ -153,7 +161,11 @@ def held(stepped: list[dict], released: dict[str, set[str]], rewritten: set[str]
     and the remedy is a new write rather than a smaller edit of an old one.
     """
     problems = []
-    for entry in stepped:
+    # ⚠️ Each target once, however many of its steps state a listing: the set is
+    # already their union, and a target read per step would name a file twice.
+    targets = list(dict.fromkeys(entry["target"] for entry in stepped))
+    for target in targets:
+        entry = {"target": target}
         for path in sorted(released.get(entry["target"], ()) & rewritten):
             problems.append(
                 f"{path}: already applied to the live store `{entry['target']}` "
@@ -175,16 +187,20 @@ def run(root: str, base: str | None = None) -> tuple[int, list[str]]:
             "against (§ 35)."
         )
         return 0, report
-    code_root = configuration.code_root()
-    released = {
-        entry["target"]: _released(code_root, entry["record"]) for entry in stepped
-    }
-    rewritten = _rewritten(root, base or sibling.merge_base(root, sibling.integration(root)))
+    code_root = configuration.code_root
+    # ⛔ One set per target, the union of every listing its steps state: a path
+    # applied by any step of a target is applied to what that target serves, and
+    # a mapping keyed by target alone would let a later step's listing replace an
+    # earlier one's (§ 35).
+    released: dict[str, set[str]] = {}
     for entry in stepped:
+        listed = _released(code_root, entry["record"])
+        released.setdefault(entry["target"], set()).update(listed)
         report.append(
-            f"{entry['target']}: {len(released[entry['target']])} path(s) already "
-            f"applied, listed by `{entry['record']}`."
+            f"{entry['target']}: {len(listed)} path(s) already applied, listed by "
+            f"`{entry['record']}`."
         )
+    rewritten = _rewritten(root, base or sibling.merge_base(root, sibling.integration(root)))
     problems = held(stepped, released, rewritten)
     for line in problems:
         report.append(f"  - {line}")
@@ -201,6 +217,8 @@ class _Stated:
         self._targets = targets
         self._root = root
 
+    # ⛔ A property, because the reader's is one -- see `live_data.py`'s fake.
+    @property
     def code_root(self):
         return self._root
 
@@ -212,14 +230,17 @@ class _Stated:
             if entry.get("name") != target:
                 continue
             block = entry.get("live_data_step")
+            blocks = block if isinstance(block, list) else [block] if block else []
             return {
                 "target": dict(entry),
-                "found": dict(block) if isinstance(block, dict) else None,
+                "found": block or None,
+                "steps": [dict(each, name=each.get("name")) for each in blocks],
+                "listed": isinstance(block, list),
                 "reads_record": entry.get("not_live") is False,
                 "names": [target],
                 "report": [],
             }
-        return {"target": None, "found": None, "reads_record": False,
+        return {"target": None, "found": None, "steps": [], "reads_record": False,
                 "names": [], "report": []}
 
 
@@ -421,6 +442,34 @@ def self_test() -> int:
     check(
         "while the same change against a target nobody else uses is green",
         status == 0 and "holds nothing" in " ".join(report),
+        f"answered {status} {report!r}",
+    )
+    # ⛔ A target listing several steps, the rewritten path listed by the second
+    # step's command alone: a check reading only the first step's listing, or
+    # one whose second listing replaced the first, is green on this.
+    first_only = os.path.join(repo, "lists-another-store")
+    with open(first_only, "w", encoding="utf-8") as handle:
+        handle.write("#!/bin/sh\nprintf 'other/0001.sql\\n'\n")
+    os.chmod(first_only, 0o755)
+    two_steps = _a_target()
+    single = two_steps["live_data_step"]
+    two_steps["live_data_step"] = [
+        dict(single, name="first", record="./lists-another-store"),
+        dict(single, name="second", record="./released"),
+    ]
+    status, report = _run_against([two_steps])
+    check(
+        "a rewrite of a path only a later step lists is red, named once",
+        status == 1
+        and sum(1 for line in report if "store/0001.sql" in line) == 1,
+        f"answered {status} {report!r}",
+    )
+    reversed_steps = dict(two_steps, live_data_step=list(reversed(
+        two_steps["live_data_step"])))
+    status, report = _run_against([reversed_steps])
+    check(
+        "and red with the steps the other way round, no listing replacing another",
+        status == 1 and any("store/0001.sql" in line for line in report),
         f"answered {status} {report!r}",
     )
     os.remove(os.path.join(repo, "store/0002.sql"))

@@ -47,12 +47,15 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 import unicodedata
 from urllib.parse import unquote
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import config as reader  # noqa: E402  -- the one reader, never a second parser
+# The facet this copy holds a tree to, and where that tree's documents are read
+# from relative to the repository this copy sits in. ⛔ `None` in the toolkit's
+# own copy and rendered by the install step, which is what lets a host run this
+# file in a checkout holding neither the toolkit nor the configuration -- and
+# what keeps one project's graph out of every other project's gate.
+STATED = None
 
 FACET = "documents"
 LIST = "list"
@@ -624,6 +627,42 @@ def check_every_document_is_reachable(subject: Subject) -> list:
     return problems
 
 
+def held_by(entry: dict, governed_now: list) -> tuple:
+    """The governed documents one forbidding entry holds, and its globs that match nothing.
+
+    ⛔ An entry stating neither `covers` nor `exempt` holds every governed
+    document, which is the only default. ⚠️ An exemption is judged against what
+    the entry would otherwise hold rather than against the whole governed set,
+    so an exempt glob outside `covers` is reported rather than read as an
+    exemption that did its job.
+    """
+    stale = []
+    covers = entry.get("covers")
+    if covers is None:
+        candidates = list(governed_now)
+    else:
+        candidates = []
+        for at, glob in enumerate(covers):
+            matched = [path for path in governed_now if glob_regex(glob).match(path)]
+            if not matched:
+                stale.append((f"covers[{at}]", glob, "no governed document"))
+            candidates.extend(path for path in matched if path not in candidates)
+    held = list(candidates)
+    for at, item in enumerate(entry.get("exempt") or ()):
+        glob = item.get("glob") or ""
+        matched = [path for path in candidates if glob_regex(glob).match(path)]
+        if not matched:
+            stale.append((f"exempt[{at}].glob", glob, "no document this entry holds"))
+        held = [path for path in held if path not in matched]
+    # ⛔ Every glob may match and the entry still hold nothing, where its
+    # exemptions take out all it covers -- the same scope holding nothing,
+    # reached through globs each of which is live.
+    if candidates and not held:
+        globs = ", ".join(str(item.get("glob")) for item in entry.get("exempt") or ())
+        stale.append(("exempt", globs, "every document this entry would hold"))
+    return sorted(held), stale
+
+
 def check_every_link_resolves(subject: Subject) -> list:
     """Every relative link in a governed document reaching something the index holds.
 
@@ -704,7 +743,14 @@ def check_no_forbidden_name_appears(subject: Subject) -> list:
                 "does not compile is never *no match*."
             )
             continue
-        for path in subject.set_now:
+        held, stale = held_by(entry, subject.set_now)
+        for where, glob, what in stale:
+            problems.append(
+                f"documents.forbidden[{index}].{where}: {glob!r} matches {what}, so "
+                "this scope holds nothing it says it holds. A scope that went stale "
+                "when a file moved is never read as the entry having nothing to find."
+            )
+        for path in held:
             text = subject.read(path)
             if isinstance(text, Exception):
                 continue
@@ -1165,6 +1211,169 @@ def warnings(subject: Subject) -> list:
     ]
 
 
+def hold(subject: Subject) -> int:
+    """Run every check over one subject, print the verdict, and return the status.
+
+    ⛔ One function for both callers -- the toolkit's own `main` below the
+    sentinel and the vendored copy's `vendored_main` above it -- so the two
+    cannot print different verdicts over the same tree.
+    """
+    results = run(subject)
+    for name, kind, _check in CHECKS:
+        found = results[name]
+        print(f"  {'FAIL' if found else 'ok  '}  [{kind:<10}] {name}")
+    said = warnings(subject)
+    if said:
+        print()
+        for warning in said:
+            print(f"  warn  {warning}")
+    problems = [problem for found in results.values() for problem in found]
+    if problems:
+        print(f"\n{len(problems)} problem(s):\n")
+        for problem in problems:
+            print(f"  - {problem}")
+        print(
+            "\n⚠️ When one of these goes red, the assertion is as likely to be wrong as "
+            "the document (§ 38). Read the row and the text against each other before "
+            "editing either."
+        )
+        return 1
+    # ⛔ The summary names what was **held** and nothing more. ⚠️ Measured on
+    # this file's own first form: it said every document names what its row
+    # allows and is reached from an entry point, which is false of a project
+    # whose rows state `may_name: null` -- the three graph checks held nothing
+    # there, and the sentence asserted they had passed.
+    held = [
+        f"all {len(subject.set_now)} governed document(s) have a row",
+        "every relative link reaches a file and a heading the index holds"
+        + (f" or {len(subject.exempt)} exempt glob(s) cover" if subject.exempt else ""),
+        "no forbidden name appears",
+        "and every one keeps its own blocks"
+        + (
+            ", its box diagrams' edges included" if subject.diagrams_held
+            else " -- no box diagram is held, `documents.box_diagrams` "
+            + ("stating `held: false`" if subject.box_diagrams else "being unstated")
+        ),
+    ]
+    if subject.enforced:
+        held.insert(1, (
+            f"{len(subject.enforced)} of them name only what their row allows and all "
+            "of it, and are reached from an entry point"
+        ))
+    print("\n" + "; ".join(held) + ".")
+    return 0
+
+
+def vendored_main(argv: list) -> int:
+    """The rendered copy's entry point: the facet rendered in, the checkout read.
+
+    ⛔ **It reads no configuration and imports nothing of the toolkit's**, which
+    is the whole of what makes it runnable on a host: the checkout holds this
+    file and the documents, and nothing else is assumed to be there.
+    """
+    parser = argparse.ArgumentParser(
+        description="Hold this repository's documents to the facet rendered into this copy.",
+    )
+    # ⛔ Strict: an argument this copy does not take is refused rather than
+    # ignored, so a flag meant for the toolkit's copy is never read as a run.
+    parser.parse_args(argv)
+    if not STATED:
+        # ⛔ Not a verdict, and not green: a copy holding no facet holds nothing,
+        # which the install step never writes -- so meeting one is a copy taken
+        # by hand, and saying so is the answer.
+        print(
+            "This copy holds no facet, so there is nothing to hold a document to. The "
+            "facet is the project's own and is rendered in by the install step.",
+            file=sys.stderr,
+        )
+        return 2
+    repository = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = os.path.normpath(os.path.join(repository, STATED["root"]))
+    return hold(read_subject(root, STATED["facet"]))
+
+
+# ---- the vendored half ends here ------------------------------------------
+#
+# ⛔ The line above is the sentinel `render` splits on, and everything below it
+# is the toolkit's own entry point, the renderer and the suite. Nothing below
+# states a rule about a document: a rule down here would be one the host's own
+# run of the rendered copy never executes.
+
+import tempfile  # noqa: E402
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import config as reader  # noqa: E402  -- the one reader, never a second parser
+
+RENDER_SENTINEL = "# ---- the vendored half ends here "
+
+# What the rendered copy ends with, in place of everything below the sentinel.
+# ⛔ Nothing in it moves between runs, which is the install step's own
+# byte-identical property reaching an artifact whose body is generated.
+RENDER_TAIL = 'if __name__ == "__main__":\n    sys.exit(vendored_main(sys.argv[1:]))\n'
+
+# The line the facet is rendered over. ⛔ Matched whole, so a render is a
+# substitution of one line and never a search through the source.
+PLACEHOLDER = "STATED = None"
+
+
+def render(stated) -> str:
+    """This file's vendored half, with one project's facet rendered in.
+
+    ⛔ The half above the sentinel and not the whole file: the suite below plants
+    documents and names of its own, and a whole-file copy would carry every one
+    of them into an adopting repository.
+    """
+    with open(os.path.abspath(__file__), encoding="utf-8") as handle:
+        source = handle.read()
+    head = source.split(RENDER_SENTINEL)[0]
+    if head.count(PLACEHOLDER) != 1:
+        raise ValueError(
+            f"the vendored half states {head.count(PLACEHOLDER)} {PLACEHOLDER!r} lines "
+            "where a render needs exactly one to substitute"
+        )
+    return head.replace(PLACEHOLDER, rendered_stated(stated), 1) + RENDER_TAIL
+
+
+def rendered_stated(stated) -> str:
+    """The `STATED` line one project's facet renders to, as a Python literal.
+
+    ⛔ Read back before it is returned: a value the literal does not reproduce
+    exactly would be a gate holding a different facet from the one the project
+    states, with nothing reporting the difference.
+    """
+    import ast
+    import pprint
+    text = "STATED = " + pprint.pformat(stated, width=88, sort_dicts=False)
+    if ast.literal_eval(text[len("STATED = "):]) != stated:
+        raise ValueError("the facet does not survive as a Python literal")
+    return text
+
+
+def from_config(configuration) -> dict | None:
+    """What a rendered copy holds for this project, or None where it cannot be held.
+
+    ⛔ `None` where the documents are read from outside the repository the copy
+    sits in: a checkout holds that repository and nothing above it, so a gate
+    rendered for such a root would read a tree the host never has.
+    """
+    facet = configuration.get(FACET)
+    relative = os.path.relpath(
+        os.path.abspath(configuration.skills_root), os.path.abspath(configuration.code_root)
+    )
+    if relative == os.pardir or relative.startswith(os.pardir + os.sep):
+        return None
+    return {"root": relative.replace(os.sep, "/"), "facet": _plain(facet)}
+
+
+def _plain(value):
+    """The facet as the plain types a Python literal carries."""
+    if isinstance(value, dict):
+        return {str(key): _plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(item) for item in value]
+    return value
+
+
 # --- the planted violations -------------------------------------------------
 #
 # ⛔ One per branch that does real work. A branch with no plant is a branch
@@ -1333,6 +1542,61 @@ def _plant_a_fragment_naming_frontmatter(subject: Subject) -> Subject:
 def _plant_a_forbidden_name(subject: Subject) -> Subject:
     subject.text["docs/a-document.md"] += "\nThe ARetiredName module does this.\n"
     return subject
+
+
+def _scoped(subject: Subject, **scope) -> Subject:
+    """The fixture's one forbidding entry with a scope stated on it, replaced rather than mutated."""
+    subject.forbidden = [dict(subject.forbidden[0], **scope)]
+    return subject
+
+
+def _plant_a_forbidden_name_in_a_covered_document(subject: Subject) -> Subject:
+    """The `covers` arm's inclusion: a scoped entry still holds what it covers."""
+    return _plant_a_forbidden_name(_scoped(subject, covers=["docs/**/*.md"]))
+
+
+def _plant_a_forbidden_name_beside_an_exemption(subject: Subject) -> Subject:
+    """An exemption takes out what it matches and nothing else."""
+    return _plant_a_forbidden_name(_scoped(
+        subject, exempt=[{"glob": "README.md", "reason": "it defines the ban"}],
+    ))
+
+
+def _plant_a_scope_matching_no_governed_document(subject: Subject) -> Subject:
+    """A `covers` glob over a tracked file the governed set does not hold.
+
+    ⚠️ The glob matches a **tracked** file, so a reading against the index
+    rather than against the governed set would see a match and stay green.
+    """
+    return _scoped(subject, covers=["docs/**/*.md", "src/*.src"])
+
+
+def _plant_an_exemption_matching_no_governed_document(subject: Subject) -> Subject:
+    return _scoped(subject, exempt=[{"glob": "src/*.src", "reason": "it is code"}])
+
+
+def _plant_an_exemption_outside_what_the_entry_covers(subject: Subject) -> Subject:
+    """An exempt glob matching a governed document `covers` already leaves out.
+
+    ⚠️ Read against the whole governed set this exemption matches something, so
+    it reddens only where an exemption is judged against what the entry holds.
+    """
+    return _scoped(
+        subject, covers=["docs/**/*.md"],
+        exempt=[{"glob": "README.md", "reason": "it defines the ban"}],
+    )
+
+
+def _plant_exemptions_that_take_out_everything_covered(subject: Subject) -> Subject:
+    """Every glob live, and the entry holding nothing once its exemptions apply.
+
+    ⚠️ Each glob here matches a document the entry covers, so the per-glob test
+    stays green on it; what reddens it is the entry's held set being empty.
+    """
+    return _scoped(
+        subject, covers=["docs/**/*.md"],
+        exempt=[{"glob": "docs/*.md", "reason": "it defines the ban"}],
+    )
 
 
 def _plant_a_forbidden_pattern_that_cannot_compile(subject: Subject) -> Subject:
@@ -1521,6 +1785,18 @@ VIOLATIONS = [
      _plant_a_fragment_naming_frontmatter),
     ("no forbidden name appears", "a forbidden name in a governed document",
      _plant_a_forbidden_name),
+    ("no forbidden name appears", "a forbidden name in a document the entry covers",
+     _plant_a_forbidden_name_in_a_covered_document),
+    ("no forbidden name appears", "a forbidden name beside an exemption for another document",
+     _plant_a_forbidden_name_beside_an_exemption),
+    ("no forbidden name appears", "a covers glob matching no governed document",
+     _plant_a_scope_matching_no_governed_document),
+    ("no forbidden name appears", "an exempt glob matching no governed document",
+     _plant_an_exemption_matching_no_governed_document),
+    ("no forbidden name appears", "an exempt glob outside what the entry covers",
+     _plant_an_exemption_outside_what_the_entry_covers),
+    ("no forbidden name appears", "exemptions taking out every document the entry covers",
+     _plant_exemptions_that_take_out_everything_covered),
     ("no forbidden name appears", "a forbidden pattern that cannot be evaluated",
      _plant_a_forbidden_pattern_that_cannot_compile),
     ("a table keeps its shape", "a table row short of a cell", _plant_a_ragged_table),
@@ -1625,6 +1901,17 @@ def _plant_a_forbidden_name_outside_the_governed_set(subject: Subject) -> Subjec
     subject.tracked.append("src/legacy.src")
     subject.text["src/legacy.src"] = "ARetiredName\n"
     return subject
+
+
+def _plant_a_forbidden_name_in_an_exempt_document(subject: Subject) -> Subject:
+    """The document that defines a ban, carrying the banned name under its exemption."""
+    return _plant_a_forbidden_name(_scoped(
+        subject, exempt=[{"glob": "docs/*.md", "reason": "it defines the ban"}],
+    ))
+
+
+def _plant_a_forbidden_name_outside_what_the_entry_covers(subject: Subject) -> Subject:
+    return _plant_a_forbidden_name(_scoped(subject, covers=["README.md"]))
 
 
 def _plant_a_row_that_does_not_enforce_its_edge(subject: Subject) -> Subject:
@@ -1908,6 +2195,10 @@ EXEMPTIONS = [
     ("a fence delimiter shown inside another fence", _plant_a_nested_fence_delimiter),
     ("a forbidden name in a file the globs do not govern",
      _plant_a_forbidden_name_outside_the_governed_set),
+    ("a forbidden name in a document its entry exempts",
+     _plant_a_forbidden_name_in_an_exempt_document),
+    ("a forbidden name in a governed document its entry does not cover",
+     _plant_a_forbidden_name_outside_what_the_entry_covers),
     ("a table carrying one row and its delimiter", _plant_a_table_of_one_row),
     ("a row whose enforced edge this project does not state",
      _plant_a_row_that_does_not_enforce_its_edge),
@@ -2237,51 +2528,7 @@ def main(argv: list) -> int:
         )
         return 2
 
-    subject = read_subject(os.path.abspath(args.skills_root), facet)
-    results = run(subject)
-    for name, kind, _check in CHECKS:
-        found = results[name]
-        print(f"  {'FAIL' if found else 'ok  '}  [{kind:<10}] {name}")
-    said = warnings(subject)
-    if said:
-        print()
-        for warning in said:
-            print(f"  warn  {warning}")
-    problems = [problem for found in results.values() for problem in found]
-    if problems:
-        print(f"\n{len(problems)} problem(s):\n")
-        for problem in problems:
-            print(f"  - {problem}")
-        print(
-            "\n⚠️ When one of these goes red, the assertion is as likely to be wrong as "
-            "the document (§ 38). Read the row and the text against each other before "
-            "editing either."
-        )
-        return 1
-    # ⛔ The summary names what was **held** and nothing more. ⚠️ Measured on
-    # this file's own first form: it said every document names what its row
-    # allows and is reached from an entry point, which is false of a project
-    # whose rows state `may_name: null` -- the three graph checks held nothing
-    # there, and the sentence asserted they had passed.
-    held = [
-        f"all {len(subject.set_now)} governed document(s) have a row",
-        "every relative link reaches a file and a heading the index holds"
-        + (f" or {len(subject.exempt)} exempt glob(s) cover" if subject.exempt else ""),
-        "no forbidden name appears",
-        "and every one keeps its own blocks"
-        + (
-            ", its box diagrams' edges included" if subject.diagrams_held
-            else " -- no box diagram is held, `documents.box_diagrams` "
-            + ("stating `held: false`" if subject.box_diagrams else "being unstated")
-        ),
-    ]
-    if subject.enforced:
-        held.insert(1, (
-            f"{len(subject.enforced)} of them name only what their row allows and all "
-            "of it, and are reached from an entry point"
-        ))
-    print("\n" + "; ".join(held) + ".")
-    return 0
+    return hold(read_subject(os.path.abspath(args.skills_root), facet))
 
 
 if __name__ == "__main__":
