@@ -2491,7 +2491,7 @@ def release_answer(payload: dict, *, config=None, now: float | None = None,
         return {}
     if config is None and not _states_a_configuration(payload.get("cwd")):
         return {}
-    loaded = config if config is not None else _config(payload.get("cwd"))
+    loaded = config if config is not None else _config(_hook_root(payload.get("cwd")))
     said = [
         # ⛔ First, so that a hook killed at its budget has written the record
         # before it reaches the reads that may hang.
@@ -2641,9 +2641,25 @@ def _states_a_configuration(cwd: str | None) -> bool:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     try:
         import config as reader  # noqa: PLC0415 -- the path is set one line up
-        return bool(reader.configured(cwd or "."))
+        return bool(reader.configured(reader.hook_root(cwd)))
     except Exception:  # noqa: BLE001 -- an unreachable reader answers no, per above
         return False
+
+
+def _hook_root(cwd: str | None) -> str:
+    """The directory this event's configuration is resolved under (§ 7).
+
+    ⛔ The reader's rule and not one of this carrier's: the event's directory
+    follows the session's shell, and which project it is standing in is the
+    reader's `hook_root` to answer. A role's own `--skills-root` never passes
+    through here.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import config as reader  # noqa: PLC0415 -- the path is set one line up
+        return reader.hook_root(cwd)
+    except Exception:  # noqa: BLE001 -- an unreachable reader resolves nothing new
+        return cwd or "."
 
 
 def _config(cwd: str | None):
@@ -2674,7 +2690,7 @@ def _read(cwd: str | None):
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     try:
         import config as reader  # noqa: PLC0415 -- the path is set one line up
-        loaded, stop = reader.read_or_why(cwd or ".")
+        loaded, stop = reader.read_or_why(reader.hook_root(cwd))
         return loaded, (f" {reader.REFUSAL_PREFACE} {stop}" if stop else "")
     except Exception:  # noqa: BLE001 -- an unreachable reader explains nothing
         return None, ""
@@ -5359,6 +5375,27 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
         check("a merge in a project stating no configuration is unguarded and silent",
               guard_answer(_call("gh pr merge 7", cwd=str(outside)), now=1000.0,
                            store=fresh("unconfigured-merge")) == {})
+
+        # ⛔ The same merge typed after a `cd` into the project, which a guard
+        # reading the event's directory alone holds to nothing (§ 7): that
+        # directory follows the shell, the harness's project directory does not.
+        below = Path(unreadable) / "a-package" / "src"
+        below.mkdir(parents=True)
+        held_project = os.environ.get("CLAUDE_PROJECT_DIR")
+        try:
+            os.environ["CLAUDE_PROJECT_DIR"] = str(unreadable)
+            check("a merge typed in a subdirectory of the project is refused as at its root",
+                  denied(guard_answer(_call("gh pr merge 7", cwd=str(below)), now=1000.0,
+                                      store=fresh("subdirectory-merge"))))
+            os.environ["CLAUDE_PROJECT_DIR"] = str(outside)
+            check("while a project directory not containing it reaches nothing above it",
+                  guard_answer(_call("gh pr merge 7", cwd=str(below)), now=1000.0,
+                               store=fresh("subdirectory-merge")) == {})
+        finally:
+            if held_project is None:
+                os.environ.pop("CLAUDE_PROJECT_DIR", None)
+            else:
+                os.environ["CLAUDE_PROJECT_DIR"] = held_project
 
         check("while a merge whose record could not be read is refused",
               denied(guard_answer(_call("gh pr merge 7"), config=_a_config([]), now=1000.0,

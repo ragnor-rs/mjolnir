@@ -1180,8 +1180,8 @@ def check_the_carrier_still_calls_this(text: str) -> list[str]:
 
 def _config(cwd: str | None):
     """The project's configuration, or None where there is none to read."""
-    where = cwd or "."
     try:
+        where = config.hook_root(cwd)
         if not config.configured(where):
             return None
         return config.load(where)

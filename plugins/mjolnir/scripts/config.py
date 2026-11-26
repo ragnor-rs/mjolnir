@@ -13219,9 +13219,62 @@ def configured(skills_root: str = ".") -> bool:
 
     ⛔ The same path `load` resolves, and no walk up the tree: where a project's
     configuration lives is one statement, and a carrier searching upwards would
-    act on a parent project's facts in a directory that states none.
+    act on a parent project's facts in a directory that states none. ⚠️ A hook
+    asks `hook_root` first, which is the one bounded exception and lives there
+    rather than here, so a role asking this question is never answered upwards.
     """
     return os.path.isfile(os.path.join(skills_root or ".", CONFIG_PATH))
+
+
+PROJECT_DIR_VARIABLE = "CLAUDE_PROJECT_DIR"
+"""The harness's statement of the directory a session was opened on (§ 7)."""
+
+
+def hook_root(cwd: str | None, project_dir: str | None = None) -> str:
+    """The directory a hook resolves the configuration under, for one event.
+
+    The rule is § 7's, at *A hook in a project that states no configuration*,
+    and is not restated here beyond what the code needs to be read: the
+    directory the event names where it states a configuration; else, where that
+    directory lies at or under the session's project directory, the nearest
+    directory between the two that states one; else the event's directory
+    unchanged, so the caller finds none and is silent.
+
+    ⛔ **The project directory is the harness's statement, never derived.** It
+    is the variable the harness hands every hook and holds fixed for the
+    session, while the event's `cwd` follows every `cd` the session's shell
+    makes, so a guard reading `cwd` alone holds a merge typed after
+    `cd <subdirectory>` to nothing. `project_dir` is the parameter a suite
+    states it through; omitted, the variable is read.
+
+    ⛔ **Never above it.** The walk ends at the project directory inclusive, so
+    no event is answered with the facts of a project the session was not opened
+    on, and a directory outside the project directory is answered exactly as it
+    was before this existed. ⚠️ Nearest rather than the project directory
+    itself, because a work tree under the managed root sits inside it and states
+    its own configuration: a subdirectory of that tree is the tree's, not the
+    checkout's.
+    """
+    here = cwd or "."
+    if configured(here):
+        return here
+    stated = os.environ.get(PROJECT_DIR_VARIABLE) if project_dir is None else project_dir
+    if not stated:
+        return here
+    try:
+        top, at = os.path.realpath(stated), os.path.realpath(here)
+        if os.path.commonpath([top, at]) != top:
+            return here
+    except (OSError, ValueError):
+        return here
+    while at != top:
+        parent = os.path.dirname(at)
+        if parent == at:
+            return here
+        at = parent
+        if configured(at):
+            return at
+    return here
 
 
 STOP_LIMIT = 400
@@ -14403,11 +14456,101 @@ def self_test() -> int:
                       spends.guard_answer(dict(one_call, session_id="a-fresh-session"))
                       .get("systemMessage", "")),
                   why_refused(broken)[:90])
+
+            # ⛔ The same four arms from a subdirectory of that project, which is
+            # where a session stands after one `cd` (§ 7 -> A hook in a project
+            # that states no configuration). Resolved from `cwd` alone, every arm
+            # answers nothing there, the merge guard included. Each call names a
+            # session of its own, so the once-a-session claim above cannot be what
+            # silences one.
+            below = os.path.join(broken, "a-subdirectory", "deeper")
+            os.makedirs(below)
+            held_project = os.environ.get(PROJECT_DIR_VARIABLE)
+            try:
+                os.environ[PROJECT_DIR_VARIABLE] = broken
+
+                def _arms(where: str, tag: str) -> list[str]:
+                    call = dict(one_call, cwd=where)
+                    return [
+                        name
+                        for name, answered in (
+                            ("spend", spends.guard_answer(dict(call, session_id=f"{tag}-s"))),
+                            ("live", reaches.guard_answer(dict(call, session_id=f"{tag}-l"))),
+                            ("enforce", record.guard_answer(dict(call, session_id=f"{tag}-e"))),
+                            ("context", bounded.guard_answer(dict(call, session_id=f"{tag}-c"))),
+                        )
+                        if answered.get("systemMessage")
+                    ]
+
+                spoke_below = _arms(below, "below")
+                check("every arm answers a subdirectory of the project as it answers its root",
+                      sorted(spoke_below) == ["context", "enforce", "live", "spend"],
+                      f"spoke: {spoke_below}")
+                merged = record.guard_answer(dict(
+                    one_call, cwd=below, session_id="below-merge",
+                    tool_input={"command": "gh pr merge 999999 --squash"}))
+                check("and a merge typed there is refused, as it is at the root",
+                      (merged.get("hookSpecificOutput") or {}).get("permissionDecision")
+                      == "deny", repr(merged)[:160])
+
+                # The bound: a project directory that does not contain the event's
+                # directory reaches nothing, so a directory outside every project
+                # the session was opened on still gets no answer.
+                os.environ[PROJECT_DIR_VARIABLE] = os.path.join(directory, "elsewhere")
+                check("a project directory that does not contain the event answers nothing",
+                      _arms(below, "outside") == [], f"spoke: {_arms(below, 'outside-again')}")
+                os.environ.pop(PROJECT_DIR_VARIABLE, None)
+                check("and with no project directory stated the event's own is the only one read",
+                      _arms(below, "unstated") == [], f"spoke: {_arms(below, 'unstated-again')}")
+            finally:
+                if held_project is None:
+                    os.environ.pop(PROJECT_DIR_VARIABLE, None)
+                else:
+                    os.environ[PROJECT_DIR_VARIABLE] = held_project
         finally:
             if held is None:
                 os.environ.pop("CLAUDE_PLUGIN_DATA", None)
             else:
                 os.environ["CLAUDE_PLUGIN_DATA"] = held
+
+    # ⛔ Which directory a hook resolves under (§ 7), held as a function of the
+    # two directories alone. Every case states the project directory through
+    # the parameter, so the variable of whatever session runs this is not read.
+    with tempfile.TemporaryDirectory() as directory:
+        def _states(where: str) -> str:
+            os.makedirs(os.path.join(where, os.path.dirname(CONFIG_PATH)), exist_ok=True)
+            with open(os.path.join(where, CONFIG_PATH), "w", encoding="utf-8") as handle:
+                handle.write("")
+            return where
+
+        project = _states(os.path.realpath(os.path.join(directory, "a-project")))
+        sub = os.path.join(project, "a-package", "src")
+        os.makedirs(sub)
+        tree = _states(os.path.join(project, ".claude", "worktrees", "items", "1-a-tree"))
+        tree_sub = os.path.join(tree, "a-package")
+        os.makedirs(tree_sub)
+        # A parent that states one too, which every bounded case below must
+        # never reach.
+        _states(os.path.realpath(directory))
+        bare = os.path.join(directory, "states-nothing", "below")
+        os.makedirs(bare)
+
+        check("a directory that states one is its own root, whatever the project directory",
+              hook_root(tree, project) == tree and hook_root(project, None) == project)
+        check("a subdirectory of the project resolves to the project",
+              hook_root(sub, project) == project, hook_root(sub, project))
+        check("a subdirectory of a tree inside it resolves to the tree, the nearest one",
+              hook_root(tree_sub, project) == tree, hook_root(tree_sub, project))
+        check("never above the project directory, where a parent states one too",
+              hook_root(os.path.join(directory, "states-nothing"), project)
+              == os.path.join(directory, "states-nothing"))
+        check("a project directory that states none reaches no parent that does",
+              hook_root(bare, os.path.join(directory, "states-nothing")) == bare,
+              hook_root(bare, os.path.join(directory, "states-nothing")))
+        check("with no project directory stated, the event's directory is answered unchanged",
+              hook_root(sub, "") == sub)
+        check("and the event naming none is the working directory, as before",
+              hook_root(None, "") == ".")
 
     loaded: dict[str, Config] = {}
     for path in paths:
