@@ -1480,8 +1480,8 @@ def self_test() -> int:
         answer["written"] is True,
         f"reported {answer['report'][:1]!r}",
     )
-    # ⛔ A later side still follows what precedes it: with the rehearsal placed
-    # after the invocation, the write side cannot be prepared ahead of it.
+    # ⛔ A step whose phases fall on both sides: with no dump, its sequence starts
+    # at the rehearsal on the earlier side, and the write follows on the later one.
     before, after = _the_sides()
     split = _Stated(
         _a_block(backup={"absent_reason": reason},
