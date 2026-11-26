@@ -360,6 +360,8 @@ carriers:
   deploy: skill                 # split per environment at the project level
   session: skill
 
+carrier_routes: []   # no label or type is worked through a carrier of the project's own (§ 7)
+
 # § 23. All three thirds stated. ⚠️ The memory third is the one a project on a tracker this far
 # from the code would lean on hardest — what the next session needs is rarely on the card.
 session:

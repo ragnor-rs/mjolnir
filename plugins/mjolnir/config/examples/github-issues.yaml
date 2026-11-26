@@ -188,6 +188,8 @@ carriers:
   review: skill
   session: skill
 
+carrier_routes: []   # no label or type is worked through a carrier of the project's own (§ 7)
+
 # § 23. All three thirds stated: the tracker brought current, memory refreshed, then the commit —
 # in that order, which is procedure and not this list's. The store that middle third writes is
 # § 25's block below, which is written here exactly because this list names the third.

@@ -2459,6 +2459,86 @@ class Config:
             "identity": str(identity),
         }
 
+    def route_for(self, values: list[str]) -> dict:
+        """§ 7's route for an item, from every label it carries and its type.
+
+        ⛔ **Every failure is a stop and none of them falls back to the loop's
+        own implementing leg**: two routes naming different carriers, and a
+        carrier whose file is not where its kind puts it, are each refused. A
+        route the item matches is a statement that the work is not the loop's
+        to do, so entering the loop's leg instead would do the work the project
+        routed away.
+
+        ⚠️ **A namespaced carrier is unestablished rather than present**: where
+        a plugin is installed is the harness's to know, so the answer says so
+        and the starting role's invocation is the test.
+        """
+        held = {str(value) for value in values}
+        prefix = (
+            str(self.get("work_item.type.label_prefix") or "")
+            if self.get("work_item.type.carrier") == "label" else ""
+        )
+        matched = []
+        for index, entry in enumerate(self.get(ROUTES_KEY) or []):
+            if "label" in entry:
+                hit = str(entry["label"]) in held
+            else:
+                hit = bool({str(entry["type"]), f"{prefix}{entry['type']}"} & held)
+            if hit:
+                matched.append((index, entry))
+        if not matched:
+            return {
+                "routed": False,
+                "carrier": None,
+                "detail": "no route matches the item, so its work is entered "
+                "through `carriers.implement` (§ 7).",
+            }
+        carriers = {entry["carrier"] for _, entry in matched}
+        if len(carriers) > 1:
+            raise ConfigError(
+                ROUTES_KEY,
+                "routes this item to "
+                + " and to ".join(
+                    f"`{entry['carrier']}` (entry {index}, by "
+                    f"{'label' if 'label' in entry else 'type'})"
+                    for index, entry in matched
+                )
+                + ". Which carrier the work belongs to is the project's to state, "
+                "so this is a stop rather than the first of them (§ 7).",
+            )
+        index, entry = matched[0]
+        carrier, kind = entry["carrier"], entry["kind"]
+        on = "label" if "label" in entry else "type"
+        if ":" in carrier:
+            present, where = "unestablished", None
+        else:
+            where = os.path.join(
+                self.skills_root, *ROUTE_PLACES[kind]
+            ).format(name=carrier)
+            present = os.path.isfile(where)
+        if present is False:
+            raise ConfigError(
+                f"{ROUTES_KEY}[{index}].carrier",
+                f"names the {kind} `{carrier}`, and nothing is at {where!r}. A route "
+                "to a carrier that is not there is a stop naming it, never the "
+                "loop's own leg entered in its place (§ 7).",
+            )
+        return {
+            "routed": True,
+            "carrier": carrier,
+            "kind": kind,
+            "by": {on: entry[on]},
+            "present": present,
+            "read_at": where,
+            "detail": (
+                f"the item is handed to the {kind} `{carrier}` after the gate and "
+                "the claim, in place of `carriers.implement` (§ 7)."
+                + (" Its install is the harness's to know, so the invocation is "
+                   "the test and a refused one is the stop."
+                   if present == "unestablished" else "")
+            ),
+        }
+
     def exempt_for(self, paths: list[str], kind: str | None = None) -> dict:
         """§ 30's verdict on one change: does it go through the loop or not.
 
@@ -7418,6 +7498,89 @@ def _validate_transition_fields(data: dict) -> None:
         seen.add((status, name))
 
 
+# § 7's routes, by the key the surface states them under.
+ROUTES_KEY = "carrier_routes"
+# The two things an entry may route on. ⛔ Exactly one per entry: an entry naming
+# both has no reading of which of them the item has to carry.
+ROUTE_ON = ("label", "type")
+# Where a project's own carrier of each kind sits under the skills root -- the
+# harness's convention for a project-local skill and command, and not a choice
+# of this module's. ⚠️ A namespaced carrier is read at no path: where a plugin is
+# installed is the harness's alone, so § 7 reports one unestablished.
+ROUTE_PLACES = {
+    "skill": (".claude", "skills", "{name}", "SKILL.md"),
+    "command": (".claude", "commands", "{name}.md"),
+}
+
+
+def _validate_carrier_routes(data: dict, facts: dict) -> None:
+    """§ 7's routes, each one a carrier the starting role can hand an item to.
+
+    ⛔ Refused at load: each of these otherwise surfaces after an item has been
+    gated and claimed, which is a claim held on work nothing can be entered for.
+    """
+    entries = _get(data, ROUTES_KEY)
+    if entries is None:
+        return
+    if not isinstance(entries, list):
+        raise ConfigError(
+            ROUTES_KEY,
+            f"is {entries!r}; § 7 states it as a list of entries, each naming a "
+            "`label` or a `type`, the `carrier` an item carrying it is handed to, "
+            "and that carrier's `kind`.",
+        )
+    kinds = vocabulary(facts, f"{ROUTES_KEY}.kind", "a routed carrier's kind")
+    type_carrier = _get(data, "work_item.type.carrier")
+    # ⚠️ No values at all where § 4.1 carries no type, so one test refuses both a
+    # type that facet does not state and a type where it states none.
+    type_values = [] if type_carrier in (None, "none") else [
+        str(value) for value in _get(data, "work_item.type.values") or []
+    ]
+    seen = set()
+    for index, entry in enumerate(entries):
+        where = f"{ROUTES_KEY}[{index}]"
+        entry = entry if isinstance(entry, dict) else {}
+        named = [part for part in ROUTE_ON if entry.get(part) is not None]
+        if len(named) != 1:
+            raise ConfigError(
+                where,
+                f"names {' and '.join(named) or 'neither'} of `label` and `type`. A "
+                "route matches an item on exactly one of them, so an entry naming "
+                "neither routes nothing and one naming both has no reading (§ 7).",
+            )
+        on = named[0]
+        value = str(entry[on])
+        if on == "type" and value not in type_values:
+            raise ConfigError(
+                where,
+                f"routes on the type {value!r}, and § 4.1 "
+                + ("carries no type here"
+                   if type_carrier in (None, "none")
+                   else f"states only {', '.join(type_values) or 'no values'}")
+                + ". A type nothing reads off an item routes nothing (§ 7).",
+            )
+        carrier = entry.get("carrier")
+        if not isinstance(carrier, str) or not carrier.strip():
+            raise ConfigError(
+                where,
+                "names no `carrier`. The route is the carrier an item is handed to, "
+                "so an entry without one hands it to nothing (§ 7).",
+            )
+        if entry.get("kind") not in kinds:
+            raise ConfigError(
+                where,
+                f"states the kind {entry.get('kind')!r}; § 7 allows "
+                f"{' | '.join(kinds)}, each a carrier with an invocation name.",
+            )
+        if (on, value) in seen:
+            raise ConfigError(
+                where,
+                f"routes the {on} {value!r} a second time. Two carriers for one "
+                "item have no reading of which one the work is entered through (§ 7).",
+            )
+        seen.add((on, value))
+
+
 # The two wordings a link type may be read from, as § 3's `tracker.relations`
 # names them. ⛔ A side is which wording the item named first reads, never which
 # position a call puts it in -- the two run opposite ways on the tracker this was
@@ -10464,6 +10627,7 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
     _validate_billing(data)
     _validate_create_fields(data)
     _validate_transition_fields(data)
+    _validate_carrier_routes(data, facts)
     _validate_relations(data)
     _validate_search(data, facts)
     # § 38's lists, in the same position and for the same reason. ⛔ The two rules
@@ -14730,6 +14894,42 @@ def self_test() -> int:
         f"answered {resolved!r}",
     )
 
+    # § 7's routes. ⛔ Every arm reads the whole answer: the failure this facet
+    # exists against is a route that quietly lands on the loop's own leg, which
+    # is an ordinary-looking answer rather than an error.
+    check(
+        "every kind § 7 allows a route has a place its carrier is read at",
+        sorted(vocabulary(facts, f"{ROUTES_KEY}.kind", "a routed carrier's kind"))
+        == sorted(ROUTE_PLACES),
+        f"the surface allows {vocabulary(facts, f'{ROUTES_KEY}.kind', 'kind')!r}",
+    )
+    design = {"label": PLANTED_ROUTE_LABEL, "carrier": PLANTED_CARRIER, "kind": "skill"}
+    for label, routes, values, written, wanted in (
+        ("an item no route matches enters the loop's own leg",
+         [design], ["another label"], True, "loop"),
+        ("an item a label routes is handed to that carrier",
+         [design], [PLANTED_ROUTE_LABEL, "another label"], True,
+         f"skill {PLANTED_CARRIER} True"),
+        ("a command carrier is read where a command sits",
+         [{**design, "kind": "command"}], [PLANTED_ROUTE_LABEL], True,
+         f"command {PLANTED_CARRIER} True"),
+        ("a routed carrier that is not there is a stop naming it",
+         [design], [PLANTED_ROUTE_LABEL], False, f"stop {ROUTES_KEY}[0].carrier"),
+        ("a namespaced carrier is unestablished rather than present",
+         [{**design, "carrier": f"a-plugin:{PLANTED_CARRIER}"}], [PLANTED_ROUTE_LABEL],
+         False, f"skill a-plugin:{PLANTED_CARRIER} unestablished"),
+        ("two routes naming different carriers are a stop",
+         [design, {"label": "another label", "carrier": "another", "kind": "skill"}],
+         [PLANTED_ROUTE_LABEL, "another label"], True, f"stop {ROUTES_KEY}"),
+        ("a type routes an item carrying it under its label prefix",
+         [{"type": PLANTED_ROUTE_TYPE, "carrier": PLANTED_CARRIER, "kind": "skill"}],
+         # the item's type label, under whatever prefix the example states
+         [TYPE_LABEL_HELD], True,
+         f"skill {PLANTED_CARRIER} True"),
+    ):
+        answered = _routed(routes, values, written=written)
+        check(label, answered == wanted, f"answered {answered!r}")
+
     # § 28's layer. ⛔ The answering arm first, and it reads the value: every
     # refusal below is sound only if the facet resolves at all, and a reader that
     # resolved nothing would pass each of them while leaving a project unable to
@@ -15894,6 +16094,21 @@ def self_test() -> int:
         _a_valid_example(), [{"field": "a", "value": "b"}, {"field": "c", "value": ["d"]}]
     ))
     check("a move stating two fields for one status loads", stated is None,
+          f"refused {stated!r}")
+    # And § 7's routes from the green side, so each arm above refuses what it
+    # names rather than every route.
+    stated = _refused(_with_typed_routes(_a_valid_example(), [
+        {"label": "a", "carrier": "c", "kind": "skill"},
+        {"type": PLANTED_ROUTE_TYPE, "carrier": "c", "kind": "command"},
+    ]))
+    check("a route on a label and one on a type load together", stated is None,
+          f"refused {stated!r}")
+    # ⛔ And a project stating no route at all loads as it did before the key
+    # existed, which is § 7's absent reading rather than a refusal.
+    unstated = _a_valid_example()
+    unstated.pop(ROUTES_KEY, None)
+    stated = _refused(unstated)
+    check("a configuration stating no routes at all loads", stated is None,
           f"refused {stated!r}")
 
     # ⛔ § 38's scope keys from the green side: an entry stating both loads, and
@@ -18019,6 +18234,35 @@ def _planted_violations():
         ("a move field stated twice for one status", "tracker.transitions.fields[1]",
          lambda data: _with_move_fields(
              data, [{"field": "a", "value": "b"}, {"field": "a", "value": "c"}])),
+        # § 7's routes, one plant per arm.
+        ("routes that are not a list", ROUTES_KEY, at(ROUTES_KEY, "design")),
+        ("a route naming neither a label nor a type", f"{ROUTES_KEY}[0]",
+         lambda data: _with_typed_routes(data, [{"carrier": "c", "kind": "skill"}])),
+        ("a route naming both a label and a type", f"{ROUTES_KEY}[0]",
+         lambda data: _with_typed_routes(data, [{
+             "label": "a", "type": PLANTED_ROUTE_TYPE, "carrier": "c", "kind": "skill",
+         }])),
+        ("a route on a type § 4.1 does not state", f"{ROUTES_KEY}[0]",
+         lambda data: _with_typed_routes(data, [{
+             "type": "a type nothing states", "carrier": "c", "kind": "skill",
+         }])),
+        ("a route on a type where § 4.1 carries none", f"{ROUTES_KEY}[0]",
+         lambda data: {**data, ROUTES_KEY: [{
+             "type": PLANTED_ROUTE_TYPE, "carrier": "c", "kind": "skill",
+         }], "work_item": {**data.get("work_item", {}), "type": {
+             "carrier": "none", "absent_reason": "nothing is typed here",
+         }}}),
+        ("a route with no carrier", f"{ROUTES_KEY}[0]",
+         lambda data: _with_typed_routes(data, [{"label": "a", "kind": "skill"}])),
+        ("a route to a carrier with no invocation name", f"{ROUTES_KEY}[0]",
+         lambda data: _with_typed_routes(data, [{
+             "label": "a", "carrier": "c", "kind": "hook",
+         }])),
+        ("one label routed twice", f"{ROUTES_KEY}[1]",
+         lambda data: _with_typed_routes(data, [
+             {"label": "a", "carrier": "c", "kind": "skill"},
+             {"label": "a", "carrier": "d", "kind": "command"},
+         ])),
         # § 3's non-blocking relations, one plant per arm.
         ("relations that are not a mapping", "tracker.relations",
          at("tracker.relations", ["related"])),
@@ -22434,6 +22678,82 @@ def _looked_up(role: str, mapping, *, key: str = "handle", written: bool = True,
             return f"stop {error.key}"
 
 
+# § 7's routes, written for the run. ⛔ The carrier is planted in a directory the
+# run deletes, and its name is a word no project uses.
+PLANTED_ROUTE_LABEL = "a-label-a-route-names"
+PLANTED_ROUTE_TYPE = "a-type-a-route-names"
+PLANTED_TYPE_PREFIX = "kind/"
+PLANTED_CARRIER = "a-carrier-of-the-projects-own"
+# Stands in for the label an item carries for the planted type, which `_routed`
+# reads off the example once the prefix that example states is known.
+TYPE_LABEL_HELD = object()
+
+
+def _with_typed_routes(data: dict, routes: list) -> dict:
+    """§ 7's routes written in, over a § 4.1 type carried as a prefixed label.
+
+    ⚠️ The planted type is **added** to whatever the example states rather than
+    replacing it, since an example's template and prefix map are keyed by its
+    own types and a replaced list is refused there before a route is read.
+    """
+    item = data.setdefault("work_item", {})
+    facet = item.get("type") if isinstance(item.get("type"), dict) else {}
+    if facet.get("carrier") != "label":
+        facet = {"carrier": "label", "label_prefix": PLANTED_TYPE_PREFIX, "values": []}
+        item.pop("template", None)
+        item["type_branch_prefix"] = {}
+    facet["values"] = [*(facet.get("values") or []), PLANTED_ROUTE_TYPE]
+    item["type"] = facet
+    item.setdefault("type_branch_prefix", {})[PLANTED_ROUTE_TYPE] = "feature"
+    by_type = _get(data, "work_item.template.by_type")
+    if isinstance(by_type, dict) and by_type:
+        by_type[PLANTED_ROUTE_TYPE] = next(iter(by_type.values()))
+    data[ROUTES_KEY] = routes
+    return data
+
+
+def _planted_type_label(data: dict) -> str:
+    """The label an item carries for the planted type, under the stated prefix."""
+    return f"{_get(data, 'work_item.type.label_prefix') or ''}{PLANTED_ROUTE_TYPE}"
+
+
+# Where the harness reads a project's own carrier of each kind, written out
+# rather than taken from `ROUTE_PLACES`: a fixture placed through the table it
+# tests follows that table wherever it points, and asserts nothing about it.
+HARNESS_PLACES = {
+    "skill": f".claude/skills/{PLANTED_CARRIER}/SKILL.md",
+    "command": f".claude/commands/{PLANTED_CARRIER}.md",
+}
+
+
+def _routed(routes: list, values: list, *, written: bool = True) -> str:
+    """`<kind> <carrier> <present>`, `loop` where nothing routes, `stop <key>`.
+
+    The carrier's file is written only where the harness reads the first
+    route's own kind, so a kind read at another kind's place answers absent.
+    """
+    import tempfile  # noqa: PLC0415 -- one of the arms that needs a directory
+
+    data = _with_typed_routes(_a_valid_example(), routes)
+    values = [_planted_type_label(data) if value is TYPE_LABEL_HELD else value
+              for value in values]
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    with tempfile.TemporaryDirectory() as root:
+        if written:
+            path = os.path.join(root, HARNESS_PLACES[routes[0]["kind"]])
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write("a carrier of the project's own\n")
+        try:
+            answer = _resolve(data, root, facts, False).route_for(values)
+        except ConfigError as error:
+            return f"stop {error.key}"
+    if not answer["routed"]:
+        return "loop"
+    return f"{answer['kind']} {answer['carrier']} {answer['present']}"
+
+
 # § 28's layer, written for the run rather than shipped, and for the reason
 # § 27's map is: what the pointer addresses is the class of value this repository
 # may not hold, so a shipped fixture would be the tree holding one. ⛔ The value
@@ -22946,6 +23266,15 @@ def main(argv: list[str]) -> int:
         "running this",
     )
     parser.add_argument(
+        "--route-for",
+        nargs="+",
+        metavar="VALUE",
+        help="every label the item carries and its type, held against § 7's "
+        "routes. Prints the carrier the work is handed to and what routed it, or "
+        "that no route matches. Two routes naming different carriers, and a "
+        "carrier that is not where its kind puts it, are each a stop",
+    )
+    parser.add_argument(
         "--exempt-for",
         nargs="+",
         metavar="PATH",
@@ -23052,6 +23381,10 @@ def main(argv: list[str]) -> int:
         # project's rather than a root's, so either form resolves it, and a role
         # that has narrowed to a root still asks the same question.
         answer = config.person_for(args.person_for) if args.person_for else None
+        # ⛔ After the root narrowing for § 27's reason: § 7's routes are the
+        # project's rather than a root's.
+        if args.route_for:
+            answer = config.route_for(args.route_for)
         # ⛔ After the root narrowing for § 27's reason one argument up: § 31's
         # facet is the project's rather than a root's, so either form resolves
         # it and a role that has narrowed to a root asks the same question.

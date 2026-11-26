@@ -370,6 +370,8 @@ carriers:
   deploy: skill
   session: command
 
+carrier_routes: []   # no label or type is worked through a carrier of the project's own (§ 7)
+
 # § 23. One third of the role, which is a configuration rather than a half-finished adoption:
 # this project's bookkeeping carrier commits and does nothing else. ⛔ And it is not derivable
 # from whether the project has a tracker — the board above is a tracker, and this is still the

@@ -254,6 +254,8 @@ carriers:
   deploy: skill
   session: command              # the whole loop here is commands except where it is not
 
+carrier_routes: []   # no label or type is worked through a carrier of the project's own (§ 7)
+
 # § 23. Two thirds: the board is brought current and the work committed, and nothing here keeps
 # a memory store for a later session to read.
 session:
