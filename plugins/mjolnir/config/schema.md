@@ -4618,6 +4618,46 @@ its sweep is unchanged.
 - **Each command runs inside the sweep's own bound**, and one there is no time left for is not
   started and is named as not run.
 
+### The resource a merged change's tree holds
+
+**Where `stop_on_merge` is stated, a merge the session makes stops what the merged change's tree
+holds, and keeps the tree.** A session merges from inside the tree it is working in, and the rules
+below keep that tree, so neither the teardown nor the resource check is reached: what the tree
+started holds its ports and its place until the tree is released or swept. A second session's
+claiming call is meanwhile refused or kept waiting on a resource whose change has landed.
+
+```yaml
+branch_model:
+  stop_on_merge: true
+```
+
+- **It runs only after the host confirms the merge**, on the same event, the same grammar and the
+  same read of the host's record as [`prune_on_merge`](#pruning-a-tree-whose-branch-has-landed).
+  The call finishing is not the confirmation, so a merge queued behind the host's automatic merge
+  stops nothing.
+- **The tree is the one holding the merged branch**, one level under `tree_dir`. A merge whose
+  branch no such tree holds stops nothing and says nothing.
+- **What that tree holds is what `resource_up` prints for it**, asked as the resource check above
+  asks it. Nothing is read off a machine-wide listing, so a resource another tree holds is never
+  named and never stopped. A check that goes unanswered stops nothing and says so.
+- **Each resource it prints is stopped by `resource_stop`**, run as the gone-tree stop above runs:
+  at the main checkout, with the tree in `MJOLNIR_TREE` and the resource in `MJOLNIR_RESOURCE`. A
+  stop that fails is reported with its exit and the end of what it printed.
+- **The stop is read back** by asking `resource_up` again. A resource it still prints is reported
+  as still up.
+- **Only once nothing is up is the place released**: every lease on an
+  [exclusive resource](#exclusive-resources) held under `subject: tree` by that tree or a directory
+  below it is given back, whichever session took it and whether or not its call was put in the
+  background. ⚠️ A place held under `subject: call` names no tree, so it is left to the exits
+  [§ 7](#a-lease-on-an-exclusive-resource-and-the-exit-paths-that-release-it) states.
+- **The tree stays.** Stopping is not removing: the tree, its branch and its claim are the
+  release's and the sweep's, unchanged.
+- **It says what it did**, resource by resource, since it answers an act the person has just taken.
+- **Off unless stated.** `false`, or the key unwritten, stops nothing. It is read only under
+  `kind: worktree`, and only beside both `resource_up` and `resource_stop`, there being nothing to
+  ask or nothing to stop with otherwise; the reader refuses it elsewhere with the key named.
+  It is independent of `prune_on_merge`, and where both are stated the stop runs first.
+
 ### Pruning a tree whose branch has landed
 
 **A tree whose branch has landed is removed, and there are two carriers: the merge, and the event
@@ -4803,7 +4843,8 @@ branch_model:
   branch, examines nothing and says so.
 - **The tree is decided by this subsection's rules, unchanged**: the landed reading, the oracle,
   the occupancy reading and the caller's own tree. So the tree the session stands in is never
-  removed: that is the stop above, cleared by leaving, and the next sweep takes the tree.
+  removed: that is the stop above, cleared by leaving, and the next sweep takes the tree. What
+  that tree started is [`stop_on_merge`](#the-resource-a-merged-changes-tree-holds)'s to stop.
 - **It says what it left.** This event answers an act the person has just taken, so every tree it
   examined is named, removed or kept, with what kept it. That includes the states the opening
   event's table keeps out of the message. A merge whose branch no tree holds says nothing, because

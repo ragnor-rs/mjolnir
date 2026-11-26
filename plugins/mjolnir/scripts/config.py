@@ -12107,6 +12107,33 @@ def validate(data: dict, facts: dict, workflows: set[str]) -> None:
                 "is `true` where no tree is ever cut, so no merge has a tree to prune (§ 10).",
             )
 
+    # § 10 → The resource a merged change's tree holds. ⛔ Absent is `false`;
+    # `true` needs a tree and both commands, one to ask what the tree holds and
+    # one to stop it, since either missing makes the key a stop that stops nothing.
+    stop_on_merge = _get(data, "branch_model.stop_on_merge")
+    if stop_on_merge is not None:
+        if not isinstance(stop_on_merge, bool):
+            raise ConfigError(
+                "branch_model.stop_on_merge",
+                f"is {stop_on_merge!r}; it is `true` or `false` (§ 10), and a string "
+                "would read as `true` to anything that tested it.",
+            )
+        if stop_on_merge and _get(data, "branch_model.kind") != "worktree":
+            raise ConfigError(
+                "branch_model.stop_on_merge",
+                "is `true` where no tree is ever cut, so no merge has a tree whose "
+                "resource it could stop (§ 10).",
+            )
+        for needed, why in (
+            ("branch_model.resource_up", "nothing asks what the merged change's tree holds"),
+            ("branch_model.resource_stop", "nothing stops what the merged change's tree holds"),
+        ):
+            if stop_on_merge and _get(data, needed) is None:
+                raise ConfigError(
+                    "branch_model.stop_on_merge",
+                    f"is `true` with no `{needed}`, so {why} (§ 10).",
+                )
+
     # § 10. Whether the sweep on the event that opens a session removes or only
     # lists. ⚠️ The two values are the surface's enumeration, which the reader
     # already holds every key to; what is held here is the kind it is read under.
