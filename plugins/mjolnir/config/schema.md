@@ -8738,6 +8738,7 @@ deploy:
       backup:
         run:    "<the command that dumps the live store, stated whole>"
         verify: "<the command that reads the dump back; its exit status is the verdict>"
+        absent_reason: "<why this step takes no backup, stated in place of run and verify>"
       preview:
         run:    "<a read-only command printing the writes this deploy would make, where the project has one>"
         at:     "<the file that command writes its preview to, where it prints none>"
@@ -8778,9 +8779,10 @@ configured rather than that it found nothing to do.
 
 ⛔ **The block is refused in both directions, by § 33's rule for its own per-shape keys.** A key this
 section does not declare, written inside the block, is refused; and `backup`, `apply`, `apply_by`,
-`order` and `record` are each required of a block that is stated at all — four of them because a
-step without one is a step whose ordering nothing can perform, and `record` for
-[§ 2](#2-code-host)'s reason: a project that never looked at what its store already holds and a
+`order` and `record` are each required of a block that is stated at all — `backup` even where the
+step takes none, which it then says ([below](#a-step-that-takes-no-backup-and-the-go-that-says-so)).
+Four of them because a step without one is a step whose ordering nothing can perform, and `record`
+for [§ 2](#2-code-host)'s reason: a project that never looked at what its store already holds and a
 project that decided nothing is released read identically otherwise. `preview` and `rehearse` are
 the two commands a block may omit, as the subsections below state; `sides` may be omitted too,
 being a placement, and `name` is the list's and not the step's — both are stated under
@@ -8804,6 +8806,34 @@ project's claim rather than this surface's.
 write against a store is not fully known until it has run, and a dump taken afterwards records the
 damage rather than the state before it. ⛔ **A failed or unverified dump stops the deploy** — not the
 step, the deploy — and nothing below it runs.
+
+### A step that takes no backup, and the go that says so
+
+⛔ **`backup` is required, and what it may carry instead of a dump is a stated absence**:
+`absent_reason` alone, in place of `run` and `verify`, saying why this step takes none — a staging
+store rebuilt from fixtures is the measured case. The absence is allowed on any target, live or
+not: the reason is what licenses it, and every go on that step reads it.
+
+| what `backup` carries | what the loader does |
+|---|---|
+| `run` and `verify`, each a command | the backup above |
+| `absent_reason` alone, a sentence | loads: the step takes no backup, for that reason |
+| `absent_reason` beside `run` or `verify` | refused — a step either dumps the store or says why it does not |
+| `absent_reason` written blank, or nothing at all | refused — an absence with no reason is an unstated backup |
+| `backup` omitted | refused — an omitted key and a decision not to dump would read identically |
+
+⛔ **The go says there is no backup, with the reason.** The plan a person reads before the go states
+that the step takes no backup and quotes `absent_reason`, and a go given on such a step names *no
+backup* beside what every go names, so an approval of a write nothing can recover from is one that
+said so; a go that does not is refused like any other go naming too little. A stop after the write
+reports that no dump was taken, with the reason, where it would otherwise name the dump a recovery
+reads.
+
+The sequence loses its first two rows and keeps its order. The step's reading starts at the preview
+or the rehearsal, whichever stated one comes first; where neither is stated, nothing is prepared and
+the go is asked on the plan alone — a reading still recorded, so the write is entered no
+differently. A `sides.backup` on a step that takes no backup is refused with the phase named, being
+a placement of nothing.
 
 ### A rehearsal the project may not have, and what reading it is for
 
@@ -8933,16 +8963,17 @@ The alternation `before_invoke | after_invoke` is written in the order the two s
 reader ranks the sides by it rather than by a second list of its own.
 
 ⛔ **A write is never reached before its own verified backup, nor before its own preview or
-rehearsal, whatever the placement.** The sides a step's phases fall on never run backwards through
-§ 35's sequence — backup, then preview, then rehearsal, then write — and a step whose placement
-would is refused at the load with the phase named. A `sides.preview` or `sides.rehearse` on a step
-stating no such command is refused with it, being a placement of nothing.
+rehearsal, whatever the placement** — each where the step states one. The sides a step's phases
+fall on never run backwards through § 35's sequence — backup, then preview, then rehearsal, then
+write — and a step whose placement would is refused at the load with the phase named. A
+`sides.preview` or `sides.rehearse` on a step stating no such command is refused with it, being a
+placement of nothing.
 
 ⛔ **The same holds when it is performed and not only when it is loaded.** A step's write is refused
-until its own reading is on record — the dump taken and read back, and the preview and the rehearsal
-run where each is stated — so a deploy that took the phases out of order, or a go that overrules
-`order` into a placement that would, reaches no write. What the go may overrule is the configured
-side and never this rule.
+until its own reading is on record — the dump taken and read back where the step takes one, and the
+preview and the rehearsal run where each is stated — so a deploy that took the phases out of order,
+or a go that overrules `order` into a placement that would, reaches no write. What the go may
+overrule is the configured side and never this rule.
 
 ⛔ **Each write has its own go, given after its own evidence.** A target listing several steps asks
 one go per write, after that step's own dump, preview and rehearsal have been read, and a go on a
@@ -8985,8 +9016,8 @@ order:
 
 | | what runs | what a failure does |
 |---|---|---|
-| 1 | `backup.run` | stops the deploy; nothing has reached the store |
-| 2 | `backup.verify` | stops the deploy; there is a file and it is not a backup |
+| 1 | `backup.run`, where the step takes a backup | stops the deploy; nothing has reached the store |
+| 2 | `backup.verify`, where the step takes a backup | stops the deploy; there is a file and it is not a backup |
 | 3 | `preview.run`, where one is stated | stops the deploy, naming the exit status or the empty preview |
 | 4 | `rehearse`, where one is stated | stops the deploy, naming divergence or the exit status |
 | 5 | the rehearsal's output, **read** | stops the deploy where it could not be read |
@@ -8998,11 +9029,11 @@ with no rail at all, and the sequence is asserted where the step is performed.
 
 The report names what it could not establish, by
 [§ 11](#a-report-names-what-it-could-not-establish). This step adds its own list: whether the dump
-was verified and by what, whether a preview ran and where its output is, whether a rehearsal
-ran at all, what its output was read as, which order
-was taken and whether the configured one was overruled, whether the apply ran or was handed over,
-and — where it ran and failed — what the store is left holding, and — where the target lists several
-steps — each of them by name as written, handed over or not made.
+was verified and by what, or that the step takes none and why, whether a preview ran and where its
+output is, whether a rehearsal ran at all, what its output was read as, which order was taken and
+whether the configured one was overruled, whether the apply ran or was handed over, and — where it
+ran and failed — what the store is left holding, and — where the target lists several steps — each
+of them by name as written, handed over or not made.
 
 ## 36. A skill that is no leg of the loop, and why none is carried here
 

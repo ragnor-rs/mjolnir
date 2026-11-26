@@ -1448,7 +1448,11 @@ ANSWERED_BY: dict[str, Answer] = {
 
     # --- § 35. The live data step a deploy performs ------------------------
     "deploy.live_data_step.backup.run": ask(
-        "Which command dumps this target's live store?",
+        "Which command dumps this target's live store -- or does this step take "
+        "no backup at all? ⛔ Where it takes none, the answer is why, written as "
+        "`backup.absent_reason` in place of both commands: the reason is quoted "
+        "to whoever gives the go, and a go on that write has to say there is no "
+        "backup (§ 35).",
     ),
     "deploy.live_data_step.backup.verify": ask(
         "And which command reads that dump back? ⛔ Asked as a key of its own "
