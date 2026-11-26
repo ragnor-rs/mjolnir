@@ -2655,6 +2655,8 @@ work_item:
     closes_items: false          # required when a grouping is carried
     closed_by: orderer           # required when a grouping is carried; one of § 4.2's writers
     ref_prefix: "release/"       # when a ref is named after the grouping's own value
+    default_from: priority       # under `current: stated` only; a § 4 facet that lists its values
+    default_map: {}              # that facet's value -> this grouping's value; with default_from
     absent_reason: "…"           # required when carrier is none
     revisit_when: "…"
 ```
@@ -2699,10 +2701,38 @@ really use — the same reason its `field:` values are placeholders.
 ⛔ **`current` is the key a procedure may not do without, and neither value is derivable from the
 other.** A grouping the tracker itself marks as the open or dated one is `discoverable`, and a
 procedure reads it; one the tracker holds several of at once is `stated`, and the grouping arrives
-on the invocation of the role that needs it. ⚠️ **The permissive reading is the expensive one**:
-a procedure that guessed the current grouping under `stated` would put a new item into whichever
-one it picked, and a grouping is the one field whose wrong value is invisible on the item itself —
-every other facet's wrong value reads as wrong where it is written.
+on the invocation of the role that needs it, or from the default the project maps below.
+⚠️ **The permissive reading is the expensive one**: a procedure that guessed the current grouping
+under `stated` would put a new item into whichever one it picked, and a grouping is the one field
+whose wrong value is invisible on the item itself — every other facet's wrong value reads as wrong
+where it is written.
+
+**A stated grouping may have a default the project maps from another facet, and that map is the
+project's answer rather than a guess.** `default_from` names the facet and `default_map` carries
+one entry per value of it, so a project whose release scope follows the tier writes that rule once
+instead of having it asked for on every item. The value is decided in one order, and a role reads
+it through `config.py --grouping-default` rather than applying the map itself:
+
+| what is in hand | the grouping written | what the report says |
+|---|---|---|
+| a value given on the request | that value, whatever the map says | that it was given |
+| no value given, and the source facet's value is a key of the map | the map's value | the rule: which facet, which value, which entry |
+| no value given, and the source value is missing or not a key of the map | nothing until a person answers | that it was asked for, and why the map did not answer |
+
+- ⛔ **Only under `current: stated`.** A `discoverable` grouping is named by the tracker, and a map
+  beside it would be a second answer free to disagree with the first, so the reader refuses it.
+- ⛔ **The source is a facet of § 4 that lists its `values`, and every key of the map is one of
+  them.** The set is read off this section's fences rather than listed here, and a key outside it is
+  an entry no item can ever reach. The source facet has to be carried, since a facet with no carrier
+  has no value to map from.
+- ⛔ **The source value is the one handed or already on the item, never derived.** § 4.6's rule
+  stands: a map from the tier does not license working out the tier, and an item with no tier gets
+  the grouping asked for.
+- ⚠️ **A map can go stale, and that is the cost the project accepts by stating one.** An entry
+  naming a grouping that has since closed fills the field with that grouping's name. The report
+  names the rule every time it is used, so the reader of the item sees where the value came from.
+- ⚠️ **Neither key without the other**: a source with no map, or a map with no source, is refused
+  with both keys named. A project that states neither is asked for the grouping exactly as before.
 
 ⛔ **`closed_by` is [§ 4.2](#42-status--an-ordered-set-of-name-role-writer)'s writer argument one
 level up: a role that closes a grouping is refused where this is not the writer that role asks
