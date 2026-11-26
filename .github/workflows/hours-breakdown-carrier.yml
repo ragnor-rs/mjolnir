@@ -1,0 +1,41 @@
+name: Hours breakdown carrier
+
+# The carrier that breaks a given total of hours down over the changes a period shipped. What a gate
+# can hold about it is every arm that needs nobody's real period: that a given total is distributed
+# so the parts sum back to it exactly and no store is asked anything, that no total is answered by
+# an offer of the day log's own sum and a stop, that the changes are read off the first-parent
+# history of the integration branch inside the period, and that a change naming no work item
+# appears among them as naming none — or as unread, where the tracker composes no reference.
+#
+# ⚠️ The repositories and day logs are the suite's own, stood up per arm. What that leaves unheld is
+# stated rather than assumed away — whether the narrative a pass writes over the figures reads
+# correctly to whoever is told where the hours went is a judgement about prose, answered by that
+# reader.
+#
+# A workflow of its own rather than a second job of a sibling, per § 2 of
+# plugins/mjolnir/config/schema.md, which states that ruling and the cost it is worth. No copy of
+# either is carried here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No credential of any kind: the suite reads only the repositories and stores it creates.
+permissions: {}
+
+jobs:
+  hours-breakdown-carrier:
+    name: Hours breakdown carrier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # One step, one command, and the same string `host.checks` states this run mirrors. ⚠️ Held
+      # together by eye, and § 2 rules that it must be: the mapping from a run to the command it
+      # mirrors is configured and never inferred. The workflow *name* above is held mechanically,
+      # by the `Host checks drift` run.
+      - name: Assert the parts sum back, the offer stops, and no store is asked where a total is given
+        run: python3 plugins/mjolnir/scripts/hours_breakdown.py --self-test

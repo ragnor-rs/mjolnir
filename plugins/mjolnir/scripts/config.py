@@ -267,6 +267,16 @@ PRIVATE_KEYS_PATH = f"{PRIVATE_KEY}.keys"
 PRIVATE_FILE = "file"
 PRIVATE_NONE = "none"
 
+# `# private_block` beside a key declares the whole block under it as one a
+# repository may be barred from holding although every key in it is a rule, so
+# § 28's `blocks` may name it and the private file supplies it whole. ⛔ A
+# separate mark from `# private` and never implied by it: that mark is the bound
+# between a value and a rule, and a block mark is the one place a rule may leave
+# review -- named on the surface, given a reason in the tracked file. Refused
+# where `# private` is, for the reason stated there.
+PRIVATE_BLOCK_CLAUSE = re.compile(r"^private_block$")
+PRIVATE_BLOCKS_PATH = f"{PRIVATE_KEY}.blocks"
+
 # `# port: <directory>` beside a `kind` declares that key as a port's kind, and
 # the clause's value as the directory the implementations behind it live in. The
 # section the marked block sits under is the third fact it carries, and it is not
@@ -466,6 +476,7 @@ def surface_facts(surface_text: str) -> dict:
     required_when: dict[tuple[str, str, str], str] = {}
     absent_reason: dict[str, str] = {}
     private: dict[str, str] = {}
+    private_blocks: dict[str, str] = {}
     procedure: dict[str, str] = {}
     ports: dict[str, tuple[str, str]] = {}
     declared: set[str] = set()
@@ -595,6 +606,19 @@ def surface_facts(surface_text: str) -> dict:
                             "it.",
                         )
                     private.setdefault(path, heading)
+                if PRIVATE_BLOCK_CLAUSE.match(clause):
+                    leaf = path.rpartition(".")[2]
+                    if leaf in PRIVATE_FORBIDDEN_ON or path.split(".")[0] == PRIVATE_KEY:
+                        raise ConfigError(
+                            path,
+                            "carries `# private_block`, which marks a block a "
+                            "repository may be barred from holding. A "
+                            f"`{'`/`'.join(PRIVATE_FORBIDDEN_ON)}` and "
+                            f"`{PRIVATE_KEY}`'s own keys are never such a block "
+                            "(§ 28). Move the marker to the block's own key, or "
+                            "delete it.",
+                        )
+                    private_blocks.setdefault(path, heading)
 
             # A closed set, written either as the value or as a comment beside
             # it -- `key: a | b | c` is the first shape, and a line whose value
@@ -728,6 +752,8 @@ def surface_facts(surface_text: str) -> dict:
         # `lists` and `per_root` are not: a surface marking nothing empties this,
         # and what follows is closed rather than silent.
         "private": private,
+        # ⚠️ Not in the `missing` refusal either, for the reason `private` is not.
+        "private_blocks": private_blocks,
         "procedure": procedure,
         # `the kind's dotted path -> (the section its operation list is under,
         # the directory its implementations live in)`. Read by the contract beside
@@ -1938,6 +1964,9 @@ class Config:
         # that did would want the cache moved rather than this comment.
         self._private_listed: list[str] | None = None
         self._private_read: dict | None = None
+        # § 28's named blocks, already in `data` by the time this object exists.
+        # Set by `_resolve`, which is what put them there.
+        self.private_blocks: list[str] = []
 
     # -- the roots. The skills root is where the role ran (§ 1); the code root is
     # read from the file found there and is never inferred.
@@ -2704,33 +2733,7 @@ class Config:
             return self._private_read
         listed = self.private_keys
         source = self.get(PRIVATE_SOURCE_PATH)
-        path = os.path.normpath(os.path.join(self.skills_root, str(source)))
-        try:
-            with open(path, encoding="utf-8") as handle:
-                values = _load_yaml(handle.read(), PRIVATE_SOURCE_PATH)
-        except OSError as error:
-            raise ConfigError(
-                PRIVATE_SOURCE_PATH,
-                f"names {source!r}, which did not open at {path!r} "
-                f"({error.__class__.__name__}). It was to supply "
-                f"{', '.join(listed)} (§ 28), and a layer that is not there is "
-                "reported by name rather than resolved to nothing -- a value "
-                "measured from an absent file looks exactly like one measured "
-                "from an empty project.",
-            ) from None
-        if not isinstance(values, dict) or not values:
-            # ⚠️ The empty mapping is named as empty rather than as the wrong
-            # type: *read as dict rather than a mapping* is a sentence about a
-            # dict, which reads as a bug in the reader to whoever gets it.
-            held = "nothing at all" if isinstance(values, dict) else type(values).__name__
-            raise ConfigError(
-                PRIVATE_SOURCE_PATH,
-                f"names {source!r}, which read as {held} rather than a mapping of "
-                f"dotted key path to value (§ 28) -- and it was to supply "
-                f"{', '.join(listed)}. Nested blocks are not read and a document is "
-                "not parsed: a second resolver of this surface is free to disagree "
-                "with the one that validated the list.",
-            )
+        values = _read_private_file(self.skills_root, source, listed)
         for key in listed:
             if key not in values:
                 raise ConfigError(
@@ -2760,7 +2763,9 @@ class Config:
                     "committer read as the log's owner. A key meant to be "
                     "unanswered is left off the list.",
                 )
-        extra = sorted(set(values) - set(listed))
+        # ⚠️ A named block is an entry of the same file, already read and held to
+        # its own rules at load, so it is the one unlisted key that is not extra.
+        extra = sorted(set(values) - set(listed) - set(self.private_blocks))
         if extra:
             raise ConfigError(
                 PRIVATE_KEYS_PATH,
@@ -4151,9 +4156,11 @@ class Config:
         # carried the reader's stripped spelling of each path while the block
         # carried the project's, so a list entry written with a trailing space
         # came back both ways in one report.
-        if self.private_keys:
+        # ⛔ A named block is masked whole, by the same rule: it reached `data`
+        # from the private file, and a report goes where that file does not.
+        if self.private_keys or self.private_blocks:
             shown = copy.deepcopy(self.data)
-            for key in self.private_keys:
+            for key in [*self.private_keys, *self.private_blocks]:
                 _place_marker(shown, key, f"<private: {PRIVATE_SOURCE_PATH}>")
             out["config"] = shown
         out["unavailable"] = [
@@ -8747,14 +8754,24 @@ def _private(data: dict, facts: dict) -> list[str]:
                 f"`{PRIVATE_FILE}` and address the file, or delete the list.",
             )
         return []
-    if not isinstance(listed, list) or not listed:
+    if listed is not None and not isinstance(listed, list):
         raise ConfigError(
             PRIVATE_KEYS_PATH,
-            f"is empty under `{PRIVATE_KEY}.carrier: {PRIVATE_FILE}`, so the "
-            "pointer addresses a file nothing is read out of (§ 28). Every path "
-            "resolved privately is named here, which is what makes a missing "
-            "layer a named absence rather than a silent empty value.",
+            f"is {type(listed).__name__} rather than a list of dotted key paths (§ 28).",
         )
+    # ⚠️ An empty list is half a statement only where no block is named either:
+    # a project moving a whole facet out and no single value is a pointer that
+    # supplies something, and `blocks` is where it says what.
+    if not listed and not _private_block_rows(data):
+        raise ConfigError(
+            PRIVATE_KEYS_PATH,
+            f"is empty under `{PRIVATE_KEY}.carrier: {PRIVATE_FILE}`, and "
+            f"`{PRIVATE_BLOCKS_PATH}` names no block, so the pointer addresses a "
+            "file nothing is read out of (§ 28). Every path resolved privately is "
+            "named in one of the two, which is what makes a missing layer a named "
+            "absence rather than a silent empty value.",
+        )
+    listed = listed or []
     if not str(_get(data, PRIVATE_SOURCE_PATH) or "").strip():
         raise ConfigError(
             PRIVATE_SOURCE_PATH,
@@ -8790,6 +8807,188 @@ def _private(data: dict, facts: dict) -> list[str]:
             )
         supplied.append(path)
     return supplied
+
+
+def _private_block_rows(data: dict) -> list:
+    """§ 28's `blocks` as written, or `[]` where none is stated."""
+    rows = _get(data, PRIVATE_BLOCKS_PATH)
+    return rows if isinstance(rows, list) else ([] if rows is None else [rows])
+
+
+def _private_blocks(data: dict, facts: dict) -> list[str]:
+    """§ 28's named blocks, held to the surface's marks. Returns their paths.
+
+    ⛔ Every row names a block the surface marks `# private_block` and states why
+    it is outside review, and the reason is required rather than optional: what a
+    reviewer is not being shown is readable in the tracked file, never a facet
+    simply missing. ⚠️ Held here against the tracked file alone, so it runs
+    before the layer is read -- a refusal of the list never waits on a file.
+    """
+    rows = _private_block_rows(data)
+    if not rows:
+        return []
+    carrier = _get(data, f"{PRIVATE_KEY}.carrier")
+    if carrier != PRIVATE_FILE:
+        raise ConfigError(
+            PRIVATE_BLOCKS_PATH,
+            f"names {len(rows)} block(s) under `{PRIVATE_KEY}.carrier: {carrier}`, "
+            "so the list is a set of blocks nothing answers (§ 28). Carry "
+            f"`{PRIVATE_FILE}` and address the file, or delete the list.",
+        )
+    marked = facts.get("private_blocks") or {}
+    keys = [str(key).strip() for key in (_get(data, PRIVATE_KEYS_PATH) or [])]
+    named: list[str] = []
+    for index, row in enumerate(rows):
+        at = f"{PRIVATE_BLOCKS_PATH}[{index}]"
+        if not isinstance(row, dict) or set(row) - {"block", "reason"}:
+            raise ConfigError(
+                at,
+                "is not a row of `block` and `reason` (§ 28). A block is named by "
+                "its dotted path and carries why it is outside review, and nothing "
+                "else.",
+            )
+        path = str(row.get("block") or "").strip()
+        if not path:
+            raise ConfigError(f"{at}.block", "is blank; a row names one block (§ 28).")
+        if not str(row.get("reason") or "").strip():
+            raise ConfigError(
+                f"{at}.reason",
+                f"is blank for {path!r} (§ 28). The reason a block is outside review "
+                "is the one statement about it the tracked file carries, so a "
+                "reviewer sees what they are not being shown rather than finding a "
+                "facet simply missing.",
+            )
+        if path not in marked:
+            raise ConfigError(
+                f"{at}.block",
+                f"names {path!r}, which the surface marks `# private_block` nowhere "
+                "(§ 28). The mark is what makes a block eligible: a loop facet -- "
+                "statuses, the readiness list, the host's checks -- is a rule the "
+                "migration exists to make reviewable and is never marked.",
+            )
+        if path in named:
+            raise ConfigError(
+                f"{at}.block",
+                f"names {path!r} a second time (§ 28). One statement per block: two "
+                "rows over one block read as two facts the private file answers once.",
+            )
+        for key in keys:
+            if key == path or key.startswith(f"{path}."):
+                raise ConfigError(
+                    f"{at}.block",
+                    f"holds {key!r}, which `{PRIVATE_KEYS_PATH}` also names (§ 28). A "
+                    "key inside a named block is supplied with the block, so listing "
+                    "it too is a second statement of it.",
+                )
+        named.append(path)
+    if not str(_get(data, PRIVATE_SOURCE_PATH) or "").strip():
+        raise ConfigError(
+            PRIVATE_SOURCE_PATH,
+            f"is blank under `{PRIVATE_KEY}.carrier: {PRIVATE_FILE}`, and "
+            f"`{PRIVATE_BLOCKS_PATH}` names {', '.join(named)} (§ 28).",
+        )
+    return named
+
+
+def _read_private_file(skills_root: str, source, supplies: list[str]) -> dict:
+    """§ 28's private file as a mapping of dotted path to value. Every failure stops.
+
+    One reader for both halves of the facet, so the listed keys and the named
+    blocks are held to one statement of what the file is.
+    """
+    path = os.path.normpath(os.path.join(skills_root, str(source)))
+    try:
+        with open(path, encoding="utf-8") as handle:
+            values = _load_yaml(handle.read(), PRIVATE_SOURCE_PATH)
+    except OSError as error:
+        raise ConfigError(
+            PRIVATE_SOURCE_PATH,
+            f"names {source!r}, which did not open at {path!r} "
+            f"({error.__class__.__name__}). It was to supply "
+            f"{', '.join(supplies)} (§ 28), and a layer that is not there is "
+            "reported by name rather than resolved to nothing -- a value "
+            "measured from an absent file looks exactly like one measured "
+            "from an empty project.",
+        ) from None
+    if not isinstance(values, dict) or not values:
+        # ⚠️ The empty mapping is named as empty rather than as the wrong
+        # type: *read as dict rather than a mapping* is a sentence about a
+        # dict, which reads as a bug in the reader to whoever gets it.
+        held = "nothing at all" if isinstance(values, dict) else type(values).__name__
+        raise ConfigError(
+            PRIVATE_SOURCE_PATH,
+            f"names {source!r}, which read as {held} rather than a mapping of "
+            f"dotted key path to value (§ 28) -- and it was to supply "
+            f"{', '.join(supplies)}. Nested blocks are not read and a document is "
+            "not parsed: a second resolver of this surface is free to disagree "
+            "with the one that validated the list.",
+        )
+    return values
+
+
+def _with_private_blocks(data: dict, skills_root: str, facts: dict,
+                         layer: dict | None = None) -> tuple[dict, list[str]]:
+    """The configuration with § 28's named blocks put in place, and their paths.
+
+    ⛔ **Read at load and not at read, which is the opposite of a listed key**, and
+    the reason is what a block is: it holds rules this reader validates and every
+    accessor reads, so a block left out until something asked for it would be a
+    facet nothing ever checked. ⚠️ The cost is stated in § 28: a project naming a
+    block does not load on a machine without the file, and the refusal names the
+    file and the blocks.
+
+    Each block is taken whole from the one entry naming its path, never merged
+    with anything in the tracked file -- which carries nothing at or under it.
+
+    ⚠️ `layer` is the private file's contents handed in rather than read, for a
+    writer holding a layer it has not written yet: setup reads its own edit back
+    through this resolver before writing either file.
+    """
+    named = _private_blocks(data, facts)
+    if not named:
+        return data, []
+    for path in named:
+        if _has(data, path):
+            raise ConfigError(
+                path,
+                f"is stated in the tracked file and named in `{PRIVATE_BLOCKS_PATH}` "
+                "(§ 28). A named block is supplied whole by the private file, so "
+                "anything at or under it here is a second statement of it -- and the "
+                "one in review. Delete it here.",
+            )
+    source = _get(data, PRIVATE_SOURCE_PATH)
+    values = layer if layer is not None else _read_private_file(skills_root, source, named)
+    merged = copy.deepcopy(data)
+    for path in named:
+        if path not in values:
+            raise ConfigError(
+                PRIVATE_SOURCE_PATH,
+                f"names {source!r}, which carries no {path!r} -- a block "
+                f"`{PRIVATE_BLOCKS_PATH}` says it supplies (§ 28). The block is one "
+                "entry, keyed by its absolute path and holding the block whole.",
+            )
+        if not _valued(values[path]):
+            raise ConfigError(
+                PRIVATE_SOURCE_PATH,
+                f"names {source!r}, which carries {path!r} with nothing under it "
+                f"({values[path]!r}). A named block is the project's statement that "
+                "this file answers it (§ 28).",
+            )
+        _set_path(merged, path, copy.deepcopy(values[path]))
+    return merged, named
+
+
+def _set_path(data: dict, path: str, value) -> None:
+    """Put `value` at a dotted path, making the mappings above it."""
+    *parents, leaf = path.split(".")
+    node = data
+    for part in parents:
+        child = node.get(part)
+        if not isinstance(child, dict):
+            child = {}
+            node[part] = child
+        node = child
+    node[leaf] = value
 
 
 def _workflows_anywhere(data: dict, facts: dict) -> set[str]:
@@ -11432,15 +11631,21 @@ def load(skills_root: str = ".", *, check_paths: bool = True) -> Config:
     )
 
 
-def load_text(text: str, skills_root: str, *, check_paths: bool = False) -> Config:
-    """Resolve a configuration already in hand. Used to load the examples."""
+def load_text(text: str, skills_root: str, *, check_paths: bool = False,
+              private_layer: dict | None = None) -> Config:
+    """Resolve a configuration already in hand. Used to load the examples.
+
+    `private_layer` is § 28's file handed in rather than read, which is what a
+    writer reading back an edit it has not written yet needs.
+    """
     surface = surface_for(skills_root)
     with open(surface, encoding="utf-8") as handle:
         facts = surface_facts(handle.read())
     data = _load_yaml(text, CONFIG_PATH)
     if not isinstance(data, dict):
         raise ConfigError(CONFIG_PATH, "is empty or is not a block of keys.")
-    return _resolve(data, skills_root, facts, check_paths, None, surface)
+    return _resolve(data, skills_root, facts, check_paths, None, surface,
+                    private_layer=private_layer)
 
 
 def _resolve(
@@ -11450,7 +11655,13 @@ def _resolve(
     check_paths: bool,
     source: str | None = None,
     surface: str | None = None,
+    *,
+    private_layer: dict | None = None,
 ) -> Config:
+    # § 28's named blocks, before anything else reads the configuration: every
+    # rule below then holds a block exactly as it holds one the tracked file
+    # states, which is what one resolver means.
+    data, blocks = _with_private_blocks(data, skills_root, facts, private_layer)
     roots, collection = _code_roots(data, facts)
 
     # ⛔ One view per root, each resolved and validated as a configuration of one
@@ -11560,8 +11771,10 @@ def _resolve(
         data, skills_root, facts, source, surface, views=views, overridden=overridden
     )
     config.groupings = groupings
+    config.private_blocks = blocks
     for view in views.values():
         view.groupings = groupings
+        view.private_blocks = blocks
     for key, view in views.items():
         if check_paths and not os.path.isdir(view.code_root):
             raise ConfigError(
@@ -11941,6 +12154,11 @@ SHOWN_LISTS = {
 # list quietly becoming unwritable. ⚠️ Which keys the class does not reach, and
 # why, is § 28's; what this list is for is that the surface and this suite agree
 # about the set.
+# The blocks the surface marks `# private_block`: the day log's facet, the carrier
+# mapping its role and its artifact's language -- the three places that tooling is
+# stated. Held against the surface by the comparison that holds `MARKED_PRIVATE`.
+MARKED_PRIVATE_BLOCKS = ["day_log", "carriers.day_log", "language.artifacts.day_log"]
+
 MARKED_PRIVATE = [
     "day_log.attribute_to",
     # § 26's, and the one marked key that is a **store's address**. ⚠️ It is why
@@ -12509,6 +12727,10 @@ def self_test() -> int:
         # other rule-shaped key -- and a mark dropped, which would leave a
         # project's own list refusing a key it legitimately resolves privately.
         ("private", set(surface["private"]), set(MARKED_PRIVATE)),
+        # ⛔ And § 28's block mark, for the reason the row above holds: a block
+        # mark added to a loop facet is the one edit that moves a rule out of
+        # review, and this is what reddens on it.
+        ("private block", set(surface["private_blocks"]), set(MARKED_PRIVATE_BLOCKS)),
         ("procedure-only", set(surface["procedure"]), set(MARKED_PROCEDURE)),
         # ⛔ The kind and its directory together, which is what the clause states:
         # comparing the kinds alone would leave the directory -- the half a
@@ -14324,6 +14546,87 @@ def self_test() -> int:
     ):
         check(f"a report of a project carrying the layer {label}", held, f"{reported!r}")
 
+    # § 28's named blocks. ⛔ The answering arms first and each reads a value the
+    # layer alone holds, for the reason the key arms above do: every refusal
+    # below is sound only if a project moving a facet out still runs its role.
+    def row(path, reason="a repository rule bars this tooling"):
+        return {"block": path, "reason": reason}
+
+    day = _a_valid_example()["day_log"]
+    planted_day = {**copy.deepcopy(day), "round_to": 0.25}
+    no_start = {k: v for k, v in copy.deepcopy(day).items() if k != "day_start"}
+    bad_ties = {**copy.deepcopy(day), "round_ties": "sideways"}
+    three = [row("day_log"), row("carriers.day_log"), row("language.artifacts.day_log")]
+    for label, call, wanted in (
+        ("the day log's facet named as a block, answered from the layer",
+         lambda: _moved_blocks([row("day_log")], values={"day_log": planted_day},
+                               read="day_log.round_to"), "value 0.25"),
+        ("all three marked blocks named, the carrier answered from the layer",
+         lambda: _moved_blocks(three, read="carriers.day_log"), "value 'skill'"),
+        ("all three marked blocks named, the artifact's language answered from the layer",
+         lambda: _moved_blocks(three, read="language.artifacts.day_log.register"),
+         "value 'technical'"),
+        # ⛔ One resolver: a block in the layer is held to the same rules as the
+        # same block in the tracked file -- its defaults land, its alternations
+        # refuse.
+        ("a named block's marked default, applied to the layer's block",
+         lambda: _moved_blocks([row("day_log")], values={"day_log": no_start},
+                               read="day_log.day_start"), "value '05:00'"),
+        ("a named block holding a value outside its alternation",
+         lambda: _moved_blocks([row("day_log")], values={"day_log": bad_ties}),
+         "stop day_log.round_ties"),
+        # ⛔ The bound, in both directions: a block the surface does not mark, and
+        # a block left in the tracked file as well.
+        ("a block the surface marks nowhere",
+         lambda: _moved_blocks([row("statuses")]), f"stop {PRIVATE_BLOCKS_PATH}[0].block"),
+        ("a block stated in the tracked file as well",
+         lambda: _moved_blocks([row("day_log")], keep=("day_log",)), "stop day_log"),
+        ("a row with no reason",
+         lambda: _moved_blocks([row("day_log", reason="  ")]),
+         f"stop {PRIVATE_BLOCKS_PATH}[0].reason"),
+        ("a row carrying a key beside `block` and `reason`",
+         lambda: _moved_blocks([{**row("day_log"), "until": "later"}]),
+         f"stop {PRIVATE_BLOCKS_PATH}[0]"),
+        ("one block named twice",
+         lambda: _moved_blocks([row("day_log"), row("day_log")]),
+         f"stop {PRIVATE_BLOCKS_PATH}[1].block"),
+        ("a listed key inside a named block",
+         lambda: _moved_blocks([row("day_log")], keys=["day_log.attribute_to"]),
+         f"stop {PRIVATE_BLOCKS_PATH}[0].block"),
+        ("blocks named under a stated absence",
+         lambda: _moved_blocks([row("day_log")], carrier=PRIVATE_NONE),
+         f"stop {PRIVATE_BLOCKS_PATH}"),
+        # ⛔ And the layer, each place it could have answered with nothing.
+        ("a layer that does not open, with a block named",
+         lambda: _moved_blocks([row("day_log")], written=False), f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer carrying no entry for a named block",
+         lambda: _moved_blocks([row("day_log")], values={"carriers.day_log": "skill"}),
+         f"stop {PRIVATE_SOURCE_PATH}"),
+        ("a layer carrying a named block with nothing under it",
+         lambda: _moved_blocks([row("day_log")], values={"day_log": None}),
+         f"stop {PRIVATE_SOURCE_PATH}"),
+        # ⚠️ A listed key beside a named block, read lazily from the same file:
+        # the block's entry is the one unlisted key that file may carry.
+        ("a listed key read from a file that also carries a named block",
+         lambda: _moved_blocks(
+             [row("day_log")], keys=["ordering.record.dir"],
+             values={"day_log": day, "ordering.record.dir": PLANTED_PRIVATE_VALUE},
+             read="ordering.record.dir"),
+         f"value {PLANTED_PRIVATE_VALUE!r}"),
+    ):
+        answered = call()
+        check(f"{label} answers `{wanted}`", answered == wanted, f"answered {answered!r}")
+
+    shown = _moved_blocks([row("day_log")], values={"day_log": planted_day}, report=True)
+    rendered = json.dumps(shown)
+    check(
+        "a report of a project naming a block shows the block as the marker and no value",
+        isinstance(shown, dict)
+        and shown["config"].get("day_log") == f"<private: {PRIVATE_SOURCE_PATH}>"
+        and "0.25" not in rendered,
+        f"{rendered[:300]!r}",
+    )
+
     # ⛔ The two halves of the statement, each refused on its own: a key written
     # empty satisfies the conditional marker's presence test, so neither arm is
     # the marker's and both are the reader's.
@@ -14405,6 +14708,27 @@ def self_test() -> int:
             reported = error.key
         check(
             f"`# private` on {label} is refused, naming `{key}`",
+            reported == key,
+            f"reported {reported!r}",
+        )
+    # ⛔ The block mark refused on the same three, for the same reason: a block
+    # is how a whole facet leaves review, so a carrier, a kind or § 28's own
+    # block carrying one is the route the mark was bounded against.
+    for label, fence, key in (
+        ("a carrier", "a_facet:\n  carrier: a-kind | none  # private_block", "a_facet.carrier"),
+        ("a kind", "a_facet:\n  kind: a-kind | none  # private_block", "a_facet.kind"),
+        ("this facet's own block", f"{PRIVATE_KEY}:  # private_block\n  carrier: file",
+         PRIVATE_KEY),
+    ):
+        with open(SURFACE, encoding="utf-8") as handle:
+            marked = f"{handle.read()}\n```yaml\n{fence}\n```\n"
+        try:
+            surface_facts(marked)
+            reported = None
+        except ConfigError as error:
+            reported = error.key
+        check(
+            f"`# private_block` on {label} is refused, naming `{key}`",
             reported == key,
             f"reported {reported!r}",
         )
@@ -21764,6 +22088,53 @@ def _resolved_privately(listed, values, *, written: bool = True, read: str | Non
             return f"value {configuration.get(read or listed[0])!r}"
         except ConfigError as error:
             return f"stop {error.key}"
+
+
+def _moved_blocks(rows, *, values=None, keep=(), keys=(), written: bool = True,
+                  carrier: str = PRIVATE_FILE, read: str | None = None,
+                  report: bool = False):
+    """`value <v>` where a project naming § 28 blocks resolves, `stop <key>` where not.
+
+    Each named block is taken out of a valid example and written to the layer
+    whole -- what a project moving a facet out of review leaves behind -- unless
+    `values` states the layer instead, or `keep` leaves a block in the tracked
+    file as well. `rows` are written into `private.blocks` as given, so a
+    malformed row is a row of this call.
+    """
+    import tempfile  # noqa: PLC0415 -- the layer needs a directory of its own
+
+    data = _a_valid_example()
+    moved: dict = {}
+    for row in rows:
+        path = row.get("block") if isinstance(row, dict) else None
+        if isinstance(path, str) and _has(data, path) and path not in moved:
+            moved[path] = copy.deepcopy(_get(data, path))
+            if path not in keep:
+                *parents, leaf = path.split(".")
+                _get(data, ".".join(parents)).pop(leaf) if parents else data.pop(leaf)
+    for key in keys:
+        if _has(data, key):
+            _with(data, key, None)
+    layer = moved if values is None else values
+    data[PRIVATE_KEY] = (
+        {"carrier": PRIVATE_NONE, "absent_reason": "nothing here is private", "blocks": rows}
+        if carrier == PRIVATE_NONE
+        else {"carrier": carrier, "source": PLANTED_PRIVATE_FILE, "keys": list(keys),
+              "blocks": rows}
+    )
+    with open(SURFACE, encoding="utf-8") as handle:
+        facts = surface_facts(handle.read())
+    with tempfile.TemporaryDirectory() as root:
+        if written:
+            with open(os.path.join(root, PLANTED_PRIVATE_FILE), "w", encoding="utf-8") as handle:
+                handle.write(_yaml().safe_dump(layer, allow_unicode=True))
+        try:
+            configuration = _resolve(data, root, facts, False)
+        except ConfigError as error:
+            return f"stop {error.key}"
+        if report:
+            return configuration.to_dict()
+        return f"value {configuration.get(read or rows[0]['block'])!r}"
 
 
 def _reported_privately(listed) -> dict:
