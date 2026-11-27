@@ -243,8 +243,17 @@ claim that races and a refusal that leaves a branch behind for every later pass 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" take \
   --repo-root <code-root> --branch-prefix <prefix> --item <number> --title <title> \
-  --tree-dir <tree-dir>
+  --tree-dir <tree-dir> [--grouping-value "<the value the item carries>" [--grouping <name>]]
 ```
+
+⛔ **The base is the carrier's to derive, and this role hands it the item's grouping value rather
+than a branch.** Where the item carries a value for a grouping the project plans in, it goes over as
+`--grouping-value`, quoted, with `--grouping` naming which where the project carries several; the
+carrier composes the branch through the same reading `grouping_ref_exists` confirmed, and a grouping
+stating no `ref_prefix` leaves the remote's default.
+[`§ 10`](../../config/schema.md#the-claim-on-a-work-item) states the rule; `--integration` is never
+passed to stand in for it. The success line names the branch the claim was cut from, and the reply
+carries it.
 
 - **Refused** ⇒ the item is taken, and the refusal already carries who holds it and since when, or
   names whichever half it could not establish. Auto-picked: go back to step 2 and take the next
