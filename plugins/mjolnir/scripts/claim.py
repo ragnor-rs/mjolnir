@@ -1399,17 +1399,20 @@ def _local_branch(root: str | Path, branch: str) -> bool:
     ).returncode == 0
 
 
-def _registered_tree(root: str | Path, tree: str | Path) -> bool:
-    """Whether git registers a worktree at `tree`, its directory present or not.
+def _checked_out_at(root: str | Path, branch: str) -> str | None:
+    """The registered worktree `branch` is checked out in, of any kind, or None.
 
-    Compared on resolved paths, since git lists a worktree by the path it was added under and a
-    caller may name it through a symlink or a relative form already joined to the root.
+    ⚠️ Not `tree_for_branch`: that answer is filtered to the trees a release may remove, and this
+    one asks where git will refuse to delete the branch from — which is any worktree at all, a
+    helper's or one cut under an older `tree_dir` included.
     """
-    want = os.path.realpath(str(tree))
+    path: str | None = None
     for line in git(root, "worktree", "list", "--porcelain", check=False).stdout.splitlines():
-        if line.startswith("worktree ") and os.path.realpath(line[len("worktree "):].strip()) == want:
-            return True
-    return False
+        if line.startswith("worktree "):
+            path = line[len("worktree "):].strip()
+        elif line.startswith("branch ") and line[len("branch "):].strip() == REFS_PREFIX + branch:
+            return path
+    return None
 
 
 def take(
@@ -1851,24 +1854,19 @@ def release(
     # does not exist there, removed nothing, and reported the claim released.
     if tree and not Path(tree).is_absolute():
         tree = str(Path(root) / tree)
-    if tree and not Path(tree).exists() and not _registered_tree(root, tree):
-        # ⛔ A named tree that is neither on disk nor registered is reported as that, while the
-        # claim still has a local branch for the tree to have held: the release's point is that
-        # the tree is gone, and one it could not find is no evidence of that. With no local branch
-        # left there is nothing here to give up, which is the re-run of a release that already
-        # removed the tree — reported as already gone, as it always was.
-        if _local_branch(root, branch):
-            held = tree_for_branch(root, branch, tree_dir)
+    if tree and not Path(tree).exists():
+        # ⛔ A named tree that is not there, while the branch is still checked out in another
+        # worktree, is reported as **no such tree**: the release's point is that the tree is gone,
+        # and the one holding the branch is still standing. A branch checked out nowhere is the
+        # opposite case — the named tree's absence is a removal that already happened, and the
+        # re-run of a half-released claim finishes it, as it always did.
+        held = _checked_out_at(root, branch)
+        if held and os.path.realpath(held) != os.path.realpath(tree):
             raise ClaimError(
-                f"refused: no such tree `{tree}` — no directory and no registered worktree is "
-                "there, so nothing was removed and the claim on "
-                f"`{branch}` is untouched.\n"
-                + (
-                    f"`{branch}` is checked out at `{held}`; name that tree, or leave out "
-                    "`--tree` and the release resolves it.\n"
-                    if held
-                    else "The local branch is in no tree; leave out `--tree` to give it up.\n"
-                )
+                f"refused: no such tree `{tree}` — nothing is there, so nothing was removed and "
+                f"the claim on `{branch}` is untouched.\n"
+                f"`{branch}` is checked out at `{held}`; name that tree, or leave out `--tree` "
+                "and the release resolves it."
             )
     doomed = tree or tree_for_branch(root, branch, tree_dir)
     # ⛔ Before the ref deletion and not beside the tree removal: a refusal has to leave the claim
@@ -2962,6 +2960,24 @@ def self_test() -> int:
         suite.ok("⛔ the command exits nonzero with nothing on the success stream",
                  code != 0 and not printed.getvalue() and "no such tree" in complained.getvalue(),
                  f"{code} {printed.getvalue()!r} {complained.getvalue()!r}")
+
+    # The control: a release that removed its tree and stopped before the local branch went — the
+    # half-released claim the command exists to be re-run on. The branch is in no tree, so the
+    # named tree being gone is that release's own work, and the re-run finishes it.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        half = str(Path(tmp) / "half")
+        take(one, "feature/h", half)
+        # The release's own order: the ref first, then the tree, and the branch not reached.
+        git(one, "push", "origin", "--delete", "feature/h")
+        git(one, "worktree", "remove", half, "--force")
+        try:
+            out = release(one, "feature/h", half)
+        except ClaimError as refused:
+            out = str(refused)
+        suite.ok("⛔ a half-released claim named by its gone tree is released on the re-run",
+                 not _local_branch(one, "feature/h") and "released" in out, out)
 
     print("\na removal that fails is reported as one:")
 

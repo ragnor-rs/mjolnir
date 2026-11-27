@@ -625,8 +625,8 @@ tree to remove, and the guard asks a different question.
 
 One command gives the claim up, and this role does not assemble it out of git calls. The command is
 re-runnable, because a half-released claim is what a failed release leaves. A relative `<tree>` is
-the code root's, wherever this session is standing, and a tree the command cannot find fails it
-rather than reading as released — both by
+the code root's, wherever this session is standing, and a named tree that is not there while the
+branch is checked out elsewhere fails the command rather than reading as released — both by
 [`§ 10`](../../config/schema.md#pruning-a-tree-whose-branch-has-landed).
 
 A tree git refuses to remove fails the command, which names the tree, git's reason and what became
