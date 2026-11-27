@@ -1305,6 +1305,14 @@ carrying the wrong one is a check that never reports. The comparison fires only 
 stated: a project that states nothing has declared the kind's default, which this surface does not
 enumerate, so there is nothing to hold a file to — a limit rather than a pass.
 
+**A generated workflow grants its job token exactly what its steps read, and that is procedure
+rather than configuration.** A job that checks the repository out holds read access to the
+repository's contents and nothing more; a job that reads only the event payload holds no scope at
+all. The first half is load-bearing on a private repository: there a token with no contents scope
+cannot fetch, so the checkout fails before the check runs, and the run reads as a failure about the
+change. A public repository masks it, anonymous fetch succeeding. Which half a file takes is read
+off its own steps, never stated per project, so no key carries it.
+
 ### Reading a run's answer, and what a failure is
 
 Procedure rather than configuration, stated here because the reviewing role drives these runs green
