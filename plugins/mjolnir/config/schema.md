@@ -6078,6 +6078,14 @@ A compound call is refused on the segment that matched, and the refusal names it
 harness offers is the whole call, so naming the segment makes the refusal legible, not narrower:
 *this call spends* against four semicolons does not say which was meant.
 
+A substitution's body is a command text of its own, read wherever the shell would expand it and
+nowhere else. ⛔ That includes a here-document's body, by its delimiter's rule: under a quoted
+delimiter (`'EOF'`, `"EOF"`, `\EOF`) the body is literal and nothing in it is a call, and under an
+unquoted one each substitution in it is, with neither quote character quoting anything there. A
+body read as text and never as lines of commands is the same either way; what differs is only the
+substitutions. Reading a quoted body for them refused a script that quoted a denied command in
+Markdown backticks, which the shell never runs.
+
 ⚠️ What it does not reach: a paid command invoked through an interpreter stands in no command
 position of its own — the interpreter does, and the paid script is its argument — so a project that
 invokes one that way lists it as a launcher, by
