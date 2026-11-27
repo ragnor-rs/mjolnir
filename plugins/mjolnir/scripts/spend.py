@@ -173,7 +173,7 @@ HEREDOC = "<<"
 # A here-document whole, for the one reading that has no lexer under it: what
 # follows the delimiter on its line is kept, and the body is text.
 HEREDOC_BODY = re.compile(
-    r"<<-?[ \t]*([\"']?)([A-Za-z_]\w*)\1([^\n]*)\n(?:.*?\n)?[ \t]*\2[ \t]*(?=\n|$)", re.DOTALL
+    r"<<-?[ \t]*\\?([\"']?)([A-Za-z_]\w*)\1([^\n]*)\n(?:.*?\n)?[ \t]*\2[ \t]*(?=\n|$)", re.DOTALL
 )
 
 # A line continuation, which is not a token at all. ⚠️ Left in place, the escaped
@@ -341,15 +341,66 @@ def nested(command: str) -> tuple[str, list[str]]:
     ⚠️ Single quotes are tracked and nothing inside them is a substitution, which
     is the shell's own rule: a path mentioned inside `'…'` is text.
 
+    ⚠️ Double quotes are tracked too, because the shell's rule differs inside
+    them: a substitution still expands there, while an apostrophe is a literal
+    character and opens nothing. Read as a single quote, the apostrophe in
+    `"it's $(…)"` hid the substitution after it.
+
+    ⛔ **A here-document's body is read by its delimiter's rule**, which is the
+    shell's: under a quoted delimiter (`'EOF'`, `"EOF"`, `\\EOF`) the body is
+    literal and nothing in it is a substitution, and under an unquoted one every
+    substitution in it expands while neither quote character quotes anything.
+    Measured: a backtick span in a quoted body was refused as a call the shell
+    never makes, and an apostrophe in an unquoted body hid the substitution after
+    it. ⚠️ A body begins on the line after its operator, so the rest of that line
+    is still read as commands.
+
     ⚠️ The body is **replaced by a space** in the text that comes back, so each
     command text is segmented exactly once and one spend is reported once.
     """
+    return _substitutions(command, quotes=True)
+
+
+# A here-document operator and its delimiter word, read where `nested` stands on
+# `<<`. ⚠️ `<<<` is a here-string and opens no body, so it is excluded. The word
+# is the shell's: runs of quoted spans, escapes and plain characters up to a
+# metacharacter, and any quoting anywhere in it makes the body literal.
+HEREDOC_OPERATOR = re.compile(
+    r"<<(?!<)(-?)[ \t]*((?:'[^']*'|\"[^\"]*\"|\\.|[^\s;&|()<>'\"\\])+)")
+
+
+def _heredoc_body(text: str, start: int, delimiter: str, dash: bool) -> tuple[str, int]:
+    """The body from `start` through its terminating line, and where it ends.
+
+    ⚠️ A body nothing terminates runs to the end of the text, which is what the
+    shell does with it too. The terminating line is part of what comes back.
+    """
+    index = start
+    while index < len(text):
+        stop = text.find("\n", index)
+        line_end = len(text) if stop == -1 else stop
+        line = text[index:line_end]
+        if (line.lstrip("\t") if dash else line) == delimiter:
+            return text[start:line_end], line_end
+        if stop == -1:
+            break
+        index = stop + 1
+    return text[start:], len(text)
+
+
+def _substitutions(command: str, *, quotes: bool) -> tuple[str, list[str]]:
+    """`nested`'s scan, with the quote characters live or, in a body, literal.
+
+    `quotes` false is the reading of an unquoted here-document's body: both
+    quote characters are ordinary there, and no further body opens inside it.
+    """
     out: list[str] = []
     bodies: list[str] = []
-    index, end, quoted = 0, len(command), False
+    pending: list[tuple[str, bool, bool]] = []
+    index, end, quoted, doubled = 0, len(command), False, False
     while index < end:
         char = command[index]
-        if char == "'":
+        if quotes and char == "'" and not doubled:
             quoted = not quoted
             out.append(char)
             index += 1
@@ -358,9 +409,43 @@ def nested(command: str) -> tuple[str, list[str]]:
             out.append(char)
             index += 1
             continue
+        if quotes and char == '"':
+            doubled = not doubled
+            out.append(char)
+            index += 1
+            continue
         if char == "\\" and index + 1 < end:
             out.append(command[index:index + 2])
             index += 2
+            continue
+        # ⚠️ The look behind is the here-string's other half: at the second `<`
+        # of `<<<` the next two characters read as an operator, and taking them
+        # for one hid the substitution in the here-string's word.
+        if (quotes and not doubled and char == "<" and command.startswith("<<", index)
+                and command[index - 1:index] != "<"):
+            operator = HEREDOC_OPERATOR.match(command, index)
+            if operator:
+                word = operator.group(2)
+                pending.append((re.sub(r"\\(.)|['\"]", r"\1", word),
+                                bool(set(word) & set("'\"\\")), operator.group(1) == "-"))
+                out.append(operator.group(0))
+                index = operator.end()
+                continue
+        if char == "\n" and pending:
+            out.append(char)
+            index += 1
+            for delimiter, literal, dash in pending:
+                body, index = _heredoc_body(command, index, delimiter, dash)
+                if literal:
+                    out.append(body)
+                else:
+                    text, found = _substitutions(body, quotes=False)
+                    out.append(text)
+                    bodies.extend(found)
+                if index < end:
+                    out.append("\n")
+                    index += 1
+            pending = []
             continue
         # `$(…)` and the process-substitution forms, which differ only in what
         # the shell does with the body's output.
@@ -416,18 +501,30 @@ def _segments_of(call: str) -> list[list[str]]:
     # on its tokens reads them there, a body's among them.
     tokens = words(call if _lexes(call) else HEREDOC_BODY.sub(r"\3", call))
     index = 0
+    pending: list[str | None] = []
     while index < len(tokens):
         token = tokens[index]
         index += 1
-        if token.startswith(HEREDOC) and set(token) <= set("<-"):
-            # The delimiter, then everything up to the line that repeats it. ⚠️ A
-            # body nothing terminates runs to the end of the call, which is what
-            # the shell does with it too.
-            delimiter = tokens[index].lstrip("-") if index < len(tokens) else None
+        # ⚠️ `<<<` is a here-string, whose word is a redirection's target and
+        # opens no body: read as an operator, it hid every line after it.
+        if token.startswith(HEREDOC) and set(token) <= set("<-") and token != "<<<":
+            # The delimiter is taken now and the body skipped at the end of the
+            # line. ⛔ Not at once: the rest of the operator's line is commands,
+            # and skipping straight to the delimiter's repeat hid a command piped
+            # to after it.
+            pending.append(tokens[index].lstrip("-") if index < len(tokens) else None)
             index += 1
-            while index < len(tokens) and tokens[index] != delimiter:
+            continue
+        if pending and "\n" in token and set(token) <= set("();<>|&\n"):
+            # Each body up to the line that repeats its delimiter. ⚠️ A body
+            # nothing terminates runs to the end of the call, which is what the
+            # shell does with it too.
+            for delimiter in pending:
+                while index < len(tokens) and tokens[index] != delimiter:
+                    index += 1
                 index += 1
-            index += 1
+            pending = []
+            out.append([])
             continue
         if token and set(token) <= REDIRECTIONS and (set(token) & set("<>")):
             index += 1
@@ -1191,6 +1288,23 @@ MUST_REFUSE = [
     ("as the condition a loop ends on", "until <deny> --the-paid-tier; do a-free-command; done"),
     ("on the line after a here-document carrying an apostrophe",
      "a-free-command <<'EOF'\nit's text\nEOF\n<deny> --the-paid-tier"),
+    # ⛔ A here-document under an unquoted delimiter expands every substitution
+    # in its body, and neither quote character quotes anything there — the arm
+    # the quoted-delimiter shapes in `MUST_ALLOW` are the other half of.
+    ("in a backtick span in a body under an unquoted delimiter",
+     "a-free-command <<EOF\nsee `<deny> --the-paid-tier` here\nEOF"),
+    ("in a substitution in a body under an unquoted delimiter",
+     "a-free-command <<EOF\nsee $(<deny> --the-paid-tier) here\nEOF"),
+    ("after an apostrophe in a body under an unquoted delimiter",
+     "a-free-command <<EOF\nit's `<deny> --the-paid-tier`\nEOF"),
+    ("on the operator's own line, after a quoted delimiter",
+     "a-free-command <<'EOF' | <deny> --the-paid-tier\ntext\nEOF"),
+    ("in a substitution after an apostrophe inside double quotes",
+     'a-free-command "it\'s $(<deny> --the-paid-tier)"'),
+    ("in a substitution in a here-string's word",
+     'a-free-command <<< "$(<deny> --the-paid-tier)"'),
+    ("in a backtick span in a here-string's word", "a-free-command <<<`<deny> --the-paid-tier`"),
+    ("on the line after a here-string", "a-free-command <<< a-word\n<deny> --the-paid-tier"),
     ("as the body of a loop", "for i in a b; do <deny> --the-paid-tier; done"),
     ("as the alternative of a condition",
      "if a-free-command; then a-free-command; else <deny>; fi"),
@@ -1250,6 +1364,21 @@ MUST_ALLOW = [
      "A_DELIMITER"),
     ("the same body under the dash form of the delimiter",
      "a-writing-command <<-A_DELIMITER\n<deny> --the-paid-tier\nA_DELIMITER"),
+    # ⛔ Under a quoted delimiter the body is literal, so a substitution's
+    # spelling in it runs nothing — one shape per way of quoting the delimiter.
+    # Measured: each was refused as a call the shell never makes.
+    ("a backtick span in a body under a single-quoted delimiter",
+     "a-writing-command <<'EOF'\nsee `<deny> --the-paid-tier` here\nEOF"),
+    ("a backtick span in a body under a double-quoted delimiter",
+     'a-writing-command <<"EOF"\nsee `<deny> --the-paid-tier` here\nEOF'),
+    ("a backtick span in a body under an escaped delimiter",
+     "a-writing-command <<\\EOF\nsee `<deny> --the-paid-tier` here\nEOF"),
+    ("a substitution in a body under a quoted delimiter",
+     "a-writing-command <<'EOF'\nsee $(<deny> --the-paid-tier) here\nEOF"),
+    ("a backtick span with an apostrophe in a quoted body",
+     "a-writing-command <<'EOF'\nit's `<deny> --the-paid-tier`\nEOF"),
+    ("a backtick span in a body under the dash form, quoted",
+     "a-writing-command <<-'EOF'\n\tsee `<deny> --the-paid-tier`\n\tEOF"),
     ("a placeholder standing before the denied path",
      "a-searching-command . -name a-file -exec a-copying-command {} <deny> ;"),
     ("the denied path as an argument across a line continuation",

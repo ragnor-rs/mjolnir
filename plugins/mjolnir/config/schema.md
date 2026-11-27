@@ -4570,10 +4570,18 @@ the same missing half.
 orphaned one is; the reading decides which question to put to a person, never which refs may be
 deleted.
 
-**The integration branch a claim is cut from is derived, not configured.** No key names it, so it is
-read from what the remote advertises as its default — and where that cannot be read, the role is
-told by name rather than handed a guess. ⚠️ A claim cut from the wrong base reads as a successful
-start.
+**The integration branch a claim is cut from is derived, not configured.** No key names it. Where
+the item carries a value for a grouping that states a `ref_prefix`
+([§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)), it is the ref that prefix composes
+from that value — the one composition, which
+[§ 5](#5-readiness-gate--an-ordered-predicate-list)'s `grouping_ref_exists` confirms exists — read
+at the remote's tip rather than at a local branch of that name. Otherwise it is what the remote
+advertises as its default. The starting role hands over the value and never the ref, and the
+finishing role opens the pull request against the same branch, asked of the same derivation, so a
+change is never opened against a base it was not cut from. Where the composed ref cannot be read
+from the remote, the claim is refused naming it, never cut from the default in its place; where the
+default cannot be read, the role is told by name rather than handed a guess. ⚠️ A claim cut from the
+wrong base reads as a successful start.
 
 **The absent case is derived, not configured.** A code root with no remote cannot publish a ref, so
 the claim is local-only there and the role says so; the claim still holds against every session on
@@ -6088,6 +6096,14 @@ wrapper, which a strip-then-match would leave unguardable.
 A compound call is refused on the segment that matched, and the refusal names it. The act the
 harness offers is the whole call, so naming the segment makes the refusal legible, not narrower:
 *this call spends* against four semicolons does not say which was meant.
+
+A substitution's body is a command text of its own, read wherever the shell would expand it and
+nowhere else. ⛔ That includes a here-document's body, by its delimiter's rule: under a quoted
+delimiter (`'EOF'`, `"EOF"`, `\EOF`) the body is literal and nothing in it is a call, and under an
+unquoted one each substitution in it is, with neither quote character quoting anything there. A
+body read as text and never as lines of commands is the same either way; what differs is only the
+substitutions. Reading a quoted body for them refused a script that quoted a denied command in
+Markdown backticks, which the shell never runs.
 
 ⚠️ What it does not reach: a paid command invoked through an interpreter stands in no command
 position of its own — the interpreter does, and the paid script is its argument — so a project that

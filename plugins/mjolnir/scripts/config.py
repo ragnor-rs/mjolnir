@@ -2273,6 +2273,22 @@ class Config:
             )
         return {"name": name, **self.groupings[name]}
 
+    def grouping_ref(self, value: str, name: str | None = None) -> str | None:
+        """The ref § 4.8's `ref_prefix` composes from one grouping value, or `None`.
+
+        ⛔ **The one composition**, read by every role that needs the branch a
+        grouping's value names: § 5's `grouping_ref_exists` asks whether it is
+        on the remote, and § 10's claim is cut from it. Two compositions are two
+        answers free to disagree, and the disagreement is a claim cut from one
+        branch after the gate confirmed another.
+
+        `None` is the grouping stating no `ref_prefix`, which is § 10's default
+        arm and not a failure. Which grouping is meant is `grouping`'s answer,
+        with every one of its stops.
+        """
+        prefix = self.grouping(name).get("ref_prefix")
+        return f"{prefix}{value}" if prefix else None
+
     def grouping_default(
         self,
         name: str | None = None,

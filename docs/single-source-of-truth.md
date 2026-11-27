@@ -2570,7 +2570,8 @@ The call shapes are enumerated by hand: the suite runs the denied command throug
 arrives in, in four families — the way it is spelled, what stands in front of it, what it is nested
 inside, and what follows it — and the complement is the same path standing where it is **not** a
 call: in another command's prose, as an argument, as a redirection's target, inside a
-here-document's body, inside single quotes, and as a longer name merely ending in it
+here-document's body — a substitution's spelling included, where the delimiter is quoted — inside
+single quotes, and as a longer name merely ending in it
 ([schema § 19 → The command position](../plugins/mjolnir/config/schema.md#the-command-position-and-why-the-whole-call-is-not-one)).
 The run prints the count of each family.
 
