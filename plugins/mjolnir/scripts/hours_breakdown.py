@@ -32,9 +32,11 @@ change names is read off its message through the reference the tracker port itse
 (`link_for_close`), so this file carries no host's closing grammar. ⛔ **A change naming no item is
 reported as naming none, and is not classified**: § 30 states that no role but two reads the
 exempt facet, so a change committed outside the loop appears here exactly as it landed -- among
-the period's changes, with no work item to name. ⚠️ **Where the port composes no reference, the
-item is read from the references a line of the message opens with, in the root's title form**
-(§ 3's fallback, through `title_form.py`); ⚠️ **where the root states no title form either, every
+the period's changes, with no work item to name. ⚠️ **Where the root states a title form, the
+item is also read from the references a line of the message opens with, in that form** (§ 3,
+through `title_form.py`) -- beside the closing reference and not only where the port composes
+none, a squash landed with an explicit subject carrying the title and no closing line; ⚠️ **where
+the port composes no reference and the root states no title form either, every
 change's item is reported unread**, never *none*: a reference nothing could recognise and a change
 that carries none read alike otherwise.
 
@@ -76,7 +78,7 @@ import boundary as ingestion  # noqa: E402 -- § 11's step, run where text from 
 import claim  # noqa: E402 -- § 10's derivation of the integration branch, not a second one
 import config as reader  # noqa: E402 -- the one reader of the surface
 import port as ports  # noqa: E402 -- the one door to a tracker and to a day log's store
-import title_form  # noqa: E402 -- § 2's title form, read where no closing reference is composed
+import title_form  # noqa: E402 -- § 2's title form, read beside the closing reference
 
 DISTRIBUTED, STOPPED, OFFERED, UNREADABLE = 0, 1, 3, 4
 
@@ -364,7 +366,7 @@ def shipped(root_name: str, view, first: str, last: str, pattern: re.Pattern | N
     method = view.get("host.landing.method")
     try:
         bases = view.landing_bases()
-        titled = None if pattern is not None else view.pull_request_title()
+        titled = view.pull_request_title()
     except reader.ConfigError as error:
         raise Stop(f"{root_name}: {error}") from error
     # ⚠️ § 2's `bases`: every branch the project lands a change on, read beside the integration
@@ -404,15 +406,19 @@ def shipped(root_name: str, view, first: str, last: str, pattern: re.Pattern | N
             if method == "merge_commit" and len(parents) > 1:
                 # The commits the merge brought in, which is where a closing reference is written.
                 read += "\n" + _git(code_root, "log", "--format=%B", f"{parents[0]}..{commit}")
+            # Both references a landed message may carry, read together: the tracker's closing
+            # reference, and the references a line opens with in the root's own title form (§ 2).
+            # ⚠️ The title form is read beside the closing reference and not only in its place,
+            # since a squash landed with an explicit subject keeps the closing line on the pull
+            # request and lands the title alone. A change whose two references disagree names
+            # both items, and stays a line of its own.
+            found = None
             if pattern is not None:
                 found = {int(m["item"]) for m in pattern.finditer(read)}
-            elif titled is not None:
-                # § 3's fallback for a port composing no closing reference: the references a
-                # line of the message opens with, in the root's own title form (§ 2).
-                found = {int(number) for line in read.splitlines()
-                         for number in title_form.items_in(view, line.strip()) or ()}
-            else:
-                found = None
+            if titled is not None:
+                found = (found or set()) | {
+                    int(number) for line in read.splitlines()
+                    for number in title_form.items_in(view, line.strip()) or ()}
             changes.append({
                 "root": root_name,
                 "commit": commit,
@@ -423,8 +429,9 @@ def shipped(root_name: str, view, first: str, last: str, pattern: re.Pattern | N
                 # ⛔ None is unread and [] is a change naming no item -- two answers, never one.
                 "items": None if found is None else [str(number) for number in sorted(found)],
             })
-    read_by = ("the tracker's closing reference" if pattern is not None
-               else "the title form" if titled is not None else None)
+    read_by = " and ".join(
+        name for name, read in (("the tracker's closing reference", pattern is not None),
+                                ("the title form", titled is not None)) if read) or None
     return changes, [{
         "root": root_name,
         "ref": where,
@@ -666,7 +673,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _a_project(base: str, name: str, days=(), *, carrier=True, landing="squash",
-               triple=None, bases=None, example="none.yaml") -> str:
+               triple=None, bases=None, example="none.yaml", title=None) -> str:
     """One real project over a real git repository, with a day log of its own."""
     import yaml
 
@@ -682,6 +689,8 @@ def _a_project(base: str, name: str, days=(), *, carrier=True, landing="squash",
     data["host"]["landing"]["method"] = landing
     if bases is not None:
         data["host"]["landing"]["bases"] = bases
+    if title is not None:
+        data["host"]["pull_request_title"] = title
     if triple is not None:
         data["language"].setdefault("artifacts", {})["hours_breakdown"] = triple
     data["day_log"] = dict(data.get("day_log") or {})
@@ -1134,6 +1143,37 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
               [line["item"] for line in
                breakdown(jira, "2026-11-01", "2026-11-30", "3", [], per_item=True)[1]["lines"]]
               == ["12", None, None])
+
+        # A port composing a closing reference on a root that states a title form, landing
+        # squash with an explicit subject: the title lands, the closing line mostly does not.
+        titled = _a_project(base, "titled", title={"reference": "#<number> —", "repeated": False,
+                                                   "into": ["*"]})
+        _commit(titled, "Start", "2026-10-01T10:00:00+00:00")
+        sticker = _commit(titled, "#200 — take a sticker as the photo (#209)",
+                          "2026-11-02T10:00:00+00:00")
+        pants = _commit(titled, "#151 — measure where the photo loses its pants (#235)",
+                        "2026-11-03T10:00:00+00:00")
+        again = _commit(titled, "#151 — Подбор по фото (#248)", "2026-11-04T10:00:00+00:00")
+        closed = _commit(titled, "A closing line only\n\nCloses #9.", "2026-11-05T10:00:00+00:00")
+        untitled = _commit(titled, "A change naming nothing", "2026-11-06T10:00:00+00:00")
+        split = _commit(titled, "#7 — one item in the title\n\nCloses #8.",
+                        "2026-11-07T10:00:00+00:00")
+        status, report = breakdown(titled, "2026-11-01", "2026-11-30", "6", [],
+                                   tracker_from=closes)
+        check("beside a closing reference, a landed subject in the title form names its item",
+              status == DISTRIBUTED
+              and [(c["commit"], c["items"]) for c in report["changes"]]
+              == [(sticker, ["200"]), (pants, ["151"]), (again, ["151"]), (closed, ["9"]),
+                  (untitled, []), (split, ["7", "8"])]
+              and report["read_from"][0]["items_read_by"]
+              == "the tracker's closing reference and the title form",
+              report.get("changes"))
+        lines = breakdown(titled, "2026-11-01", "2026-11-30", "6", [], tracker_from=closes,
+                          per_item=True)[1]["lines"]
+        check("per item, the titled changes fold into one line per item and the rest stand",
+              [(line["item"], line["changes"]) for line in lines]
+              == [("200", [sticker]), ("151", [pants, again]), ("9", [closed]),
+                  (None, [untitled]), (None, [split])], lines)
 
         # The resolution and the unit words are the triple's, read through the configuration.
         stated = _a_project(base, "minutes", triple={
