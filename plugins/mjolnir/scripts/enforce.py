@@ -2574,10 +2574,15 @@ def behind_of(where: str, *, remote: str = "origin",
     named = run(tree, "rev-parse", "--abbrev-ref", "HEAD")
     branch = named.stdout.strip() if named is not None and named.returncode == 0 else ""
     here = f"{tree} on `{branch}`" if branch else tree
+    # ⛔ The base the claim recorded, through the carrier's one derivation of it
+    # (§ 10): a tree cut from a grouping's branch is behind that branch or level
+    # with it, never behind the remote's default its work does not land on.
     try:
-        base = carrier.integration_branch(tree, remote, timeout=BEHIND_TIMEOUT)
+        base, recorded = carrier.base_branch(tree, remote, branch, timeout=BEHIND_TIMEOUT)
     except Exception as error:  # noqa: BLE001 -- any failure is a named absence
         return UNESTABLISHED, None, f"in {here}, the base could not be named: {error}"
+    if recorded:
+        here = f"{here}, recorded as cut from `{base}`"
     try:
         head = carrier.remote_ref_sha(tree, remote, base, timeout=BEHIND_TIMEOUT)
     except Exception as error:  # noqa: BLE001 -- any failure is a named absence
@@ -3742,7 +3747,7 @@ class _OneReadMissing:
     def __init__(self, real, which: str):
         self._real, self._which = real, which
         self.remote_url = real.remote_url
-        self.integration_branch = real.integration_branch
+        self.base_branch = real.base_branch
         self.remote_ref_sha = real.remote_ref_sha
 
     def git(self, root, *args, check: bool = True, timeout=None):
@@ -6152,6 +6157,35 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
               answer == UNESTABLISHED, f"was {answer!r}: {said}")
         check("and says the base is what it could not find",
               "no branch named" in said, said[:240])
+        # ⛔ A tree cut from a grouping's branch is measured against the branch
+        # its claim recorded (§ 10), never the remote's default. The default
+        # moves past the point the grouping's branch was cut at, so a reading
+        # taken against it calls a level tree behind.
+        out.append("")
+        out.append("A tree whose claim recorded its base is measured against that base:")
+        _origin, seed, tree = _a_published_base(fresh("recorded-base"))
+        _a_commit(tree, "mine.txt")
+        _in(seed, "push", "--quiet", "origin", "main:release/x")
+        _a_commit(seed, "theirs.txt")
+        _in(seed, "push", "--quiet", "origin", "main")
+        _in(tree, "fetch", "--quiet", "origin")
+        answer, figure, said = behind_of(tree)
+        check("with nothing recorded it reads against the remote's default, as it always did",
+              answer == BEHIND and figure == 1 and "origin/main" in said,
+              f"{answer!r}, {figure!r}: {said}")
+        _claim().record_base(tree, "a-branch", "release/x")
+        answer, figure, said = behind_of(tree)
+        check("⛔ with `release/x` recorded it is level with `release/x`, the default moved or not",
+              answer == LEVEL and figure == 0 and "origin/release/x" in said,
+              f"{answer!r}, {figure!r}: {said}")
+        check("and it says the base is the recorded one", "recorded as cut from" in said,
+              said[:240])
+        _claim().record_base(tree, "a-branch", "release/gone")
+        answer, _figure, said = behind_of(tree)
+        check("⛔ a recorded base the remote carries no branch for is unestablished, never the "
+              "default", answer == UNESTABLISHED and "release/gone" in said,
+              f"{answer!r}: {said}")
+
         answer, _figure, said = behind_of(outside, load=_a_carrier_that_will_not_load)
         check("and a claim carrier that could not be loaded is unestablished, not silence",
               answer == UNESTABLISHED and "claim carrier" in said, f"{answer!r}: {said}")

@@ -481,10 +481,31 @@ def record_base(root: str | Path, branch: str, base: str) -> None:
     git(root, "config", f"branch.{branch}.{BASE_KEY}", base)
 
 
-def recorded_base(root: str | Path, branch: str) -> str | None:
+def recorded_base(root: str | Path, branch: str, timeout: float | None = None) -> str | None:
     """The branch a claim was recorded as cut from, or None where nothing was recorded."""
-    proc = git(root, "config", "--get", f"branch.{branch}.{BASE_KEY}", check=False)
+    if not branch or branch == "HEAD":
+        return None
+    proc = git(root, "config", "--get", f"branch.{branch}.{BASE_KEY}", check=False,
+               timeout=timeout)
     return proc.stdout.strip() or None
+
+
+def base_branch(
+    root: str | Path, remote: str, branch: str, timeout: float | None = None
+) -> tuple[str, bool]:
+    """`(the name of the branch a tree's work is measured against, whether a claim recorded it)`.
+
+    ⛔ **The one derivation of a tree's base, whichever reading asks** (§ 10): the landed reading,
+    the behind report and the load report each take it here, so a tree cut from a grouping's
+    branch is measured against that branch everywhere or nowhere. Where nothing is recorded it is
+    the remote's default, exactly as before the record existed. A recorded name is returned as
+    recorded and never checked here: whether the remote answers for it is each reading's own
+    question, and one it cannot answer is that reading's *unestablished*, never the default.
+    """
+    recorded = recorded_base(root, branch, timeout=timeout)
+    if recorded:
+        return recorded, True
+    return integration_branch(root, remote, timeout=timeout), False
 
 
 def _push_created_ref(porcelain: str, branch: str) -> bool:
@@ -1305,10 +1326,10 @@ def reading_base(
     """
     if stated:
         return stated, None
-    recorded = recorded_base(root, branch)
+    name, recorded = base_branch(root, remote, branch)
     if not recorded:
-        return integration_branch(root, remote), None
-    return _remote_tip(root, remote, recorded)
+        return name, None
+    return _remote_tip(root, remote, name)
 
 
 def status(

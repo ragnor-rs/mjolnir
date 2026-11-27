@@ -363,6 +363,33 @@ def _ref_exists(root: str | Path, ref: str) -> bool:
     return carrier.git(root, "rev-parse", "--verify", "--quiet", ref, check=False).returncode == 0
 
 
+def _recorded_base_answered(
+    root: str | Path, remote: str, base: str, unestablished: list[str]
+) -> str | None:
+    """`base` where the remote answers for the recorded branch, None with the reason otherwise.
+
+    ⛔ A recorded base the remote carries no branch for is unestablished, never the remote's
+    default and never a tracking ref left behind here: either would measure this tree against a
+    branch its work does not land on. The question is a query that writes nothing.
+    """
+    try:
+        if not carrier.remote_url(root, remote):
+            return base
+        head = carrier.remote_ref_sha(root, remote, base, timeout=BASE_TIMEOUT)
+    except Exception as exc:  # the carrier names what it could not read
+        unestablished.append(
+            f"the base was recorded as `{base}` and `{remote}` could not be asked for it: {exc}"
+        )
+        return None
+    if head is None:
+        unestablished.append(
+            f"the base was recorded as `{base}` and `{remote}` carries no branch of that name, "
+            "so there is no base to read this branch against"
+        )
+        return None
+    return base
+
+
 def position(root: str | Path, *, remote: str = REMOTE, base: str | None = None) -> dict:
     """Where the work is, read-only and without fetching.
 
@@ -411,12 +438,17 @@ def position(root: str | Path, *, remote: str = REMOTE, base: str | None = None)
     answer["upstream"] = upstream.stdout.strip() if upstream.returncode == 0 else None
 
     # The base, derived rather than named -- the one derivation of it there is.
+    # ⛔ Through the claim carrier's one derivation of a tree's base (§ 10), so a
+    # tree cut from a grouping's branch names that branch here, and its upstream
+    # hazard is that branch's tracking ref rather than the remote's default.
     if base is None:
         try:
-            base = carrier.integration_branch(root, remote, timeout=BASE_TIMEOUT)
+            base, recorded = carrier.base_branch(root, remote, branch, timeout=BASE_TIMEOUT)
         except Exception as exc:  # the carrier names what it could not derive
             answer["unestablished"].append(f"the base branch could not be derived: {exc}")
-            base = None
+            base, recorded = None, False
+        if recorded:
+            base = _recorded_base_answered(root, remote, base, answer["unestablished"])
     answer["base"] = base
 
     # ⛔ The hazard § 10 names: a branch cut without tracking disabled tracks the
@@ -1804,6 +1836,49 @@ def self_test() -> int:  # noqa: PLR0915 -- one suite, read top to bottom
             "a base ref this tree does not have is reported unread",
             "behind_base" not in found
             and any("could be counted" in line for line in found.get("unestablished", [])),
+            f"came back {found!r}",
+        )
+
+        # ⛔ A tree cut from a grouping's branch names the base its claim recorded
+        # (§ 10), and its upstream hazard is that branch's tracking ref. The
+        # remote's default has moved past the cut, so a report deriving the base
+        # again names `main` and misses an upstream that writes to `release/x`.
+        cut = Path(directory) / "cut-from-a-grouping"
+        _origin, grouped = _a_world(cut, branch="feature/7-x")
+        subprocess.run(["git", "-C", grouped, "push", "--quiet", "origin", "main:release/x"],
+                       capture_output=True, text=True, check=True)
+        _a_commit(grouped, "mine.txt")
+        subprocess.run(["git", "-C", grouped, "branch", "--set-upstream-to",
+                        "origin/release/x"], capture_output=True, text=True, check=True)
+        found = position(grouped)
+        check(
+            "with nothing recorded the base is the remote's default, as it always was",
+            found.get("base") == "main" and found.get("upstream_is_base") is False,
+            f"came back {found!r}",
+        )
+        carrier.record_base(grouped, "feature/7-x", "release/x")
+        found = position(grouped)
+        check(
+            "⛔ with `release/x` recorded the base named is `release/x`",
+            found.get("base") == "release/x",
+            f"came back {found.get('base')!r}",
+        )
+        check(
+            "⛔ and an upstream of `origin/release/x` is flagged as the hazard",
+            found.get("upstream_is_base") is True
+            and any("writes to the base" in line for line in found.get("report", [])),
+            f"came back {found!r}",
+        )
+        carrier.record_base(grouped, "feature/7-x", "release/gone")
+        subprocess.run(["git", "-C", grouped, "update-ref", "refs/remotes/origin/release/gone",
+                        "refs/remotes/origin/release/x"], capture_output=True, text=True,
+                       check=True)
+        found = position(grouped)
+        check(
+            "⛔ a recorded base the remote carries no branch for is unestablished, never "
+            "the default and never a tracking ref left here",
+            found.get("base") is None and "behind_base" not in found
+            and any("release/gone" in line for line in found.get("unestablished", [])),
             f"came back {found!r}",
         )
 
