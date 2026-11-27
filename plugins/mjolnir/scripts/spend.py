@@ -418,7 +418,11 @@ def _substitutions(command: str, *, quotes: bool) -> tuple[str, list[str]]:
             out.append(command[index:index + 2])
             index += 2
             continue
-        if quotes and not doubled and char == "<" and command.startswith("<<", index):
+        # ⚠️ The look behind is the here-string's other half: at the second `<`
+        # of `<<<` the next two characters read as an operator, and taking them
+        # for one hid the substitution in the here-string's word.
+        if (quotes and not doubled and char == "<" and command.startswith("<<", index)
+                and command[index - 1:index] != "<"):
             operator = HEREDOC_OPERATOR.match(command, index)
             if operator:
                 word = operator.group(2)
@@ -501,7 +505,9 @@ def _segments_of(call: str) -> list[list[str]]:
     while index < len(tokens):
         token = tokens[index]
         index += 1
-        if token.startswith(HEREDOC) and set(token) <= set("<-"):
+        # ⚠️ `<<<` is a here-string, whose word is a redirection's target and
+        # opens no body: read as an operator, it hid every line after it.
+        if token.startswith(HEREDOC) and set(token) <= set("<-") and token != "<<<":
             # The delimiter is taken now and the body skipped at the end of the
             # line. ⛔ Not at once: the rest of the operator's line is commands,
             # and skipping straight to the delimiter's repeat hid a command piped
@@ -1295,6 +1301,10 @@ MUST_REFUSE = [
      "a-free-command <<'EOF' | <deny> --the-paid-tier\ntext\nEOF"),
     ("in a substitution after an apostrophe inside double quotes",
      'a-free-command "it\'s $(<deny> --the-paid-tier)"'),
+    ("in a substitution in a here-string's word",
+     'a-free-command <<< "$(<deny> --the-paid-tier)"'),
+    ("in a backtick span in a here-string's word", "a-free-command <<<`<deny> --the-paid-tier`"),
+    ("on the line after a here-string", "a-free-command <<< a-word\n<deny> --the-paid-tier"),
     ("as the body of a loop", "for i in a b; do <deny> --the-paid-tier; done"),
     ("as the alternative of a condition",
      "if a-free-command; then a-free-command; else <deny>; fi"),
