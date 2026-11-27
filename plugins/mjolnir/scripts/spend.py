@@ -162,6 +162,16 @@ GROUPING = {"{", "}"}
 # a command is honest work.
 REDIRECTIONS = set("<>&")
 
+# The file descriptor a redirection names, written against its operator: `2>&1`,
+# `2>/dev/null`, `1>>log`. ⛔ The lexer splits it from the operator, so without
+# this it survives the dropped redirection as an argument of the command -- a
+# merge of `origin/main 2>&1` read as a merge of a branch named `2`. The shell's
+# own rule is that a digit word touching `<` or `>` is a descriptor, while one a
+# space separates from the operator (`2 >&1`) is an argument, so it is matched on
+# the text before lexing rather than on the tokens, which no longer carry the gap.
+DESCRIPTOR = re.compile(r"\d+(?=[<>])")
+DESCRIPTOR_STARTS = set(" \t\r\n;&|()")
+
 # A here-document, whose body is **text and not commands**. ⛔ Its lines are
 # newline-separated like any other, so a parse that did not skip them refused a
 # document that merely quoted the denied command -- the same defect as the one
@@ -319,6 +329,7 @@ def words(command: str) -> list[str]:
     ordinary character, a real comment's `#` stands in the command position and
     matches nothing, which is the same answer by a cheaper route.
     """
+    command = _without_descriptors(command)
     try:
         return list(_lexer(command))
     except ValueError:
@@ -327,6 +338,44 @@ def words(command: str) -> list[str]:
         # answering nothing at all: a quote nobody closed must not be the way
         # past a guard.
         return [w for w in re.split(r"([;&|()\n{}])", command) for w in w.split() if w]
+
+
+def _without_descriptors(command: str) -> str:
+    """The call with every redirection's descriptor taken off its operator.
+
+    ⚠️ Only a digit word standing at the start of a word and outside quotes is a
+    descriptor: `"2>&1"` is text, `a2>f` is the word `a2` redirected, and
+    `\\2>f` escapes the digit -- each of them the shell's own reading.
+    """
+    out: list[str] = []
+    quote = ""
+    index = 0
+    while index < len(command):
+        char = command[index]
+        if quote:
+            if char == "\\" and quote == '"' and index + 1 < len(command):
+                out.append(command[index:index + 2])
+                index += 2
+                continue
+            if char == quote:
+                quote = ""
+        elif char == "\\" and index + 1 < len(command):
+            out.append(command[index:index + 2])
+            index += 2
+            continue
+        elif char in "'\"":
+            quote = char
+        elif char.isdigit() and (index == 0 or command[index - 1] in DESCRIPTOR_STARTS):
+            found = DESCRIPTOR.match(command, index)
+            if found:
+                # A space and not nothing: `;2>f` with the digit dropped would
+                # fuse the separator and the operator into one punctuation token.
+                out.append(" ")
+                index = found.end()
+                continue
+        out.append(char)
+        index += 1
+    return "".join(out)
 
 
 def nested(command: str) -> tuple[str, list[str]]:
@@ -1503,6 +1552,22 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
           decision(guard_answer(_call(f"{base} --the-paid-tier > a-file"),
                                 config=anchored)) == "ask",
           repr(guard_answer(_call(f"{base} --the-paid-tier > a-file"), config=anchored))[:140])
+    # ⛔ Read off the words directly as well as through the anchored denial: the
+    # denial alone passes whenever the descriptor is dropped some other way, and
+    # the spaced arm is what makes this the shell's rule rather than a digit strip.
+    for written, wanted in (
+        (f"{base} --the-paid-tier 2>&1 | a-pager", [base, "--the-paid-tier"]),
+        (f"{base} --the-paid-tier 2>/dev/null 1>>a-log", [base, "--the-paid-tier"]),
+        (f"a-free-command;2>a-file {base}", [base]),
+        (f"{base} --the-paid-tier 2 >&1", [base, "--the-paid-tier", "2"]),
+        (f'{base} "2>&1"', [base, "2>&1"]),
+    ):
+        check(f"a redirection's descriptor is read by the shell's rule: {written}",
+              wanted in segments(written), repr(segments(written)))
+    check("and a descriptor written against its operator leaves the anchored denial matching",
+          decision(guard_answer(_call(f"{base} --the-paid-tier 2>&1"),
+                                config=anchored)) == "ask",
+          repr(guard_answer(_call(f"{base} --the-paid-tier 2>&1"), config=anchored))[:140])
 
     out.append("")
     out.append("The two refusals the guard this was extracted from paid for, reproduced:")
