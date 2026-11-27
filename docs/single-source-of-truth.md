@@ -3852,6 +3852,7 @@ a branch per version, a dirty tree on a third branch, and a single-branch clone:
 | a project with no corpus has no subject | the absent case, and the report that says so rather than that nothing contradicts | computed |
 | a working role the project does not name reads nothing | the *not asked* answer, worded as neither the absent subject nor a verdict | computed |
 | a working role's narrowing only narrows | a document matching the narrowing and not the corpus stays unloaded, and the filing role's read is not narrowed | computed |
+| a document that is not text is reported, never read or raised on | a blob that does not decode and one carrying a NUL, in each half of the corpus, listed by path with the reason; a `\r\n` document reads as the text-mode read gave it | computed |
 
 Which roles read the corpus and what narrows their read are the project's `while_working` block,
 refused at load in every shape that reads as a role or a narrowing while being neither

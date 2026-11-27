@@ -10337,6 +10337,18 @@ while reading as one that reads something, and `carrier: none` is how a project 
 an empty load-bearing list is a project stating that every document in its corpus is reached by
 keyword.
 
+⛔ **A document the read cannot take as text is reported as not read, by path and with the reason,
+and is never a stop.** A glob says where the corpus is and not what kind of file is there, so a
+corpus that keeps its source artifacts beside the documents distilled from them — the shape
+[§ 11](#11-session-context)'s rule that the artifact governs encourages — matches binaries as a
+matter of course. A blob that does not decode, or that carries a NUL byte, is listed in the report
+and nothing of it reaches the reading: fed through as text it would be a document the role believes
+it read, and dropped without a word it would be a document the role cannot know it missed. A
+`load_bearing` match is the same report, since nothing in the file could be read either way. A stop
+instead would end the read at the first such file, and with `while_working` stated, every start in
+that project. What the file says is **unanswered**, by
+[§ 11](#a-report-names-what-it-could-not-establish), and never read as agreeing with the item.
+
 ### The roles that read it while the work is done, and what narrows their read
 
 The filing role reads the governing copy wherever a corpus is carried; `while_working.roles` names
