@@ -5050,6 +5050,13 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             check(f"a branch that is the head of {label} is refused, naming the branch",
                   denied(answered) and "a-work-branch" in reason(answered),
                   reason(answered)[:200])
+        for written in ("git merge a-work-branch 2>&1", "git merge a-work-branch >a-file",
+                        "git merge a-work-branch 2>/dev/null"):
+            answered = locally(written, listed=())
+            check(f"a redirected merge names the branch it takes, not the descriptor: {written}",
+                  denied(answered) and "`a-work-branch`" in reason(answered)
+                  and "`2`" not in reason(answered) and "a-file" not in reason(answered),
+                  reason(answered)[:200])
         check("two refs merged at once are refused",
               denied(locally("git merge a-work-branch another-work-branch")))
         released = _a_git(branch="release/one", commits={"a-work-branch": A_HEAD})
@@ -5070,6 +5077,10 @@ def self_test() -> int:  # noqa: PLR0915 -- one assertion per rule, read top to 
             ("the base pulled into a work branch", "git pull a-remote a-base",
              _a_git(branch="a-work-branch")),
             ("the integration branch brought level with its remote", "git merge --ff-only a-remote/a-base",
+             None),
+            ("the same with its output redirected and piped",
+             "git merge --ff-only a-remote/a-base 2>&1 | tail -2", None),
+            ("the same with its errors sent to a file", "git merge --ff-only a-remote/a-base 2>/dev/null",
              None),
             ("the same by its upstream's name", "git merge @{u}", None),
             ("the same by a pull naming nothing", "git pull", None),
