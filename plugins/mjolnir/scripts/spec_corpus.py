@@ -177,9 +177,13 @@ def _blob(root, ref: str, path: str) -> tuple[str | None, str | None]:
     if b"\0" in proc.stdout:
         return None, "it is not text (it carries a NUL byte)"
     try:
-        return proc.stdout.decode("utf-8"), None
+        text = proc.stdout.decode("utf-8")
     except UnicodeDecodeError as error:
         return None, f"it does not decode as text ({error.reason} at byte {error.start})"
+    # ⚠️ The newline translation text mode performed, kept: a document written
+    # with `\r\n` otherwise reaches the reading carrying a `\r` on every line,
+    # which is a project stating nothing new reading differently than it did.
+    return text.replace("\r\n", "\n").replace("\r", "\n"), None
 
 
 def _paths_at(root, ref: str) -> list[str]:
@@ -777,7 +781,16 @@ def self_test() -> int:
         # without complaint, so only the NUL test keeps it out of the reading.
         with open(os.path.join(root, "kb", "requirements.bin"), "wb") as handle:
             handle.write(b"deploy\x00\x00\x01\x02")
+        # ⚠️ And a text document written with `\r\n`, which must read as the
+        # text-mode read gave it: reading bytes is not licence to change what a
+        # document that always decoded comes back as.
+        with open(os.path.join(root, "kb", "notes-crlf.md"), "wb") as handle:
+            handle.write(b"# Notes\r\n\r\nThe deploy is manual.\r\n")
         _commit(root, "a corpus with its sources beside it")
+        check("a document written with \\r\\n reads exactly as the text-mode read gave it",
+              _blob(root, "HEAD", "kb/notes-crlf.md")
+              == (_git(root, "show", "HEAD:kb/notes-crlf.md").stdout, None),
+              f"{_blob(root, 'HEAD', 'kb/notes-crlf.md')!r}")
         binary_facet = _a_facet(files=["kb/**"], load_bearing=["kb/requirements*"])
         try:
             answer = answered(read_corpus(root, binary_facet, "9.0", keywords=["deploy"]))
