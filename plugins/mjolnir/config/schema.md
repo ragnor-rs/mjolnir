@@ -4937,6 +4937,17 @@ that gives the claim up fails rather than succeeding in part. What became of the
 stated beside the tree left behind, the ref going first: a ref reported gone on its own reads as a
 claim given up whole. The local branch stays with the tree.
 
+⛔ **A tree the release is told to remove is the one the claim cut, read from the same anchor.** A
+relative tree path is resolved against the code root, which is where the claim cut it — never
+against the directory the release happens to run from. A session that releases one item's tree
+while standing in the next item's tree would otherwise look for a path that does not exist there,
+remove nothing and report the claim released. A named tree that is neither on disk nor registered,
+while the claim's local branch is still here, is reported as **no such tree**, naming the path
+looked for. The command fails with the claim left whole. A tree it could not find is no evidence
+that the tree is gone, and a branch kept for that reason is never reported as kept by choice. With
+no local branch left there is nothing here to give up, and that is the re-run of a release that
+already removed the tree.
+
 **A symlink is never precious, however it is ignored.** A tree preparation step that plants ignored
 symlinks into every tree it prepares would otherwise leave every correctly prepared tree permanently
 precious, so nothing is ever pruned — while removing the tree unlinks them and loses not a byte.

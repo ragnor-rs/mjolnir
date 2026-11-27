@@ -1326,6 +1326,19 @@ def _local_branch(root: str | Path, branch: str) -> bool:
     ).returncode == 0
 
 
+def _registered_tree(root: str | Path, tree: str | Path) -> bool:
+    """Whether git registers a worktree at `tree`, its directory present or not.
+
+    Compared on resolved paths, since git lists a worktree by the path it was added under and a
+    caller may name it through a symlink or a relative form already joined to the root.
+    """
+    want = os.path.realpath(str(tree))
+    for line in git(root, "worktree", "list", "--porcelain", check=False).stdout.splitlines():
+        if line.startswith("worktree ") and os.path.realpath(line[len("worktree "):].strip()) == want:
+            return True
+    return False
+
+
 def take(
     root: str | Path,
     branch: str | None = None,
@@ -1750,6 +1763,31 @@ def release(
     a tree it keeps keeps its claim whole. `force` does not skip it either: what clears it is the
     resource being stopped, or the check being made to answer.
     """
+    # ⛔ A relative `--tree` is anchored on the code root, which is where `take` cut it: `take`
+    # hands the path to `git -C <root> worktree add`, so git resolved it there. Read against this
+    # process's own directory instead, a release run from a sibling tree looked for a path that
+    # does not exist there, removed nothing, and reported the claim released.
+    if tree and not Path(tree).is_absolute():
+        tree = str(Path(root) / tree)
+    if tree and not Path(tree).exists() and not _registered_tree(root, tree):
+        # ⛔ A named tree that is neither on disk nor registered is reported as that, while the
+        # claim still has a local branch for the tree to have held: the release's point is that
+        # the tree is gone, and one it could not find is no evidence of that. With no local branch
+        # left there is nothing here to give up, which is the re-run of a release that already
+        # removed the tree — reported as already gone, as it always was.
+        if _local_branch(root, branch):
+            held = tree_for_branch(root, branch, tree_dir)
+            raise ClaimError(
+                f"refused: no such tree `{tree}` — no directory and no registered worktree is "
+                "there, so nothing was removed and the claim on "
+                f"`{branch}` is untouched.\n"
+                + (
+                    f"`{branch}` is checked out at `{held}`; name that tree, or leave out "
+                    "`--tree` and the release resolves it.\n"
+                    if held
+                    else "The local branch is in no tree; leave out `--tree` to give it up.\n"
+                )
+            )
     doomed = tree or tree_for_branch(root, branch, tree_dir)
     # ⛔ Before the ref deletion and not beside the tree removal: a refusal has to leave the claim
     # whole. Checked where `release` is entered, so a half-released claim is never this guard's.
@@ -2793,6 +2831,55 @@ def self_test() -> int:
                  "already gone" in again, again)
         suite.ok("so the item can be claimed again after a release",
                  "claimed" in take(two, "feature/r", str(Path(tmp) / "t2")))
+
+    print("\na relative tree is the code root's, wherever the release runs from:")
+
+    # Plant: the finishing role's own call shape — a relative `--tree` under the configured
+    # directory — run from a sibling directory, which is where a session releasing one item's tree
+    # stands while it works the next. Read against the process's directory, the path named nothing
+    # there, nothing was removed, and the release still said *released*.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        relative = str(Path("trees") / "a")
+        sibling = Path(tmp) / "sibling"
+        sibling.mkdir()
+        take(one, "feature/a", relative)
+        cut = Path(one) / relative
+        before = os.getcwd()
+        try:
+            os.chdir(sibling)
+            out = release(one, "feature/a", relative, tree_dir="trees")
+        except ClaimError as refused:
+            out = str(refused)
+        finally:
+            os.chdir(before)
+        suite.ok("⛔ from a sibling directory a relative --tree removes the tree it names",
+                 not cut.exists() and f"tree {cut} removed" in out, out)
+        suite.ok("⛔ and its local branch", not _local_branch(one, "feature/a"), out)
+
+    print("\na named tree that is not there is not a release:")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        _, one, _two = _bare_world(stack)
+        real = str(Path(tmp) / "real")
+        take(one, "feature/m", real)
+        missing = str(Path(tmp) / "missing")
+        said = _message(lambda: release(one, "feature/m", missing)) or ""
+        suite.ok("⛔ a --tree matching no worktree is refused, naming the path looked for",
+                 "no such tree" in said and missing in said, said)
+        suite.ok("with the tree the branch is checked out in", real in said, said)
+        suite.ok("⛔ and the claim is left whole — ref, tree and local branch",
+                 remote_ref_sha(one, "origin", "feature/m") is not None
+                 and Path(real).exists() and _local_branch(one, "feature/m"), said)
+        suite.ok("never reported as a branch kept by choice", "local branch kept" not in said, said)
+        printed, complained = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(printed), contextlib.redirect_stderr(complained):
+            code = main(["release", "--repo-root", one, "--branch", "feature/m", "--tree", missing])
+        suite.ok("⛔ the command exits nonzero with nothing on the success stream",
+                 code != 0 and not printed.getvalue() and "no such tree" in complained.getvalue(),
+                 f"{code} {printed.getvalue()!r} {complained.getvalue()!r}")
 
     print("\na removal that fails is reported as one:")
 

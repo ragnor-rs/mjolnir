@@ -615,7 +615,10 @@ naming the override reserved for somebody else's work. `--tree` does not cover i
 tree to remove, and the guard asks a different question.
 
 One command gives the claim up, and this role does not assemble it out of git calls. The command is
-re-runnable, because a half-released claim is what a failed release leaves.
+re-runnable, because a half-released claim is what a failed release leaves. A relative `<tree>` is
+the code root's, wherever this session is standing, and a tree the command cannot find fails it
+rather than reading as released — both by
+[`§ 10`](../../config/schema.md#pruning-a-tree-whose-branch-has-landed).
 
 A tree git refuses to remove fails the command, which names the tree, git's reason and what became
 of the ref — the reply carries all three, by
