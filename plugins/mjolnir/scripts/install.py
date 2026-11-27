@@ -407,6 +407,30 @@ class Template(NamedTuple):
 TEMPLATES = {"github": Template("ubuntu-latest", "actions/checkout@v4")}
 
 
+def permission_lines(checks_out: bool) -> list[str]:
+    """The `permissions` block a generated workflow carries, from whether its job checks out.
+
+    ⛔ **One answer, read by every workflow this module writes**, and § 2's
+    (*A generated workflow grants its job token exactly what its steps read*)
+    rather than a project's. A job that checks the repository out holds
+    `contents: read` and nothing more; one reading only the event payload holds
+    no scope at all.
+
+    ⚠️ Measured on a private repository: an empty block beside a checkout gave
+    the token no contents scope, every fetch answered *Repository not found*,
+    and the gate failed before its check ran. A public repository masks it,
+    since anonymous fetch succeeds.
+    """
+    if checks_out:
+        return ["# Read access to the repository's contents, which the checkout needs, and",
+                "# nothing more: the checker asks the host for nothing else.",
+                "permissions:",
+                "  contents: read"]
+    return ["# Nothing is read from the repository and no credential is held: the job reads",
+            "# only the event payload, so it needs neither a checkout nor a token.",
+            "permissions: {}"]
+
+
 def runner_of(configuration: config.Config) -> dict:
     """The label, the budget and the supersession group a generated job carries.
 
@@ -499,12 +523,7 @@ def _title_gate(configuration: config.Config) -> str:
     if list(form["into"]) != [config.ANY_REF]:
         lines.append("    branches:")
         lines += [f"      - {_scalar(ref)}" for ref in form["into"]]
-    lines += [
-        "",
-        "# Nothing is read from the repository and no credential is held: the title arrives in the",
-        "# event payload, so the job needs neither a checkout nor a token.",
-        "permissions: {}",
-    ]
+    lines += ["", *permission_lines(checks_out=False)]
     if where["group"] is not None:
         lines += [
             "",
@@ -652,9 +671,9 @@ def body_gate_workflow(configuration: config.Config) -> str:
         "  pull_request:",
         f"    types: [{', '.join(BODY_GATE_TYPES)}]",
         "",
-        "# No credential: the body arrives on the event and the checker asks the host",
-        "# for nothing.",
-        "permissions: {}",
+        # ⛔ The body arrives on the event, and the checker it runs is reached
+        # through the checkout below -- so the job checks out.
+        *permission_lines(checks_out=True),
         "",
     ]
     if runner is not None and runner.get("supersedes"):
@@ -862,9 +881,7 @@ def _workflow(gate: FacetGate):
         template = TEMPLATES[configuration.get("host.kind")]
         where = runner_of(configuration)
         lines = [f"name: {_scalar(gate.workflow)}", "", *gate.says, "",
-                 "on:", "  pull_request:", "",
-                 "# No credential: the checker reads the checkout and asks the host for nothing.",
-                 "permissions: {}"]
+                 "on:", "  pull_request:", "", *permission_lines(checks_out=True)]
         if where["group"] is not None:
             lines += ["", "concurrency:", f"  group: {_scalar(where['group'])}",
                       "  cancel-in-progress: true"]
@@ -3717,6 +3734,53 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
               str(answered["report"]))
         check("and no toolkit directory was created",
               not os.path.isdir(os.path.join(quiet.code_root, TOOLKIT_DIRECTORY)))
+
+    print()
+    print("a generated workflow grants its token what its own steps read, and nothing more")
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ What each file has to carry is read off that file's own steps and
+        # never off `permission_lines`: an arm asking the helper what it answers
+        # cannot redden on a renderer that stopped calling it, which is the
+        # planted regression this arm exists for.
+        everything = _a_project(tmp, title=A_TITLE_FORM, facets=dict(_A_FACET))
+        done = _answers_of(run(everything, write=True))
+        flows = [artifact for artifact in ARTIFACTS if artifact.kind == WORKFLOW]
+        check("every registered workflow is written for a project wanting all of them",
+              all(_answer_of(done, a.name) == WRITTEN for a in flows),
+              str({a.name: done.get(a.name) for a in flows}))
+        action = TEMPLATES["github"].checkout.split("@")[0]
+        held = {}
+        for artifact in flows:
+            document = yaml.safe_load(_read(done[artifact.name]["path"]))
+            steps = [step for job in document["jobs"].values() for step in job["steps"]]
+            checks_out = any(str(step.get("uses", "")).split("@")[0] == action
+                             for step in steps)
+            held[artifact.name] = (checks_out, document.get("permissions"))
+        check("both shapes are among them, so neither half below is vacuous",
+              {checks_out for checks_out, _ in held.values()} == {True, False}, str(held))
+        check("a workflow that checks out holds `contents: read` and nothing more",
+              all(granted == {"contents": "read"}
+                  for checks_out, granted in held.values() if checks_out), str(held))
+        check("a workflow reading only the event payload holds no scope at all",
+              all(granted == {}
+                  for checks_out, granted in held.values() if not checks_out), str(held))
+
+        # ⛔ The file an install before this rule wrote: marked at its head, so
+        # it is this step's own output and a re-run replaces it whole.
+        old = done["body-sections-gate"]["path"]
+        before = _read(old)
+        stale = re.sub(r"(?m)^permissions:\n  contents: read$", "permissions: {}", before)
+        check("the planted old file is the empty-block shape",
+              stale != before and _marked(stale), stale[:400])
+        with open(old, "w", encoding="utf-8") as handle:
+            handle.write(stale)
+        again = _answers_of(run(config.load(tmp), write=True))
+        check("a re-run rewrites a file carrying the old empty block",
+              _answer_of(again, "body-sections-gate") == WRITTEN,
+              str(again.get("body-sections-gate")))
+        check("and what it rewrote holds `contents: read`",
+              yaml.safe_load(_read(old)).get("permissions") == {"contents": "read"},
+              _read(old)[:400])
 
     for gate in FACET_GATES:
         names = (f"{gate.facet}-checker", f"{gate.facet}-gate")
