@@ -1150,8 +1150,19 @@ def refuses_entry(configuration: config.Config, entry: dict, replacing=None) -> 
     pre-check runs on every pass, before anything asks whether the entry needs
     writing at all, so *unchanged* is the first answer a reader-side uniqueness
     rule takes away.
+
+    ⛔ **What is validated is the tracked statement, and § 28's named blocks are
+    handed back as the private layer they came from.** `configuration.data`
+    already carries every block the private file supplied, merged in at load;
+    dumped whole, it reads as a tracked file stating a block it also names as
+    private, which § 28 refuses -- so every entry was refused for a project
+    using `private.blocks`, whatever the entry said. The blocks are taken out of
+    the copy and passed as `private_layer`, which is the resolver's own route
+    for a layer in hand, so the pre-check reads the configuration exactly as the
+    project's next load will.
     """
     data = copy.deepcopy(configuration.data)
+    layer = {path: _taken_out(data, path) for path in configuration.private_blocks}
     data.setdefault("host", {})
     # ⚠️ `stated` and not `standing`: one entry is what `one()` calls the
     # standing entry, and the same word for the whole list beside it is the
@@ -1175,7 +1186,8 @@ def refuses_entry(configuration: config.Config, entry: dict, replacing=None) -> 
     # stated a refusal. Nothing is left behind either way, the pre-check running
     # before any write, but a traceback is not the named answer.
     try:
-        config.load_text(yaml.safe_dump(data, allow_unicode=True), ".", check_paths=False)
+        config.load_text(yaml.safe_dump(data, allow_unicode=True), ".", check_paths=False,
+                         private_layer=layer or None)
     except ConfigError as exc:
         return str(exc)
     except Exception as exc:                     # noqa: BLE001 - naming it is the point
@@ -1183,6 +1195,24 @@ def refuses_entry(configuration: config.Config, entry: dict, replacing=None) -> 
             f"this entry cannot be put to the reader at all: {type(exc).__name__}: {exc}"
         )
     return None
+
+
+def _taken_out(data: dict, path: str):
+    """Remove the value at a dotted path from `data` and return it.
+
+    An emptied mapping above it is removed too, so the copy reads as a tracked
+    file that never wrote the block rather than one stating `{}` where it sat.
+    """
+    *parents, leaf = path.split(".")
+    trail = [data]
+    for part in parents:
+        trail.append(trail[-1][part])
+    value = trail[-1].pop(leaf)
+    for node, part in zip(reversed(trail[:-1]), reversed(parents)):
+        if node[part]:
+            break
+        del node[part]
+    return value
 
 
 def already_registered(configuration: config.Config, entry: dict) -> bool:
@@ -3170,6 +3200,82 @@ def self_test() -> int:  # noqa: C901 -- one assertion per property, read in ord
         check("and it names what could not be put to the reader",
               isinstance(answered, str) and "cannot be put to the reader" in answered,
               str(answered))
+
+    print()
+    print("a project naming a § 28 block installs a gate, and the block stays private")
+    with tempfile.TemporaryDirectory() as tmp:
+        # ⛔ The pre-check validates the tracked statement, not the configuration
+        # in hand: that one carries the private file's blocks merged in, and a
+        # dump of it reads as a tracked file stating a block it names as private.
+        # ⚠️ Measured before the fix: both facet gates answered `unstatable
+        # entry`, naming `day_log`, for a tracked file that states none.
+        documents_gate = next(g for g in FACET_GATES if g.facet == "documents")
+        _a_project(tmp, facets={"documents": _A_FACET["documents"]})
+        path = os.path.join(tmp, config.CONFIG_PATH)
+        tracked = yaml.safe_load(_read(path))
+        block = tracked.pop("day_log")
+        tracked["private"] = {
+            "carrier": "file",
+            "source": ".claude/mjolnir.private.yaml",
+            "keys": [],
+            "blocks": [{"block": "day_log", "reason": "A fixture's tooling, kept out."}],
+        }
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(yaml.safe_dump(tracked, allow_unicode=True))
+        private_path = os.path.join(tmp, ".claude", "mjolnir.private.yaml")
+        with open(private_path, "w", encoding="utf-8") as handle:
+            handle.write(yaml.safe_dump({"day_log": block}, allow_unicode=True))
+        private_before = _read(private_path)
+        project = config.load(tmp)
+        check("the fixture names the block, and the private file supplies it",
+              project.private_blocks == ["day_log"] and project.get("day_log") == block,
+              str(project.private_blocks))
+        done = _answers_of(run(project, write=True))
+        names = ("documents-checker", "documents-gate")
+        check("the gate's checker and workflow are written",
+              [_answer_of(done, name) for name in names] == [WRITTEN, WRITTEN],
+              str({name: done.get(name) for name in names}))
+        registered = yaml.safe_load(_read(path))
+        check("and its entry is registered in the tracked file",
+              any(e.get("workflow") == documents_gate.workflow
+                  for e in registered["host"]["checks"]),
+              str(registered["host"]["checks"]))
+        check("with no private value written into it",
+              "day_log" not in registered and registered["private"] == tracked["private"],
+              str(sorted(registered)))
+        check("and the private file untouched", _read(private_path) == private_before)
+
+    print()
+    print("a tracked file stating a block it names as private is still refused")
+    with tempfile.TemporaryDirectory() as tmp:
+        # The other arm of the same rule: taking the blocks out of the copy must
+        # not take out a block the tracked file really states.
+        project = _a_project(tmp)
+        stated = yaml.safe_load(yaml.safe_dump(project.data, allow_unicode=True))
+        stated["private"] = {
+            "carrier": "file",
+            "source": ".claude/mjolnir.private.yaml",
+            "keys": [],
+            "blocks": [{"block": "day_log", "reason": "A fixture's tooling, kept out."}],
+        }
+        with open(os.path.join(tmp, ".claude", "mjolnir.private.yaml"), "w",
+                  encoding="utf-8") as handle:
+            handle.write(yaml.safe_dump({"day_log": stated["day_log"]}, allow_unicode=True))
+        try:
+            config.load_text(yaml.safe_dump(stated, allow_unicode=True), tmp)
+            refused = None
+        except ConfigError as error:
+            refused = str(error)
+        check("the reader refuses it, naming the block",
+              refused is not None and "day_log" in refused, str(refused))
+        # The configuration in hand as a reader that let the statement through
+        # would leave it: the block in `data`, and no named block to hand back.
+        planted = config.load(tmp)
+        planted.data = stated
+        planted.private_blocks = []
+        answer = refuses_entry(planted, AN_ENTRY)
+        check("and so does the pre-check, the block being the tracked file's own",
+              answer is not None and "day_log" in answer, str(answer))
 
     print()
     print("register's own read-back puts a file that stops loading back")
