@@ -152,9 +152,34 @@ def _on_the_remote(root, ref: str) -> bool:
         return True
 
 
-def _blob(root, ref: str, path: str) -> str | None:
-    proc = _git(root, "show", f"{ref}:{path}", check=False)
-    return proc.stdout if proc.returncode == 0 else None
+def _blob(root, ref: str, path: str) -> tuple[str | None, str | None]:
+    """One document's text at `ref`, or why it is not read -- exactly one of the two.
+
+    ⛔ Read as bytes and decoded here, rather than through `claim.git`: that call
+    decodes every git output as text for every caller, so the first blob that is
+    not text raised out of it and ended the whole read. What a corpus holds is
+    the project's own (§ 39), and its source artifacts sitting beside the
+    documents is a shape the surface encourages -- so a blob that is not text is
+    a document this read reports as **not read**, by path and with the reason,
+    and never one fed to the reading as mojibake or dropped without a word.
+
+    ⚠️ A NUL byte is read as not text as well as a decode failure, which is
+    git's own test for a binary blob: the decoder takes a NUL without complaint, so
+    a binary file that happened to decode would otherwise arrive as text.
+    """
+    proc = subprocess.run(
+        ["git", "-C", str(root), "show", f"{ref}:{path}"],
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        detail = proc.stderr.decode("utf-8", "replace").strip()
+        return None, f"`git show` could not read it: {detail or 'no output'}"
+    if b"\0" in proc.stdout:
+        return None, "it is not text (it carries a NUL byte)"
+    try:
+        return proc.stdout.decode("utf-8"), None
+    except UnicodeDecodeError as error:
+        return None, f"it does not decode as text ({error.reason} at byte {error.start})"
 
 
 def _paths_at(root, ref: str) -> list[str]:
@@ -271,12 +296,22 @@ def read_corpus(root, facet: dict, version: str | None, keywords=(),
         (whole if governed(path, facet["load_bearing"]) else rest).append(path)
 
     terms = [(word, _term(word)) for word in keywords]
-    load_bearing = [
-        {"path": path, "text": _blob(root, ref, path) or ""} for path in whole
-    ]
-    matched = []
+    # ⛔ A document that could not be read is listed here whichever half of the
+    # corpus it is in, and is **not a stop** even where `load_bearing` matches
+    # it: nothing in it could be read either way, and a stop would end every
+    # start of a project whose corpus keeps one binary file (§ 39).
+    load_bearing, matched, not_read = [], [], []
+    for path in whole:
+        text, why = _blob(root, ref, path)
+        if why:
+            not_read.append({"path": path, "why": why})
+        else:
+            load_bearing.append({"path": path, "text": text})
     for path in rest:
-        text = _blob(root, ref, path) or ""
+        text, why = _blob(root, ref, path)
+        if why:
+            not_read.append({"path": path, "why": why})
+            continue
         hits = sorted(word for word, pattern in terms if pattern.search(text))
         if hits:
             matched.append({"path": path, "keywords": hits, "text": text})
@@ -291,6 +326,7 @@ def read_corpus(root, facet: dict, version: str | None, keywords=(),
         "grouping": facet.get("grouping"),
         "load_bearing": load_bearing,
         "matched": matched,
+        "not_read": not_read,
         "corpus": corpus,
         # ⛔ Never answered here. Whether the request contradicts the corpus is a
         # reading of prose and the filing role's to make; what this module owes
@@ -359,8 +395,16 @@ def render(answer: dict, reason: str | None = None) -> str:
         + (f", narrowed for the `{answer['role']}` role to "
            f"{', '.join(f'`{glob}`' for glob in narrowed)}" if narrowed else "")
         + f": {len(answer['load_bearing'])} read whole, "
-        f"{len(answer['matched'])} matched on the request's keywords."
+        f"{len(answer['matched'])} matched on the request's keywords"
+        + (f", {len(answer['not_read'])} not read." if answer["not_read"] else ".")
     )
+    if answer["not_read"]:
+        out.append(
+            "⚠️ Not read, so nothing below speaks for them — whatever these say is "
+            "**unanswered** here (§ 39):"
+        )
+        for entry in answer["not_read"]:
+            out.append(f"  - `{entry['path']}`: {entry['why']}")
     if not answer["corpus"]:
         out.append(
             "⛔ No document of the corpus is at that ref. That is a corpus with "
@@ -712,6 +756,60 @@ def self_test() -> int:
               "release/9.0" in said and "git fetch" in said, said)
         check("⛔ and says it is not the fallback",
               "not the fallback" in said, said)
+
+    # ⛔ A corpus whose glob matches a binary file, which is a project keeping
+    # the source artifacts its documents were distilled from beside them. The
+    # first form decoded every blob as text and the first binary one raised out
+    # of the read, so the role holding it had nothing but a traceback. ⚠️ Two
+    # binaries, one in each half of the corpus: a load-bearing match is the
+    # same report and not a stop, and a fix covering one half reddens here.
+    with tempfile.TemporaryDirectory() as where:
+        root = _repo(where, "a-binary-corpus")
+        _write(root, "kb/requirements.md", "# Requirements\n\nThe deploy runs nightly.\n")
+        _write(root, "kb/notes.md", "# Notes\n\nNothing about it.\n")
+        os.makedirs(os.path.join(root, "kb", "sources"))
+        # Bytes taken from the reported traceback's shape: `0xdd` opening an
+        # invalid continuation, which no text decoder accepts. ⚠️ No NUL in
+        # them, so it is the decode and not the NUL test that keeps this out.
+        with open(os.path.join(root, "kb", "sources", "deck.pptx"), "wb") as handle:
+            handle.write(b"PK\x03\x04deploy\xdd\x8a\xff")
+        # ⚠️ And one that decodes and is still not text: NULs decode
+        # without complaint, so only the NUL test keeps it out of the reading.
+        with open(os.path.join(root, "kb", "requirements.bin"), "wb") as handle:
+            handle.write(b"deploy\x00\x00\x01\x02")
+        _commit(root, "a corpus with its sources beside it")
+        binary_facet = _a_facet(files=["kb/**"], load_bearing=["kb/requirements*"])
+        try:
+            answer = answered(read_corpus(root, binary_facet, "9.0", keywords=["deploy"]))
+            raised = None
+        except Exception as error:  # noqa: BLE001 -- the defect is any raise at all
+            answer, raised = None, f"{type(error).__name__}: {error}"
+        check("a corpus holding a binary file is read rather than raising",
+              raised is None, f"{raised}")
+        if answer is not None:
+            check("the text document is read whole",
+                  [entry["path"] for entry in answer["load_bearing"]]
+                  == ["kb/requirements.md"]
+                  and "nightly" in answer["load_bearing"][0]["text"],
+                  f"{answer['load_bearing']}")
+            check("the binary files are reported as not read, by path",
+                  sorted(entry["path"] for entry in answer["not_read"])
+                  == ["kb/requirements.bin", "kb/sources/deck.pptx"],
+                  f"{answer['not_read']}")
+            why = {entry["path"]: entry["why"] for entry in answer["not_read"]}
+            check("each with the reason it was not read",
+                  "does not decode" in why.get("kb/sources/deck.pptx", "")
+                  and "NUL" in why.get("kb/requirements.bin", ""),
+                  f"{answer['not_read']}")
+            check("⛔ and neither is fed to the reading as text",
+                  not any(entry["path"].endswith((".pptx", ".bin"))
+                          for entry in answer["load_bearing"] + answer["matched"]),
+                  f"{answer['load_bearing']} / {answer['matched']}")
+            said = render(answer)
+            check("and the report names each one and says it was not read",
+                  "2 not read" in said
+                  and "kb/sources/deck.pptx" in said and "kb/requirements.bin" in said,
+                  said)
 
     # ⛔ The claim that covers every answer rather than the two arms that
     # happened to mention it: no outcome carries a verdict about whether the
