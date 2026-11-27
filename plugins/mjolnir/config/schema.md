@@ -4570,10 +4570,18 @@ the same missing half.
 orphaned one is; the reading decides which question to put to a person, never which refs may be
 deleted.
 
-**The integration branch a claim is cut from is derived, not configured.** No key names it, so it is
-read from what the remote advertises as its default — and where that cannot be read, the role is
-told by name rather than handed a guess. ⚠️ A claim cut from the wrong base reads as a successful
-start.
+**The integration branch a claim is cut from is derived, not configured.** No key names it. Where
+the item carries a value for a grouping that states a `ref_prefix`
+([§ 4.8](#48-grouping--what-a-set-of-items-is-planned-into)), it is the ref that prefix composes
+from that value — the one composition, which
+[§ 5](#5-readiness-gate--an-ordered-predicate-list)'s `grouping_ref_exists` confirms exists — read
+at the remote's tip rather than at a local branch of that name. Otherwise it is what the remote
+advertises as its default. The starting role hands over the value and never the ref, and the
+finishing role opens the pull request against the same branch, asked of the same derivation, so a
+change is never opened against a base it was not cut from. Where the composed ref cannot be read
+from the remote, the claim is refused naming it, never cut from the default in its place; where the
+default cannot be read, the role is told by name rather than handed a guess. ⚠️ A claim cut from the
+wrong base reads as a successful start.
 
 **The absent case is derived, not configured.** A code root with no remote cannot publish a ref, so
 the claim is local-only there and the role says so; the claim still holds against every session on

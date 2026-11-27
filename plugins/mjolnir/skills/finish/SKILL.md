@@ -195,6 +195,15 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/title_form.py" render --item <the item's 
 - The title is read back after it is set, with `check --title`: what the host holds is what the
   gate will read.
 
+**The base is the branch the claim was cut from**, asked of the same derivation that cut it and
+passed as the pull request's base rather than left to the host's default —
+[`§ 10`](../../config/schema.md#the-claim-on-a-work-item):
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/claim.py" integration-branch --repo-root <code-root> \
+  [--grouping-value "<the value the item carries>" [--grouping <name>]]
+```
+
 **The summary** is what changed and why it is the answer to the item — not a list of the files
 touched, which the diff already states better. One paragraph, where one will do.
 
