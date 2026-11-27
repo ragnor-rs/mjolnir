@@ -403,9 +403,11 @@ def position(root: str | Path, *, remote: str = REMOTE, base: str | None = None)
             "the remote-tracking refs as this tree last fetched them; nothing here "
             f"fetched. `git -C {root} fetch {remote}` is what refreshes them, and it "
             "writes, so it is a person's call rather than this sweep's. ⚠️ One reading "
-            "here may still **ask** the remote: where this clone recorded no default "
-            "branch, the base's name is derived by querying it — a read that writes "
-            "nothing, bounded, and avoidable by naming the base on the invocation"
+            "here may still **ask** the remote: where the claim recorded the branch it "
+            "was cut from, whether the remote carries that branch is queried; and where "
+            "nothing is recorded and this clone recorded no default branch, the base's "
+            "name is derived by querying it — each a read that writes nothing, bounded, "
+            "and avoidable by naming the base on the invocation"
         ),
         "unestablished": [],
     }

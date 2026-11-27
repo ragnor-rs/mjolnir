@@ -76,9 +76,12 @@ published on. Both read as *nothing to do* until they bite.
   and not cleared.
 - Nothing is fetched, and the reply says so. Every remote-side answer is against the remote-tracking
   refs the tree already has; the command that refreshes them writes, so it is a person's to run.
-- Pass `--base <the integration branch>` where this tree's clone records no default. Without it the
-  base's name is derived by **asking** the remote — a read that writes nothing and still reaches the
-  network, which the command says in its own `as_of` — and in a repository with no remote at all the
+- Pass `--base <the integration branch>` where this tree's clone records no default and its claim
+  records no base. A named base overrides the recorded one, so naming the integration branch for a
+  tree cut from a grouping's branch measures it against a branch its work does not land on
+  ([`§ 10`](../../config/schema.md#the-claim-on-a-work-item)). Without it the base's name is
+  derived, and the remote is **asked** — a read that writes nothing and still reaches the network,
+  which the command says in its own `as_of` — and in a repository with no remote at all the
   derivation falls back to this branch, which the command then reports as a position it could not
   take rather than as zero.
 - Where § 1's collection carries several code roots, this is run **per root the work is in**, and
