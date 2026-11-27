@@ -363,6 +363,79 @@ def integration_branch(
     )
 
 
+def grouping_ref(skills_root: str | Path, value: str, grouping: str | None = None) -> str | None:
+    """The branch an item's grouping value names, through the reader's one composition.
+
+    ⛔ Read through `config.Config.grouping_ref` rather than composed here: § 5's
+    `grouping_ref_exists` confirms the same ref exists, and a claim cut from a second composition
+    is one cut from a branch the gate never looked at. `None` is a grouping stating no
+    `ref_prefix`, or a project with no configuration at all — § 10's default arm either way.
+    """
+    try:
+        import config  # noqa: PLC0415 -- every other subcommand runs without a configuration
+    except Exception as error:  # noqa: BLE001 -- any failure is the answer here
+        raise ClaimError(
+            f"refused: the configuration reader could not be loaded ({error}), so whether the "
+            f"grouping value {value!r} names a branch is unknown."
+        ) from None
+    loaded, stop = config.read_or_why(str(skills_root))
+    if stop:
+        raise ClaimError(
+            "refused: this project's configuration did not resolve, so whether the grouping "
+            f"value {value!r} names a branch is unknown. {config.REFUSAL_PREFACE} {stop}"
+        )
+    if loaded is None:
+        return None
+    try:
+        return loaded.grouping_ref(value, grouping)
+    except config.ConfigError as error:
+        raise ClaimError(f"refused: {error}") from None
+
+
+def claim_base(
+    root: str | Path,
+    remote: str,
+    stated: str | None = None,
+    *,
+    grouping_value: str | None = None,
+    grouping: str | None = None,
+    skills_root: str | Path = ".",
+    timeout: float | None = None,
+) -> tuple[str, str]:
+    """`(the branch a claim is cut from, the revision that names its tip here)`.
+
+    § 10's rule in one place: an explicit value overrides; a grouping value whose grouping states
+    a `ref_prefix` names the branch the item's work lands on; otherwise the remote's default, as
+    `integration_branch` derives it. The finishing role's pull-request base is the first half, so
+    a change is opened against the branch it was cut from.
+
+    ⛔ **The grouping's branch is read at the remote's tip, never at a local branch of that name**,
+    which may be weeks behind or absent: the ref is fetched and the remote-tracking ref is the
+    revision. A fetch that fails is a refusal naming the ref and not a fall back to the default —
+    that fall back is the claim cut from the wrong base, which reads as a successful start.
+    """
+    if stated:
+        return stated, stated
+    composed = grouping_ref(skills_root, grouping_value, grouping) if grouping_value else None
+    if not composed:
+        name = integration_branch(root, remote, timeout=timeout)
+        return name, name
+    if not remote_url(root, remote):
+        return composed, composed
+    tracking = f"refs/remotes/{remote}/{composed}"
+    fetched = git(
+        root, "fetch", "--quiet", remote, f"+{REFS_PREFIX}{composed}:{tracking}",
+        check=False, timeout=timeout,
+    )
+    if fetched.returncode != 0:
+        raise ClaimError(
+            f"refused: the grouping value {grouping_value!r} names `{composed}`, which could not "
+            f"be read from `{remote}` ({fetched.stderr.strip() or 'no output'}). No claim is cut "
+            "from the remote's default in its place (§ 10)."
+        )
+    return composed, tracking
+
+
 def _push_created_ref(porcelain: str, branch: str) -> bool:
     """Whether the push *created* the ref, read off `--porcelain`'s per-ref flag.
 
@@ -1337,6 +1410,9 @@ def take(
     prefix: str | None = None,
     title: str | None = None,
     tree_dir: str | None = None,
+    grouping_value: str | None = None,
+    grouping: str | None = None,
+    skills_root: str | Path = ".",
     _lease: bool = True,
     _require_created: bool = True,
     _release_on_tree_failure: bool = True,
@@ -1395,7 +1471,13 @@ def take(
     # without guessing -- so a role that already holds a name still gets the guard.
     item = str(item) if item else item_in_branch(branch)
 
-    integration = integration_branch(root, remote, integration)
+    # ⛔ § 10's base, resolved once: the grouping's branch where the item's grouping value names
+    # one, the remote's default otherwise. `integration` is the revision every reading below is
+    # taken against, so the liveness arms read the same branch the claim is cut from.
+    cut_from, integration = claim_base(
+        root, remote, integration,
+        grouping_value=grouping_value, grouping=grouping, skills_root=skills_root,
+    )
     base = git(root, "rev-parse", integration).stdout.strip()
     url = remote_url(root, remote)
     published = False
@@ -1463,7 +1545,7 @@ def take(
         )
 
     where = "published and cut" if published else "cut (local-only: the project has no remote)"
-    return f"claimed `{branch}`: {where}, tree at {tree}."
+    return f"claimed `{branch}`: {where} from `{cut_from}`, tree at {tree}."
 
 
 def main_checkout(root: str | Path) -> str:
@@ -3730,6 +3812,101 @@ def self_test() -> int:
             f"exited {code} having printed {printed.getvalue()!r}",
         )
 
+    print("\nthe branch a grouping value names is the base, where its grouping states a prefix:")
+
+    # ⛔ Through `main`, with a configuration on disk, because that is the route a role reaches:
+    # the composition is the reader's, and a suite handing the ref in would cover a function no
+    # role calls. The local `release/x` is planted stale on purpose -- the defect this guards was
+    # a claim cut weeks behind the branch the work lands on, and a fixture whose local branch
+    # happened to be current could not tell the remote tip from it.
+    with tempfile.TemporaryDirectory() as tmp:
+        stack = tempfile.TemporaryDirectory(dir=tmp)
+        origin, one, two = _bare_world(stack)
+        git(two, "config", "user.email", "two")
+        git(two, "config", "user.name", "Two")
+        git(two, "checkout", "--quiet", "-b", "release/x")
+        (Path(two) / "release.txt").write_text("x\n")
+        git(two, "add", "release.txt")
+        git(two, "commit", "--quiet", "-m", "release x")
+        git(two, "push", "--quiet", "origin", "release/x")
+        tip = git(two, "rev-parse", "HEAD").stdout.strip()
+        main_tip = git(one, "rev-parse", "origin/main").stdout.strip()
+        git(one, "branch", "release/x", "main")
+
+        stated = Path(one) / ".claude" / "mjolnir.yaml"
+        stated.parent.mkdir()
+        shipped = Path(__file__).resolve().parent.parent / "config" / "examples"
+        example = (shipped / "github-issues.yaml").read_text()
+        prefixed = '    ref_prefix: "release/"\n'
+        if prefixed not in example:
+            raise ClaimError("the fixture's example no longer states the grouping's ref_prefix")
+        stated.write_text(example)
+        trees = str(Path(tmp) / "trees")
+
+        def started(item: str, *extra: str) -> tuple[int, str, str]:
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                code = main([
+                    "take", "--repo-root", one, "--branch-prefix", "feature", "--item", item,
+                    "--title", "x", "--tree-dir", trees, "--skills-root", one, *extra,
+                ])
+            return code, out.getvalue(), err.getvalue()
+
+        def head_of(item: str) -> str:
+            return git(Path(trees) / f"{item}-x", "rev-parse", "HEAD", check=False).stdout.strip()
+
+        def published(item: str) -> str:
+            return git(origin, "rev-parse", "--verify", "--quiet", f"refs/heads/feature/{item}-x",
+                       check=False).stdout.strip()
+
+        code, out, err = started("7", "--grouping-value", "x")
+        suite.ok("⛔ the tree is cut at the remote tip of the branch the grouping value names",
+                 code == 0 and head_of("7") == tip, out + err)
+        suite.ok("⛔ and the claim ref is published at that same tip", published("7") == tip,
+                 published("7"))
+        suite.ok("and the start says which branch it was cut from", "from `release/x`" in out, out)
+
+        # The planted violation: the derivation as it stood before, which never consulted the
+        # grouping. The check above has to read it as wrong, or it holds nothing.
+        here = sys.modules[__name__]
+        kept = here.grouping_ref
+        here.grouping_ref = lambda *_args, **_kwargs: None
+        try:
+            started("70", "--grouping-value", "x")
+        finally:
+            here.grouping_ref = kept
+        suite.ok("and a derivation ignoring the grouping is read as the wrong base",
+                 head_of("70") == main_tip != tip, head_of("70"))
+
+        printed = io.StringIO()
+        with contextlib.redirect_stdout(printed):
+            code = main(["integration-branch", "--repo-root", one, "--skills-root", one,
+                         "--grouping-value", "x"])
+        suite.ok("⛔ the pull-request base a finishing role asks for is the same branch",
+                 code == 0 and printed.getvalue().strip() == "release/x", printed.getvalue())
+
+        code, out, err = started("9", "--grouping-value", "y")
+        suite.ok("⛔ a grouping branch absent from the remote refuses, never falling back",
+                 code == 1 and "`release/y`" in err and not published("9")
+                 and not (Path(trees) / "9-x").exists(), out + err)
+
+        code, out, err = started("10")
+        suite.ok("an item handing no grouping value is cut from the remote's default",
+                 code == 0 and head_of("10") == main_tip, out + err)
+
+        # ⚠️ The example's corpus is read at the grouping's ref and so requires the prefix; the
+        # project under test here states neither, which is the configuration the default arm is for.
+        corpus = example.index("\nspec_corpus:\n")
+        unprefixed = (
+            example[:corpus]
+            + "\nspec_corpus:\n  carrier: none\n  absent_reason: a fixture keeping no corpus\n"
+            + example[example.index("\nbuilt_check:", corpus):]
+        )
+        stated.write_text(unprefixed.replace(prefixed, "", 1))
+        code, out, err = started("8", "--grouping-value", "x")
+        suite.ok("⛔ a grouping stating no ref_prefix keeps the remote's default",
+                 code == 0 and head_of("8") == main_tip, out + err)
+
     print()
     if suite.failures:
         print(f"{suite.failures} check(s) failed.")
@@ -3804,6 +3981,28 @@ def main(argv: list[str]) -> int:
     )
     integration.add_argument("--remote", default="origin")
 
+    def grouping_flags(node: argparse.ArgumentParser) -> None:
+        # ⛔ The value and never the ref: the ref is the reader's composition (§ 4.8), the same
+        # one `grouping_ref_exists` confirmed, and a caller composing it would be a second one.
+        node.add_argument(
+            "--grouping-value",
+            default=None,
+            help="the value the item carries for § 4.8's grouping; where that grouping states a "
+            "`ref_prefix`, the branch it composes is the base (§ 10)",
+        )
+        node.add_argument(
+            "--grouping",
+            default=None,
+            help="which grouping the value is for, where the project carries several",
+        )
+        node.add_argument(
+            "--skills-root",
+            default=".",
+            help="the root the configuration is resolved relative to",
+        )
+
+    grouping_flags(integration)
+
     for name, help_text in (
         ("take", "claim the item: publish the ref, then cut the tree"),
         ("release", "give the claim up: the ref, the tree, the local branch"),
@@ -3832,6 +4031,7 @@ def main(argv: list[str]) -> int:
             node.add_argument(
                 "--title", default=None, help="with --item and --branch-prefix, derives --branch"
             )
+            grouping_flags(node)
         if name in ("take", "release"):
             # ⛔ Not required for `take` any more, and the refusal moved into `take` itself rather
             # than being dropped: one of `--tree-dir` and `--tree` is needed, which argparse states
@@ -3882,7 +4082,15 @@ def main(argv: list[str]) -> int:
         if args.command == "name":
             print(branch_for(args.branch_prefix, args.item, args.title))
         elif args.command == "integration-branch":
-            print(integration_branch(args.repo_root, args.remote))
+            print(
+                claim_base(
+                    args.repo_root,
+                    args.remote,
+                    grouping_value=args.grouping_value,
+                    grouping=args.grouping,
+                    skills_root=args.skills_root,
+                )[0]
+            )
         elif args.command == "take":
             print(
                 take(
@@ -3895,6 +4103,9 @@ def main(argv: list[str]) -> int:
                     prefix=args.branch_prefix,
                     title=args.title,
                     tree_dir=args.tree_dir,
+                    grouping_value=args.grouping_value,
+                    grouping=args.grouping,
+                    skills_root=args.skills_root,
                 )
             )
         elif args.command == "release":
