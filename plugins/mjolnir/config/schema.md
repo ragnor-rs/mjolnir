@@ -4591,6 +4591,18 @@ from the remote, the claim is refused naming it, never cut from the default in i
 default cannot be read, the role is told by name rather than handed a guess. ⚠️ A claim cut from the
 wrong base reads as a successful start.
 
+**A claim's landed reading is taken against the branch it was cut from, and the claim records that
+branch.** A change opened against a grouping's branch lands there and never on the remote's default,
+so a reading taken against the default sees commits beyond it and keeps the claim live and its tree
+for ever. A reader of a tree is handed no item, the sweep below least of all, so the grouping value
+is not available to compose the branch again: the start records the branch the derivation above
+returned beside the claim's local branch, and the landed reading uses that record, read at the
+remote's tip. The record is written only where the grouping composed the base, so a claim cut from
+the default records nothing and reads as before. It lives and dies with the local branch, so a
+machine without that branch reads the claim against the default. ⛔ **Where the recorded branch
+cannot be read from the remote, the content test is not taken**, not against a stale tracking ref
+and not against the default: a base that cannot be read reads as not landed, which keeps the tree.
+
 **The absent case is derived, not configured.** A code root with no remote cannot publish a ref, so
 the claim is local-only there and the role says so; the claim still holds against every session on
 that machine. That is the one configuration in which two machines could claim one item, and nothing
