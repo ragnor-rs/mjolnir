@@ -61,6 +61,10 @@ LEASE = "--force-with-lease={ref}:"
 
 REFS_PREFIX = "refs/heads/"
 
+# The variable in a local branch's configuration section that names the branch its claim was cut
+# from, where that is not the remote's default (§ 10 -> *The claim on a work item*).
+BASE_KEY = "mjolnir-base"
+
 # How the refusal explains itself when the ref's own history is all there is. Read by the
 # self-test, so a reword travels rather than breaking it.
 UNESTABLISHED = "could not be established"
@@ -414,26 +418,73 @@ def claim_base(
     revision. A fetch that fails is a refusal naming the ref and not a fall back to the default —
     that fall back is the claim cut from the wrong base, which reads as a successful start.
     """
+    return _claim_base(
+        root, remote, stated, grouping_value=grouping_value, grouping=grouping,
+        skills_root=skills_root, timeout=timeout,
+    )[:2]
+
+
+def _claim_base(
+    root: str | Path,
+    remote: str,
+    stated: str | None = None,
+    *,
+    grouping_value: str | None = None,
+    grouping: str | None = None,
+    skills_root: str | Path = ".",
+    timeout: float | None = None,
+) -> tuple[str, str, bool]:
+    """`claim_base`, and whether the base is the one the grouping value composed."""
     if stated:
-        return stated, stated
+        return stated, stated, False
     composed = grouping_ref(skills_root, grouping_value, grouping) if grouping_value else None
     if not composed:
         name = integration_branch(root, remote, timeout=timeout)
-        return name, name
+        return name, name, False
+    tracking, unread = _remote_tip(root, remote, composed, timeout)
+    if unread:
+        raise ClaimError(
+            f"refused: the grouping value {grouping_value!r} names `{composed}`, which could not "
+            f"be read from `{remote}` ({unread}). No claim is cut from the remote's default in "
+            "its place (§ 10)."
+        )
+    return composed, tracking, True
+
+
+def _remote_tip(
+    root: str | Path, remote: str, name: str, timeout: float | None = None
+) -> tuple[str, str | None]:
+    """`(the revision naming `name`'s tip on the remote, why it could not be read)`.
+
+    Fetched onto its remote-tracking ref, never read off a local branch of that name. With no
+    remote the branch on this machine is the only one there is, so it is the revision.
+    """
     if not remote_url(root, remote):
-        return composed, composed
-    tracking = f"refs/remotes/{remote}/{composed}"
+        return name, None
+    tracking = f"refs/remotes/{remote}/{name}"
     fetched = git(
-        root, "fetch", "--quiet", remote, f"+{REFS_PREFIX}{composed}:{tracking}",
+        root, "fetch", "--quiet", remote, f"+{REFS_PREFIX}{name}:{tracking}",
         check=False, timeout=timeout,
     )
     if fetched.returncode != 0:
-        raise ClaimError(
-            f"refused: the grouping value {grouping_value!r} names `{composed}`, which could not "
-            f"be read from `{remote}` ({fetched.stderr.strip() or 'no output'}). No claim is cut "
-            "from the remote's default in its place (§ 10)."
-        )
-    return composed, tracking
+        return tracking, fetched.stderr.strip() or "no output"
+    return tracking, None
+
+
+def record_base(root: str | Path, branch: str, base: str) -> None:
+    """Write beside the local branch the branch its claim was cut from (§ 10).
+
+    ⛔ Written only where the base is not the remote's default, so a project whose groupings state
+    no `ref_prefix` records nothing and reads exactly as it did. It lives in the branch's own
+    configuration section, so deleting the branch deletes it too and no record outlives its claim.
+    """
+    git(root, "config", f"branch.{branch}.{BASE_KEY}", base)
+
+
+def recorded_base(root: str | Path, branch: str) -> str | None:
+    """The branch a claim was recorded as cut from, or None where nothing was recorded."""
+    proc = git(root, "config", "--get", f"branch.{branch}.{BASE_KEY}", check=False)
+    return proc.stdout.strip() or None
 
 
 def _push_created_ref(porcelain: str, branch: str) -> bool:
@@ -981,8 +1032,13 @@ def read_liveness(
     now: "datetime | None" = None,
     window: int = CUT_WINDOW_SECONDS,
     tree_dir: str | Path | None = None,
+    base_unread: str | None = None,
 ) -> Liveness:
     """`created_at` is when *this* ref came into existence, read from the host's own record.
+
+    `base_unread` is why the branch the claim was cut from could not be read, where it could not.
+    ⛔ The content arm is then not taken at all, rather than taken against a stale tip or the
+    remote's default: a base that cannot be established reads as not landed, which keeps the tree.
 
     `now` is the instant the window arm at the end measures the ref's age against, and it exists
     so the suite can stand on both sides of the bound without sleeping. ⛔ Every caller leaves it
@@ -1017,7 +1073,11 @@ def read_liveness(
     git(root, "fetch", "--quiet", remote, f"{REFS_PREFIX}{branch}", check=False)
     integration_sha = git(root, "rev-parse", integration, check=False)
 
-    if integration_sha.returncode != 0:
+    if base_unread:
+        unestablished.append(
+            f"the branch this claim was cut from, `{integration}`, could not be read ({base_unread})"
+        )
+    elif integration_sha.returncode != 0:
         unestablished.append(f"the integration branch `{integration}` could not be resolved")
     else:
         tip = integration_sha.stdout.strip()
@@ -1233,6 +1293,24 @@ class Status:
         return "\n".join(lines)
 
 
+def reading_base(
+    root: str | Path, remote: str, branch: str, stated: str | None = None
+) -> tuple[str, str | None]:
+    """`(the revision a claim's landed reading is taken against, why it could not be read)`.
+
+    ⛔ The branch the claim was cut from, as `take` recorded it from `claim_base`, and never a
+    second derivation: a reader of a tree is handed no item, so the grouping value is not available
+    here to compose anything from. Where nothing is recorded the base is the remote's default,
+    exactly as before the record existed. An explicit value overrides both.
+    """
+    if stated:
+        return stated, None
+    recorded = recorded_base(root, branch)
+    if not recorded:
+        return integration_branch(root, remote), None
+    return _remote_tip(root, remote, recorded)
+
+
 def status(
     root: str | Path,
     branch: str,
@@ -1241,7 +1319,7 @@ def status(
     tree_dir: str | Path | None = None,
 ) -> Status:
     url = remote_url(root, remote)
-    integration = integration_branch(root, remote, integration)
+    integration, base_unread = reading_base(root, remote, branch, integration)
     if not url:
         # Local-only: the branch itself is the whole claim, and it still arbitrates every session
         # on this machine -- which is every session there can be, with no remote to reach.
@@ -1252,7 +1330,8 @@ def status(
             ref_sha=sha,
             holder=Holder(unestablished=["the project has no remote, so the claim is local-only"]),
             liveness=(
-                read_liveness(root, remote, branch, integration, sha, tree_dir=tree_dir)
+                read_liveness(root, remote, branch, integration, sha, tree_dir=tree_dir,
+                              base_unread=base_unread)
                 if sha
                 else None
             ),
@@ -1288,7 +1367,8 @@ def status(
                 unestablished=["the ref does not exist on the host, so it records no actor"]
             ),
             liveness=(
-                read_liveness(root, remote, branch, integration, here, tree_dir=tree_dir)
+                read_liveness(root, remote, branch, integration, here, tree_dir=tree_dir,
+                              base_unread=base_unread)
                 if here
                 else None
             ),
@@ -1303,7 +1383,8 @@ def status(
         ref_sha=sha,
         holder=holder,
         liveness=read_liveness(
-            root, remote, branch, integration, sha, holder.since, tree_dir=tree_dir
+            root, remote, branch, integration, sha, holder.since, tree_dir=tree_dir,
+            base_unread=base_unread,
         ),
         local_only=False,
     )
@@ -1383,7 +1464,8 @@ def status_for_item(
     integration: str | None = None,
     tree_dir: str | Path | None = None,
 ) -> ItemStatus:
-    integration = integration_branch(root, remote, integration)
+    # ⛔ Each ref is read against its own base, so nothing is resolved once for all of them here:
+    # two claims on one item may have been cut from different branches.
     local_only = not remote_url(root, remote)
     readings = [
         (branch, status(root, branch, remote, integration, tree_dir))
@@ -1474,7 +1556,7 @@ def take(
     # ⛔ § 10's base, resolved once: the grouping's branch where the item's grouping value names
     # one, the remote's default otherwise. `integration` is the revision every reading below is
     # taken against, so the liveness arms read the same branch the claim is cut from.
-    cut_from, integration = claim_base(
+    cut_from, integration, grouped = _claim_base(
         root, remote, integration,
         grouping_value=grouping_value, grouping=grouping, skills_root=skills_root,
     )
@@ -1543,6 +1625,10 @@ def take(
         raise ClaimError(
             f"refused: the ref was claimed but no tree could be cut: {cut.stderr.strip()}"
         )
+    # ⛔ The base is recorded where the grouping composed it, because nothing reading the claim
+    # later is handed the item: `status` and the sweep read the record and never derive it again.
+    if grouped:
+        record_base(root, branch, cut_from)
 
     where = "published and cut" if published else "cut (local-only: the project has no remote)"
     return f"claimed `{branch}`: {where} from `{cut_from}`, tree at {tree}."
@@ -3852,6 +3938,8 @@ def self_test() -> int:
                 ])
             return code, out.getvalue(), err.getvalue()
 
+        here = sys.modules[__name__]
+
         def head_of(item: str) -> str:
             return git(Path(trees) / f"{item}-x", "rev-parse", "HEAD", check=False).stdout.strip()
 
@@ -3866,9 +3954,69 @@ def self_test() -> int:
                  published("7"))
         suite.ok("and the start says which branch it was cut from", "from `release/x`" in out, out)
 
+        # ⛔ The landed reading of that claim, taken against the branch it was cut from. The work
+        # is squash-landed on `release/x` and never reaches `main`, so a reading taken against the
+        # remote's default sees commits beyond it and keeps the tree for ever.
+        seven = Path(trees) / "7-x"
+        for key, value in (("user.email", "one"), ("user.name", "One")):
+            git(one, "config", key, value)
+        (seven / "seven.txt").write_text("the work\n")
+        git(seven, "add", "seven.txt")
+        git(seven, "commit", "--quiet", "-m", "the work")
+        git(seven, "push", "--quiet", "--force", "origin", f"HEAD:{REFS_PREFIX}feature/7-x")
+        git(two, "fetch", "--quiet", "origin")
+        git(two, "merge", "--quiet", "--squash", "origin/feature/7-x")
+        git(two, "commit", "--quiet", "-m", "the work, squashed onto release/x")
+        git(two, "push", "--quiet", "origin", "release/x")
+
+        suite.ok("⛔ the claim records the branch it was cut from beside its local branch",
+                 recorded_base(one, "feature/7-x") == "release/x",
+                 str(recorded_base(one, "feature/7-x")))
+        held = status(one, "feature/7-x", "origin", tree_dir=trees)
+        suite.ok("⛔ a claim squash-landed on the branch it was cut from reads landed",
+                 held.liveness is not None and held.liveness.landed, held.report())
+
+        # The planted violation: the reading as it stood before, against the remote's default.
+        kept = here.recorded_base
+        here.recorded_base = lambda *_args, **_kwargs: None
+        try:
+            unrecorded = status(one, "feature/7-x", "origin", tree_dir=trees)
+        finally:
+            here.recorded_base = kept
+        suite.ok("and a reading taken against the remote's default is read as not landed",
+                 unrecorded.liveness is not None and not unrecorded.liveness.landed,
+                 unrecorded.report())
+
+        # ⛔ A base that cannot be read keeps the claim, rather than falling back to the default or
+        # to a stale tracking ref. The tracking ref is planted holding the landed work, so a
+        # reading that compared against it would answer landed.
+        record_base(one, "feature/7-x", "release/gone")
+        git(one, "update-ref", "refs/remotes/origin/release/gone", "refs/remotes/origin/release/x")
+        try:
+            unread = status(one, "feature/7-x", "origin", tree_dir=trees)
+        finally:
+            record_base(one, "feature/7-x", "release/x")
+            git(one, "update-ref", "-d", "refs/remotes/origin/release/gone")
+        suite.ok("⛔ a recorded base the remote cannot answer for reads not landed, and says why",
+                 unread.liveness is not None and not unread.liveness.landed
+                 and any("could not be read" in u and "release/gone" in u
+                         for u in unread.liveness.unestablished),
+                 unread.report())
+
+        import prune  # noqa: PLC0415 -- the sweep imports this module, so it is read here
+
+        swept = prune.sweep(one, [], "never", tree_dir=trees, occupants=lambda _p: [],
+                            only="feature/7-x")
+        suite.ok("⛔ and the sweep reaps its tree",
+                 [os.path.realpath(v.path) for v in swept.removed] == [os.path.realpath(seven)]
+                 and not seven.exists(),
+                 swept.report())
+        suite.ok("and the record goes with the local branch, outliving no claim",
+                 recorded_base(one, "feature/7-x") is None,
+                 str(recorded_base(one, "feature/7-x")))
+
         # The planted violation: the derivation as it stood before, which never consulted the
         # grouping. The check above has to read it as wrong, or it holds nothing.
-        here = sys.modules[__name__]
         kept = here.grouping_ref
         here.grouping_ref = lambda *_args, **_kwargs: None
         try:
@@ -3893,6 +4041,8 @@ def self_test() -> int:
         code, out, err = started("10")
         suite.ok("an item handing no grouping value is cut from the remote's default",
                  code == 0 and head_of("10") == main_tip, out + err)
+        suite.ok("⛔ and records no base, so its landed reading is taken as it always was",
+                 recorded_base(one, "feature/10-x") is None, str(recorded_base(one, "feature/10-x")))
 
         # ⚠️ The example's corpus is read at the grouping's ref and so requires the prefix; the
         # project under test here states neither, which is the configuration the default arm is for.
@@ -3906,6 +4056,8 @@ def self_test() -> int:
         code, out, err = started("8", "--grouping-value", "x")
         suite.ok("⛔ a grouping stating no ref_prefix keeps the remote's default",
                  code == 0 and head_of("8") == main_tip, out + err)
+        suite.ok("⛔ and records no base either",
+                 recorded_base(one, "feature/8-x") is None, str(recorded_base(one, "feature/8-x")))
 
     print()
     if suite.failures:
