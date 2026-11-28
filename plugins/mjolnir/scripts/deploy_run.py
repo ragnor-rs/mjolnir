@@ -72,9 +72,12 @@ def _slug(target: str) -> str:
 
 
 def _store(configuration) -> str:
-    """The store § 11 names, or the temporary directory where none is carried."""
-    where = configuration.get("context.artifacts.dir") or tempfile.gettempdir()
-    return os.path.expandvars(where)
+    """The store § 11 names, or the temporary directory where none is carried.
+
+    ⛔ Resolved by the reader's one resolver rather than expanded here: this line once expanded
+    `$VAR` and not `~`, and wrote its records under a literal `./~` inside the code root.
+    """
+    return config.run_record_store(configuration)
 
 
 def _record_path(store: str, target: str) -> str:
@@ -360,6 +363,28 @@ def self_test() -> int:
         if path.startswith("deploy.background.")
     )
     check("§ 33 declares the background run's one key, `log`", declared == ["log"], declared)
+
+    print("\nWhere the records go (issue 485):")
+
+    class _Stating:
+        def __init__(self, stated, root):
+            self._stated, self.code_root, self.skills_root = stated, root, root
+
+        def get(self, path, default=None):
+            return self._stated if path == "context.artifacts.dir" else default
+
+    a_root = tempfile.mkdtemp(prefix="deploy-run-root-")
+    resolved = _store(_Stating(os.path.join("~", "a-store"), a_root))
+    check("a `~` store is the home directory's, never a literal `~` under the code root",
+          resolved == os.path.join(os.path.expanduser("~"), "a-store"), resolved)
+    try:
+        _store(_Stating("records", a_root))
+        refused = None
+    except config.ConfigError as error:
+        refused = str(error)
+    check("a store inside the code root is refused rather than written into the tree",
+          refused is not None and "inside the code root" in refused, refused)
+    os.rmdir(a_root)
 
     scratch = tempfile.mkdtemp(prefix="deploy-run-test-")
     store = os.path.join(scratch, "store")

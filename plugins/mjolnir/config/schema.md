@@ -5308,6 +5308,16 @@ the form a local check's own command takes stated at
 yet is created by the first role that writes to it: unlike `roots.code` (§ 1), its absence is not a
 stop.
 
+⛔ **A command that writes a run's own records into the store resolves `dir` through one resolver,
+`config.run_record_store`, and never expands it itself** — the background deploy run and the live
+data step ([§ 33](#33-the-deploy-targets-and-what-reaching-one-invokes)) are the two. It expands `~` and a
+shell variable, refuses a variable the environment does not set, reads a relative value against the
+skills root, falls back to the system temporary directory where `dir` is absent, and **refuses a
+directory that resolves inside any code root**, real paths compared on both sides. A run record is
+process state rather than a plan, so the in-tree arm above does not cover it: inside a repository it
+dirties the tree a target's `clean` condition reads, and a carrier that expanded `$VAR` but not `~`
+once wrote its records under a literal `./~` in the code root for exactly that reason.
+
 `carrier: none` is a real configuration: a project that maps one role, so nothing is handed from one
 role to another, writes none, states why, and is not misconfigured for it. It accepts a cost: a
 boundary exists in every project, whether or not a second role is mapped —

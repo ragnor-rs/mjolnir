@@ -15371,6 +15371,67 @@ HARNESS_STORE = "projects"
 # or a drive letter and two.
 _ENCODED_CHECKOUT = re.compile(r"^(-|[A-Za-z]--)")
 
+# A shell variable as `expandvars` leaves it when the environment does not set it.
+_UNEXPANDED = re.compile(r"\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?")
+
+ARTIFACTS_DIR = "context.artifacts.dir"
+
+
+def run_record_store(configuration) -> str:
+    """The directory a carrier writes a run's own records into, expanded and checked (§ 11).
+
+    ⛔ **The one resolution of `context.artifacts.dir` for a record a command writes**, shared by
+    the deploy run and the live data step. The reader stores the value as written and the role's
+    own command expands it (§ 11), so each carrier expanding it for itself is what let one of them
+    expand `$VAR` and not `~` and write its records under a literal `./~` inside the code root.
+
+    - Absent ⇒ the system temporary directory, which is where these records went before.
+    - `~` and shell variables are expanded; a variable the environment does not set is refused
+      rather than left as a directory named for it.
+    - Relative is relative to the skills root (§ 1), never to wherever the process stands.
+    - ⛔ A directory inside any code root this configuration names is refused, the real path
+      compared on both sides as § 26's file destination does for the day log. A run record is
+      process state rather than a plan: inside a repository it dirties the tree the target's own
+      `clean` condition reads, and it is a `git add -A` away from a commit.
+    """
+    stated = configuration.get(ARTIFACTS_DIR)
+    if stated is None or (isinstance(stated, str) and not stated.strip()):
+        return tempfile.gettempdir()
+    if not isinstance(stated, str):
+        raise ConfigError(
+            ARTIFACTS_DIR,
+            f"is {stated!r}, which is not a directory. § 11 states this key as the store's "
+            "address, and an address is written as a string.",
+        )
+    expanded = os.path.expanduser(os.path.expandvars(stated.strip()))
+    unexpanded = _UNEXPANDED.findall(expanded)
+    if unexpanded:
+        raise ConfigError(
+            ARTIFACTS_DIR,
+            f"is {stated!r} and names {', '.join(sorted(set(unexpanded)))}, which the "
+            "environment this role runs in does not set. The role's own command expands a "
+            "variable (§ 11), so an unset one is a store with no address -- never a directory "
+            "of that name.",
+        )
+    if not os.path.isabs(expanded):
+        base = getattr(configuration, "skills_root", None) or configuration.code_root
+        expanded = os.path.join(os.path.abspath(base), expanded)
+    resolved = os.path.normpath(os.path.abspath(expanded))
+    views = getattr(configuration, "views", None) or {}
+    roots = [view.code_root for view in views.values()] or [configuration.code_root]
+    real = os.path.realpath(resolved)
+    for root in (os.path.realpath(root) for root in roots):
+        if real == root or real.startswith(root + os.sep):
+            through = "" if real == resolved else f" by way of {real!r}"
+            raise ConfigError(
+                ARTIFACTS_DIR,
+                f"resolves to {resolved!r}, which is inside the code root {root!r}{through}. "
+                "A run's records are process state: inside the repository they dirty the tree "
+                "a target's `clean` condition reads and are a `git add -A` away from a commit. "
+                "Put the store outside every repository (§ 11).",
+            )
+    return resolved
+
 
 def derived_by_the_harness(stated: str) -> bool:
     """Whether a stated directory is inside the harness's per-project store (§ 40).
@@ -15421,6 +15482,74 @@ def self_test() -> int:
     check("the examples directory holds configurations", bool(paths))
 
     import tempfile  # noqa: PLC0415 -- one of the arms that needs a directory
+
+    # --- § 11's store, as a run's records resolve it (issue 485) ---------------
+    class _Stating:
+        def __init__(self, stated, skills_root, roots):
+            self._stated = stated
+            self.skills_root = skills_root
+            self.code_root = roots[0]
+            self.views = {f"r{at}": type("_View", (), {"code_root": root})()
+                          for at, root in enumerate(roots)}
+
+        def get(self, path, default=None):
+            return self._stated if path == ARTIFACTS_DIR else default
+
+    with tempfile.TemporaryDirectory() as scratch:
+        home = os.path.join(scratch, "home")
+        repo = os.path.join(scratch, "repo")
+        other = os.path.join(scratch, "other-repo")
+        for made in (home, repo, other):
+            os.makedirs(made)
+        os.symlink(repo, os.path.join(scratch, "into-repo"))
+
+        def resolved(stated, skills_root=repo, roots=(repo,)):
+            try:
+                return run_record_store(_Stating(stated, skills_root, list(roots)))
+            except ConfigError as refused:
+                return refused
+
+        held = {name: os.environ.get(name) for name in ("HOME", "MJOLNIR_485_UNSET")}
+        os.environ["HOME"] = home
+        os.environ.pop("MJOLNIR_485_UNSET", None)
+        try:
+            check("an absent store resolves to the system temporary directory",
+                  resolved(None) == tempfile.gettempdir() and resolved("  ")
+                  == tempfile.gettempdir())
+            # ⛔ The defect itself: a `~` left literal became a directory named `~` inside the
+            # code root.
+            got = resolved(os.path.join("~", "a-store", "artifacts"))
+            check("a `~` store is expanded into the home directory, never left literal",
+                  got == os.path.join(home, "a-store", "artifacts"), repr(got))
+            os.environ["MJOLNIR_485_HOME"] = home
+            got = resolved("$MJOLNIR_485_HOME/a-store")
+            check("a set variable is expanded", got == os.path.join(home, "a-store"), repr(got))
+            os.environ.pop("MJOLNIR_485_HOME")
+            got = resolved("$MJOLNIR_485_UNSET/a-store")
+            check("an unset variable is refused, naming it",
+                  isinstance(got, ConfigError) and "MJOLNIR_485_UNSET" in str(got), repr(got))
+            got = resolved("a-store")
+            check("a relative store is read against the skills root, and inside the code root "
+                  "it is refused", isinstance(got, ConfigError)
+                  and os.path.join(repo, "a-store") in str(got), repr(got))
+            got = resolved(os.path.join(other, "a-store"), roots=(repo, other))
+            check("a store inside any code root of several is refused",
+                  isinstance(got, ConfigError) and "inside the code root" in str(got), repr(got))
+            got = resolved(os.path.join(scratch, "into-repo", "a-store"))
+            check("a store reaching a code root through a link is refused",
+                  isinstance(got, ConfigError) and "by way of" in str(got), repr(got))
+            got = resolved("../outside", skills_root=os.path.join(scratch, "skills"))
+            check("a relative store outside every code root resolves against the skills root",
+                  got == os.path.join(scratch, "outside"), repr(got))
+            got = resolved(12)
+            check("a store that is not a string is refused", isinstance(got, ConfigError),
+                  repr(got))
+        finally:
+            for name, value in held.items():
+                if value is None:
+                    os.environ.pop(name, None)
+                else:
+                    os.environ[name] = value
 
     # --- § 40's directories that outlive a checkout ---------------------------
     standing = os.environ.pop(HARNESS_CONFIG_DIR, None)
