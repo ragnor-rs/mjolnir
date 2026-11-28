@@ -192,13 +192,15 @@ def _slug(target: str) -> str:
 
 
 def _record_path(configuration: config.Config, target: str, step: str | None = None) -> str:
-    where = configuration.get("context.artifacts.dir") or tempfile.gettempdir()
+    # ⛔ The reader's one resolver and never an expansion here: this line once expanded `$VAR`
+    # and not `~`, and wrote its records under a literal `./~` inside the code root.
+    where = config.run_record_store(configuration)
     name = (
         RECORD.format(target=_slug(target))
         if step is None
         else RECORD_OF_STEP.format(target=_slug(target), step=_slug(step))
     )
-    return os.path.join(os.path.expandvars(where), name)
+    return os.path.join(where, name)
 
 
 def _held(path: str) -> dict | None:
@@ -1236,6 +1238,21 @@ def self_test() -> int:
     artifacts = _a_tree({})
     tree = _a_tree(_scripts())
     ready = _Stated(_a_block(), tree, artifacts=artifacts)
+    # ⛔ Issue 485: `~` was left literal and the record landed under `./~` in the code root.
+    homed = _record_path(_Stated(_a_block(), tree, artifacts=os.path.join("~", "a-store")), "a-target")
+    check(
+        "a `~` store puts the record in the home directory, never under a literal `~`",
+        os.path.dirname(homed) == os.path.join(os.path.expanduser("~"), "a-store"),
+        homed,
+    )
+    in_tree = _record_path(
+        _Stated(_a_block(), tree, artifacts=os.path.join(tree, "r")), "a-target"
+    )
+    check(
+        "a store inside the code root puts the record in the temporary directory, not the tree",
+        os.path.dirname(in_tree) == tempfile.gettempdir(),
+        in_tree,
+    )
     answer = prepare(ready, "a-target")
     check(
         "every step the block states ran, in order",
