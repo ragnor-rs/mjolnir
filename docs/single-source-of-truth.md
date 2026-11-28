@@ -3368,8 +3368,10 @@ than a shell builtin, so an arm about a non-zero status can produce one.
 
 What it holds: the plan naming every step in order and running none; each stop planted alone and
 asserted to stop at its own step, with the record an apply would read left absent in every case; a
-completed preparation leaving that record and writing nothing itself; a go naming neither the
-target nor the rehearsal's verdict refused in all four shapes, and one naming both writing; a write
+completed preparation leaving that record and writing nothing itself; a go missing the target's
+name or a verdict word refused in every shape, the placeholder phrases with no value among them,
+and one naming both values writing; a go naming target, step, grouping value, verdict and *no
+backup* writing, the same go without the target's name refused naming it; a write
 with no preparation on record refused; a target stating no rehearsal completing with the row still
 in the plan and the report saying there was none rather than that it passed; the hand-over making
 no write and handing the command over whole; a hand-over under an unbound go still refused, which
