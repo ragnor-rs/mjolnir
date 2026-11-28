@@ -9522,6 +9522,22 @@ configure the go away is a project whose live store is written unasked. It is a 
 one deploy: § 33's is about reaching the target at all, this one is about a write whose evidence did
 not exist when that one was put.
 
+⛔ **What the go names is values, never a phrase.** It names the target by its name and the
+rehearsal's verdict in one of a small accepted set of words — *clean*, *passed*, *ok*, *no
+divergence* — or *no rehearsal* where the step states none; beside those, the step's name on a
+listed target, *no backup* where the step takes none, the side taken where the side is a choice,
+and the grouping value where a command places one. Each is matched as a whole word, ignoring case,
+so a target `prod` is not named by *production*. A go carrying the words *the target* and *the
+rehearsal's verdict* names none of them, and is refused like any other that is short. The verdict
+is a word from a set rather than one read from the rehearsal's output because the verdict is the
+exit status, below: a rehearsal that reached the go exited zero.
+
+**The go is put as an option set, and the option picked is the person's answer.** The approving
+option's label states those values; picking it is approving what it states, as much as a sentence
+they typed would be, and the label is handed over exactly as shown. A free-text answer is read as
+written. What is never done is composing the answer *after* it was given — filling in what the
+person's words left out — which turns a short go into one the person did not give.
+
 ⛔ **A prompt the command puts is not the go, and a command carrying its own answer is refused at the
 load.** On the copy whose writes block on a prompt of their own, a session running such a command
 unattended has to feed it, and the answer it feeds is one it gave on the applicant's behalf. So a

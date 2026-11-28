@@ -65,6 +65,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -89,19 +90,50 @@ NO_STEP = 3
 # own.
 PREPARED = ("backup.run", "backup.verify", "preview", "rehearse")
 
-# What the go has to name, and ⛔ **not a form the go is composed to satisfy.**
-# § 29 states the rule for a dispatch and § 35 states it for this write: a go is
-# an approval of something, so one that names neither what it approves nor the
-# reading it was given is an answer to a question nobody can reconstruct.
+# What the go has to name is **values**, and ⛔ **never a phrase the go is
+# composed to carry.** § 29 states the rule for a dispatch and § 35 states it for
+# this write: a go is an approval of something, so one that names neither what it
+# approves nor the reading it was given is an answer to a question nobody can
+# reconstruct. What it approves is the target by its name; the reading is the
+# rehearsal's verdict, said in one of the words below.
 #
-# ⚠️ Matched case-insensitively and as a substring, which is the loosest form that
-# still carries the fact. A tighter match would be a form, and a person typing a
-# correct answer in their own words would be refused by it.
-GO_MUST_NAME = ("the target", "the rehearsal's verdict")
+# ⚠️ Each value is matched case-insensitively as a whole token (`_names`), which
+# is the loosest form that still carries the fact: a target `prod` is not named by
+# *production*, and a grouping value `5.7` is not named by *5.71*.
+#
+# The verdict is one of a small accepted set rather than a word read out of the
+# rehearsal's output, because the verdict *is* the exit status (see `_UNREAD`
+# below): a rehearsal that reached the go exited zero, and the person says so in
+# whichever of these words they use.
+GO_VERDICT_WORDS = ("clean", "passed", "ok", "no divergence")
+
+# What a go on a step stating no rehearsal names in the verdict's place (§ 35):
+# the go was asked with *no rehearsal* said, and the answer carries it back.
+GO_NO_REHEARSAL = "no rehearsal"
 
 # What a go on a step taking no backup names beside the above (§ 35): an approval
 # of an irreversible write with nothing to recover it from is one that said so.
 GO_MUST_NAME_NO_BACKUP = "no backup"
+
+
+def _names(said: str, value: str) -> bool:
+    """Whether the go `said` names `value` as a whole token, ignoring case.
+
+    A token boundary is anything but a word character or a hyphen, and a dot is
+    a boundary only where no word character follows it -- so `staging` is named
+    by *Go staging,* and `5.7` by *5.7.* at a sentence's end, while neither is
+    named by *staging-2* or *5.71* or *5.7.1*.
+    """
+    pattern = r"(?<![\w-])" + re.escape(value.lower()) + r"(?![\w-]|\.\w)"
+    return re.search(pattern, said.lower()) is not None
+
+
+def _verdict_line(rehearsed: bool) -> str:
+    """What the go names for the rehearsal, as the plan and a refusal state it."""
+    if not rehearsed:
+        return f"that there was {GO_NO_REHEARSAL}"
+    return "the rehearsal's verdict (" + ", ".join(GO_VERDICT_WORDS[:-1]) + \
+        f" or {GO_VERDICT_WORDS[-1]})"
 
 # Where the reading `prepare` took is left for `apply` to find, under the
 # directory § 11 states artifacts crossing a role boundary live in.
@@ -277,6 +309,11 @@ def _steps(block: dict) -> list[dict]:
     return out
 
 
+def _rehearsal_stated(block: dict) -> bool:
+    """Whether the step states a rehearsal, which decides what the go's verdict is."""
+    return any(step["step"] == "rehearse" and step["stated"] for step in _steps(block))
+
+
 def _dump(answer: dict) -> str:
     """The command that took the dump, read out of the plan **by name**.
 
@@ -415,13 +452,16 @@ def _plan_of(configuration: config.Config, target: str, read: dict, block: dict)
             "this deploy would make and ⛔ says no preview is stated rather than "
             "that nothing is pending (§ 35)."
         )
-    if not any(step["step"] == "rehearse" and step["stated"] for step in _steps(block)):
+    rehearsed = _rehearsal_stated(block)
+    if not rehearsed:
         report.append(
             "This target states no rehearsal, which § 35 makes a key a block may "
             "omit. ⛔ Reported as **no rehearsal** rather than as a clean one, and "
             "the go is asked with that said."
         )
-    go_must_name = list(GO_MUST_NAME)
+    # ⛔ Values, each as the go has to carry it: the deploy role puts the go as an
+    # option whose label states every one of them (§ 35).
+    go_must_name = [f"the target ({target})", _verdict_line(rehearsed)]
     if absent is not None:
         go_must_name.append(GO_MUST_NAME_NO_BACKUP)
     if block.get("name") is not None:
@@ -815,9 +855,11 @@ def apply(
 
     ⛔ **Four refusals before anything runs**, and each is a stop rather than a
     warning: no record from `prepare`, a record for another target or step or
-    one missing a phase this write follows, a go that names neither the target
-    nor the reading it was given (nor the step, on a listed one, nor the side
-    taken, where the side is a choice), and a target whose configuration states
+    one missing a phase this write follows, a go missing any value it binds to --
+    the target by its name, the rehearsal's verdict in one of `GO_VERDICT_WORDS`
+    or *no rehearsal* where none is stated, the step on a listed one, *no backup*
+    where none is taken, the side taken where the side is a choice, and the
+    grouping value where the step places one -- and a target whose configuration states
     that a person performs the write. ⚠️ A reading taken under other sides than
     `chosen` resolves to is no completed preparation for this write (§ 35), and
     neither is one taken under another grouping value; the go names the value
@@ -900,24 +942,35 @@ def apply(
     # dispatch met one facet over. ⚠️ The words are never composed to satisfy
     # this: a role that filled in the form would have a form rather than an
     # approval, so a go that is short is refused and reported, never rewritten.
-    said = (go or "").lower()
-    missing = [what for what in GO_MUST_NAME if what not in said]
+    said = go or ""
+    missing = []
+    # ⛔ The target by its own name: what the write is approved against.
+    if not _names(said, target):
+        missing.append(f"target {target!r}")
+    # ⛔ The rehearsal's verdict in one of the accepted words, or -- where the
+    # step states none -- that there was no rehearsal, which is what the go was
+    # asked with (§ 35).
+    if _rehearsal_stated(block):
+        if not any(_names(said, word) for word in GO_VERDICT_WORDS):
+            missing.append(_verdict_line(True))
+    elif not _names(said, GO_NO_REHEARSAL):
+        missing.append(GO_NO_REHEARSAL)
     # ⛔ On a listed step the go names that step too: each write has its own go,
     # and one naming another step, or none, licenses nothing (§ 35).
-    if name is not None and name.lower() not in said:
+    if name is not None and not _names(said, name):
         missing.append(f"step {name!r}")
     # ⛔ On a step taking no backup the go says so, or it approved a write it
     # was not told nothing could recover the store from (§ 35).
-    if answer["backup_absent"] is not None and GO_MUST_NAME_NO_BACKUP not in said:
+    if answer["backup_absent"] is not None and not _names(said, GO_MUST_NAME_NO_BACKUP):
         missing.append(GO_MUST_NAME_NO_BACKUP)
     # ⛔ Where the side is a choice the go names the side taken, or it approved a
     # write without saying which side of the new code it lands on (§ 35).
     for one in answer["side_chosen"]:
-        if one["value"].lower() not in said:
+        if not _names(said, one["value"]):
             missing.append(f"side {one['value']!r}")
     # ⛔ Where a command places the grouping value the go names it, or it approved
     # a write against a version it never said (§ 33).
-    if answer["grouping"] is not None and answer["grouping"].lower() not in said:
+    if answer["grouping"] is not None and not _names(said, answer["grouping"]):
         missing.append(f"grouping value {answer['grouping']!r}")
     if missing:
         answer["report"].insert(
@@ -1155,11 +1208,13 @@ def _scripts(**status) -> dict[str, str]:
 
 
 def _a_go() -> str:
-    """A go naming everything § 35 binds one to, written as a person would."""
-    return (
-        "Yes — the target is the one named above, and the rehearsal's verdict was "
-        "no divergence over two statements."
-    )
+    """A go naming the values § 35 binds one to, written as a person would."""
+    return "Go a-target, rehearsal clean."
+
+
+def _a_go_unrehearsed() -> str:
+    """The same go on a step stating no rehearsal, which it says in the verdict's place."""
+    return "Go a-target, no rehearsal."
 
 
 def self_test() -> int:
@@ -1261,9 +1316,14 @@ def self_test() -> int:
     print("\nThe go, held to what it is a go for:")
     for label, go in (
         ("a go that is merely a yes", "yes"),
-        ("a go naming the target and not the reading", "yes, deploy the target"),
+        ("a go naming the target and not the reading", "yes, deploy a-target"),
         ("a go naming the reading and not the target",
          "the rehearsal's verdict was no divergence"),
+        # ⛔ The placeholder phrases are not the values: a go carrying them and
+        # neither the target's name nor a verdict word approved nothing.
+        ("a go carrying the placeholder phrases and no value",
+         "yes, the target, and the rehearsal's verdict"),
+        ("a go naming a target that only contains the name", "go a-target-2, clean"),
         ("a go that is empty", ""),
     ):
         answer = apply(ready, "a-target", go)
@@ -1538,7 +1598,7 @@ def self_test() -> int:
     prepare(owed, "a-target", side=after)
     check(
         "and made once the later side has shown it",
-        apply(owed, "a-target", _a_go())["written"] is True,
+        apply(owed, "a-target", _a_go_unrehearsed())["written"] is True,
     )
     check(
         "a step stating no preview says so in its plan rather than that nothing is pending",
@@ -1825,6 +1885,58 @@ def self_test() -> int:
         f"answered {fixed['grouping']!r}, {fixed['go_must_name']!r}",
     )
 
+    print("\nA go naming the values, written as a person answers the option set (§ 35):")
+
+    def staging_target():
+        # ⛔ Every value the go binds to is in play at once: a named target, a
+        # named step, a placed grouping value, no backup, and a clean rehearsal.
+        return _Stated(
+            [dict(
+                _a_block(
+                    backup={"absent_reason": "the staging store is rebuilt nightly"},
+                    rehearse="./write --dry {deploy:grouping}",
+                    apply="./write {deploy:grouping}",
+                ),
+                name="before-image",
+            )],
+            _a_tree(_scripts()), name="staging", artifacts=_a_tree({}),
+            grouping="a-release",
+        )
+
+    valued_go = "Go staging before-image 5.7, rehearsal clean, no backup"
+    staged = staging_target()
+    asked = plan(staged, "staging", step="before-image", grouping="5.7")
+    check(
+        "the plan asks for the values themselves, the target's name among them",
+        "the target (staging)" in asked["go_must_name"]
+        and any("clean" in what for what in asked["go_must_name"])
+        and not any(what == "the target" for what in asked["go_must_name"]),
+        f"asks {asked['go_must_name']!r}",
+    )
+    prepare(staged, "staging", step="before-image", grouping="5.7")
+    refused = apply(staged, "staging", valued_go.replace("staging ", ""),
+                    step="before-image", grouping="5.7")
+    check(
+        "the same go with the target's name removed is refused, naming the target",
+        refused["written"] is False and refused["ran"] == []
+        and "no target 'staging'" in refused["report"][0],
+        f"reported {refused['report'][:1]!r}",
+    )
+    answer = apply(staged, "staging", valued_go, step="before-image", grouping="5.7")
+    check(
+        "a go naming the target, step, value, verdict and no backup writes",
+        answer["written"] is True
+        and [o["command"] for o in answer["ran"] if o["step"] == "apply"] == ["./write 5.7"],
+        f"reported {answer['report'][:1]!r}",
+    )
+    for word in GO_VERDICT_WORDS:
+        fresh = staging_target()
+        prepare(fresh, "staging", step="before-image", grouping="5.7")
+        answer = apply(fresh, "staging", valued_go.replace("clean", word),
+                       step="before-image", grouping="5.7")
+        check(f"the verdict said as {word!r} is accepted", answer["written"] is True,
+              f"reported {answer['report'][:1]!r}")
+
     print("\nSeveral steps on one target, each addressed by name:")
     listed_tree = _a_tree(dict(
         _scripts(), **{"write-fails": "#!/bin/sh\necho 'half of it ran'\nexit 1\n"}
@@ -2010,6 +2122,12 @@ def self_test() -> int:
     )
     answer = apply(bare, "a-target", _a_go() + " No backup.")
     check(
+        "a go giving a verdict where no rehearsal ran is refused, naming no rehearsal",
+        answer["written"] is False and "no no rehearsal" in " ".join(answer["report"]),
+        f"reported {answer['report'][:1]!r}",
+    )
+    answer = apply(bare, "a-target", _a_go_unrehearsed() + " No backup.")
+    check(
         "and its write is entered under a go that says so",
         answer["written"] is True,
         f"reported {answer['report'][:1]!r}",
@@ -2107,7 +2225,8 @@ def main(argv: list[str] | None = None) -> int:
         # later while reading as an answer somebody gave.
         print(json.dumps({
             "error": "--given is required: the write is licensed by a person's own "
-                     "answer, naming the target and the rehearsal's verdict (§ 35).",
+                     "answer, naming the target by its name and the rehearsal's "
+                     "verdict (§ 35).",
         }, indent=2, ensure_ascii=False))
         return 1
 

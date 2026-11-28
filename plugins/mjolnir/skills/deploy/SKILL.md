@@ -315,6 +315,15 @@ still owe once it has run** — the `before` ones having been performed or stopp
 **A go is for the values it showed.** Anybody asking for another value is asking for another
 deploy: step 3 resolves it and this question is put again.
 
+**Put as an option set, never as a request to type a sentence.** The question goes through the
+harness's structured question, where it has one, with the evidence above in the question itself and
+two options: one approving, whose label states the values this go is for — the target's name, the
+ref, and every choice's value — and one declining. ⛔ **The option the person picks is their
+answer**, in their words as much as a sentence they typed would be: the label is a statement of the
+values they were shown, and picking it is the act of approving them. A free-text answer the harness
+offers beside the options is an answer too, read as written. Where the harness has no structured
+question, the same two options are put in the reply and the person's choice is read back.
+
 **A go that goes to the port carries what it is for.** Where the shape is `dispatch`, the port
 refuses a go that does not name this workflow, this ref and every input, and the words are never
 composed to satisfy it.
@@ -380,7 +389,7 @@ against the store, so a step stating one and no `rehearse` is still asked with *
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/live_data.py" apply --target "<the entry's name>" \
-  [--step "<the step's name>"] --given "<their answer, in their words>" \
+  [--step "<the step's name>"] --given "<the option they picked, verbatim, or what they typed>" \
   [--choose "<a choice's name>=<a value>"] [--grouping-value "<the grouping's own value>"]
 ```
 
@@ -393,9 +402,21 @@ listed step it refuses a go that does not name that step.
 shorter spelling, which the names check reads as the build tool of the same name and refuses the
 whole command.
 
-- ⛔ **The go is handed over as they wrote it and is never composed to satisfy the carrier.** It
-  refuses one that names neither the target nor the rehearsal's verdict — nor, on a step taking no
-  backup, that there is none — and that refusal is reported, not worked around.
+**Put as an option set, as step 5's question is.** The approving option's label states every value
+the plan lists as what the go must name, as values and in that order — for example
+`Go staging before-image 5.7, rehearsal clean, no backup` for target `staging`, step
+`before-image`, grouping value `5.7`, a rehearsal that ran and a step taking no backup — with
+*no rehearsal* in the verdict's place where the step states none. The other option declines. The
+label states what the evidence above showed and nothing it did not: a rehearsal that ran is
+labelled with a verdict word, never on a step that states none.
+
+- ⛔ **The option the person picks is their answer, handed to `--given` verbatim** — the label
+  exactly as it was shown, or the free text they typed instead, never edited between the pick and
+  the call. Nothing is composed after the answer to satisfy the carrier. It refuses a go missing any
+  value it binds to — the target's name, a verdict word (*clean*, *passed*, *ok*, *no divergence*)
+  or *no rehearsal*, the step on a listed target, *no backup* on a step taking none, the side taken
+  where it is a choice, the grouping value where the step places one — and that refusal is
+  reported, not worked around: the question is put again with the label the plan states.
 - **Silence is not a yes.** Nothing is invoked, the deploy stays unmade, and the reply says the
   question went unanswered.
 - **Where `apply_by` is `person` the carrier makes no write and hands the command over**, and the
