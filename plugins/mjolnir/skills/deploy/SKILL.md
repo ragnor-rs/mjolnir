@@ -403,7 +403,8 @@ shorter spelling, which the names check reads as the build tool of the same name
 whole command.
 
 **Put as an option set, as step 5's question is.** The approving option's label states every value
-the plan lists as what the go must name, as values and in that order — for example
+the plan lists as what the go must name, as values rather than as the plan's descriptions of them,
+in any order that reads as a sentence — for example
 `Go staging before-image 5.7, rehearsal clean, no backup` for target `staging`, step
 `before-image`, grouping value `5.7`, a rehearsal that ran and a step taking no backup — with
 *no rehearsal* in the verdict's place where the step states none. The other option declines. The
