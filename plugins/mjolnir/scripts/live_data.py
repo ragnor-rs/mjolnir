@@ -1245,14 +1245,12 @@ def self_test() -> int:
         os.path.dirname(homed) == os.path.join(os.path.expanduser("~"), "a-store"),
         homed,
     )
-    try:
-        _record_path(_Stated(_a_block(), tree, artifacts=os.path.join(tree, "r")), "a-target")
-        in_tree = None
-    except config.ConfigError as error:
-        in_tree = str(error)
+    in_tree = _record_path(
+        _Stated(_a_block(), tree, artifacts=os.path.join(tree, "r")), "a-target"
+    )
     check(
-        "a store inside the code root is refused rather than written into the tree",
-        in_tree is not None and "inside the code root" in in_tree,
+        "a store inside the code root puts the record in the temporary directory, not the tree",
+        os.path.dirname(in_tree) == tempfile.gettempdir(),
         in_tree,
     )
     answer = prepare(ready, "a-target")

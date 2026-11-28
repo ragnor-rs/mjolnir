@@ -377,13 +377,9 @@ def self_test() -> int:
     resolved = _store(_Stating(os.path.join("~", "a-store"), a_root))
     check("a `~` store is the home directory's, never a literal `~` under the code root",
           resolved == os.path.join(os.path.expanduser("~"), "a-store"), resolved)
-    try:
-        _store(_Stating("records", a_root))
-        refused = None
-    except config.ConfigError as error:
-        refused = str(error)
-    check("a store inside the code root is refused rather than written into the tree",
-          refused is not None and "inside the code root" in refused, refused)
+    in_tree = _store(_Stating("records", a_root))
+    check("a store inside the code root sends the records to the temporary directory",
+          in_tree == tempfile.gettempdir() and not os.listdir(a_root), in_tree)
     os.rmdir(a_root)
 
     scratch = tempfile.mkdtemp(prefix="deploy-run-test-")

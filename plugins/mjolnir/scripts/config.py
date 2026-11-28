@@ -15389,10 +15389,15 @@ def run_record_store(configuration) -> str:
     - `~` and shell variables are expanded; a variable the environment does not set is refused
       rather than left as a directory named for it.
     - Relative is relative to the skills root (§ 1), never to wherever the process stands.
-    - ⛔ A directory inside any code root this configuration names is refused, the real path
-      compared on both sides as § 26's file destination does for the day log. A run record is
-      process state rather than a plan: inside a repository it dirties the tree the target's own
-      `clean` condition reads, and it is a `git add -A` away from a commit.
+    - ⛔ A directory inside any code root this configuration names, the real path compared on both
+      sides as § 26's file destination does for the day log, is **not written into**: the records
+      go to the system temporary directory instead, the same answer an absent store gets. A run
+      record is process state rather than a plan, so inside a repository it dirties the tree the
+      target's own `clean` condition reads and is a `git add -A` away from a commit. ⚠️ Not a
+      refusal, because § 11 makes a committed in-tree store legal for the plans it holds, and a
+      project in that shape would otherwise have no way to run a background deploy or a live data
+      step at all. The fallback is a function of the configuration alone, so every session and
+      every tree of the project resolves the same directory.
     """
     stated = configuration.get(ARTIFACTS_DIR)
     if stated is None or (isinstance(stated, str) and not stated.strip()):
@@ -15422,14 +15427,7 @@ def run_record_store(configuration) -> str:
     real = os.path.realpath(resolved)
     for root in (os.path.realpath(root) for root in roots):
         if real == root or real.startswith(root + os.sep):
-            through = "" if real == resolved else f" by way of {real!r}"
-            raise ConfigError(
-                ARTIFACTS_DIR,
-                f"resolves to {resolved!r}, which is inside the code root {root!r}{through}. "
-                "A run's records are process state: inside the repository they dirty the tree "
-                "a target's `clean` condition reads and are a `git add -A` away from a commit. "
-                "Put the store outside every repository (§ 11).",
-            )
+            return tempfile.gettempdir()
     return resolved
 
 
@@ -15528,16 +15526,17 @@ def self_test() -> int:
             got = resolved("$MJOLNIR_485_UNSET/a-store")
             check("an unset variable is refused, naming it",
                   isinstance(got, ConfigError) and "MJOLNIR_485_UNSET" in str(got), repr(got))
-            got = resolved("a-store")
-            check("a relative store is read against the skills root, and inside the code root "
-                  "it is refused", isinstance(got, ConfigError)
-                  and os.path.join(repo, "a-store") in str(got), repr(got))
+            # ⛔ § 11's legal committed in-tree store: run records never land in the tree, and
+            # the project is not refused a deploy for the shape its plans are kept in.
+            got = resolved(os.path.join(".claude", "artifacts"))
+            check("a relative store inside the code root sends the records to the temporary "
+                  "directory, never into the tree", got == tempfile.gettempdir(), repr(got))
             got = resolved(os.path.join(other, "a-store"), roots=(repo, other))
-            check("a store inside any code root of several is refused",
-                  isinstance(got, ConfigError) and "inside the code root" in str(got), repr(got))
+            check("so does a store inside any code root of several",
+                  got == tempfile.gettempdir(), repr(got))
             got = resolved(os.path.join(scratch, "into-repo", "a-store"))
-            check("a store reaching a code root through a link is refused",
-                  isinstance(got, ConfigError) and "by way of" in str(got), repr(got))
+            check("and a store reaching a code root through a link",
+                  got == tempfile.gettempdir(), repr(got))
             got = resolved("../outside", skills_root=os.path.join(scratch, "skills"))
             check("a relative store outside every code root resolves against the skills root",
                   got == os.path.join(scratch, "outside"), repr(got))
